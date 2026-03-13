@@ -8,5 +8,5 @@ import { base } from "viem/chains";
  */
 export const publicClient = createPublicClient({
   chain: base,
-  transport: http(process.env.NEXT_PUBLIC_BASE_RPC_URL || undefined),
+  transport: http(process.env.BASE_RPC_URL || undefined),
 });

@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   const txHash = body.txHash as Hex | undefined;
   const fallbackContent = body.content as string | undefined;
 
-  if (!txHash) {
-    return error("Missing txHash");
+  if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
+    return error("Missing or invalid txHash");
   }
 
   // 1. Fetch receipt
