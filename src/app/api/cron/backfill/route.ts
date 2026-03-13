@@ -73,7 +73,23 @@ export async function GET(req: Request) {
   }
 
   const currentBlock = await publicClient.getBlockNumber();
-  const fromBlock = currentBlock > SCAN_BLOCKS ? currentBlock - SCAN_BLOCKS : BigInt(0);
+
+  // Read last processed block from persistent cursor
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: cursor } = await (supabase.from("backfill_cursor") as any)
+    .select("last_block")
+    .eq("id", 1)
+    .single();
+  const lastBlock = cursor?.last_block ? BigInt(cursor.last_block) : BigInt(0);
+
+  // Start from the block after last processed, but cap scan range
+  const idealFrom = lastBlock > BigInt(0) ? lastBlock + BigInt(1) : BigInt(0);
+  const maxFrom = currentBlock > SCAN_BLOCKS ? currentBlock - SCAN_BLOCKS : BigInt(0);
+  const fromBlock = idealFrom > maxFrom ? maxFrom : idealFrom;
+
+  if (fromBlock > currentBlock) {
+    return NextResponse.json({ skipped: true, reason: "Already up to date" });
+  }
 
   // Fetch all StoryFactory logs in the scan range
   const logs = await publicClient.getLogs({
@@ -143,6 +159,12 @@ export async function GET(req: Request) {
       errors++;
     }
   }
+
+  // Persist cursor — advance to currentBlock
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase.from("backfill_cursor") as any)
+    .update({ last_block: Number(currentBlock), updated_at: new Date().toISOString() })
+    .eq("id", 1);
 
   return NextResponse.json({
     scanned: { fromBlock: Number(fromBlock), toBlock: Number(currentBlock) },
