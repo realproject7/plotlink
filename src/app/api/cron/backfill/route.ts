@@ -82,20 +82,23 @@ export async function GET(req: Request) {
     .single();
   const lastBlock = cursor?.last_block ? BigInt(cursor.last_block) : BigInt(0);
 
-  // Start from the block after last processed, but cap scan range
-  const idealFrom = lastBlock > BigInt(0) ? lastBlock + BigInt(1) : BigInt(0);
-  const maxFrom = currentBlock > SCAN_BLOCKS ? currentBlock - SCAN_BLOCKS : BigInt(0);
-  const fromBlock = idealFrom > maxFrom ? maxFrom : idealFrom;
+  // Start from block after last processed; cap toBlock to limit scan per run
+  const fromBlock = lastBlock > BigInt(0) ? lastBlock + BigInt(1) : BigInt(0);
 
   if (fromBlock > currentBlock) {
     return NextResponse.json({ skipped: true, reason: "Already up to date" });
   }
 
+  // Cap scan range per run to avoid timeouts on large backlogs
+  const toBlock = (fromBlock + SCAN_BLOCKS) < currentBlock
+    ? fromBlock + SCAN_BLOCKS
+    : currentBlock;
+
   // Fetch all StoryFactory logs in the scan range
   const logs = await publicClient.getLogs({
     address: STORY_FACTORY,
     fromBlock,
-    toBlock: currentBlock,
+    toBlock,
   });
 
   let storylinesInserted = 0;
@@ -160,14 +163,14 @@ export async function GET(req: Request) {
     }
   }
 
-  // Persist cursor — advance to currentBlock
+  // Persist cursor — advance to highest block actually scanned
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await (supabase.from("backfill_cursor") as any)
-    .update({ last_block: Number(currentBlock), updated_at: new Date().toISOString() })
+    .update({ last_block: Number(toBlock), updated_at: new Date().toISOString() })
     .eq("id", 1);
 
   return NextResponse.json({
-    scanned: { fromBlock: Number(fromBlock), toBlock: Number(currentBlock) },
+    scanned: { fromBlock: Number(fromBlock), toBlock: Number(toBlock) },
     processed: {
       storylines: storylinesInserted,
       plots: plotsInserted,
