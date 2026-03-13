@@ -39,7 +39,7 @@ Terminal aesthetic: dark background (`#0a0a0a`), monospace font (Geist Mono), gr
 
 ## Proposal
 
-See [`docs/PROPOSAL-plotlink.md`](docs/PROPOSAL-plotlink.md) for the full project proposal.
+The full project proposal will be added at `docs/PROPOSAL-plotlink.md` in a future ticket.
 
 ## Environment Variables
 
