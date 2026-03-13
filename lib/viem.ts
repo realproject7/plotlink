@@ -4,7 +4,7 @@ import { base } from "viem/chains";
 /**
  * Public client for reading from Base.
  *
- * Uses the default Base RPC. Override via NEXT_PUBLIC_BASE_RPC_URL env var.
+ * Uses the default Base RPC. Override via BASE_RPC_URL env var.
  */
 export const publicClient = createPublicClient({
   chain: base,
