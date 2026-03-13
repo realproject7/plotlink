@@ -1,0 +1,173 @@
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+
+// Browser-side client (anon key, respects RLS)
+export const supabase: SupabaseClient<Database> | null =
+  supabaseUrl && supabaseAnonKey
+    ? createClient<Database>(supabaseUrl, supabaseAnonKey)
+    : null;
+
+// Server-side client (service role, bypasses RLS)
+export function createServerClient(): SupabaseClient<Database> | null {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+  if (!supabaseUrl || !serviceRoleKey) return null;
+
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Database types
+// ---------------------------------------------------------------------------
+
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+export interface Database {
+  public: {
+    Tables: {
+      storylines: {
+        Row: {
+          id: number;
+          storyline_id: number;
+          writer_address: string;
+          token_address: string;
+          title: string;
+          plot_count: number;
+          last_plot_time: string | null;
+          has_deadline: boolean;
+          sunset: boolean;
+          writer_type: number;
+          hidden: boolean;
+          tx_hash: string;
+          log_index: number;
+          block_timestamp: string | null;
+          indexed_at: string;
+        };
+        Insert: {
+          id?: never;
+          storyline_id: number;
+          writer_address: string;
+          token_address: string;
+          title: string;
+          plot_count?: number;
+          last_plot_time?: string | null;
+          has_deadline?: boolean;
+          sunset?: boolean;
+          writer_type?: number;
+          hidden?: boolean;
+          tx_hash: string;
+          log_index: number;
+          block_timestamp?: string | null;
+          indexed_at?: string;
+        };
+        Update: {
+          id?: never;
+          storyline_id?: number;
+          writer_address?: string;
+          token_address?: string;
+          title?: string;
+          plot_count?: number;
+          last_plot_time?: string | null;
+          has_deadline?: boolean;
+          sunset?: boolean;
+          writer_type?: number;
+          hidden?: boolean;
+          tx_hash?: string;
+          log_index?: number;
+          block_timestamp?: string | null;
+          indexed_at?: string;
+        };
+      };
+      plots: {
+        Row: {
+          id: number;
+          storyline_id: number;
+          plot_index: number;
+          writer_address: string;
+          content_cid: string;
+          content_hash: string;
+          hidden: boolean;
+          tx_hash: string;
+          log_index: number;
+          block_timestamp: string | null;
+          indexed_at: string;
+        };
+        Insert: {
+          id?: never;
+          storyline_id: number;
+          plot_index: number;
+          writer_address: string;
+          content_cid: string;
+          content_hash: string;
+          hidden?: boolean;
+          tx_hash: string;
+          log_index: number;
+          block_timestamp?: string | null;
+          indexed_at?: string;
+        };
+        Update: {
+          id?: never;
+          storyline_id?: number;
+          plot_index?: number;
+          writer_address?: string;
+          content_cid?: string;
+          content_hash?: string;
+          hidden?: boolean;
+          tx_hash?: string;
+          log_index?: number;
+          block_timestamp?: string | null;
+          indexed_at?: string;
+        };
+      };
+      donations: {
+        Row: {
+          id: number;
+          storyline_id: number;
+          donor_address: string;
+          amount: string;
+          tx_hash: string;
+          log_index: number;
+          block_timestamp: string | null;
+          indexed_at: string;
+        };
+        Insert: {
+          id?: never;
+          storyline_id: number;
+          donor_address: string;
+          amount: string;
+          tx_hash: string;
+          log_index: number;
+          block_timestamp?: string | null;
+          indexed_at?: string;
+        };
+        Update: {
+          id?: never;
+          storyline_id?: number;
+          donor_address?: string;
+          amount?: string;
+          tx_hash?: string;
+          log_index?: number;
+          block_timestamp?: string | null;
+          indexed_at?: string;
+        };
+      };
+    };
+  };
+}
+
+// Convenience type aliases
+export type Storyline = Database["public"]["Tables"]["storylines"]["Row"];
+export type Plot = Database["public"]["Tables"]["plots"]["Row"];
+export type Donation = Database["public"]["Tables"]["donations"]["Row"];
