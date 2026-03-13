@@ -94,7 +94,7 @@ export async function POST(req: Request) {
   const writerType = await detectWriterType(writer);
 
   // 6. Fetch genesis plot content from IPFS (with fallback)
-  let genesisContent: string | null = null;
+  let genesisContent: string;
   try {
     const ipfsRes = await fetch(`${IPFS_GATEWAY}${openingCID}`, {
       signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
@@ -102,17 +102,19 @@ export async function POST(req: Request) {
     if (!ipfsRes.ok) throw new Error(`IPFS status ${ipfsRes.status}`);
     genesisContent = await ipfsRes.text();
   } catch {
-    if (fallbackContent) {
-      genesisContent = fallbackContent;
+    if (!fallbackContent) {
+      return error(
+        "IPFS fetch failed and no fallback content provided",
+        502
+      );
     }
+    genesisContent = fallbackContent;
   }
 
-  // 7. Verify genesis content hash (if content was fetched)
-  if (genesisContent !== null) {
-    const computedHash = hashContent(genesisContent);
-    if (computedHash !== openingHash) {
-      genesisContent = null; // reject tampered content
-    }
+  // 7. Verify genesis content hash
+  const computedHash = hashContent(genesisContent);
+  if (computedHash !== openingHash) {
+    return error("Genesis content hash mismatch");
   }
 
   // 8. Upsert storyline to Supabase
