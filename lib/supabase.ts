@@ -48,7 +48,7 @@ export interface Database {
           last_plot_time: string | null;
           has_deadline: boolean;
           sunset: boolean;
-          writer_type: number;
+          writer_type: number | null;
           hidden: boolean;
           tx_hash: string;
           log_index: number;
@@ -65,7 +65,7 @@ export interface Database {
           last_plot_time?: string | null;
           has_deadline?: boolean;
           sunset?: boolean;
-          writer_type?: number;
+          writer_type?: number | null;
           hidden?: boolean;
           tx_hash: string;
           log_index: number;
@@ -82,7 +82,7 @@ export interface Database {
           last_plot_time?: string | null;
           has_deadline?: boolean;
           sunset?: boolean;
-          writer_type?: number;
+          writer_type?: number | null;
           hidden?: boolean;
           tx_hash?: string;
           log_index?: number;
