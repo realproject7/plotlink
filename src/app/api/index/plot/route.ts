@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server";
-import { type Hex, decodeEventLog } from "viem";
+import { type Hex, decodeEventLog, encodeEventTopics } from "viem";
 import { publicClient } from "../../../../../lib/viem";
 import { createServerClient } from "../../../../../lib/supabase";
-import { storyFactoryAbi } from "../../../../../lib/contracts/abi";
-import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
+import {
+  storyFactoryAbi,
+  plotChainedEvent,
+} from "../../../../../lib/contracts/abi";
 import { hashContent } from "../../../../../lib/content";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
 const IPFS_TIMEOUT_MS = 10_000;
+
+/** PlotChained event topic0 (keccak256 of the event signature) */
+const PLOT_CHAINED_TOPIC = encodeEventTopics({
+  abi: [plotChainedEvent],
+  eventName: "PlotChained",
+})[0];
 
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -35,11 +43,9 @@ export async function POST(req: Request) {
     return error("Transaction failed");
   }
 
-  // 2. Find PlotChained event log from StoryFactory
+  // 2. Find PlotChained event log by event signature (topic0)
   const plotChainedLog = receipt.logs.find(
-    (log) =>
-      log.address.toLowerCase() === STORY_FACTORY.toLowerCase() &&
-      log.topics.length >= 4
+    (log) => log.topics[0] === PLOT_CHAINED_TOPIC
   );
 
   if (!plotChainedLog) {
