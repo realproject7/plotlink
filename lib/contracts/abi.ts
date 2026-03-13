@@ -30,6 +30,8 @@ export const storylineCreatedEvent = {
     { name: "tokenAddress", type: "address", indexed: false },
     { name: "title", type: "string", indexed: false },
     { name: "hasDeadline", type: "bool", indexed: false },
+    { name: "openingCID", type: "string", indexed: false },
+    { name: "openingHash", type: "bytes32", indexed: false },
   ],
 } as const;
 

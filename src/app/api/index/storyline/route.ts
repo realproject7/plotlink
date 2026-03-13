@@ -7,7 +7,11 @@ import {
   storylineCreatedEvent,
 } from "../../../../../lib/contracts/abi";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
+import { hashContent } from "../../../../../lib/content";
 import type { Database } from "../../../../../lib/supabase";
+
+const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
+const IPFS_TIMEOUT_MS = 10_000;
 
 /** StorylineCreated event topic0 */
 const STORYLINE_CREATED_TOPIC = encodeEventTopics({
@@ -22,6 +26,7 @@ function error(message: string, status = 400) {
 export async function POST(req: Request) {
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
+  const fallbackContent = body.content as string | undefined;
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");
@@ -64,8 +69,15 @@ export async function POST(req: Request) {
     return error("Unexpected event type");
   }
 
-  const { storylineId, writer, tokenAddress, title, hasDeadline } =
-    decoded.args;
+  const {
+    storylineId,
+    writer,
+    tokenAddress,
+    title,
+    hasDeadline,
+    openingCID,
+    openingHash,
+  } = decoded.args;
 
   // 4. Get block timestamp
   let blockTimestamp: bigint;
@@ -81,13 +93,37 @@ export async function POST(req: Request) {
   // 5. Detect writer type via ERC-8004 (best-effort, defaults to human)
   const writerType = await detectWriterType(writer);
 
-  // 6. Upsert to Supabase
+  // 6. Fetch genesis plot content from IPFS (with fallback)
+  let genesisContent: string | null = null;
+  try {
+    const ipfsRes = await fetch(`${IPFS_GATEWAY}${openingCID}`, {
+      signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
+    });
+    if (!ipfsRes.ok) throw new Error(`IPFS status ${ipfsRes.status}`);
+    genesisContent = await ipfsRes.text();
+  } catch {
+    if (fallbackContent) {
+      genesisContent = fallbackContent;
+    }
+  }
+
+  // 7. Verify genesis content hash (if content was fetched)
+  if (genesisContent !== null) {
+    const computedHash = hashContent(genesisContent);
+    if (computedHash !== openingHash) {
+      genesisContent = null; // reject tampered content
+    }
+  }
+
+  // 8. Upsert storyline to Supabase
   const supabase = createServerClient();
   if (!supabase) {
     return error("Supabase not configured", 500);
   }
 
-  const row: Database["public"]["Tables"]["storylines"]["Insert"] = {
+  const timestampISO = new Date(Number(blockTimestamp) * 1000).toISOString();
+
+  const storylineRow: Database["public"]["Tables"]["storylines"]["Insert"] = {
     storyline_id: Number(storylineId),
     writer_address: writer.toLowerCase(),
     token_address: tokenAddress.toLowerCase(),
@@ -95,20 +131,43 @@ export async function POST(req: Request) {
     plot_count: 1, // genesis plot
     has_deadline: hasDeadline,
     writer_type: writerType,
-    last_plot_time: new Date(Number(blockTimestamp) * 1000).toISOString(),
-    block_timestamp: new Date(Number(blockTimestamp) * 1000).toISOString(),
+    last_plot_time: timestampISO,
+    block_timestamp: timestampISO,
     tx_hash: txHash.toLowerCase(),
     log_index: storylineLog.logIndex!,
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: dbError } = await (supabase.from("storylines") as any).upsert(
-    row,
+    storylineRow,
     { onConflict: "tx_hash,log_index" }
   );
 
   if (dbError) {
-    return error(`Database error: ${dbError.message}`, 500);
+    return error(`Database error (storyline): ${dbError.message}`, 500);
+  }
+
+  // 9. Insert genesis plot (plot_index = 0) into plots table
+  const plotRow: Database["public"]["Tables"]["plots"]["Insert"] = {
+    storyline_id: Number(storylineId),
+    plot_index: 0,
+    writer_address: writer.toLowerCase(),
+    content: genesisContent,
+    content_cid: openingCID,
+    content_hash: openingHash as string,
+    block_timestamp: timestampISO,
+    tx_hash: txHash.toLowerCase(),
+    log_index: storylineLog.logIndex!,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: plotDbError } = await (supabase.from("plots") as any).upsert(
+    plotRow,
+    { onConflict: "tx_hash,log_index" }
+  );
+
+  if (plotDbError) {
+    return error(`Database error (genesis plot): ${plotDbError.message}`, 500);
   }
 
   return NextResponse.json({ success: true });
