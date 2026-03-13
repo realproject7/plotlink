@@ -168,7 +168,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     scanned: { fromBlock: Number(fromBlock), toBlock: Number(currentBlock) },
-    upserted: {
+    processed: {
       storylines: storylinesInserted,
       plots: plotsInserted,
       donations: donationsInserted,
