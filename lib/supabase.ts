@@ -96,6 +96,7 @@ export interface Database {
           storyline_id: number;
           plot_index: number;
           writer_address: string;
+          content: string | null;
           content_cid: string;
           content_hash: string;
           hidden: boolean;
@@ -109,6 +110,7 @@ export interface Database {
           storyline_id: number;
           plot_index: number;
           writer_address: string;
+          content?: string | null;
           content_cid: string;
           content_hash: string;
           hidden?: boolean;
@@ -122,6 +124,7 @@ export interface Database {
           storyline_id?: number;
           plot_index?: number;
           writer_address?: string;
+          content?: string | null;
           content_cid?: string;
           content_hash?: string;
           hidden?: boolean;
