@@ -5,7 +5,8 @@ import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation } from "../../../../lib/supabase";
 import { ConnectWallet } from "../../../components/ConnectWallet";
-import { formatUnits } from "viem";
+import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
+import { formatUnits, type Address } from "viem";
 
 const PAGE_SIZE = 50;
 
@@ -76,13 +77,8 @@ export default function ReaderDashboard() {
         Reader Dashboard
       </h1>
 
-      {/* --- Portfolio section (Phase 5) --- */}
-      <section className="border-border mt-8 rounded border px-4 py-4">
-        <h2 className="text-foreground text-sm font-medium">Portfolio</h2>
-        <p className="text-muted mt-2 text-xs italic">
-          Token holdings and portfolio value available after Phase 5 (P5-7b).
-        </p>
-      </section>
+      {/* --- Portfolio section --- */}
+      <ReaderPortfolio readerAddress={address as Address} />
 
       {/* --- Donation History --- */}
       <section className="mt-8">

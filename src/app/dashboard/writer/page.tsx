@@ -6,6 +6,7 @@ import { supabase, type Storyline } from "../../../../lib/supabase";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
+import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import Link from "next/link";
 import { type Address } from "viem";
 
@@ -60,6 +61,18 @@ export default function WriterDashboard() {
         <p className="mt-8 text-sm text-red-400">
           Failed to load storylines. Please try again.
         </p>
+      )}
+
+      {isConnected && address && storylines.length > 0 && (
+        <WriterTradingStats
+          writerAddress={address as Address}
+          storylineTokens={storylines
+            .filter((s) => s.token_address)
+            .map((s) => ({
+              storylineId: s.storyline_id,
+              tokenAddress: s.token_address as Address,
+            }))}
+        />
       )}
 
       <div className="mt-8 space-y-4">
