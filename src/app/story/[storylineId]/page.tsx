@@ -1,5 +1,8 @@
 import { createServerClient, type Storyline, type Plot } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
+import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
+import { IS_TESTNET } from "../../../../lib/contracts/constants";
+import { type Address } from "viem";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -41,9 +44,14 @@ export default async function StoryPage({ params }: { params: Params }) {
 
   const plots = plotRows ?? [];
 
+  const sl = storyline as Storyline;
+  const priceInfo = sl.token_address
+    ? await getTokenPrice(sl.token_address as Address)
+    : null;
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <StoryHeader storyline={storyline} />
+      <StoryHeader storyline={storyline} priceInfo={priceInfo} />
       <div className="mt-10 space-y-10">
         {plots.map((plot) => (
           <PlotEntry key={plot.id} plot={plot} />
@@ -56,7 +64,15 @@ export default async function StoryPage({ params }: { params: Params }) {
   );
 }
 
-function StoryHeader({ storyline }: { storyline: Storyline }) {
+function StoryHeader({
+  storyline,
+  priceInfo,
+}: {
+  storyline: Storyline;
+  priceInfo: TokenPriceInfo | null;
+}) {
+  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+
   return (
     <header className="border-border border-b pb-6">
       <h1 className="text-accent text-2xl font-bold tracking-tight">
@@ -78,6 +94,27 @@ function StoryHeader({ storyline }: { storyline: Storyline }) {
           </span>
         )}
       </div>
+
+      {priceInfo && (
+        <div className="border-border bg-surface mt-4 grid grid-cols-2 gap-2 rounded border px-3 py-2 text-xs">
+          <div>
+            <span className="text-muted block text-[10px] uppercase tracking-wider">
+              Token Price
+            </span>
+            <span className="text-foreground">
+              {priceInfo.pricePerToken} {reserveLabel}
+            </span>
+          </div>
+          <div>
+            <span className="text-muted block text-[10px] uppercase tracking-wider">
+              Supply Minted
+            </span>
+            <span className="text-foreground">
+              {priceInfo.totalSupply} tokens
+            </span>
+          </div>
+        </div>
+      )}
       {storyline.sunset ? (
         <div className="border-border bg-surface mt-4 rounded border px-3 py-2 text-xs">
           <span className="text-muted">Story complete</span>
