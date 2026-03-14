@@ -153,7 +153,10 @@ export async function GET(req: Request) {
         );
         donationsInserted++;
       }
-    } catch {
+    } catch (err) {
+      const txHash = log.transactionHash ?? "unknown";
+      const logIdx = log.logIndex ?? "?";
+      console.error(`Backfill error at tx=${txHash} logIndex=${logIdx}:`, err instanceof Error ? err.message : err);
       errors++;
     }
   }
