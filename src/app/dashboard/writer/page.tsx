@@ -5,7 +5,9 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase, type Storyline } from "../../../../lib/supabase";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
+import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import Link from "next/link";
+import { type Address } from "viem";
 
 async function fetchWriterStorylines(
   address: string,
@@ -126,6 +128,13 @@ function StorylineDetail({ storyline }: { storyline: Storyline }) {
         storyline.last_plot_time && (
           <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
         )}
+
+      {storyline.token_address && (
+        <ClaimRoyalties
+          tokenAddress={storyline.token_address as Address}
+          plotCount={storyline.plot_count}
+        />
+      )}
     </div>
   );
 }
