@@ -8,7 +8,9 @@ import {
   MIN_CONTENT_LENGTH,
   MAX_CONTENT_LENGTH,
 } from "../../../lib/content";
-import { usePublishStoryline, type PublishState } from "../../hooks/usePublish";
+import { usePublish, type PublishState } from "../../hooks/usePublish";
+import { storyFactoryAbi } from "../../../lib/contracts/abi";
+import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import Link from "next/link";
 
 const STATE_LABELS: Record<PublishState, string> = {
@@ -27,7 +29,7 @@ export default function CreateStorylinePage() {
   const [content, setContent] = useState("");
   const [hasDeadline, setHasDeadline] = useState(false);
 
-  const { state, error, publish, reset } = usePublishStoryline();
+  const { state, error, execute, reset } = usePublish();
   const { valid, charCount } = validateContentLength(content);
   const titleValid = title.trim().length > 0;
   const canSubmit =
@@ -79,7 +81,18 @@ export default function CreateStorylinePage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (canSubmit) publish(title.trim(), content, hasDeadline);
+          if (canSubmit)
+            execute({
+              content,
+              uploadKeyPrefix: "plotlink/genesis",
+              indexerRoute: "/api/index/storyline",
+              buildWriteCall: (cid, contentHash) => ({
+                address: STORY_FACTORY,
+                abi: storyFactoryAbi as unknown as [],
+                functionName: "createStoryline",
+                args: [title.trim(), cid, contentHash, hasDeadline],
+              }),
+            });
         }}
         className="mt-8 space-y-6"
       >
