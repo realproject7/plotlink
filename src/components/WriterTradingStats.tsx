@@ -118,9 +118,6 @@ export function WriterTradingStats({
 
   if (storylineTokens.length === 0) return null;
 
-  const totalEarned =
-    (totalDonations ?? BigInt(0)) + (totalRoyalties ?? BigInt(0));
-
   const totalVolume = (storyStats ?? []).reduce(
     (sum, s) => sum + s.totalSupply,
     BigInt(0),
@@ -129,16 +126,21 @@ export function WriterTradingStats({
   return (
     <section className="border-border mt-8 rounded border px-4 py-4">
       <h2 className="text-foreground text-sm font-medium">Trading Stats</h2>
-      <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
         <div>
           <span className="text-muted block text-[10px] uppercase tracking-wider">
-            Total Earned
+            Donations Received
           </span>
           <span className="text-foreground">
-            {formatUnits(totalEarned, 18)} {reserveLabel}
+            {formatUnits(totalDonations ?? BigInt(0), 18)} {reserveLabel}
           </span>
-          <span className="text-muted block text-[10px] mt-0.5">
-            {formatUnits(totalRoyalties ?? BigInt(0), 18)} royalties + {formatUnits(totalDonations ?? BigInt(0), 18)} donations
+        </div>
+        <div>
+          <span className="text-muted block text-[10px] uppercase tracking-wider">
+            Unclaimed Royalties
+          </span>
+          <span className="text-foreground">
+            {formatUnits(totalRoyalties ?? BigInt(0), 18)} {reserveLabel}
           </span>
         </div>
         <div>
