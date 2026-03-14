@@ -2,11 +2,9 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useWriteContract } from "wagmi";
-import { storyFactoryAbi } from "../../lib/contracts/abi";
-import { STORY_FACTORY } from "../../lib/contracts/constants";
 import { hashContent } from "../../lib/content";
 import { publicClient } from "../../lib/rpc";
-import type { Hex } from "viem";
+import type { Hex, Abi } from "viem";
 
 export type PublishState =
   | "idle"
@@ -17,30 +15,39 @@ export type PublishState =
   | "published"
   | "error";
 
-interface PublishResult {
-  state: PublishState;
-  error: string | null;
-  txHash: Hex | undefined;
-  publish: (
-    title: string,
-    content: string,
-    hasDeadline: boolean,
-  ) => Promise<void>;
-  reset: () => void;
+interface WriteCall {
+  address: `0x${string}`;
+  abi: Abi;
+  functionName: string;
+  args: readonly unknown[];
 }
 
-export function usePublishStoryline(): PublishResult {
+interface PublishOptions {
+  content: string;
+  uploadKeyPrefix: string;
+  indexerRoute: string;
+  buildWriteCall: (cid: string, contentHash: Hex) => WriteCall;
+}
+
+/**
+ * Shared publishing state machine for StoryFactory write flows.
+ *
+ * Manages the 5-state flow: uploading -> confirming -> pending -> indexing -> published.
+ * Caches CID keyed by content hash for retry (skips re-upload if content unchanged).
+ */
+export function usePublish() {
   const [state, setState] = useState<PublishState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<Hex | undefined>(undefined);
   const cachedCid = useRef<{ cid: string; contentHash: string } | null>(null);
 
-  const { writeContractAsync, data: txHash } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
 
-  const publish = useCallback(
-    async (title: string, content: string, hasDeadline: boolean) => {
+  const execute = useCallback(
+    async (opts: PublishOptions) => {
       try {
         setError(null);
-        const contentHash = hashContent(content);
+        const contentHash = hashContent(opts.content);
 
         // 1. Upload to IPFS (reuse cached CID only if content unchanged)
         let cid: string;
@@ -55,8 +62,8 @@ export function usePublishStoryline(): PublishResult {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              content,
-              key: `plotlink/genesis/${Date.now()}.txt`,
+              content: opts.content,
+              key: `${opts.uploadKeyPrefix}/${Date.now()}.txt`,
             }),
           });
           if (!res.ok) throw new Error("IPFS upload failed");
@@ -67,24 +74,21 @@ export function usePublishStoryline(): PublishResult {
 
         // 2. Submit tx to wallet
         setState("confirming");
+        const writeCall = opts.buildWriteCall(cid, contentHash);
 
-        const hash = await writeContractAsync({
-          address: STORY_FACTORY,
-          abi: storyFactoryAbi,
-          functionName: "createStoryline",
-          args: [title, cid, contentHash, hasDeadline],
-        });
+        const hash = await writeContractAsync(writeCall);
+        setTxHash(hash);
 
-        // 3. Wait for tx confirmation via viem publicClient
+        // 3. Wait for tx confirmation
         setState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
 
         // 4. Trigger indexer
         setState("indexing");
-        await fetch("/api/index/storyline", {
+        await fetch(opts.indexerRoute, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash, content }),
+          body: JSON.stringify({ txHash: hash, content: opts.content }),
         });
 
         // 5. Done
@@ -103,8 +107,9 @@ export function usePublishStoryline(): PublishResult {
   const reset = useCallback(() => {
     setState("idle");
     setError(null);
+    setTxHash(undefined);
     cachedCid.current = null;
   }, []);
 
-  return { state, error, txHash, publish, reset };
+  return { state, error, txHash, execute, reset };
 }
