@@ -2,12 +2,7 @@ import { NextResponse } from "next/server";
 import { decodeEventLog, type Log } from "viem";
 import { publicClient } from "../../../../../lib/viem";
 import { createServerClient } from "../../../../../lib/supabase";
-import {
-  storyFactoryAbi,
-  plotChainedEvent,
-  storylineCreatedEvent,
-  donationEvent,
-} from "../../../../../lib/contracts/abi";
+import { storyFactoryAbi } from "../../../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
@@ -158,16 +153,22 @@ export async function GET(req: Request) {
         );
         donationsInserted++;
       }
-    } catch {
+    } catch (err) {
+      const txHash = log.transactionHash ?? "unknown";
+      const logIdx = log.logIndex ?? "?";
+      console.error(`Backfill error at tx=${txHash} logIndex=${logIdx}:`, err instanceof Error ? err.message : err);
       errors++;
     }
   }
 
   // Persist cursor — advance to highest block actually scanned
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (supabase.from("backfill_cursor") as any)
+  const { error: cursorError } = await (supabase.from("backfill_cursor") as any)
     .update({ last_block: Number(toBlock), updated_at: new Date().toISOString() })
     .eq("id", 1);
+  if (cursorError) {
+    console.error(`Failed to update backfill cursor: ${cursorError.message}`);
+  }
 
   return NextResponse.json({
     scanned: { fromBlock: Number(fromBlock), toBlock: Number(toBlock) },
@@ -220,9 +221,12 @@ async function processStorylineCreated(
     log_index: logIndex,
   };
 
-  await supabase
+  const { error: storylineError } = await supabase
     .from("storylines")
     .upsert(storylineRow, { onConflict: "tx_hash,log_index" });
+  if (storylineError) {
+    throw new Error(`Database error (storyline): ${storylineError.message}`);
+  }
 
   // Insert genesis plot
   const content = await fetchIPFSContent(openingCID);
@@ -238,9 +242,12 @@ async function processStorylineCreated(
       tx_hash: txHash,
       log_index: logIndex,
     };
-    await supabase
+    const { error: plotError } = await supabase
       .from("plots")
       .upsert(plotRow, { onConflict: "tx_hash,log_index" });
+    if (plotError) {
+      throw new Error(`Database error (genesis plot): ${plotError.message}`);
+    }
   }
 }
 
@@ -273,9 +280,12 @@ async function processPlotChained(
     log_index: logIndex,
   };
 
-  await supabase
+  const { error: plotError } = await supabase
     .from("plots")
     .upsert(row, { onConflict: "tx_hash,log_index" });
+  if (plotError) {
+    throw new Error(`Database error (plot): ${plotError.message}`);
+  }
 }
 
 async function processDonation(
@@ -298,7 +308,10 @@ async function processDonation(
     log_index: logIndex,
   };
 
-  await supabase
+  const { error: donationError } = await supabase
     .from("donations")
     .upsert(row, { onConflict: "tx_hash,log_index" });
+  if (donationError) {
+    throw new Error(`Database error (donation): ${donationError.message}`);
+  }
 }
