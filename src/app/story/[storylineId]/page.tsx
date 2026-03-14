@@ -1,6 +1,7 @@
 import { createServerClient, type Storyline, type Plot } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { TradingWidget } from "../../../components/TradingWidget";
+import { PriceChart } from "../../../components/PriceChart";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
@@ -53,6 +54,13 @@ export default async function StoryPage({ params }: { params: Params }) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <StoryHeader storyline={storyline} priceInfo={priceInfo} />
+      {sl.token_address && priceInfo && (
+        <PriceChart
+          tokenAddress={sl.token_address as Address}
+          totalSupplyRaw={priceInfo.totalSupplyRaw}
+          currentPriceRaw={priceInfo.priceRaw}
+        />
+      )}
       {sl.token_address && (
         <TradingWidget tokenAddress={sl.token_address as Address} />
       )}
