@@ -21,13 +21,14 @@ async function fetchDonationPage(
   if (!supabase) return { rows: [], totalCount: 0 };
   const from = page * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
-  const { data, count } = await supabase
+  const { data, count, error } = await supabase
     .from("donations")
     .select("*", { count: "exact" })
     .eq("donor_address", address.toLowerCase())
     .order("block_timestamp", { ascending: false })
     .range(from, to)
     .returns<Donation[]>();
+  if (error) throw error;
   return { rows: data ?? [], totalCount: count ?? 0 };
 }
 
@@ -40,7 +41,7 @@ export default function ReaderDashboard() {
     setPage(0);
   }, [address]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["reader-donations", address, page],
     queryFn: () => fetchDonationPage(address!, page),
     enabled: isConnected && !!address,
@@ -100,11 +101,17 @@ export default function ReaderDashboard() {
 
         {isLoading && <p className="text-muted mt-4 text-sm">Loading...</p>}
 
+        {error && (
+          <p className="mt-4 text-sm text-red-400">
+            Failed to load donations. Please try again.
+          </p>
+        )}
+
         <div className="mt-4 space-y-2">
           {donations.map((d) => (
             <DonationRow key={d.id} donation={d} />
           ))}
-          {!isLoading && donations.length === 0 && (
+          {!isLoading && !error && donations.length === 0 && (
             <p className="text-muted py-6 text-center text-sm">
               No donations yet.
             </p>

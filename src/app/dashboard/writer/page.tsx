@@ -11,20 +11,21 @@ async function fetchWriterStorylines(
   address: string,
 ): Promise<Storyline[]> {
   if (!supabase) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("storylines")
     .select("*")
     .eq("writer_address", address.toLowerCase())
     .eq("hidden", false)
     .order("block_timestamp", { ascending: false })
     .returns<Storyline[]>();
+  if (error) throw error;
   return data ?? [];
 }
 
 export default function WriterDashboard() {
   const { address, isConnected } = useAccount();
 
-  const { data: storylines = [], isLoading } = useQuery({
+  const { data: storylines = [], isLoading, error } = useQuery({
     queryKey: ["writer-storylines", address],
     queryFn: () => fetchWriterStorylines(address!),
     enabled: isConnected && !!address,
@@ -53,11 +54,17 @@ export default function WriterDashboard() {
 
       {isLoading && <p className="text-muted mt-8 text-sm">Loading...</p>}
 
+      {error && (
+        <p className="mt-8 text-sm text-red-400">
+          Failed to load storylines. Please try again.
+        </p>
+      )}
+
       <div className="mt-8 space-y-4">
         {storylines.map((s) => (
           <StorylineDetail key={s.id} storyline={s} />
         ))}
-        {!isLoading && storylines.length === 0 && (
+        {!isLoading && !error && storylines.length === 0 && (
           <p className="text-muted py-8 text-center text-sm">
             No storylines yet.
           </p>
