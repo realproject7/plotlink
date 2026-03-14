@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation } from "../../../../lib/supabase";
@@ -34,6 +34,11 @@ async function fetchDonationPage(
 export default function ReaderDashboard() {
   const { address, isConnected } = useAccount();
   const [page, setPage] = useState(0);
+
+  // Reset to first page when wallet address changes
+  useEffect(() => {
+    setPage(0);
+  }, [address]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["reader-donations", address, page],
