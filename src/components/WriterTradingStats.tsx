@@ -126,6 +126,9 @@ export function WriterTradingStats({
   return (
     <section className="border-border mt-8 rounded border px-4 py-4">
       <h2 className="text-foreground text-sm font-medium">Trading Stats</h2>
+      <p className="text-muted mt-1 text-[10px] italic">
+        Lifetime total earned requires a royalty-claim indexer — showing available metrics.
+      </p>
       <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
         <div>
           <span className="text-muted block text-[10px] uppercase tracking-wider">
