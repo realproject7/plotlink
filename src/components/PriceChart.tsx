@@ -16,6 +16,7 @@ const NUM_POINTS = 20;
 interface PriceChartProps {
   tokenAddress: Address;
   totalSupplyRaw: bigint;
+  currentPriceRaw: bigint;
 }
 
 /**
@@ -24,7 +25,7 @@ interface PriceChartProps {
  * Samples getReserveForToken at evenly spaced supply points to plot
  * the price curve, then marks the current supply position.
  */
-export function PriceChart({ tokenAddress, totalSupplyRaw }: PriceChartProps) {
+export function PriceChart({ tokenAddress, totalSupplyRaw, currentPriceRaw }: PriceChartProps) {
   const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
 
   // Sample the bonding curve at multiple supply points
@@ -60,13 +61,16 @@ export function PriceChart({ tokenAddress, totalSupplyRaw }: PriceChartProps) {
 
       const cumulativeCosts = await Promise.all(promises);
 
-      // Compute marginal price at each supply step
-      let prevCost = BigInt(0);
+      // Start with the actual current supply/price point
       const currentSupplyNum = Number(formatUnits(totalSupplyRaw, 18));
+      const currentPriceNum = Number(formatUnits(currentPriceRaw, 18));
+      points.push({ supply: currentSupplyNum, price: currentPriceNum });
+
+      // Compute marginal price at each future supply step
+      let prevCost = BigInt(0);
       for (let i = 0; i < cumulativeCosts.length; i++) {
         const amount = step * BigInt(i + 1);
         const marginalCost = cumulativeCosts[i] - prevCost;
-        // Price per token = marginal cost / step size
         const pricePerToken =
           Number(formatUnits(marginalCost, 18)) /
           Number(formatUnits(step, 18));
@@ -96,11 +100,11 @@ export function PriceChart({ tokenAddress, totalSupplyRaw }: PriceChartProps) {
     .map((p) => `${scaleX(p.supply)},${scaleY(p.price)}`)
     .join(" ");
 
-  // Current supply marker — first point on the curve is closest to current supply
+  // Current supply marker — uses actual current supply and price
   const currentSupply = Number(formatUnits(totalSupplyRaw, 18));
-  const firstPoint = curvePoints[0];
-  const markerX = scaleX(firstPoint.supply);
-  const markerY = scaleY(firstPoint.price);
+  const currentPrice = Number(formatUnits(currentPriceRaw, 18));
+  const markerX = scaleX(currentSupply);
+  const markerY = scaleY(currentPrice);
 
   // Y-axis labels (3 ticks)
   const yTicks = [0, maxY / 2, maxY];
