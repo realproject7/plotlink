@@ -32,7 +32,6 @@ export function PriceChart({ tokenAddress, totalSupplyRaw }: PriceChartProps) {
     queryKey: ["price-curve", tokenAddress],
     queryFn: async () => {
       // Sample from 1 token to 2x current supply (or a minimum of 100 tokens)
-      const oneToken = BigInt(10 ** 18);
       const minMax = parseUnits("100", 18);
       const maxSupply =
         totalSupplyRaw * BigInt(2) > minMax
@@ -43,28 +42,39 @@ export function PriceChart({ tokenAddress, totalSupplyRaw }: PriceChartProps) {
       const step = maxSupply / BigInt(NUM_POINTS);
       if (step === BigInt(0)) return [];
 
-      const promises: Promise<{ supply: bigint; price: bigint }>[] = [];
+      // Query cumulative costs for increasing mint amounts from current supply
+      const promises: Promise<bigint>[] = [];
       for (let i = 1; i <= NUM_POINTS; i++) {
-        const supplyAt = step * BigInt(i);
+        const amount = step * BigInt(i);
         promises.push(
           publicClient
             .readContract({
               address: MCV2_BOND,
               abi: mcv2BondAbi,
               functionName: "getReserveForToken",
-              args: [tokenAddress, oneToken],
+              args: [tokenAddress, amount],
             })
-            .then((price) => ({ supply: supplyAt, price }))
-            .catch(() => ({ supply: supplyAt, price: BigInt(0) })),
+            .catch(() => BigInt(0)),
         );
       }
 
-      const results = await Promise.all(promises);
-      for (const r of results) {
+      const cumulativeCosts = await Promise.all(promises);
+
+      // Compute marginal price at each supply step
+      let prevCost = BigInt(0);
+      const currentSupplyNum = Number(formatUnits(totalSupplyRaw, 18));
+      for (let i = 0; i < cumulativeCosts.length; i++) {
+        const amount = step * BigInt(i + 1);
+        const marginalCost = cumulativeCosts[i] - prevCost;
+        // Price per token = marginal cost / step size
+        const pricePerToken =
+          Number(formatUnits(marginalCost, 18)) /
+          Number(formatUnits(step, 18));
         points.push({
-          supply: Number(formatUnits(r.supply, 18)),
-          price: Number(formatUnits(r.price, 18)),
+          supply: currentSupplyNum + Number(formatUnits(amount, 18)),
+          price: pricePerToken,
         });
+        prevCost = cumulativeCosts[i];
       }
       return points;
     },
@@ -86,19 +96,11 @@ export function PriceChart({ tokenAddress, totalSupplyRaw }: PriceChartProps) {
     .map((p) => `${scaleX(p.supply)},${scaleY(p.price)}`)
     .join(" ");
 
-  // Current supply marker
+  // Current supply marker — first point on the curve is closest to current supply
   const currentSupply = Number(formatUnits(totalSupplyRaw, 18));
-  const currentPrice = curvePoints.length > 0 ? curvePoints[curvePoints.length - 1]?.price ?? 0 : 0;
-  // Find the closest point to current supply for y position
-  let markerPrice = currentPrice;
-  for (const p of curvePoints) {
-    if (p.supply >= currentSupply) {
-      markerPrice = p.price;
-      break;
-    }
-  }
-  const markerX = scaleX(Math.min(currentSupply, maxX));
-  const markerY = scaleY(markerPrice);
+  const firstPoint = curvePoints[0];
+  const markerX = scaleX(firstPoint.supply);
+  const markerY = scaleY(firstPoint.price);
 
   // Y-axis labels (3 ticks)
   const yTicks = [0, maxY / 2, maxY];
