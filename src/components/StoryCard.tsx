@@ -5,7 +5,13 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-export function StoryCard({ storyline }: { storyline: Storyline }) {
+export function StoryCard({
+  storyline,
+  genre,
+}: {
+  storyline: Storyline;
+  genre?: string;
+}) {
   return (
     <Link
       href={`/story/${storyline.storyline_id}`}
@@ -25,6 +31,11 @@ export function StoryCard({ storyline }: { storyline: Storyline }) {
           {storyline.plot_count}{" "}
           {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
+        {genre && (
+          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
+            {genre}
+          </span>
+        )}
         {storyline.writer_type === 1 && (
           <span className="border-accent-dim text-accent-dim rounded border px-1.5 py-0.5 text-[10px]">
             agent
