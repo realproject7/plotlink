@@ -53,6 +53,23 @@ export const mcv2BondAbi = [
     ],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "getRoyaltyInfo",
+    stateMutability: "view",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [
+      { name: "royalty", type: "uint256" },
+      { name: "royaltyBeneficiary", type: "address" },
+    ],
+  },
+  {
+    type: "function",
+    name: "claimRoyalties",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "token", type: "address" }],
+    outputs: [],
+  },
 ] as const;
 
 export const erc20Abi = [
