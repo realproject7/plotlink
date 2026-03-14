@@ -18,6 +18,7 @@ interface ClaimRoyaltiesProps {
 export function ClaimRoyalties({ tokenAddress, plotCount }: ClaimRoyaltiesProps) {
   const [txState, setTxState] = useState<TxState>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [claimedAmount, setClaimedAmount] = useState<bigint>(BigInt(0));
 
   const { writeContractAsync } = useWriteContract();
 
@@ -47,6 +48,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount }: ClaimRoyaltiesProps)
   const executeClaim = useCallback(async () => {
     try {
       setError(null);
+      setClaimedAmount(unclaimed);
       setTxState("confirming");
 
       const hash = await writeContractAsync({
@@ -65,7 +67,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount }: ClaimRoyaltiesProps)
       setError(err instanceof Error ? err.message : "Claim failed");
       setTxState("error");
     }
-  }, [tokenAddress, writeContractAsync, refetch]);
+  }, [tokenAddress, unclaimed, writeContractAsync, refetch]);
 
   const reset = useCallback(() => {
     setTxState("idle");
@@ -98,7 +100,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount }: ClaimRoyaltiesProps)
             {txState === "idle" && "Claim"}
             {txState === "confirming" && "Confirm..."}
             {txState === "pending" && "Pending..."}
-            {txState === "done" && "Claimed!"}
+            {txState === "done" && `Claimed ${formatUnits(claimedAmount, 18)} ${reserveLabel}`}
             {txState === "error" && "Retry"}
           </button>
         ) : (
