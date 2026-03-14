@@ -1,4 +1,4 @@
-import { createServerClient, type Storyline, type Donation } from "../../../lib/supabase";
+import { createServerClient, type Storyline } from "../../../lib/supabase";
 import { StoryCard } from "../../components/StoryCard";
 import { TabNav } from "../../components/TabNav";
 import { publicClient } from "../../../lib/rpc";
@@ -95,7 +95,7 @@ async function queryTab(
     }
 
     case "trending": {
-      // Fetch active storylines with token addresses
+      // Rank by on-chain totalSupply (minted token volume = trading activity)
       const { data: allStorylines } = await supabase
         .from("storylines")
         .select("*")
@@ -111,41 +111,26 @@ async function queryTab(
           .slice(0, 50);
       }
 
-      // Read on-chain totalSupply (trading volume proxy) for each token
+      // Read on-chain totalSupply for each storyline token
       const supplies = await Promise.all(
         withTokens.map((s) => readSupply(s.token_address)),
       );
 
-      // Fetch recent unique buyers (donation donors as buyer proxy) in last 7 days
-      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: donations } = await supabase
-        .from("donations")
-        .select("storyline_id, donor_address")
-        .gte("block_timestamp", since)
-        .returns<Pick<Donation, "storyline_id" | "donor_address">[]>();
+      // Rank by totalSupply descending (higher supply = more trading activity)
+      const scored = withTokens
+        .map((s, i) => ({ storyline: s, supply: supplies[i] }))
+        .filter((s) => s.supply > BigInt(0));
 
-      const donorMap = new Map<number, Set<string>>();
-      for (const d of donations ?? []) {
-        const set = donorMap.get(d.storyline_id) ?? new Set<string>();
-        set.add(d.donor_address);
-        donorMap.set(d.storyline_id, set);
-      }
+      scored.sort((a, b) =>
+        a.supply > b.supply ? -1 : a.supply < b.supply ? 1 : 0,
+      );
 
-      // Composite score: normalized supply + 2 * unique buyers
-      const maxSupply = supplies.reduce((a, b) => (a > b ? a : b), BigInt(1));
-      const scored = withTokens.map((s, i) => ({
-        storyline: s,
-        score:
-          Number((supplies[i] * BigInt(100)) / maxSupply) +
-          2 * (donorMap.get(s.storyline_id)?.size ?? 0),
-      }));
-
-      scored.sort((a, b) => b.score - a.score);
       return scored.slice(0, 50).map((s) => s.storyline);
     }
 
     case "rising": {
-      // Fetch active storylines with tokens
+      // Rank by supply growth rate: totalSupply / age (newer stories with high
+      // supply are rising faster than older ones with the same supply)
       const { data: allStorylines } = await supabase
         .from("storylines")
         .select("*")
@@ -161,54 +146,28 @@ async function queryTab(
           .slice(0, 50);
       }
 
-      // Compare trading activity (donations as proxy) in last 3 days vs prior 3 days
+      const supplies = await Promise.all(
+        withTokens.map((s) => readSupply(s.token_address)),
+      );
+
       const now = Date.now();
-      const recentSince = new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString();
-      const priorSince = new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString();
+      const scored = withTokens
+        .map((s, i) => {
+          const supply = supplies[i];
+          if (supply === BigInt(0)) return null;
+          // Age in hours (min 1 to avoid division by zero)
+          const ageMs = s.block_timestamp
+            ? now - new Date(s.block_timestamp).getTime()
+            : now;
+          const ageHours = Math.max(ageMs / (1000 * 60 * 60), 1);
+          // Growth rate = supply per hour (normalized)
+          const rate = Number(supply) / ageHours;
+          return { storyline: s, rate };
+        })
+        .filter((s): s is { storyline: Storyline; rate: number } => s !== null);
 
-      const { data: recentDonations } = await supabase
-        .from("donations")
-        .select("storyline_id")
-        .gte("block_timestamp", recentSince)
-        .returns<Pick<Donation, "storyline_id">[]>();
-
-      const { data: priorDonations } = await supabase
-        .from("donations")
-        .select("storyline_id")
-        .gte("block_timestamp", priorSince)
-        .lt("block_timestamp", recentSince)
-        .returns<Pick<Donation, "storyline_id">[]>();
-
-      const recentCounts = new Map<number, number>();
-      for (const d of recentDonations ?? []) {
-        recentCounts.set(d.storyline_id, (recentCounts.get(d.storyline_id) ?? 0) + 1);
-      }
-
-      const priorCounts = new Map<number, number>();
-      for (const d of priorDonations ?? []) {
-        priorCounts.set(d.storyline_id, (priorCounts.get(d.storyline_id) ?? 0) + 1);
-      }
-
-      // Score by acceleration: recent - prior
-      const accelerating: { storyline: Storyline; accel: number }[] = [];
-      for (const s of withTokens) {
-        const recent = recentCounts.get(s.storyline_id) ?? 0;
-        const prior = priorCounts.get(s.storyline_id) ?? 0;
-        const accel = recent - prior;
-        if (accel > 0 || (recent > 0 && prior === 0)) {
-          accelerating.push({ storyline: s, accel: accel > 0 ? accel : recent });
-        }
-      }
-
-      if (accelerating.length === 0) {
-        // Fallback: newest with tokens
-        return withTokens
-          .sort((a, b) => (b.block_timestamp ?? "").localeCompare(a.block_timestamp ?? ""))
-          .slice(0, 50);
-      }
-
-      accelerating.sort((a, b) => b.accel - a.accel);
-      return accelerating.slice(0, 50).map((a) => a.storyline);
+      scored.sort((a, b) => b.rate - a.rate);
+      return scored.slice(0, 50).map((s) => s.storyline);
     }
   }
 }
