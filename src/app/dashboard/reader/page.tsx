@@ -111,7 +111,7 @@ export default function ReaderDashboard() {
           {donations.map((d) => (
             <DonationRow key={d.id} donation={d} />
           ))}
-          {!isLoading && donations.length === 0 && (
+          {!isLoading && !error && donations.length === 0 && (
             <p className="text-muted py-6 text-center text-sm">
               No donations yet.
             </p>

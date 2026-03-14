@@ -64,7 +64,7 @@ export default function WriterDashboard() {
         {storylines.map((s) => (
           <StorylineDetail key={s.id} storyline={s} />
         ))}
-        {!isLoading && storylines.length === 0 && (
+        {!isLoading && !error && storylines.length === 0 && (
           <p className="text-muted py-8 text-center text-sm">
             No storylines yet.
           </p>
