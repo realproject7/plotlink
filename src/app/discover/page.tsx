@@ -69,7 +69,7 @@ export default async function DiscoverPage({
 
       <div className="mt-6 space-y-3">
         {storylines.map((s) => (
-          <StoryCard key={s.id} storyline={s} />
+          <StoryCard key={s.id} storyline={s} genre="fiction" />
         ))}
         {storylines.length === 0 && (
           <p className="text-muted py-8 text-center text-sm">
