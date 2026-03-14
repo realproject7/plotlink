@@ -1,12 +1,3 @@
-import { createPublicClient, http } from "viem";
-import { base } from "viem/chains";
-
-/**
- * Public client for reading from Base.
- *
- * Uses the default Base RPC. Override via BASE_RPC_URL env var.
- */
-export const publicClient = createPublicClient({
-  chain: base,
-  transport: http(process.env.BASE_RPC_URL || undefined),
-});
+// Re-export from lib/rpc.ts — this file exists for backward compatibility.
+// New code should import from "lib/rpc" directly.
+export { publicClient } from "./rpc";
