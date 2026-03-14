@@ -38,6 +38,12 @@ export default async function DiscoverPage({
 
       <TabNav tabs={TABS} active={tab} className="mt-6" />
 
+      {tab === "rising" && (
+        <p className="text-muted mt-4 text-xs italic">
+          Acceleration ranking requires a trades indexer — showing recent active stories.
+        </p>
+      )}
+
       <div className="mt-6 space-y-3">
         {storylines.map((s) => (
           <StoryCard key={s.id} storyline={s} genre="fiction" />
@@ -95,7 +101,12 @@ async function queryTab(
     }
 
     case "trending": {
-      // Rank by on-chain totalSupply (minted token volume = trading activity)
+      // Composite ranking using available on-chain + DB signals:
+      //   - totalSupply (on-chain minting volume)
+      //   - plot_count (content engagement)
+      //   - recency bonus (newer stories weighted higher)
+      // Full composite (unique buyers, holder diversity) requires a trades
+      // indexer — will replace these proxies when that exists.
       const { data: allStorylines } = await supabase
         .from("storylines")
         .select("*")
@@ -111,63 +122,66 @@ async function queryTab(
           .slice(0, 50);
       }
 
-      // Read on-chain totalSupply for each storyline token
       const supplies = await Promise.all(
         withTokens.map((s) => readSupply(s.token_address)),
       );
 
-      // Rank by totalSupply descending (higher supply = more trading activity)
+      const maxSupply = supplies.reduce((a, b) => (a > b ? a : b), BigInt(1));
+      const now = Date.now();
+
       const scored = withTokens
-        .map((s, i) => ({ storyline: s, supply: supplies[i] }))
-        .filter((s) => s.supply > BigInt(0));
+        .map((s, i) => {
+          // Normalize supply to 0-100
+          const supplyScore = Number((supplies[i] * BigInt(100)) / maxSupply);
+          // Content engagement: plot_count (capped at 20 for normalization)
+          const plotScore = Math.min(s.plot_count, 20) * 5;
+          // Recency: bonus for stories created in last 14 days
+          const ageMs = s.block_timestamp
+            ? now - new Date(s.block_timestamp).getTime()
+            : now;
+          const ageDays = ageMs / (1000 * 60 * 60 * 24);
+          const recencyScore = ageDays < 14 ? Math.round((14 - ageDays) * 3) : 0;
 
-      scored.sort((a, b) =>
-        a.supply > b.supply ? -1 : a.supply < b.supply ? 1 : 0,
-      );
+          return {
+            storyline: s,
+            score: supplyScore + plotScore + recencyScore,
+          };
+        })
+        .filter((s) => s.score > 0);
 
+      scored.sort((a, b) => b.score - a.score);
       return scored.slice(0, 50).map((s) => s.storyline);
     }
 
     case "rising": {
-      // Rank by supply growth rate: totalSupply / age (newer stories with high
-      // supply are rising faster than older ones with the same supply)
+      // Full acceleration ranking (recent vs prior period trading activity)
+      // requires a trades indexer. Falling back to recently active stories
+      // with tokens (stories with supply > 0, ordered by recency).
       const { data: allStorylines } = await supabase
         .from("storylines")
         .select("*")
         .eq("hidden", false)
         .eq("sunset", false)
+        .order("block_timestamp", { ascending: false })
         .returns<Storyline[]>();
 
       const storylines = allStorylines ?? [];
       const withTokens = storylines.filter((s) => s.token_address);
       if (withTokens.length === 0) {
-        return storylines
-          .sort((a, b) => (b.block_timestamp ?? "").localeCompare(a.block_timestamp ?? ""))
-          .slice(0, 50);
+        return storylines.slice(0, 50);
       }
 
+      // Filter to stories with active supply (any minting activity)
       const supplies = await Promise.all(
         withTokens.map((s) => readSupply(s.token_address)),
       );
 
-      const now = Date.now();
-      const scored = withTokens
-        .map((s, i) => {
-          const supply = supplies[i];
-          if (supply === BigInt(0)) return null;
-          // Age in hours (min 1 to avoid division by zero)
-          const ageMs = s.block_timestamp
-            ? now - new Date(s.block_timestamp).getTime()
-            : now;
-          const ageHours = Math.max(ageMs / (1000 * 60 * 60), 1);
-          // Growth rate = supply per hour (normalized)
-          const rate = Number(supply) / ageHours;
-          return { storyline: s, rate };
-        })
-        .filter((s): s is { storyline: Storyline; rate: number } => s !== null);
+      const active = withTokens.filter((_, i) => supplies[i] > BigInt(0));
+      if (active.length === 0) {
+        return storylines.slice(0, 50);
+      }
 
-      scored.sort((a, b) => b.rate - a.rate);
-      return scored.slice(0, 50).map((s) => s.storyline);
+      return active.slice(0, 50);
     }
   }
 }
