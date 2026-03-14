@@ -2,6 +2,7 @@ import { createServerClient, type Storyline, type Plot } from "../../../../lib/s
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
+import { DonateWidget } from "../../../components/DonateWidget";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
@@ -64,6 +65,7 @@ export default async function StoryPage({ params }: { params: Params }) {
       {sl.token_address && (
         <TradingWidget tokenAddress={sl.token_address as Address} />
       )}
+      <DonateWidget storylineId={id} />
       <div className="mt-10 space-y-10">
         {plots.map((plot) => (
           <PlotEntry key={plot.id} plot={plot} />
