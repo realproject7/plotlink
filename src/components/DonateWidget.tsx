@@ -70,11 +70,14 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
 
       // Trigger donation indexer
       setTxState("indexing");
-      await fetch("/api/index/donation", {
+      const indexRes = await fetch("/api/index/donation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ txHash: hash }),
       });
+      if (!indexRes.ok) {
+        throw new Error("Donation sent on-chain but indexing failed. It will appear after the next backfill.");
+      }
 
       setTxState("done");
       setAmount("");
