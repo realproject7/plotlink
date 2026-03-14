@@ -3,8 +3,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
-import { erc20Abi } from "../../lib/price";
-import { IS_TESTNET } from "../../lib/contracts/constants";
+import { erc20Abi, mcv2BondAbi } from "../../lib/price";
+import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
 import { supabase, type Donation } from "../../lib/supabase";
 
 interface WriterTradingStatsProps {
@@ -93,7 +93,33 @@ export function WriterTradingStats({
     enabled: storylineTokens.length > 0,
   });
 
+  // Fetch unclaimed royalties across all storylines
+  const { data: totalRoyalties } = useQuery({
+    queryKey: ["writer-total-royalties", storylineTokens.map((t) => t.tokenAddress)],
+    queryFn: async () => {
+      let total = BigInt(0);
+      for (const t of storylineTokens) {
+        try {
+          const result = await publicClient.readContract({
+            address: MCV2_BOND,
+            abi: mcv2BondAbi,
+            functionName: "getRoyaltyInfo",
+            args: [t.tokenAddress],
+          });
+          total += result[0];
+        } catch {
+          // Skip on error
+        }
+      }
+      return total;
+    },
+    enabled: storylineTokens.length > 0,
+  });
+
   if (storylineTokens.length === 0) return null;
+
+  const totalEarned =
+    (totalDonations ?? BigInt(0)) + (totalRoyalties ?? BigInt(0));
 
   const totalVolume = (storyStats ?? []).reduce(
     (sum, s) => sum + s.totalSupply,
@@ -106,10 +132,13 @@ export function WriterTradingStats({
       <div className="mt-3 grid grid-cols-3 gap-3 text-xs">
         <div>
           <span className="text-muted block text-[10px] uppercase tracking-wider">
-            Total Donations
+            Total Earned
           </span>
           <span className="text-foreground">
-            {formatUnits(totalDonations ?? BigInt(0), 18)} {reserveLabel}
+            {formatUnits(totalEarned, 18)} {reserveLabel}
+          </span>
+          <span className="text-muted block text-[10px] mt-0.5">
+            {formatUnits(totalRoyalties ?? BigInt(0), 18)} royalties + {formatUnits(totalDonations ?? BigInt(0), 18)} donations
           </span>
         </div>
         <div>
