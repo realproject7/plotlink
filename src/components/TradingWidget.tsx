@@ -97,8 +97,27 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
       } else {
-        // Sell: burn storyline tokens → receive PLOT_TOKEN
+        // Sell: approve storyline token → burn → receive PLOT_TOKEN
         const minRefund = applySlippage(estimate, false);
+
+        // Check allowance for storyline token
+        const allowance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [address, MCV2_BOND],
+        });
+
+        if (allowance < parsedAmount) {
+          setTxState("approving");
+          const approveHash = await writeContractAsync({
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [MCV2_BOND, parsedAmount],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
 
         setTxState("confirming");
         const hash = await writeContractAsync({
