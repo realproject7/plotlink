@@ -3,10 +3,10 @@ import { publicClient } from "./viem";
 import { MCV2_BOND } from "./contracts/constants";
 
 /**
- * Minimal ABI for MCV2_Bond view functions used for price display.
+ * Minimal ABIs for price display.
  *
- * - priceForNextMint: returns the cost (in reserve token) to mint 1 token
- * - tokenBond: returns bond metadata including total supply info
+ * - MCV2_Bond.priceForNextMint: cost (in reserve token) to mint 1 token
+ * - ERC-20 totalSupply: total minted supply of the storyline token
  */
 const mcv2BondAbi = [
   {
@@ -19,19 +19,15 @@ const mcv2BondAbi = [
     ],
     outputs: [{ name: "price", type: "uint256" }],
   },
+] as const;
+
+const erc20Abi = [
   {
     type: "function",
-    name: "tokenBond",
+    name: "totalSupply",
     stateMutability: "view",
-    inputs: [{ name: "token", type: "address" }],
-    outputs: [
-      { name: "creator", type: "address" },
-      { name: "mintRoyalty", type: "uint16" },
-      { name: "burnRoyalty", type: "uint16" },
-      { name: "createdAt", type: "uint40" },
-      { name: "reserveToken", type: "address" },
-      { name: "reserveBalance", type: "uint256" },
-    ],
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;
 
@@ -40,12 +36,10 @@ export interface TokenPriceInfo {
   pricePerToken: string;
   /** Raw price in wei */
   priceRaw: bigint;
-  /** Reserve token address */
-  reserveToken: Address;
-  /** Reserve balance in the bond, formatted */
-  reserveBalance: string;
-  /** Reserve balance raw */
-  reserveBalanceRaw: bigint;
+  /** Total minted supply, formatted */
+  totalSupply: string;
+  /** Total minted supply raw */
+  totalSupplyRaw: bigint;
 }
 
 /**
@@ -59,7 +53,7 @@ export async function getTokenPrice(
   try {
     const oneToken = BigInt(10 ** 18);
 
-    const [priceRaw, bondInfo] = await Promise.all([
+    const [priceRaw, totalSupplyRaw] = await Promise.all([
       publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
@@ -67,21 +61,17 @@ export async function getTokenPrice(
         args: [tokenAddress, oneToken],
       }),
       publicClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "tokenBond",
-        args: [tokenAddress],
+        address: tokenAddress,
+        abi: erc20Abi,
+        functionName: "totalSupply",
       }),
     ]);
-
-    const [, , , , reserveToken, reserveBalanceRaw] = bondInfo;
 
     return {
       pricePerToken: formatUnits(priceRaw, 18),
       priceRaw,
-      reserveToken: reserveToken as Address,
-      reserveBalance: formatUnits(reserveBalanceRaw, 18),
-      reserveBalanceRaw,
+      totalSupply: formatUnits(totalSupplyRaw, 18),
+      totalSupplyRaw,
     };
   } catch {
     return null;

@@ -107,10 +107,10 @@ function StoryHeader({
           </div>
           <div>
             <span className="text-muted block text-[10px] uppercase tracking-wider">
-              Reserve
+              Supply Minted
             </span>
             <span className="text-foreground">
-              {priceInfo.reserveBalance} {reserveLabel}
+              {priceInfo.totalSupply} tokens
             </span>
           </div>
         </div>
