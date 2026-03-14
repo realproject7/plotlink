@@ -8,25 +8,86 @@ import { MCV2_BOND } from "./contracts/constants";
  * - MCV2_Bond.priceForNextMint: cost (in reserve token) to mint 1 token
  * - ERC-20 totalSupply: total minted supply of the storyline token
  */
-const mcv2BondAbi = [
+export const mcv2BondAbi = [
   {
     type: "function",
-    name: "priceForNextMint",
+    name: "getReserveForToken",
     stateMutability: "view",
     inputs: [
       { name: "token", type: "address" },
-      { name: "amount", type: "uint256" },
+      { name: "tokensToMint", type: "uint256" },
     ],
-    outputs: [{ name: "price", type: "uint256" }],
+    outputs: [{ name: "reserveAmount", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "getRefundForTokens",
+    stateMutability: "view",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokensToBurn", type: "uint256" },
+    ],
+    outputs: [{ name: "refundAmount", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "mint",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokensToMint", type: "uint256" },
+      { name: "maxReserveAmount", type: "uint256" },
+      { name: "receiver", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "burn",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "tokensToBurn", type: "uint256" },
+      { name: "minRefund", type: "uint256" },
+      { name: "receiver", type: "address" },
+    ],
+    outputs: [],
   },
 ] as const;
 
-const erc20Abi = [
+export const erc20Abi = [
   {
     type: "function",
     name: "totalSupply",
     stateMutability: "view",
     inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "allowance",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "approve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "spender", type: "address" },
+      { name: "amount", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "account", type: "address" }],
     outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;
@@ -57,7 +118,7 @@ export async function getTokenPrice(
       publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
-        functionName: "priceForNextMint",
+        functionName: "getReserveForToken",
         args: [tokenAddress, oneToken],
       }),
       publicClient.readContract({

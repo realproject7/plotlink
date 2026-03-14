@@ -1,0 +1,231 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useAccount, useWriteContract } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
+import { parseUnits, formatUnits, type Address } from "viem";
+import { publicClient } from "../../lib/rpc";
+import { mcv2BondAbi, erc20Abi } from "../../lib/price";
+import { MCV2_BOND, PLOT_TOKEN, IS_TESTNET } from "../../lib/contracts/constants";
+
+type Tab = "buy" | "sell";
+type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
+
+const SLIPPAGE_BPS = 300; // 3% slippage tolerance
+
+function applySlippage(amount: bigint, isBuy: boolean): bigint {
+  if (isBuy) {
+    // Max cost = estimate * (1 + slippage)
+    return amount + (amount * BigInt(SLIPPAGE_BPS)) / BigInt(10000);
+  }
+  // Min refund = estimate * (1 - slippage)
+  return amount - (amount * BigInt(SLIPPAGE_BPS)) / BigInt(10000);
+}
+
+export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
+  const { address, isConnected } = useAccount();
+  const [tab, setTab] = useState<Tab>("buy");
+  const [amount, setAmount] = useState("");
+  const [txState, setTxState] = useState<TxState>("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
+  const { writeContractAsync } = useWriteContract();
+
+  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const parsedAmount =
+    amount && !isNaN(Number(amount)) && Number(amount) > 0
+      ? parseUnits(amount, 18)
+      : BigInt(0);
+
+  // Fetch price estimate
+  const { data: estimate } = useQuery({
+    queryKey: ["trade-estimate", tab, tokenAddress, amount],
+    queryFn: async () => {
+      if (parsedAmount === BigInt(0)) return null;
+      const result = await publicClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: tab === "buy" ? "getReserveForToken" : "getRefundForTokens",
+        args: [tokenAddress, parsedAmount],
+      });
+      return result;
+    },
+    enabled: parsedAmount > BigInt(0),
+    refetchInterval: 15000,
+  });
+
+  const executeTrade = useCallback(async () => {
+    if (!address || parsedAmount === BigInt(0) || !estimate) return;
+
+    try {
+      setError(null);
+      setTxHash(null);
+
+      if (tab === "buy") {
+        // Buy: approve PLOT_TOKEN → mint
+        const maxCost = applySlippage(estimate, true);
+
+        // Check allowance
+        const allowance = await publicClient.readContract({
+          address: PLOT_TOKEN,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [address, MCV2_BOND],
+        });
+
+        if (allowance < maxCost) {
+          setTxState("approving");
+          const approveHash = await writeContractAsync({
+            address: PLOT_TOKEN,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [MCV2_BOND, maxCost],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
+
+        // Mint
+        setTxState("confirming");
+        const hash = await writeContractAsync({
+          address: MCV2_BOND,
+          abi: mcv2BondAbi,
+          functionName: "mint",
+          args: [tokenAddress, parsedAmount, maxCost, address],
+        });
+        setTxHash(hash);
+        setTxState("pending");
+        await publicClient.waitForTransactionReceipt({ hash });
+      } else {
+        // Sell: approve storyline token → burn → receive PLOT_TOKEN
+        const minRefund = applySlippage(estimate, false);
+
+        // Check allowance for storyline token
+        const allowance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: erc20Abi,
+          functionName: "allowance",
+          args: [address, MCV2_BOND],
+        });
+
+        if (allowance < parsedAmount) {
+          setTxState("approving");
+          const approveHash = await writeContractAsync({
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [MCV2_BOND, parsedAmount],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
+
+        setTxState("confirming");
+        const hash = await writeContractAsync({
+          address: MCV2_BOND,
+          abi: mcv2BondAbi,
+          functionName: "burn",
+          args: [tokenAddress, parsedAmount, minRefund, address],
+        });
+        setTxHash(hash);
+        setTxState("pending");
+        await publicClient.waitForTransactionReceipt({ hash });
+      }
+
+      setTxState("done");
+      setAmount("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Transaction failed");
+      setTxState("error");
+    }
+  }, [address, parsedAmount, estimate, tab, tokenAddress, writeContractAsync]);
+
+  const reset = useCallback(() => {
+    setTxState("idle");
+    setError(null);
+    setTxHash(null);
+  }, []);
+
+  if (!isConnected) return null;
+
+  return (
+    <section className="border-border mt-8 rounded border px-4 py-4">
+      <h2 className="text-foreground text-sm font-medium">Trade</h2>
+
+      {/* Tabs */}
+      <div className="mt-3 flex gap-2">
+        {(["buy", "sell"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => {
+              setTab(t);
+              setAmount("");
+              reset();
+            }}
+            className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
+              tab === t
+                ? "bg-accent text-background"
+                : "border-border text-muted hover:text-foreground border"
+            }`}
+          >
+            {t === "buy" ? "Buy" : "Sell"}
+          </button>
+        ))}
+      </div>
+
+      {/* Amount input */}
+      <div className="mt-3">
+        <label className="text-muted block text-[10px] uppercase tracking-wider">
+          {tab === "buy" ? "Tokens to buy" : "Tokens to sell"}
+        </label>
+        <input
+          type="text"
+          inputMode="decimal"
+          placeholder="0.0"
+          value={amount}
+          onChange={(e) => {
+            setAmount(e.target.value);
+            if (txState !== "idle") reset();
+          }}
+          disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
+          className="border-border bg-background text-foreground mt-1 w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+        />
+      </div>
+
+      {/* Estimate */}
+      {estimate != null && parsedAmount > BigInt(0) && (
+        <div className="text-muted mt-2 text-xs">
+          {tab === "buy" ? "Estimated cost" : "Estimated return"}:{" "}
+          <span className="text-foreground">
+            {formatUnits(estimate, 18)} {reserveLabel}
+          </span>
+          <span className="ml-2">(3% slippage tolerance)</span>
+        </div>
+      )}
+
+      {/* Action button */}
+      <button
+        onClick={txState === "done" || txState === "error" ? reset : executeTrade}
+        disabled={
+          (txState === "idle" && (parsedAmount === BigInt(0) || !estimate)) ||
+          (txState !== "idle" && txState !== "done" && txState !== "error")
+        }
+        className="bg-accent text-background mt-3 w-full rounded py-2 text-xs font-medium transition-opacity disabled:opacity-40"
+      >
+        {txState === "idle" && (tab === "buy" ? "Buy Tokens" : "Sell Tokens")}
+        {txState === "approving" && "Approving..."}
+        {txState === "confirming" && "Confirm in wallet..."}
+        {txState === "pending" && "Pending..."}
+        {txState === "done" && "Done — Trade again"}
+        {txState === "error" && "Retry"}
+      </button>
+
+      {/* Status */}
+      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {txHash && txState === "done" && (
+        <p className="text-muted mt-2 text-xs">
+          Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+        </p>
+      )}
+    </section>
+  );
+}
