@@ -14,10 +14,12 @@
 export const BASE_CHAIN_ID = 8453;
 
 // ---------------------------------------------------------------------------
-// PlotLink contracts (TBD — replace after deployment)
+// PlotLink contracts
 // ---------------------------------------------------------------------------
 
-/** StoryFactory — storyline + plot management */
+/** StoryFactory — storyline + plot management
+ *  Base Sepolia: 0x05C4d59529807316D6fA09cdaA509adDfe85b474
+ *  Base Mainnet: TBD (replace after mainnet deployment) */
 export const STORY_FACTORY = "0x0000000000000000000000000000000000000000" as const;
 
 /** ZapPlotLinkMCV2 — one-click buy (ETH/USDC/HUNT -> storyline token) */
