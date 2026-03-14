@@ -3,41 +3,51 @@
  *
  * Source: proposal §12 (External Dependencies).
  *
- * PlotLink-owned contracts (StoryFactory, ZapPlotLinkMCV2, $PLOT) use
- * placeholder zero addresses until deployed to Base mainnet.
+ * Testnet (Base Sepolia) addresses are active during development.
+ * Swap to mainnet addresses before production deployment.
  */
 
 // ---------------------------------------------------------------------------
 // Chain
 // ---------------------------------------------------------------------------
 
-export const BASE_CHAIN_ID = 8453;
+const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
+export const IS_TESTNET = chainId === 84532;
+export const BASE_CHAIN_ID = chainId;
 
 // ---------------------------------------------------------------------------
 // PlotLink contracts
 // ---------------------------------------------------------------------------
 
-/** StoryFactory — storyline + plot management
- *  Base Sepolia: 0x05C4d59529807316D6fA09cdaA509adDfe85b474
- *  Base Mainnet: TBD (replace after mainnet deployment) */
+/** StoryFactory — storyline + plot management */
 export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
-  "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  (IS_TESTNET
+    ? "0x05C4d59529807316D6fA09cdaA509adDfe85b474"
+    : "0x0000000000000000000000000000000000000000")) as `0x${string}`;
 
 /** ZapPlotLinkMCV2 — one-click buy (ETH/USDC/HUNT -> storyline token) */
 export const ZAP_PLOTLINK = "0x0000000000000000000000000000000000000000" as const;
 
-/** $PLOT protocol token (ERC-20, issued via Mint Club backed by $HUNT) */
-export const PLOT_TOKEN = "0x0000000000000000000000000000000000000000" as const;
+/** $PLOT protocol token
+ *  Testnet: WETH (stand-in reserve token)
+ *  Mainnet: $PLOT ERC-20 (backed by $HUNT via Mint Club V2) */
+export const PLOT_TOKEN = (IS_TESTNET
+  ? "0x4200000000000000000000000000000000000006"
+  : "0x0000000000000000000000000000000000000000") as `0x${string}`;
 
 // ---------------------------------------------------------------------------
-// Mint Club V2 (deployed on Base — immutable third-party contracts)
+// Mint Club V2
 // ---------------------------------------------------------------------------
 
 /** MCV2_Bond — bonding curve trading, token creation, royalty distribution */
-export const MCV2_BOND = "0xc5a076cad94176c2996B32d8466Be1cE757FAa27" as const;
+export const MCV2_BOND = (IS_TESTNET
+  ? "0x5dfA75b0185efBaEF286E80B847ce84ff8a62C2d"
+  : "0xc5a076cad94176c2996B32d8466Be1cE757FAa27") as `0x${string}`;
 
-/** MCV2_BondPeriphery — helper for multi-step bond operations */
-export const MCV2_BOND_PERIPHERY = "0x492C412369Db76C9cdD9939e6C521579301473a3" as const;
+/** MCV2_BondPeriphery — reverse calculations for mint() */
+export const MCV2_BOND_PERIPHERY = (IS_TESTNET
+  ? "0x20fBC8a650d75e4C2Dab8b7e85C27135f0D64e89"
+  : "0x492C412369Db76C9cdD9939e6C521579301473a3") as `0x${string}`;
 
 // ---------------------------------------------------------------------------
 // Uniswap V4 (Base)
