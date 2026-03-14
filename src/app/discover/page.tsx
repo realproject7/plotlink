@@ -1,6 +1,9 @@
 import { createServerClient, type Storyline, type Donation } from "../../../lib/supabase";
 import { StoryCard } from "../../components/StoryCard";
 import { TabNav } from "../../components/TabNav";
+import { publicClient } from "../../../lib/rpc";
+import { erc20Abi } from "../../../lib/price";
+import { type Address } from "viem";
 
 type SearchParams = Promise<{ tab?: string }>;
 
@@ -49,10 +52,17 @@ export default async function DiscoverPage({
   );
 }
 
-interface DonationAgg {
-  storyline_id: number;
-  donation_count: number;
-  unique_donors: number;
+/** Read totalSupply for a token, returns 0 on failure */
+async function readSupply(tokenAddress: string): Promise<bigint> {
+  try {
+    return await publicClient.readContract({
+      address: tokenAddress as Address,
+      abi: erc20Abi,
+      functionName: "totalSupply",
+    });
+  } catch {
+    return BigInt(0);
+  }
 }
 
 async function queryTab(
@@ -85,70 +95,73 @@ async function queryTab(
     }
 
     case "trending": {
-      // Composite ranking: donation count + unique donors in last 7 days
-      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      // Fetch active storylines with token addresses
+      const { data: allStorylines } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", false)
+        .returns<Storyline[]>();
 
+      const storylines = allStorylines ?? [];
+      const withTokens = storylines.filter((s) => s.token_address);
+      if (withTokens.length === 0) {
+        return storylines
+          .sort((a, b) => (b.block_timestamp ?? "").localeCompare(a.block_timestamp ?? ""))
+          .slice(0, 50);
+      }
+
+      // Read on-chain totalSupply (trading volume proxy) for each token
+      const supplies = await Promise.all(
+        withTokens.map((s) => readSupply(s.token_address)),
+      );
+
+      // Fetch recent unique buyers (donation donors as buyer proxy) in last 7 days
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
       const { data: donations } = await supabase
         .from("donations")
         .select("storyline_id, donor_address")
         .gte("block_timestamp", since)
         .returns<Pick<Donation, "storyline_id" | "donor_address">[]>();
 
-      // Aggregate per storyline
-      const aggMap = new Map<number, { count: number; donors: Set<string> }>();
+      const donorMap = new Map<number, Set<string>>();
       for (const d of donations ?? []) {
-        const entry = aggMap.get(d.storyline_id) ?? { count: 0, donors: new Set<string>() };
-        entry.count++;
-        entry.donors.add(d.donor_address);
-        aggMap.set(d.storyline_id, entry);
+        const set = donorMap.get(d.storyline_id) ?? new Set<string>();
+        set.add(d.donor_address);
+        donorMap.set(d.storyline_id, set);
       }
 
-      const ranked: DonationAgg[] = [];
-      for (const [storyline_id, entry] of aggMap) {
-        ranked.push({
-          storyline_id,
-          donation_count: entry.count,
-          unique_donors: entry.donors.size,
-        });
-      }
+      // Composite score: normalized supply + 2 * unique buyers
+      const maxSupply = supplies.reduce((a, b) => (a > b ? a : b), BigInt(1));
+      const scored = withTokens.map((s, i) => ({
+        storyline: s,
+        score:
+          Number((supplies[i] * BigInt(100)) / maxSupply) +
+          2 * (donorMap.get(s.storyline_id)?.size ?? 0),
+      }));
 
-      // Composite score: donation_count + 2 * unique_donors (diversity weighted)
-      ranked.sort(
-        (a, b) =>
-          b.donation_count + 2 * b.unique_donors -
-          (a.donation_count + 2 * a.unique_donors),
-      );
-
-      const topIds = ranked.slice(0, 50).map((r) => r.storyline_id);
-      if (topIds.length === 0) {
-        // Fallback to newest if no trading activity
-        const { data } = await supabase
-          .from("storylines")
-          .select("*")
-          .eq("hidden", false)
-          .eq("sunset", false)
-          .order("block_timestamp", { ascending: false })
-          .limit(50)
-          .returns<Storyline[]>();
-        return data ?? [];
-      }
-
-      const { data: storylines } = await supabase
-        .from("storylines")
-        .select("*")
-        .eq("hidden", false)
-        .in("storyline_id", topIds)
-        .returns<Storyline[]>();
-
-      // Re-sort by ranked order
-      const idOrder = new Map(topIds.map((id, i) => [id, i]));
-      return (storylines ?? []).sort(
-        (a, b) => (idOrder.get(a.storyline_id) ?? 99) - (idOrder.get(b.storyline_id) ?? 99),
-      );
+      scored.sort((a, b) => b.score - a.score);
+      return scored.slice(0, 50).map((s) => s.storyline);
     }
 
     case "rising": {
-      // Acceleration: more donations in last 3 days vs prior 3 days
+      // Fetch active storylines with tokens
+      const { data: allStorylines } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", false)
+        .returns<Storyline[]>();
+
+      const storylines = allStorylines ?? [];
+      const withTokens = storylines.filter((s) => s.token_address);
+      if (withTokens.length === 0) {
+        return storylines
+          .sort((a, b) => (b.block_timestamp ?? "").localeCompare(a.block_timestamp ?? ""))
+          .slice(0, 50);
+      }
+
+      // Compare trading activity (donations as proxy) in last 3 days vs prior 3 days
       const now = Date.now();
       const recentSince = new Date(now - 3 * 24 * 60 * 60 * 1000).toISOString();
       const priorSince = new Date(now - 6 * 24 * 60 * 60 * 1000).toISOString();
@@ -166,7 +179,6 @@ async function queryTab(
         .lt("block_timestamp", recentSince)
         .returns<Pick<Donation, "storyline_id">[]>();
 
-      // Count per storyline in each period
       const recentCounts = new Map<number, number>();
       for (const d of recentDonations ?? []) {
         recentCounts.set(d.storyline_id, (recentCounts.get(d.storyline_id) ?? 0) + 1);
@@ -177,42 +189,26 @@ async function queryTab(
         priorCounts.set(d.storyline_id, (priorCounts.get(d.storyline_id) ?? 0) + 1);
       }
 
-      // Compute acceleration: recent - prior (only positive acceleration)
-      const accelerating: { storyline_id: number; accel: number }[] = [];
-      for (const [id, recent] of recentCounts) {
-        const prior = priorCounts.get(id) ?? 0;
+      // Score by acceleration: recent - prior
+      const accelerating: { storyline: Storyline; accel: number }[] = [];
+      for (const s of withTokens) {
+        const recent = recentCounts.get(s.storyline_id) ?? 0;
+        const prior = priorCounts.get(s.storyline_id) ?? 0;
         const accel = recent - prior;
-        if (accel > 0) {
-          accelerating.push({ storyline_id: id, accel });
+        if (accel > 0 || (recent > 0 && prior === 0)) {
+          accelerating.push({ storyline: s, accel: accel > 0 ? accel : recent });
         }
       }
 
-      accelerating.sort((a, b) => b.accel - a.accel);
-
-      const topIds = accelerating.slice(0, 50).map((r) => r.storyline_id);
-      if (topIds.length === 0) {
-        const { data } = await supabase
-          .from("storylines")
-          .select("*")
-          .eq("hidden", false)
-          .eq("sunset", false)
-          .order("block_timestamp", { ascending: false })
-          .limit(50)
-          .returns<Storyline[]>();
-        return data ?? [];
+      if (accelerating.length === 0) {
+        // Fallback: newest with tokens
+        return withTokens
+          .sort((a, b) => (b.block_timestamp ?? "").localeCompare(a.block_timestamp ?? ""))
+          .slice(0, 50);
       }
 
-      const { data: storylines } = await supabase
-        .from("storylines")
-        .select("*")
-        .eq("hidden", false)
-        .in("storyline_id", topIds)
-        .returns<Storyline[]>();
-
-      const idOrder = new Map(topIds.map((id, i) => [id, i]));
-      return (storylines ?? []).sort(
-        (a, b) => (idOrder.get(a.storyline_id) ?? 99) - (idOrder.get(b.storyline_id) ?? 99),
-      );
+      accelerating.sort((a, b) => b.accel - a.accel);
+      return accelerating.slice(0, 50).map((a) => a.storyline);
     }
   }
 }
