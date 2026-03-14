@@ -1,30 +1,53 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation } from "../../../../lib/supabase";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { formatUnits } from "viem";
 
-async function fetchDonations(address: string): Promise<Donation[]> {
-  if (!supabase) return [];
-  const { data } = await supabase
+const PAGE_SIZE = 50;
+
+interface DonationPage {
+  rows: Donation[];
+  totalCount: number;
+}
+
+async function fetchDonationPage(
+  address: string,
+  page: number,
+): Promise<DonationPage> {
+  if (!supabase) return { rows: [], totalCount: 0 };
+  const from = page * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+  const { data, count } = await supabase
     .from("donations")
-    .select("*")
+    .select("*", { count: "exact" })
     .eq("donor_address", address.toLowerCase())
     .order("block_timestamp", { ascending: false })
+    .range(from, to)
     .returns<Donation[]>();
-  return data ?? [];
+  return { rows: data ?? [], totalCount: count ?? 0 };
 }
 
 export default function ReaderDashboard() {
   const { address, isConnected } = useAccount();
+  const [page, setPage] = useState(0);
 
-  const { data: donations = [], isLoading } = useQuery({
-    queryKey: ["reader-donations", address],
-    queryFn: () => fetchDonations(address!),
+  // Reset to first page when wallet address changes
+  useEffect(() => {
+    setPage(0);
+  }, [address]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["reader-donations", address, page],
+    queryFn: () => fetchDonationPage(address!, page),
     enabled: isConnected && !!address,
   });
+
+  const donations = data?.rows ?? [];
+  const totalCount = data?.totalCount ?? 0;
 
   if (!isConnected) {
     return (
@@ -41,6 +64,10 @@ export default function ReaderDashboard() {
     (sum, d) => sum + BigInt(d.amount),
     BigInt(0),
   );
+
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const hasMore = page + 1 < totalPages;
+  const hasPrev = page > 0;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -62,12 +89,11 @@ export default function ReaderDashboard() {
           Donation History
         </h2>
         <p className="text-muted mt-1 text-xs">
-          {donations.length}{" "}
-          {donations.length === 1 ? "donation" : "donations"}
+          {totalCount} {totalCount === 1 ? "donation" : "donations"}
           {donations.length > 0 && (
             <span>
               {" "}
-              &middot; {formatUnits(totalDonated, 18)} $PLOT total
+              &middot; {formatUnits(totalDonated, 18)} $PLOT on this page
             </span>
           )}
         </p>
@@ -84,6 +110,28 @@ export default function ReaderDashboard() {
             </p>
           )}
         </div>
+
+        {totalPages > 1 && (
+          <div className="mt-4 flex items-center justify-between text-xs">
+            <button
+              onClick={() => setPage((p) => p - 1)}
+              disabled={!hasPrev}
+              className="text-accent disabled:text-muted disabled:cursor-not-allowed"
+            >
+              &larr; Prev
+            </button>
+            <span className="text-muted">
+              Page {page + 1} of {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((p) => p + 1)}
+              disabled={!hasMore}
+              className="text-accent disabled:text-muted disabled:cursor-not-allowed"
+            >
+              Next &rarr;
+            </button>
+          </div>
+        )}
       </section>
     </div>
   );
