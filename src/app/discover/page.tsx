@@ -24,40 +24,14 @@ export default async function DiscoverPage({
     );
   }
 
-  let storylines: Storyline[] = [];
-
-  if (tab === "completed") {
-    const { data } = await supabase
-      .from("storylines")
-      .select("*")
-      .eq("hidden", false)
-      .eq("sunset", true)
-      .order("plot_count", { ascending: false })
-      .limit(50)
-      .returns<Storyline[]>();
-    storylines = data ?? [];
-  } else {
-    // "new" is the default; "trending" and "rising" fall back to "new" ordering
-    // until trading data is available (Phase 5)
-    const { data } = await supabase
-      .from("storylines")
-      .select("*")
-      .eq("hidden", false)
-      .eq("sunset", false)
-      .order("block_timestamp", { ascending: false })
-      .limit(50)
-      .returns<Storyline[]>();
-    storylines = data ?? [];
-  }
+  const storylines = await queryTab(supabase, tab);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <h1 className="text-accent text-2xl font-bold tracking-tight">
         Discover
       </h1>
-      <p className="text-muted mt-2 text-sm">
-        Browse stories on PlotLink
-      </p>
+      <p className="text-muted mt-2 text-sm">Browse stories on PlotLink</p>
 
       <TabNav tabs={TABS} active={tab} className="mt-6" />
 
@@ -79,4 +53,65 @@ export default async function DiscoverPage({
       </div>
     </div>
   );
+}
+
+async function queryTab(
+  supabase: ReturnType<typeof createServerClient> & object,
+  tab: Tab,
+): Promise<Storyline[]> {
+  switch (tab) {
+    case "new": {
+      const { data } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", false)
+        .order("block_timestamp", { ascending: false })
+        .limit(50)
+        .returns<Storyline[]>();
+      return data ?? [];
+    }
+
+    case "completed": {
+      const { data } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", true)
+        .order("plot_count", { ascending: false })
+        .limit(50)
+        .returns<Storyline[]>();
+      return data ?? [];
+    }
+
+    // TODO [Phase 5 / P5-6]: Replace with composite ranking signals
+    // (unique buyer count, holder diversity, recent trading activity).
+    // See ROADMAP.md P5-6a for the ranking formula spec.
+    case "trending": {
+      const { data } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", false)
+        .order("block_timestamp", { ascending: false })
+        .limit(50)
+        .returns<Storyline[]>();
+      return data ?? [];
+    }
+
+    // TODO [Phase 5 / P5-6]: Replace with acceleration-based ranking
+    // (stories with accelerating trading activity vs prior period).
+    // See ROADMAP.md P5-6b for the rising formula spec.
+    case "rising": {
+      const { data } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", false)
+        .order("block_timestamp", { ascending: false })
+        .limit(50)
+        .returns<Storyline[]>();
+      return data ?? [];
+    }
+  }
 }
