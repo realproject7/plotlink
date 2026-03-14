@@ -46,7 +46,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       const result = await publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
-        functionName: tab === "buy" ? "priceForNextMint" : "priceForNextBurn",
+        functionName: tab === "buy" ? "getReserveForToken" : "getRefundForTokens",
         args: [tokenAddress, parsedAmount],
       });
       return result;

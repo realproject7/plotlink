@@ -11,23 +11,23 @@ import { MCV2_BOND } from "./contracts/constants";
 export const mcv2BondAbi = [
   {
     type: "function",
-    name: "priceForNextMint",
+    name: "getReserveForToken",
     stateMutability: "view",
     inputs: [
       { name: "token", type: "address" },
-      { name: "amount", type: "uint256" },
+      { name: "tokensToMint", type: "uint256" },
     ],
-    outputs: [{ name: "price", type: "uint256" }],
+    outputs: [{ name: "reserveAmount", type: "uint256" }],
   },
   {
     type: "function",
-    name: "priceForNextBurn",
+    name: "getRefundForTokens",
     stateMutability: "view",
     inputs: [
       { name: "token", type: "address" },
-      { name: "amount", type: "uint256" },
+      { name: "tokensToBurn", type: "uint256" },
     ],
-    outputs: [{ name: "price", type: "uint256" }],
+    outputs: [{ name: "refundAmount", type: "uint256" }],
   },
   {
     type: "function",
@@ -118,7 +118,7 @@ export async function getTokenPrice(
       publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
-        functionName: "priceForNextMint",
+        functionName: "getReserveForToken",
         args: [tokenAddress, oneToken],
       }),
       publicClient.readContract({
