@@ -41,3 +41,6 @@ export {
   BASE_SEPOLIA_CHAIN_ID,
   BASE_MAINNET_CHAIN_ID,
 } from "./constants";
+
+// Re-export ABIs for direct contract reads
+export { mcv2BondAbi } from "./abi";
