@@ -85,14 +85,16 @@ function loadRcFile(): RcData {
 
   for (const filepath of candidates) {
     if (existsSync(filepath)) {
+      const raw = readFileSync(filepath, "utf-8");
       try {
-        const raw = readFileSync(filepath, "utf-8");
+        const parsed = JSON.parse(raw) as RcData;
         console.warn(
           "WARNING: Loading keys from .plotlinkrc — ensure this file is in .gitignore and never committed.",
         );
-        return JSON.parse(raw) as RcData;
-      } catch {
-        // Ignore malformed rc files
+        return parsed;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error(`Error parsing .plotlinkrc: ${message}. Check your JSON syntax.`);
       }
     }
   }
