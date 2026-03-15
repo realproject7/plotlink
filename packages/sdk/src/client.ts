@@ -21,6 +21,8 @@ import {
   MCV2_BOND_ADDRESS,
   ERC8004_REGISTRY_ADDRESS,
   BASE_SEPOLIA_CHAIN_ID,
+  DEPLOYMENT_BLOCK,
+  SUPPORTED_CHAIN_IDS,
 } from "./constants";
 import { uploadWithRetry, type FilebaseConfig } from "./ipfs";
 
@@ -133,6 +135,11 @@ export class PlotLink {
 
   constructor(config: PlotLinkConfig) {
     const chainId = config.chainId ?? BASE_SEPOLIA_CHAIN_ID;
+    if (!SUPPORTED_CHAIN_IDS.has(chainId)) {
+      throw new Error(
+        `Unsupported chainId: ${chainId}. PlotLink SDK supports Base (8453) and Base Sepolia (84532).`,
+      );
+    }
     this.chain = chainId === 8453 ? base : baseSepolia;
 
     const normalizedKey = config.privateKey.startsWith("0x")
@@ -269,7 +276,7 @@ export class PlotLink {
       address: this.storyFactory,
       event: storyFactoryAbi[1], // StorylineCreated event
       args: { storylineId },
-      fromBlock: BigInt(0),
+      fromBlock: DEPLOYMENT_BLOCK,
       toBlock: "latest",
     });
 
@@ -306,7 +313,7 @@ export class PlotLink {
       address: this.storyFactory,
       event: storyFactoryAbi[0], // PlotChained event
       args: { storylineId },
-      fromBlock: BigInt(0),
+      fromBlock: DEPLOYMENT_BLOCK,
       toBlock: "latest",
     });
 

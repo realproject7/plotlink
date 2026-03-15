@@ -15,6 +15,16 @@ export const BASE_SEPOLIA_CHAIN_ID = 84532;
 /** Base (mainnet) chain ID. */
 export const BASE_MAINNET_CHAIN_ID = 8453;
 
+/**
+ * Approximate deployment block for PlotLink contracts on Base Sepolia.
+ * Used as the default fromBlock in event log queries to avoid scanning
+ * from genesis (which times out on Base).
+ */
+export const DEPLOYMENT_BLOCK = BigInt(20_000_000);
+
+/** Supported chain IDs for the PlotLink SDK. */
+export const SUPPORTED_CHAIN_IDS = new Set([BASE_SEPOLIA_CHAIN_ID, BASE_MAINNET_CHAIN_ID]);
+
 // ---------------------------------------------------------------------------
 // PlotLink contracts (Base Sepolia defaults)
 // ---------------------------------------------------------------------------
