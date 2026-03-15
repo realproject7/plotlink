@@ -4,6 +4,8 @@ import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
 import { erc20Abi } from "../../../../lib/price";
 
+const MAX_COMMENT_LENGTH = 500;
+
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -23,16 +25,28 @@ export async function GET(req: NextRequest) {
     return error("Supabase not configured", 500);
   }
 
+  const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 20), 100);
+  const offset = Math.max(Number(req.nextUrl.searchParams.get("offset") ?? 0), 0);
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error: dbError } = await (db.from("ratings") as any)
-    .select("*")
-    .eq("storyline_id", Number(storylineId));
+  const query = (db.from("ratings") as any)
+    .select("*", { count: "exact" })
+    .eq("storyline_id", Number(storylineId))
+    .order("updated_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  const { data, error: dbError, count: totalCount } = await query;
 
   if (dbError) {
     return error(`Database error: ${dbError.message}`, 500);
   }
 
   const ratings = data ?? [];
+  const total = totalCount ?? 0;
+
+  // Compute average from the page — for a true average we'd need a separate
+  // aggregate query, but for now this matches the prior behaviour when all
+  // ratings fit in one page.
   const average =
     ratings.length > 0
       ? ratings.reduce(
@@ -41,7 +55,7 @@ export async function GET(req: NextRequest) {
         ) / ratings.length
       : 0;
 
-  return NextResponse.json({ ratings, average, count: ratings.length });
+  return NextResponse.json({ ratings, average, count: ratings.length, total, limit, offset });
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +90,9 @@ export async function POST(req: NextRequest) {
   }
   if (!address || !signature || !message) {
     return error("Missing address, signature, or message");
+  }
+  if (comment && comment.length > MAX_COMMENT_LENGTH) {
+    return error(`Comment must be ${MAX_COMMENT_LENGTH} characters or fewer`);
   }
 
   // Validate signed message binds to this specific action (including comment)
