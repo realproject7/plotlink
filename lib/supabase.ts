@@ -189,7 +189,7 @@ export interface Database {
           id?: never;
           storyline_id?: number;
           rater_address?: string;
-          score?: number;
+          rating?: number;
           comment?: string | null;
           created_at?: string;
           updated_at?: string;
