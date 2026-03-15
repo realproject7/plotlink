@@ -1,0 +1,92 @@
+import { readFileSync, existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { homedir } from "node:os";
+
+/**
+ * Resolved configuration for the CLI.
+ * Loaded from environment variables, falling back to `.plotlinkrc` in cwd or home dir.
+ */
+export interface CliConfig {
+  privateKey: string;
+  rpcUrl: string;
+  chainId?: number;
+  filebaseAccessKey?: string;
+  filebaseSecretKey?: string;
+  filebaseBucket?: string;
+}
+
+/**
+ * Load CLI config by merging env vars over `.plotlinkrc` values.
+ *
+ * Priority (highest first):
+ *   1. Environment variables (PLOTLINK_PRIVATE_KEY, PLOTLINK_RPC_URL, etc.)
+ *   2. `.plotlinkrc` JSON file in cwd
+ *   3. `.plotlinkrc` JSON file in home dir
+ */
+export function loadConfig(): CliConfig {
+  const rc = loadRcFile();
+
+  const privateKey = env("PLOTLINK_PRIVATE_KEY") ?? rc.privateKey;
+  const rpcUrl = env("PLOTLINK_RPC_URL") ?? rc.rpcUrl;
+
+  if (!privateKey) {
+    throw new Error(
+      "Missing private key. Set PLOTLINK_PRIVATE_KEY env var or add \"privateKey\" to .plotlinkrc",
+    );
+  }
+  if (!rpcUrl) {
+    throw new Error(
+      "Missing RPC URL. Set PLOTLINK_RPC_URL env var or add \"rpcUrl\" to .plotlinkrc",
+    );
+  }
+
+  const chainIdRaw = env("PLOTLINK_CHAIN_ID") ?? rc.chainId;
+  const chainId = chainIdRaw ? Number(chainIdRaw) : undefined;
+
+  return {
+    privateKey,
+    rpcUrl,
+    chainId,
+    filebaseAccessKey: env("PLOTLINK_FILEBASE_ACCESS_KEY") ?? rc.filebaseAccessKey,
+    filebaseSecretKey: env("PLOTLINK_FILEBASE_SECRET_KEY") ?? rc.filebaseSecretKey,
+    filebaseBucket: env("PLOTLINK_FILEBASE_BUCKET") ?? rc.filebaseBucket,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function env(name: string): string | undefined {
+  const val = process.env[name];
+  return val && val.trim().length > 0 ? val.trim() : undefined;
+}
+
+interface RcData {
+  privateKey?: string;
+  rpcUrl?: string;
+  chainId?: string;
+  filebaseAccessKey?: string;
+  filebaseSecretKey?: string;
+  filebaseBucket?: string;
+}
+
+function loadRcFile(): RcData {
+  const candidates = [
+    resolve(process.cwd(), ".plotlinkrc"),
+    resolve(homedir(), ".plotlinkrc"),
+  ];
+
+  for (const filepath of candidates) {
+    if (existsSync(filepath)) {
+      try {
+        const raw = readFileSync(filepath, "utf-8");
+        return JSON.parse(raw) as RcData;
+      } catch {
+        // Ignore malformed rc files
+      }
+    }
+  }
+
+  return {};
+}
