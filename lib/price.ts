@@ -209,14 +209,25 @@ export async function get24hPriceChange(
   }
 }
 
+const erc20DecimalsAbi = [
+  {
+    type: "function",
+    name: "decimals",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint8" }],
+  },
+] as const;
+
 /**
  * Get TVL (reserve balance) for a token from its MCV2_Bond tokenBond data.
+ * Fetches the reserve token's decimals on-chain for correct formatting.
  *
  * Returns null if the read fails.
  */
 export async function getTokenTVL(
   tokenAddress: Address,
-): Promise<{ tvl: string; tvlRaw: bigint; reserveToken: Address } | null> {
+): Promise<{ tvl: string; tvlRaw: bigint; reserveToken: Address; decimals: number } | null> {
   try {
     const result = await publicClient.readContract({
       address: MCV2_BOND,
@@ -226,11 +237,19 @@ export async function getTokenTVL(
     });
 
     const [, , , , reserveToken, reserveBalance] = result;
+    const reserveAddr = reserveToken as Address;
+
+    const decimals = await publicClient.readContract({
+      address: reserveAddr,
+      abi: erc20DecimalsAbi,
+      functionName: "decimals",
+    });
 
     return {
-      tvl: formatUnits(reserveBalance, 18),
+      tvl: formatUnits(reserveBalance, decimals),
       tvlRaw: reserveBalance,
-      reserveToken: reserveToken as Address,
+      reserveToken: reserveAddr,
+      decimals,
     };
   } catch {
     return null;
