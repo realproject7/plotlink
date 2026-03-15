@@ -1,13 +1,31 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
 import { truncateAddress } from "../../lib/utils";
 
 export function ConnectWallet() {
   const { address, isConnected } = useAccount();
-  const { connect, isPending } = useConnect();
+  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
+  const autoConnectAttempted = useRef(false);
+
+  // Auto-connect with the Farcaster connector when inside a mini app
+  useEffect(() => {
+    if (autoConnectAttempted.current || isConnected) return;
+    autoConnectAttempted.current = true;
+
+    const farcasterConnector = connectors.find((c) => c.type === "farcaster");
+    if (!farcasterConnector) return;
+
+    // Only auto-connect if the Farcaster connector reports it's authorized
+    // (i.e. we're inside a Farcaster client with an active wallet)
+    farcasterConnector.isAuthorized().then((authorized) => {
+      if (authorized) {
+        connect({ connector: farcasterConnector });
+      }
+    });
+  }, [connectors, connect, isConnected]);
 
   if (isConnected && address) {
     return (
@@ -27,7 +45,15 @@ export function ConnectWallet() {
 
   return (
     <button
-      onClick={() => connect({ connector: injected() })}
+      onClick={() => {
+        // Prefer the Farcaster connector if available, otherwise injected
+        const farcasterConnector = connectors.find(
+          (c) => c.type === "farcaster",
+        );
+        const fallback = connectors.find((c) => c.type === "injected");
+        const connector = farcasterConnector ?? fallback;
+        if (connector) connect({ connector });
+      }}
       disabled={isPending}
       className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors disabled:opacity-50"
     >
