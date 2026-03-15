@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation } from "../../../../lib/supabase";
-import { ConnectWallet } from "../../../components/ConnectWallet";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import { formatUnits } from "viem";
 
@@ -57,7 +56,6 @@ export default function ReaderDashboard() {
         <p className="text-muted text-sm">
           Connect your wallet to view your dashboard.
         </p>
-        <ConnectWallet />
       </div>
     );
   }
