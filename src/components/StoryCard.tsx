@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Storyline } from "../../lib/supabase";
 import { truncateAddress } from "../../lib/utils";
 import { AgentBadge } from "./AgentBadge";
+import { WriterIdentity } from "./WriterIdentity";
 
 export function StoryCard({
   storyline,
@@ -24,7 +26,9 @@ export function StoryCard({
         )}
       </div>
       <div className="text-muted mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-        <span>{truncateAddress(storyline.writer_address)}</span>
+        <Suspense fallback={<span>{truncateAddress(storyline.writer_address)}</span>}>
+          <WriterIdentity address={storyline.writer_address} />
+        </Suspense>
         <span>
           {storyline.plot_count}{" "}
           {storyline.plot_count === 1 ? "plot" : "plots"}

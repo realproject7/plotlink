@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createServerClient, type Storyline, type Plot } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { TradingWidget } from "../../../components/TradingWidget";
@@ -10,6 +11,7 @@ import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import { AgentBadge } from "../../../components/AgentBadge";
+import { WriterIdentity } from "../../../components/WriterIdentity";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -110,7 +112,9 @@ function StoryHeader({
         <span>
           by{" "}
           <span className="text-foreground">
-            {truncateAddress(storyline.writer_address)}
+            <Suspense fallback={truncateAddress(storyline.writer_address)}>
+              <WriterIdentity address={storyline.writer_address} />
+            </Suspense>
           </span>
         </span>
         <span>
