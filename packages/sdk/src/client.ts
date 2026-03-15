@@ -9,13 +9,20 @@ import {
   type WalletClient,
   type Address,
   type Hex,
-  type TransportConfig,
   type Chain,
 } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 
 import { storyFactoryAbi, erc8004Abi, mcv2BondAbi } from "./abi";
+
+// Named ABI event references (avoid fragile array indexing)
+const StorylineCreatedEvent = storyFactoryAbi.find(
+  (item) => item.type === "event" && item.name === "StorylineCreated",
+)!;
+const PlotChainedEvent = storyFactoryAbi.find(
+  (item) => item.type === "event" && item.name === "PlotChained",
+)!;
 import {
   STORY_FACTORY_ADDRESS,
   MCV2_BOND_ADDRESS,
@@ -190,9 +197,13 @@ export class PlotLink {
     hasDeadline = false,
   ): Promise<CreateStorylineResult> {
     this.requireFilebase();
+    validateNonEmpty("title", title);
+    validateNonEmpty("content", content);
+    validateNonEmpty("genre", genre);
 
-    const key = `plotlink/storylines/${Date.now()}-${slugify(title)}.txt`;
-    const contentCid = await uploadWithRetry(content, key, this.filebase!);
+    const metadata = JSON.stringify({ title, genre, content });
+    const key = `plotlink/storylines/${Date.now()}-${slugify(title)}.json`;
+    const contentCid = await uploadWithRetry(metadata, key, this.filebase!);
     const contentHash = hashContent(content);
 
     const { request } = await this.publicClient.simulateContract({
@@ -243,6 +254,7 @@ export class PlotLink {
     content: string,
   ): Promise<ChainPlotResult> {
     this.requireFilebase();
+    validateNonEmpty("content", content);
 
     const key = `plotlink/plots/${storylineId}-${Date.now()}.txt`;
     const contentCid = await uploadWithRetry(content, key, this.filebase!);
@@ -274,7 +286,7 @@ export class PlotLink {
   async getStoryline(storylineId: bigint): Promise<StorylineInfo | null> {
     const logs = await this.publicClient.getLogs({
       address: this.storyFactory,
-      event: storyFactoryAbi[1], // StorylineCreated event
+      event: StorylineCreatedEvent,
       args: { storylineId },
       fromBlock: DEPLOYMENT_BLOCK,
       toBlock: "latest",
@@ -311,7 +323,7 @@ export class PlotLink {
   async getPlots(storylineId: bigint): Promise<PlotInfo[]> {
     const logs = await this.publicClient.getLogs({
       address: this.storyFactory,
-      event: storyFactoryAbi[0], // PlotChained event
+      event: PlotChainedEvent,
       args: { storylineId },
       fromBlock: DEPLOYMENT_BLOCK,
       toBlock: "latest",
@@ -357,6 +369,11 @@ export class PlotLink {
     genre: string,
     model: string,
   ): Promise<RegisterAgentResult> {
+    validateNonEmpty("name", name);
+    validateNonEmpty("description", description);
+    validateNonEmpty("genre", genre);
+    validateNonEmpty("model", model);
+
     const agentURI = JSON.stringify({ name, description, genre, model });
 
     const { request } = await this.publicClient.simulateContract({
@@ -525,6 +542,15 @@ export class PlotLink {
 // ---------------------------------------------------------------------------
 // Utility functions
 // ---------------------------------------------------------------------------
+
+/**
+ * Validate that a required string parameter is non-empty.
+ */
+function validateNonEmpty(name: string, value: string): void {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`"${name}" must be a non-empty string.`);
+  }
+}
 
 /**
  * Compute keccak256 hash of content, matching the on-chain contentHash.
