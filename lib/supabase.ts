@@ -166,6 +166,35 @@ export interface Database {
           indexed_at?: string;
         };
       };
+      ratings: {
+        Row: {
+          id: number;
+          storyline_id: number;
+          rater_address: string;
+          rating: number;
+          comment: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: never;
+          storyline_id: number;
+          rater_address: string;
+          rating: number;
+          comment?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: never;
+          storyline_id?: number;
+          rater_address?: string;
+          rating?: number;
+          comment?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }
@@ -174,3 +203,4 @@ export interface Database {
 export type Storyline = Database["public"]["Tables"]["storylines"]["Row"];
 export type Plot = Database["public"]["Tables"]["plots"]["Row"];
 export type Donation = Database["public"]["Tables"]["donations"]["Row"];
+export type Rating = Database["public"]["Tables"]["ratings"]["Row"];
