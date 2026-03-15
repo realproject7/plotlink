@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "../../../../../lib/supabase";
+
+function safeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+}
 
 export async function POST(req: NextRequest) {
   // Authenticate with ADMIN_API_KEY
@@ -13,7 +19,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (authHeader !== `Bearer ${adminKey}`) {
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : "";
+  if (!safeCompare(token, adminKey)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -33,9 +40,9 @@ export async function POST(req: NextRequest) {
       { status: 400 },
     );
   }
-  if (!id || typeof id !== "number") {
+  if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) {
     return NextResponse.json(
-      { error: "id must be a number" },
+      { error: "id must be a positive integer" },
       { status: 400 },
     );
   }
