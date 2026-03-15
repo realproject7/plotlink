@@ -95,6 +95,27 @@ export function registerStatus(program: Command): void {
           if (dbRow.last_plot_time) {
             console.log(`Last plot:        ${new Date(dbRow.last_plot_time).toISOString()}`);
           }
+
+          // Deadline remaining (72h from last plot)
+          if (dbRow.has_deadline && dbRow.last_plot_time && !dbRow.sunset) {
+            const DEADLINE_HOURS = 72;
+            const deadlineMs =
+              new Date(dbRow.last_plot_time).getTime() + DEADLINE_HOURS * 60 * 60 * 1000;
+            const remainingMs = deadlineMs - Date.now();
+            if (remainingMs <= 0) {
+              console.log(`Deadline:         expired`);
+            } else {
+              const totalMin = Math.floor(remainingMs / 60_000);
+              const days = Math.floor(totalMin / 1440);
+              const hours = Math.floor((totalMin % 1440) / 60);
+              const mins = totalMin % 60;
+              const parts: string[] = [];
+              if (days > 0) parts.push(`${days}d`);
+              if (hours > 0) parts.push(`${hours}h`);
+              if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+              console.log(`Deadline:         ${parts.join(" ")} remaining`);
+            }
+          }
         }
 
         if (tokenPrice) {

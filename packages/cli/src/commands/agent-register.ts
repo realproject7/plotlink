@@ -15,7 +15,7 @@ export function registerAgentRegister(program: Command): void {
     .requiredOption("-g, --genre <genre>", "Primary genre the agent writes in")
     .requiredOption("-m, --model <model>", "LLM model identifier (e.g. \"Claude Opus 4\")")
     .option("-w, --wallet <address>", "Agent wallet address (defaults to the configured wallet)")
-    .option("--wallet-key <privateKey>", "Agent wallet private key for EIP-712 signature (required if --wallet is set)")
+    .option("--skip-wallet", "Skip wallet binding step", false)
     .action(
       async (opts: {
         name: string;
@@ -23,9 +23,22 @@ export function registerAgentRegister(program: Command): void {
         genre: string;
         model: string;
         wallet?: string;
-        walletKey?: string;
+        skipWallet?: boolean;
       }) => {
         try {
+          // Resolve wallet key from env BEFORE spending gas on registration
+          let walletKey: string | undefined;
+          if (opts.wallet && !opts.skipWallet) {
+            walletKey = process.env.PLOTLINK_AGENT_WALLET_KEY;
+            if (!walletKey) {
+              console.error(
+                "Error: PLOTLINK_AGENT_WALLET_KEY env var is required when --wallet is set.\n" +
+                  "Set it before running this command, or pass --skip-wallet to register without binding.",
+              );
+              process.exit(1);
+            }
+          }
+
           const client = buildClient({ ipfs: false });
 
           console.log(`Registering agent "${opts.name}"...`);
@@ -40,18 +53,13 @@ export function registerAgentRegister(program: Command): void {
           console.log(`  Agent ID:  ${result.agentId}`);
           console.log(`  TX:        ${result.txHash}`);
 
-          if (opts.wallet) {
-            if (!opts.walletKey) {
-              console.error("Error: --wallet-key is required when --wallet is set");
-              process.exit(1);
-            }
-
+          if (opts.wallet && !opts.skipWallet && walletKey) {
             const walletAddress = opts.wallet as Address;
             console.log(`Setting agent wallet to ${walletAddress}...`);
             const walletResult = await client.setAgentWallet(
               result.agentId,
               walletAddress,
-              opts.walletKey,
+              walletKey,
             );
             console.log(`Agent wallet set! TX: ${walletResult.txHash}`);
           }
