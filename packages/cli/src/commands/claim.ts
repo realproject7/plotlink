@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import { type Address, erc20Abi, formatUnits, isAddress } from "viem";
+import { MCV2_BOND_ADDRESS, mcv2BondAbi } from "@plotlink/sdk";
 import { buildClient } from "../sdk.js";
 
 export function registerClaim(program: Command): void {
@@ -19,20 +20,37 @@ export function registerClaim(program: Command): void {
         console.log("Checking royalties...");
         const info = await client.getRoyaltyInfo(tokenAddress);
 
-        // Fetch reserve token decimals dynamically
+        // Fetch reserve token address via tokenBond(), then read its decimals
         let decimals = 18;
+        let symbol = "TOKEN";
         try {
-          decimals = await client.publicClient.readContract({
-            address: tokenAddress,
-            abi: erc20Abi,
-            functionName: "decimals",
+          const bond = await client.publicClient.readContract({
+            address: MCV2_BOND_ADDRESS,
+            abi: mcv2BondAbi,
+            functionName: "tokenBond",
+            args: [tokenAddress],
           });
+          const reserveToken = (bond as readonly unknown[])[4] as Address;
+          const [dec, sym] = await Promise.all([
+            client.publicClient.readContract({
+              address: reserveToken,
+              abi: erc20Abi,
+              functionName: "decimals",
+            }),
+            client.publicClient.readContract({
+              address: reserveToken,
+              abi: erc20Abi,
+              functionName: "symbol",
+            }),
+          ]);
+          decimals = dec;
+          symbol = sym;
         } catch {
-          // Default to 18 if decimals() call fails
+          // Default to 18/TOKEN if calls fail
         }
 
         const formatted = formatUnits(info.unclaimed, decimals);
-        console.log(`  Unclaimed:    ${formatted}`);
+        console.log(`  Unclaimed:    ${formatted} ${symbol}`);
         console.log(`  Beneficiary:  ${info.beneficiary}`);
 
         if (info.unclaimed === 0n) {

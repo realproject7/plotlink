@@ -1,6 +1,7 @@
 import type { Command } from "commander";
 import { createClient } from "@supabase/supabase-js";
 import { type Address, erc20Abi, formatUnits } from "viem";
+import { MCV2_BOND_ADDRESS, mcv2BondAbi } from "@plotlink/sdk";
 import { buildClient } from "../sdk.js";
 import { loadConfig } from "../config.js";
 
@@ -49,19 +50,26 @@ export function registerStatus(program: Command): void {
         }
 
         // -----------------------------------------------------------------
-        // 3. Reserve token metadata (symbol + decimals)
+        // 3. Reserve token metadata (symbol + decimals via tokenBond)
         // -----------------------------------------------------------------
         let tokenSymbol = "TOKEN";
         let tokenDecimals = 18;
         try {
+          const bond = await client.publicClient.readContract({
+            address: MCV2_BOND_ADDRESS,
+            abi: mcv2BondAbi,
+            functionName: "tokenBond",
+            args: [info.tokenAddress],
+          });
+          const reserveToken = (bond as readonly unknown[])[4] as Address;
           const [sym, dec] = await Promise.all([
             client.publicClient.readContract({
-              address: info.tokenAddress,
+              address: reserveToken,
               abi: erc20Abi,
               functionName: "symbol",
             }),
             client.publicClient.readContract({
-              address: info.tokenAddress,
+              address: reserveToken,
               abi: erc20Abi,
               functionName: "decimals",
             }),
@@ -69,7 +77,7 @@ export function registerStatus(program: Command): void {
           tokenSymbol = sym;
           tokenDecimals = dec;
         } catch {
-          // Fall back to defaults if token doesn't support ERC-20 metadata
+          // Fall back to defaults if calls fail
         }
 
         // -----------------------------------------------------------------
