@@ -70,7 +70,7 @@ export default async function StoryPage({ params }: { params: Params }) {
         </main>
 
         {/* Sidebar — engagement widgets */}
-        <aside className="space-y-4">
+        <aside className="order-first space-y-4 lg:order-none">
           {sl.token_address && priceInfo && (
             <PriceChart
               tokenAddress={sl.token_address as Address}
