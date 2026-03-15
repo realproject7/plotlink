@@ -25,7 +25,7 @@ export function Footer() {
             built on <span className="text-accent-dim">Base</span>
           </span>
         </div>
-        <div className="text-muted text-xs">
+        <div className="text-neutral-400 text-xs">
           <span className="text-accent-dim">$</span> PlotLink &copy; {new Date().getFullYear()}
         </div>
       </div>
