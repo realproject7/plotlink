@@ -8,6 +8,7 @@ import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import Link from "next/link";
 import { ConnectWallet } from "../../../components/ConnectWallet";
+import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { type Address } from "viem";
 
 async function fetchWriterStorylines(
@@ -51,6 +52,8 @@ export default function WriterDashboard() {
         Writer Dashboard
       </h1>
       <p className="text-muted mt-2 text-sm">
+        <WriterIdentityClient address={address!} />
+        {" "}&middot;{" "}
         {storylines.length}{" "}
         {storylines.length === 1 ? "storyline" : "storylines"}
       </p>

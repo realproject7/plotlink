@@ -7,6 +7,7 @@ import { supabase, type Donation } from "../../../../lib/supabase";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
+import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 
 const PAGE_SIZE = 50;
 
@@ -76,6 +77,9 @@ export default function ReaderDashboard() {
       <h1 className="text-accent text-2xl font-bold tracking-tight">
         Reader Dashboard
       </h1>
+      <p className="text-muted mt-2 text-sm">
+        <WriterIdentityClient address={address!} />
+      </p>
 
       <ReaderPortfolio />
 

@@ -17,7 +17,7 @@ const NEYNAR_BASE = "https://api.neynar.com/v2/farcaster";
 const cache = new Map<string, FarcasterProfile | null>();
 
 function getApiKey(): string | undefined {
-  return process.env.NEXT_PUBLIC_NEYNAR_API_KEY;
+  return process.env.NEYNAR_API_KEY;
 }
 
 /**
