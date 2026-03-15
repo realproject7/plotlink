@@ -84,7 +84,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
     enabled: isConnected && !!address,
   });
 
-  // Pre-fill existing rating
+  // Pre-fill existing rating or reset when wallet changes
   useEffect(() => {
     if (ratingsData && address) {
       const existing = ratingsData.ratings.find(
@@ -93,7 +93,13 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
       if (existing) {
         setSelectedRating(existing.rating);
         setComment(existing.comment ?? "");
+      } else {
+        setSelectedRating(0);
+        setComment("");
       }
+    } else if (!address) {
+      setSelectedRating(0);
+      setComment("");
     }
   }, [ratingsData, address]);
 

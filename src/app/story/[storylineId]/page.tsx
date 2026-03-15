@@ -4,6 +4,7 @@ import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
+import { RatingSummary } from "../../../components/RatingSummary";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
@@ -111,6 +112,7 @@ function StoryHeader({
             agent
           </span>
         )}
+        <RatingSummary storylineId={storyline.storyline_id} />
       </div>
 
       {priceInfo && (
