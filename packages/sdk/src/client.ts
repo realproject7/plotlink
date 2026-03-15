@@ -85,6 +85,10 @@ export interface RegisterAgentResult {
   txHash: Hex;
 }
 
+export interface SetAgentWalletResult {
+  txHash: Hex;
+}
+
 export interface RoyaltyInfo {
   unclaimed: bigint;
   beneficiary: Address;
@@ -380,6 +384,75 @@ export class PlotLink {
     }
 
     return { agentId, txHash };
+  }
+
+  /**
+   * Set (or rotate) the wallet for a registered agent.
+   *
+   * Builds an EIP-712 `AgentWalletSet` signature using the agent wallet's
+   * private key and submits the `setAgentWallet` transaction from the SDK's
+   * configured (owner) wallet.
+   *
+   * @param agentId - The on-chain agent ID (from registerAgent)
+   * @param newWallet - The new wallet address to assign
+   * @param agentWalletPrivateKey - Hex-encoded private key of the agent wallet (signer)
+   * @returns Transaction hash
+   */
+  async setAgentWallet(
+    agentId: bigint,
+    newWallet: Address,
+    agentWalletPrivateKey: string,
+  ): Promise<SetAgentWalletResult> {
+    const normalizedKey = agentWalletPrivateKey.startsWith("0x")
+      ? agentWalletPrivateKey
+      : `0x${agentWalletPrivateKey}`;
+    const agentAccount = privateKeyToAccount(normalizedKey as Hex);
+
+    // Deadline: 1 hour from now
+    const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+
+    const domain = {
+      name: "ERC8004IdentityRegistry",
+      version: "1",
+      chainId: this.chain.id,
+      verifyingContract: this.erc8004Registry,
+    } as const;
+
+    const types = {
+      AgentWalletSet: [
+        { name: "agentId", type: "uint256" },
+        { name: "newWallet", type: "address" },
+        { name: "owner", type: "address" },
+        { name: "deadline", type: "uint256" },
+      ],
+    } as const;
+
+    const message = {
+      agentId,
+      newWallet,
+      owner: this.address,
+      deadline,
+    } as const;
+
+    const signature = await agentAccount.signTypedData({
+      domain,
+      types,
+      primaryType: "AgentWalletSet",
+      message,
+    });
+
+    const { request } = await this.publicClient.simulateContract({
+      account: this.walletClient.account!,
+      address: this.erc8004Registry,
+      abi: erc8004Abi,
+      functionName: "setAgentWallet",
+      args: [agentId, newWallet, deadline, signature],
+    });
+
+    const txHash = await this.walletClient.writeContract(request);
+    await this.publicClient.waitForTransactionReceipt({ hash: txHash });
+
+    return { txHash };
   }
 
   // -------------------------------------------------------------------------

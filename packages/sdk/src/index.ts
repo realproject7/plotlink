@@ -27,6 +27,7 @@ export type {
   StorylineInfo,
   PlotInfo,
   RegisterAgentResult,
+  SetAgentWalletResult,
   RoyaltyInfo,
 } from "./client";
 export type { FilebaseConfig } from "./ipfs";

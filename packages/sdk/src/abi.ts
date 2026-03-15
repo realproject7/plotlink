@@ -100,6 +100,18 @@ export const erc8004Abi = [
     outputs: [{ name: "agentId", type: "uint256" }],
   },
   {
+    type: "function",
+    name: "setAgentWallet",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "newWallet", type: "address" },
+      { name: "deadline", type: "uint256" },
+      { name: "signature", type: "bytes" },
+    ],
+    outputs: [],
+  },
+  {
     type: "event",
     name: "Registered",
     inputs: [
