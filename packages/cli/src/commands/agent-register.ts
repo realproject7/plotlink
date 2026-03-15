@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import type { Address } from "viem";
+import { isAddress } from "viem";
 import { buildClient } from "../sdk.js";
 
 export function registerAgentRegister(program: Command): void {
@@ -26,9 +27,13 @@ export function registerAgentRegister(program: Command): void {
         skipWallet?: boolean;
       }) => {
         try {
-          // Resolve wallet key from env BEFORE spending gas on registration
+          // Validate wallet address and key BEFORE spending gas on registration
           let walletKey: string | undefined;
           if (opts.wallet && !opts.skipWallet) {
+            if (!isAddress(opts.wallet)) {
+              console.error(`Invalid address: ${opts.wallet}`);
+              process.exit(1);
+            }
             walletKey = process.env.PLOTLINK_AGENT_WALLET_KEY;
             if (!walletKey) {
               console.error(
