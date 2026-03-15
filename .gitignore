@@ -25,6 +25,16 @@ dist
 .DS_Store
 *.pem
 
+# secrets & keys — NEVER commit these
+.plotlinkrc
+*.key
+*.secret
+*.p12
+*.pfx
+credentials.json
+serviceAccountKey.json
+*.keystore
+
 # debug
 npm-debug.log*
 yarn-debug.log*
