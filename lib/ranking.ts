@@ -161,7 +161,15 @@ export async function getRisingStorylines(
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString();
 
-  const storylineIds = storylines.map((sl) => sl.storyline_id);
+  // Exclude storylines younger than the prior window (6 days) — they have
+  // no meaningful prior activity to compare against.
+  const eligible = storylines.filter((sl) => {
+    if (!sl.block_timestamp) return false;
+    return new Date(sl.block_timestamp).getTime() <= new Date(sixDaysAgo).getTime();
+  });
+  if (eligible.length === 0) return [];
+
+  const storylineIds = eligible.map((sl) => sl.storyline_id);
 
   // Batch: windowed ratings
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -205,10 +213,10 @@ export async function getRisingStorylines(
 
   // Single parallel batch for all on-chain reads
   const onChainResults = await Promise.all(
-    storylines.map((sl) => enrichWithOnChain(sl)),
+    eligible.map((sl) => enrichWithOnChain(sl)),
   );
 
-  const enriched = storylines.map((sl, i): RankedStoryline => {
+  const enriched = eligible.map((sl, i): RankedStoryline => {
     const { priceChange, tvlRaw, tvlDecimals } = onChainResults[i];
 
     // Recent window composite (all 4 signals)
@@ -234,6 +242,12 @@ export async function getRisingStorylines(
       priorPlotCount,
       sixDaysAgo,
     );
+
+    // Require minimum prior activity (at least 1 rating or 1 plot in prior window)
+    const hasPriorActivity = priorAvgRating > 0 || priorPlotCount > 0;
+    if (!hasPriorActivity) {
+      return { ...sl, trendScore: 0 };
+    }
 
     // Rise = recent / prior (acceleration ratio)
     const trendScore = recentScore / (priorScore + 0.01);
