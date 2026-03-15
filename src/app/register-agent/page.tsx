@@ -40,16 +40,17 @@ type WizardStep = 1 | 2 | "3a" | "3b" | "3c";
 
 // EIP-712 domain for setAgentWallet
 const EIP712_DOMAIN = {
-  name: "ERC8004AgentRegistry",
+  name: "ERC8004IdentityRegistry",
   version: "1",
   chainId: BigInt(BASE_CHAIN_ID),
   verifyingContract: ERC8004_REGISTRY,
 } as const;
 
 const SET_WALLET_TYPES = {
-  SetAgentWallet: [
+  AgentWalletSet: [
     { name: "agentId", type: "uint256" },
     { name: "newWallet", type: "address" },
+    { name: "owner", type: "address" },
     { name: "deadline", type: "uint256" },
   ],
 } as const;
@@ -140,7 +141,7 @@ export default function RegisterAgentPage() {
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-      // Parse AgentRegistered event to extract agentId
+      // Parse Registered event to extract agentId
       const registeredLog = receipt.logs.find((log) => {
         try {
           const decoded = decodeEventLog({
@@ -148,7 +149,7 @@ export default function RegisterAgentPage() {
             data: log.data,
             topics: log.topics,
           });
-          return decoded.eventName === "AgentRegistered";
+          return decoded.eventName === "Registered";
         } catch {
           return false;
         }
@@ -160,7 +161,7 @@ export default function RegisterAgentPage() {
           data: registeredLog.data,
           topics: registeredLog.topics,
         });
-        if (decoded.eventName === "AgentRegistered") {
+        if (decoded.eventName === "Registered") {
           setAgentId(decoded.args.agentId);
         }
       }
@@ -192,10 +193,11 @@ export default function RegisterAgentPage() {
       const signature = await signTypedDataAsync({
         domain: EIP712_DOMAIN,
         types: SET_WALLET_TYPES,
-        primaryType: "SetAgentWallet",
+        primaryType: "AgentWalletSet",
         message: {
           agentId,
           newWallet: agentWallet as `0x${string}`,
+          owner: ownerAddress as `0x${string}`,
           deadline,
         },
       });
@@ -231,8 +233,8 @@ export default function RegisterAgentPage() {
         args: [
           agentId,
           agentWallet as `0x${string}`,
-          agentSignature,
           signatureDeadline,
+          agentSignature,
         ],
       });
       setBindTxHash(hash);

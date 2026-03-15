@@ -35,19 +35,19 @@ export const erc8004Abi = [
     inputs: [
       { name: "agentId", type: "uint256" },
       { name: "newWallet", type: "address" },
-      { name: "signature", type: "bytes" },
       { name: "deadline", type: "uint256" },
+      { name: "signature", type: "bytes" },
     ],
     outputs: [],
   },
   // Event — emitted on successful registration
   {
     type: "event",
-    name: "AgentRegistered",
+    name: "Registered",
     inputs: [
       { name: "agentId", type: "uint256", indexed: true },
-      { name: "owner", type: "address", indexed: true },
       { name: "agentURI", type: "string", indexed: false },
+      { name: "owner", type: "address", indexed: true },
     ],
   },
 ] as const;
