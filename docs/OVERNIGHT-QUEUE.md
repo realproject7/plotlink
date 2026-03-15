@@ -9,92 +9,81 @@
 ## Completed
 
 - Phase 0–4: All done
-- Phase 5: All done (except #30 Zap — blocked on $PLOT token)
-- Bug fixes #52, #55, #67, #68, #88–#95: All done
-- UI polish #104–#107, bug fixes #112–#117: All done
+- Phase 5: All done (except #30 Zap — blocked on $PLOT)
+- Bug fixes #52, #55, #67, #68, #88–#95, #112–#117: All done
+- UI polish #104–#107: All done
+- Phase 6 Agent Layer #33, #32, #35, #34: All done
 
 ---
 
-## Tonight's Queue — Phase 6: Agent Layer (assign in this exact order)
+## Tonight's Queue — Phase 6 Bug Fixes (assign in this exact order)
 
-### 1. plotlink#33 — [P6-2] Writer Type Filter & Agent Badge
+> Ordered to avoid merge conflicts on shared files (config.ts, claim.ts).
 
-**Requirements:**
-- Add writer type filter to discover page: "All" (default), "Human only", "Agent only"
-- Filter the Supabase query by `writer_type` column (0 = human, 1 = agent)
-- Create an agent badge component — show on StoryCard and story page for `writer_type = 1`
-- Pass filter as query param (e.g., `?tab=new&writer=agent`)
+### 1. plotlink#132 — [Bug] .plotlinkrc warning in CLI config
 
-**Context:** `writer_type` is already stored in the `storylines` table and set by the indexer via `detectWriterType()` in `lib/contracts/erc8004.ts`.
+`.plotlinkrc` is already in `.gitignore` (done by operator). But `packages/cli/src/config.ts` needs a runtime warning when loading keys from file.
+
+**Fix:** When config is loaded from `.plotlinkrc`, log to stderr: `"WARNING: Loading keys from .plotlinkrc — ensure this file is in .gitignore and never committed."`
 
 **Merge checklist:**
-- [ ] Writer type filter on discover page (All / Human / Agent)
-- [ ] Agent badge component on StoryCard and story page
+- [ ] Warning logged to stderr when `.plotlinkrc` is loaded
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 2. plotlink#32 — [P6-1] Agent Registration Wizard (Web)
+### 2. plotlink#137 — [Bug] Silent .plotlinkrc JSON parse errors
 
-3-step wizard for registering an AI agent identity via ERC-8004.
+Same file `packages/cli/src/config.ts`. JSON parse errors are silently swallowed — users get confusing "Missing private key" instead of a parse error.
 
-**Key context for T3:**
-- ERC-8004 registry address: import from `lib/contracts/constants.ts` (`ERC8004_REGISTRY`)
-- Existing ABI helper: `lib/contracts/erc8004.ts` (has `agentOf` — will need `register` and `setAgentWallet` added)
-- Step 1: Agent profile form (name, description, genre, LLM model) → generate agentURI JSON metadata
-- Step 2: Call `register(agentURI)` on registry → returns agentId (NFT)
-- Step 3: Agent wallet links via EIP-712 typed data → call `setAgentWallet(agentId, newWallet, signature, deadline)`
-- Redirect to create storyline flow on completion
-
-**T3: Use `/frontend-design` skill for the wizard UI.**
+**Fix:** Catch JSON parse errors explicitly, log: `"Error parsing .plotlinkrc: <message>. Check your JSON syntax."` Then fall back to env vars.
 
 **Merge checklist:**
-- [ ] 3-step wizard at `/register-agent` route
-- [ ] `register` and `setAgentWallet` ABI entries added to `lib/contracts/erc8004.ts`
-- [ ] Step 1: profile form generates agentURI metadata JSON
-- [ ] Step 2: calls `register()` and shows agentId
-- [ ] Step 3: EIP-712 typed data + `setAgentWallet()`
-- [ ] Redirects to create flow on completion
+- [ ] JSON parse errors logged with helpful message
+- [ ] Falls back to env vars after parse failure
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 3. plotlink#35 — [P6-4] SDK — @plotlink/sdk
+### 3. plotlink#133 — [Bug] CLI: no address validation
 
-TypeScript SDK wrapping all PlotLink operations for programmatic access.
+`claim` and `agent register` commands cast user input directly to `Address` without validation. Invalid addresses cause confusing RPC errors.
 
-**Requirements:**
-- Scaffold as separate package in repo (e.g., `packages/sdk/`)
-- Constructor: `new PlotLink({ privateKey, rpcUrl })`
-- Core methods: `createStoryline()`, `chainPlot()`, `getStoryline()`, `getPlots()`
-- Agent methods: `registerAgent()` wrapping ERC-8004 registration
-- Royalty method: `claimRoyalties(tokenAddress)`
-- Uses existing ABIs from `lib/contracts/` and Filebase upload from `lib/filebase.ts`
-- Bundle with tsup, proper package.json exports
+**Fix:** Validate with viem `isAddress()` before casting. Show: `"Invalid address: <input>"`
+
+**Affected:** `packages/cli/src/commands/claim.ts`, `packages/cli/src/commands/agent-register.ts`
 
 **Merge checklist:**
-- [ ] `packages/sdk/` scaffolded with tsup + TypeScript
-- [ ] Core methods: createStoryline, chainPlot, getStoryline, getPlots
-- [ ] Agent method: registerAgent
-- [ ] Royalty method: claimRoyalties
+- [ ] `isAddress()` validation in claim and agent-register commands
+- [ ] Clear error message for invalid input
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 4. plotlink#34 — [P6-3] CLI — plotlink-cli
+### 4. plotlink#134 — [Bug] CLI: claim shows raw bigint
 
-CLI for agent operators and human writers.
+`packages/cli/src/commands/claim.ts` displays unclaimed amount as raw bigint instead of formatted value.
 
-**Requirements:**
-- Scaffold as separate package (e.g., `packages/cli/`)
-- Commands: `plotlink create`, `plotlink chain`, `plotlink status`, `plotlink claim`, `plotlink agent register`
-- Use commander.js or similar for command parsing
-- Reads private key + RPC from env vars or config file
-- Can use `@plotlink/sdk` if SDK (#35) is merged, otherwise wrap contract calls directly
-
-**Depends on:** #35 (SDK — merged by then)
+**Fix:** Use `formatUnits(info.unclaimed, decimals)`. Fetch reserve token decimals same pattern as status command.
 
 **Merge checklist:**
-- [ ] `packages/cli/` scaffolded with commander.js
-- [ ] `plotlink create` — upload to IPFS + createStoryline tx
-- [ ] `plotlink chain` — upload to IPFS + chainPlot tx
-- [ ] `plotlink status` — query storyline data + token price
-- [ ] `plotlink claim` — claimRoyalties tx
-- [ ] `plotlink agent register` — ERC-8004 register + setAgentWallet
+- [ ] Unclaimed amount formatted with `formatUnits()`
+- [ ] `npm run lint` and `npm run typecheck` pass
+
+### 5. plotlink#136 — [Bug] CLI: hardcoded "ETH" label and 18 decimals
+
+`packages/cli/src/commands/status.ts` hardcodes "ETH" and 18 decimals. Wrong for USDC or mainnet $PLOT.
+
+**Fix:** Fetch reserve token `symbol()` and `decimals()` via ERC-20 calls. Display actual symbol.
+
+**Merge checklist:**
+- [ ] Reserve token symbol and decimals fetched dynamically
+- [ ] No hardcoded "ETH" or "18"
+- [ ] `npm run lint` and `npm run typecheck` pass
+
+### 6. plotlink#135 — [Bug] Discover page hardcodes genre="fiction"
+
+`src/app/discover/page.tsx` and `src/app/page.tsx` pass `genre="fiction"` to every `StoryCard`. Misleading — no genre field exists in DB.
+
+**Fix:** Remove hardcoded `genre="fiction"` prop. StoryCard should handle missing genre gracefully (don't display it).
+
+**Merge checklist:**
+- [ ] Hardcoded genre removed from discover page and home page
+- [ ] StoryCard handles missing/undefined genre
 - [ ] `npm run lint` and `npm run typecheck` pass
 
 ---
@@ -104,17 +93,18 @@ CLI for agent operators and human writers.
 1. Assign ONE ticket at a time to @t3
 2. Wait for @t2a AND @t2b to both approve before merging
 3. After merge, immediately assign the next ticket
-4. Use correct original issue numbers in PR titles (e.g., `[#33]` not `[#300]`)
-5. Import contract addresses from `lib/contracts/constants.ts` — do NOT hardcode
-6. If T3 gets stuck after 2 review rounds, skip that ticket and note it for morning review
-7. Do NOT push to main — only merge approved PRs
-8. STOP at operator gates
+4. Use correct original issue numbers in PR titles (e.g., `[#132]` not `[#300]`)
+5. **NEVER store keys/secrets in plain text without .gitignore protection**
+6. **NEVER hardcode addresses, keys, or sensitive values**
+7. **Communicate via AgentChattr MCP chat by tagging agents. Your terminal is NOT visible.**
+8. If T3 gets stuck after 2 review rounds, skip that ticket and note it for morning review
+9. Do NOT push to main — only merge approved PRs
 
 ## Reference
 
-- ERC-8004 registry: `lib/contracts/constants.ts` → `ERC8004_REGISTRY`
-- ERC-8004 ABI + detectWriterType: `lib/contracts/erc8004.ts`
-- Filebase upload: `lib/filebase.ts`
-- Contract ABIs: `lib/contracts/abi.ts`
-- Design tokens: `src/app/globals.css`
-- Existing components: `src/components/`
+- CLI config: `packages/cli/src/config.ts`
+- CLI commands: `packages/cli/src/commands/`
+- SDK: `packages/sdk/src/`
+- Discover page: `src/app/discover/page.tsx`
+- Home page: `src/app/page.tsx`
+- StoryCard: `src/components/StoryCard.tsx`
