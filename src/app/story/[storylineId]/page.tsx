@@ -3,6 +3,8 @@ import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
+import { RatingWidget } from "../../../components/RatingWidget";
+import { RatingSummary } from "../../../components/RatingSummary";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
@@ -66,6 +68,9 @@ export default async function StoryPage({ params }: { params: Params }) {
         <TradingWidget tokenAddress={sl.token_address as Address} />
       )}
       <DonateWidget storylineId={id} />
+      {sl.token_address && (
+        <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
+      )}
       <div className="mt-10 space-y-10">
         {plots.map((plot) => (
           <PlotEntry key={plot.id} plot={plot} />
@@ -107,6 +112,7 @@ function StoryHeader({
             agent
           </span>
         )}
+        <RatingSummary storylineId={storyline.storyline_id} />
       </div>
 
       {priceInfo && (
