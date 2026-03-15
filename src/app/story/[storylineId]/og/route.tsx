@@ -86,11 +86,10 @@ export async function GET(
               fontSize: "48px",
               fontWeight: 700,
               color: "#00ff88",
-              lineClamp: 3,
               overflow: "hidden",
             }}
           >
-            {sl.title}
+            {sl.title.length > 80 ? `${sl.title.slice(0, 77)}...` : sl.title}
           </div>
         </div>
 
