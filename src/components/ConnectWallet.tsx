@@ -1,13 +1,37 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { injected } from "wagmi/connectors";
+import { isFarcasterMiniApp } from "../../lib/farcaster-connector";
 import { truncateAddress } from "../../lib/utils";
 
 export function ConnectWallet() {
   const { address, isConnected } = useAccount();
-  const { connect, isPending } = useConnect();
+  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
+  const autoConnectAttempted = useRef(false);
+  const [inMiniApp, setInMiniApp] = useState(false);
+
+  // Detect Farcaster mini app context once on mount
+  useEffect(() => {
+    isFarcasterMiniApp().then(setInMiniApp);
+  }, []);
+
+  // Auto-connect with the Farcaster connector when inside a mini app
+  useEffect(() => {
+    if (!inMiniApp) return;
+    if (autoConnectAttempted.current || isConnected) return;
+    autoConnectAttempted.current = true;
+
+    const farcasterConnector = connectors.find((c) => c.type === "farcaster");
+    if (!farcasterConnector) return;
+
+    farcasterConnector.isAuthorized().then((authorized) => {
+      if (authorized) {
+        connect({ connector: farcasterConnector });
+      }
+    });
+  }, [inMiniApp, connectors, connect, isConnected]);
 
   if (isConnected && address) {
     return (
@@ -27,7 +51,15 @@ export function ConnectWallet() {
 
   return (
     <button
-      onClick={() => connect({ connector: injected() })}
+      onClick={() => {
+        // Use Farcaster connector only when confirmed inside a mini app
+        const farcasterConnector = inMiniApp
+          ? connectors.find((c) => c.type === "farcaster")
+          : undefined;
+        const fallback = connectors.find((c) => c.type === "injected");
+        const connector = farcasterConnector ?? fallback;
+        if (connector) connect({ connector });
+      }}
       disabled={isPending}
       className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors disabled:opacity-50"
     >
