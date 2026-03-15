@@ -1,11 +1,10 @@
 import { http, createConfig } from "wagmi";
 import { base, baseSepolia } from "wagmi/chains";
 import { injected } from "wagmi/connectors";
-import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
 
 export const config = createConfig({
   chains: [base, baseSepolia],
-  connectors: [farcasterMiniApp(), injected()],
+  connectors: [injected()],
   transports: {
     [base.id]: http(
       process.env.NEXT_PUBLIC_CHAIN_ID === "8453"
