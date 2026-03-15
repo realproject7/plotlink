@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
-import { ConnectWallet } from "../../components/ConnectWallet";
 import {
   validateContentLength,
   MIN_CONTENT_LENGTH,
@@ -43,7 +42,6 @@ export default function CreateStorylinePage() {
         <p className="text-muted text-sm">
           Connect your wallet to create a storyline.
         </p>
-        <ConnectWallet />
       </div>
     );
   }

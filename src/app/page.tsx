@@ -1,11 +1,6 @@
-import { ConnectWallet } from "@/components/ConnectWallet";
-
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <header className="fixed top-0 right-0 p-4">
-        <ConnectWallet />
-      </header>
       <main className="flex flex-col items-center gap-6 text-center">
         <h1 className="text-accent text-2xl font-bold tracking-tight">
           PlotLink

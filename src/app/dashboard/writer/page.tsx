@@ -3,7 +3,6 @@
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Storyline } from "../../../../lib/supabase";
-import { ConnectWallet } from "../../../components/ConnectWallet";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
@@ -40,7 +39,6 @@ export default function WriterDashboard() {
         <p className="text-muted text-sm">
           Connect your wallet to view your dashboard.
         </p>
-        <ConnectWallet />
       </div>
     );
   }
