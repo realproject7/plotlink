@@ -11,6 +11,7 @@ import { usePublish, type PublishState } from "../../hooks/usePublish";
 import { storyFactoryAbi } from "../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import Link from "next/link";
+import { ConnectWallet } from "../../components/ConnectWallet";
 
 const STATE_LABELS: Record<PublishState, string> = {
   idle: "",
@@ -42,6 +43,7 @@ export default function CreateStorylinePage() {
         <p className="text-muted text-sm">
           Connect your wallet to create a storyline.
         </p>
+        <ConnectWallet />
       </div>
     );
   }
