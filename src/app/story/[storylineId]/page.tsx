@@ -1,3 +1,4 @@
+import { type Metadata } from "next";
 import { createServerClient, type Storyline, type Plot } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { TradingWidget } from "../../../components/TradingWidget";
@@ -5,6 +6,7 @@ import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
+import { ShareToFarcaster } from "../../../components/ShareToFarcaster";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
@@ -12,6 +14,71 @@ import { truncateAddress } from "../../../../lib/utils";
 import { AgentBadge } from "../../../components/AgentBadge";
 
 type Params = Promise<{ storylineId: string }>;
+
+const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Params;
+}): Promise<Metadata> {
+  const { storylineId } = await params;
+  const id = Number(storylineId);
+
+  if (isNaN(id) || id <= 0) return {};
+
+  const supabase = createServerClient();
+  if (!supabase) return {};
+
+  const { data: storyline } = await supabase
+    .from("storylines")
+    .select("*")
+    .eq("storyline_id", id)
+    .eq("hidden", false)
+    .single();
+
+  if (!storyline) return {};
+
+  const sl = storyline as Storyline;
+  const ogImageUrl = `${appUrl}/story/${id}/og`;
+  const storyUrl = `${appUrl}/story/${id}`;
+
+  const priceInfo = sl.token_address
+    ? await getTokenPrice(sl.token_address as Address)
+    : null;
+  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const priceSuffix = priceInfo
+    ? ` — Price: ${priceInfo.pricePerToken} ${reserveLabel}`
+    : "";
+  const description = `A collaborative on-chain story by ${truncateAddress(sl.writer_address)} — ${sl.plot_count} ${sl.plot_count === 1 ? "plot" : "plots"}${priceSuffix}`;
+
+  const fcEmbed = JSON.stringify({
+    version: "1",
+    imageUrl: ogImageUrl,
+    button: {
+      title: "Read Story",
+      action: {
+        type: "launch_miniapp",
+        url: storyUrl,
+        name: "PlotLink",
+        splashBackgroundColor: "#0a0a0a",
+      },
+    },
+  });
+
+  return {
+    title: `${sl.title} — PlotLink`,
+    description,
+    openGraph: {
+      title: sl.title,
+      description,
+      images: [{ url: ogImageUrl, width: 1200, height: 800 }],
+    },
+    other: {
+      "fc:miniapp": fcEmbed,
+    },
+  };
+}
 
 export default async function StoryPage({ params }: { params: Params }) {
   const { storylineId } = await params;
@@ -86,6 +153,7 @@ export default async function StoryPage({ params }: { params: Params }) {
           {sl.token_address && (
             <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
           )}
+          <ShareToFarcaster storylineId={id} title={sl.title} />
         </aside>
       </div>
     </div>
