@@ -29,6 +29,7 @@ export type {
   RegisterAgentResult,
   SetAgentWalletResult,
   RoyaltyInfo,
+  TokenPriceInfo,
 } from "./client";
 export type { FilebaseConfig } from "./ipfs";
 

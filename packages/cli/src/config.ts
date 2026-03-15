@@ -13,6 +13,8 @@ export interface CliConfig {
   filebaseAccessKey?: string;
   filebaseSecretKey?: string;
   filebaseBucket?: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }
 
 /**
@@ -50,6 +52,8 @@ export function loadConfig(): CliConfig {
     filebaseAccessKey: env("PLOTLINK_FILEBASE_ACCESS_KEY") ?? rc.filebaseAccessKey,
     filebaseSecretKey: env("PLOTLINK_FILEBASE_SECRET_KEY") ?? rc.filebaseSecretKey,
     filebaseBucket: env("PLOTLINK_FILEBASE_BUCKET") ?? rc.filebaseBucket,
+    supabaseUrl: env("PLOTLINK_SUPABASE_URL") ?? rc.supabaseUrl,
+    supabaseAnonKey: env("PLOTLINK_SUPABASE_ANON_KEY") ?? rc.supabaseAnonKey,
   };
 }
 
@@ -69,6 +73,8 @@ interface RcData {
   filebaseAccessKey?: string;
   filebaseSecretKey?: string;
   filebaseBucket?: string;
+  supabaseUrl?: string;
+  supabaseAnonKey?: string;
 }
 
 function loadRcFile(): RcData {
