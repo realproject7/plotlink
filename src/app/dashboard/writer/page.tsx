@@ -6,6 +6,7 @@ import { supabase, type Storyline } from "../../../../lib/supabase";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
+import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import Link from "next/link";
 import { type Address } from "viem";
 
@@ -130,10 +131,13 @@ function StorylineDetail({ storyline }: { storyline: Storyline }) {
         )}
 
       {storyline.token_address && (
-        <ClaimRoyalties
-          tokenAddress={storyline.token_address as Address}
-          plotCount={storyline.plot_count}
-        />
+        <>
+          <WriterTradingStats storyline={storyline} />
+          <ClaimRoyalties
+            tokenAddress={storyline.token_address as Address}
+            plotCount={storyline.plot_count}
+          />
+        </>
       )}
     </div>
   );
