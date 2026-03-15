@@ -36,7 +36,7 @@ const LLM_MODELS = [
   "Custom / Other",
 ] as const;
 
-type WizardStep = 1 | 2 | 3;
+type WizardStep = 1 | 2 | "3a" | "3b" | "3c";
 
 // EIP-712 domain for setAgentWallet
 const EIP712_DOMAIN = {
@@ -79,7 +79,11 @@ export default function RegisterAgentPage() {
   const [agentId, setAgentId] = useState<bigint | undefined>();
 
   // Step 3 — wallet binding
+  const [ownerAddress, setOwnerAddress] = useState<`0x${string}` | undefined>();
   const [agentWallet, setAgentWallet] = useState("");
+  const [agentSignature, setAgentSignature] = useState<Hex | undefined>();
+  const [signatureDeadline, setSignatureDeadline] = useState<bigint | undefined>();
+  const [signing, setSigning] = useState(false);
   const [binding, setBinding] = useState(false);
   const [bindTxHash, setBindTxHash] = useState<Hex | undefined>();
 
@@ -161,7 +165,9 @@ export default function RegisterAgentPage() {
         }
       }
 
-      setStep(3);
+      // Capture the owner address before moving to Step 3
+      setOwnerAddress(address);
+      setStep("3a");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -170,15 +176,15 @@ export default function RegisterAgentPage() {
   }
 
   // -------------------------------------------------------------------------
-  // Step 3 handler — EIP-712 sign + setAgentWallet
+  // Step 3b handler — agent wallet signs EIP-712 typed data
   // -------------------------------------------------------------------------
 
-  async function handleSetWallet() {
+  async function handleAgentSign() {
     if (!agentId || !agentWallet) return;
 
     try {
       setError(null);
-      setBinding(true);
+      setSigning(true);
 
       // Deadline: 1 hour from now
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
@@ -194,11 +200,40 @@ export default function RegisterAgentPage() {
         },
       });
 
+      setAgentSignature(signature);
+      setSignatureDeadline(deadline);
+      setStep("3c");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Agent wallet signing failed",
+      );
+    } finally {
+      setSigning(false);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 3c handler — owner wallet submits setAgentWallet tx
+  // -------------------------------------------------------------------------
+
+  async function handleSubmitBinding() {
+    if (!agentId || !agentWallet || !agentSignature || !signatureDeadline)
+      return;
+
+    try {
+      setError(null);
+      setBinding(true);
+
       const hash = await writeContractAsync({
         address: ERC8004_REGISTRY,
         abi: erc8004Abi,
         functionName: "setAgentWallet",
-        args: [agentId, agentWallet as `0x${string}`, signature, deadline],
+        args: [
+          agentId,
+          agentWallet as `0x${string}`,
+          agentSignature,
+          signatureDeadline,
+        ],
       });
       setBindTxHash(hash);
 
@@ -212,6 +247,13 @@ export default function RegisterAgentPage() {
       setBinding(false);
     }
   }
+
+  // Derived: detect which wallet is currently connected
+  const isAgentWalletConnected =
+    address?.toLowerCase() === agentWallet.toLowerCase() &&
+    agentWallet.match(/^0x[a-fA-F0-9]{40}$/);
+  const isOwnerWalletConnected =
+    ownerAddress && address?.toLowerCase() === ownerAddress.toLowerCase();
 
   // -------------------------------------------------------------------------
   // Render
@@ -227,33 +269,40 @@ export default function RegisterAgentPage() {
       </p>
 
       {/* Step indicator */}
-      <div className="mt-8 flex items-center gap-2">
-        {([1, 2, 3] as const).map((s) => (
-          <div key={s} className="flex items-center gap-2">
-            <div
-              className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium transition-colors ${
-                s === step
-                  ? "border-accent text-accent"
-                  : s < step
-                    ? "border-accent bg-accent text-background"
-                    : "border-border text-muted"
-              }`}
-            >
-              {s < step ? "\u2713" : s}
-            </div>
-            {s < 3 && (
-              <div
-                className={`h-px w-8 ${s < step ? "bg-accent" : "bg-border"}`}
-              />
-            )}
+      {(() => {
+        const stepNum = typeof step === "number" ? step : 3;
+        return (
+          <div className="mt-8 flex items-center gap-2">
+            {([1, 2, 3] as const).map((s) => (
+              <div key={s} className="flex items-center gap-2">
+                <div
+                  className={`flex h-7 w-7 items-center justify-center rounded-full border text-xs font-medium transition-colors ${
+                    s === stepNum
+                      ? "border-accent text-accent"
+                      : s < stepNum
+                        ? "border-accent bg-accent text-background"
+                        : "border-border text-muted"
+                  }`}
+                >
+                  {s < stepNum ? "\u2713" : s}
+                </div>
+                {s < 3 && (
+                  <div
+                    className={`h-px w-8 ${s < stepNum ? "bg-accent" : "bg-border"}`}
+                  />
+                )}
+              </div>
+            ))}
+            <span className="text-muted ml-3 text-xs">
+              {step === 1 && "Agent Profile"}
+              {step === 2 && "On-chain Registration"}
+              {step === "3a" && "Bind Wallet \u2014 Enter Agent Address"}
+              {step === "3b" && "Bind Wallet \u2014 Sign with Agent"}
+              {step === "3c" && "Bind Wallet \u2014 Submit as Owner"}
+            </span>
           </div>
-        ))}
-        <span className="text-muted ml-3 text-xs">
-          {step === 1 && "Agent Profile"}
-          {step === 2 && "On-chain Registration"}
-          {step === 3 && "Bind Wallet"}
-        </span>
-      </div>
+        );
+      })()}
 
       {/* Error banner */}
       {error && (
@@ -415,9 +464,9 @@ export default function RegisterAgentPage() {
       )}
 
       {/* ----------------------------------------------------------------- */}
-      {/* Step 3: Bind Agent Wallet                                          */}
+      {/* Step 3a: Enter agent wallet address                                */}
       {/* ----------------------------------------------------------------- */}
-      {step === 3 && (
+      {step === "3a" && (
         <div className="mt-8 space-y-6">
           {agentId !== undefined && (
             <div className="border-accent/30 bg-accent/5 rounded border px-4 py-3">
@@ -432,10 +481,19 @@ export default function RegisterAgentPage() {
           )}
 
           <p className="text-muted text-xs leading-relaxed">
-            Bind a wallet address to your agent. This wallet will be used by the
-            agent to sign transactions. You will sign an EIP-712 typed message
-            to authorize the binding.
+            Bind a separate wallet to your agent. The agent wallet must sign an
+            EIP-712 message to prove consent, then the owner wallet submits the
+            binding transaction.
           </p>
+
+          <div className="border-border bg-surface rounded border px-4 py-3">
+            <p className="text-muted text-xs">
+              Owner wallet (connected):{" "}
+              <code className="text-foreground font-mono">
+                {ownerAddress?.slice(0, 6)}...{ownerAddress?.slice(-4)}
+              </code>
+            </p>
+          </div>
 
           {/* Wallet address */}
           <div>
@@ -446,10 +504,166 @@ export default function RegisterAgentPage() {
               type="text"
               value={agentWallet}
               onChange={(e) => setAgentWallet(e.target.value)}
-              disabled={binding}
               placeholder="0x..."
-              className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none disabled:opacity-50"
+              className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none"
             />
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push("/create")}
+              className="border-border text-muted hover:text-foreground rounded border px-4 py-2.5 text-sm transition-colors"
+            >
+              Skip
+            </button>
+            <button
+              onClick={() => {
+                setError(null);
+                setStep("3b");
+              }}
+              disabled={
+                !agentWallet.match(/^0x[a-fA-F0-9]{40}$/) ||
+                agentWallet.toLowerCase() === ownerAddress?.toLowerCase()
+              }
+              className="border-accent text-accent hover:bg-accent hover:text-background flex-1 rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              Continue
+            </button>
+          </div>
+
+          {agentWallet.match(/^0x[a-fA-F0-9]{40}$/) &&
+            agentWallet.toLowerCase() === ownerAddress?.toLowerCase() && (
+              <p className="text-error text-xs">
+                Agent wallet must be different from the owner wallet.
+              </p>
+            )}
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* Step 3b: Switch to agent wallet and sign EIP-712                   */}
+      {/* ----------------------------------------------------------------- */}
+      {step === "3b" && (
+        <div className="mt-8 space-y-6">
+          <div className="border-border bg-surface rounded border px-4 py-3 space-y-2">
+            <p className="text-foreground text-sm font-medium">
+              Switch to the agent wallet
+            </p>
+            <p className="text-muted text-xs leading-relaxed">
+              In your wallet provider (e.g. MetaMask), switch the connected
+              account to the agent wallet:
+            </p>
+            <p className="text-accent text-xs font-mono break-all">
+              {agentWallet}
+            </p>
+            <p className="text-muted text-xs leading-relaxed">
+              The agent wallet must sign an EIP-712 message to prove it consents
+              to being bound to this agent.
+            </p>
+          </div>
+
+          {/* Status indicator */}
+          <div className="flex items-center gap-2">
+            <div
+              className={`h-2 w-2 rounded-full ${
+                isAgentWalletConnected ? "bg-accent" : "bg-border"
+              }`}
+            />
+            <span className="text-muted text-xs">
+              {isAgentWalletConnected ? (
+                <span className="text-accent">
+                  Agent wallet connected. Ready to sign.
+                </span>
+              ) : (
+                <>
+                  Currently connected:{" "}
+                  <code className="text-foreground font-mono">
+                    {address?.slice(0, 6)}...{address?.slice(-4)}
+                  </code>{" "}
+                  — waiting for agent wallet...
+                </>
+              )}
+            </span>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setError(null);
+                setStep("3a");
+              }}
+              disabled={signing}
+              className="border-border text-muted hover:text-foreground rounded border px-4 py-2.5 text-sm transition-colors disabled:opacity-50"
+            >
+              Back
+            </button>
+            <button
+              onClick={handleAgentSign}
+              disabled={signing || !isAgentWalletConnected}
+              className="border-accent text-accent hover:bg-accent hover:text-background flex-1 rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+            >
+              {signing ? "Signing..." : "Sign with Agent Wallet"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ----------------------------------------------------------------- */}
+      {/* Step 3c: Switch back to owner and submit tx                        */}
+      {/* ----------------------------------------------------------------- */}
+      {step === "3c" && (
+        <div className="mt-8 space-y-6">
+          <div className="border-accent/30 bg-accent/5 rounded border px-4 py-3">
+            <p className="text-accent text-sm font-medium">
+              Agent wallet signature obtained
+            </p>
+            <p className="text-muted mt-1 text-xs">
+              Signature:{" "}
+              <code className="text-foreground font-mono">
+                {agentSignature?.slice(0, 10)}...{agentSignature?.slice(-8)}
+              </code>
+            </p>
+          </div>
+
+          <div className="border-border bg-surface rounded border px-4 py-3 space-y-2">
+            <p className="text-foreground text-sm font-medium">
+              Switch back to the owner wallet
+            </p>
+            <p className="text-muted text-xs leading-relaxed">
+              In your wallet provider, switch back to the owner account:
+            </p>
+            <p className="text-accent text-xs font-mono break-all">
+              {ownerAddress}
+            </p>
+            <p className="text-muted text-xs leading-relaxed">
+              The owner wallet will submit the{" "}
+              <code className="text-foreground">setAgentWallet</code>{" "}
+              transaction to finalize the binding.
+            </p>
+          </div>
+
+          {/* Status indicator */}
+          <div className="flex items-center gap-2">
+            <div
+              className={`h-2 w-2 rounded-full ${
+                isOwnerWalletConnected ? "bg-accent" : "bg-border"
+              }`}
+            />
+            <span className="text-muted text-xs">
+              {isOwnerWalletConnected ? (
+                <span className="text-accent">
+                  Owner wallet connected. Ready to submit.
+                </span>
+              ) : (
+                <>
+                  Currently connected:{" "}
+                  <code className="text-foreground font-mono">
+                    {address?.slice(0, 6)}...{address?.slice(-4)}
+                  </code>{" "}
+                  — waiting for owner wallet...
+                </>
+              )}
+            </span>
           </div>
 
           {bindTxHash && (
@@ -467,15 +681,11 @@ export default function RegisterAgentPage() {
               Skip
             </button>
             <button
-              onClick={handleSetWallet}
-              disabled={
-                binding ||
-                !agentWallet.match(/^0x[a-fA-F0-9]{40}$/) ||
-                agentId === undefined
-              }
+              onClick={handleSubmitBinding}
+              disabled={binding || !isOwnerWalletConnected}
               className="border-accent text-accent hover:bg-accent hover:text-background flex-1 rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
             >
-              {binding ? "Binding wallet..." : "Sign & Bind Wallet"}
+              {binding ? "Binding wallet..." : "Submit Binding Transaction"}
             </button>
           </div>
         </div>
