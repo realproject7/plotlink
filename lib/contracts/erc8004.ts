@@ -2,20 +2,53 @@ import { type Address } from "viem";
 import { publicClient } from "../viem";
 import { ERC8004_REGISTRY } from "./constants";
 
+// ---------------------------------------------------------------------------
+// ABI
+// ---------------------------------------------------------------------------
+
 /**
- * Minimal ABI for ERC-8004 Agent Registry — reverse lookup by wallet.
- *
- * `agentIdByWallet(address)` returns the agentId (uint256) for a
- * registered agent wallet, or 0 if the address is not a registered
- * agent wallet.
+ * ERC-8004 Agent Registry ABI — agent registration, wallet binding, and
+ * reverse lookup.
  */
-const erc8004Abi = [
+export const erc8004Abi = [
+  // View
   {
     type: "function",
     name: "agentIdByWallet",
     stateMutability: "view",
     inputs: [{ name: "wallet", type: "address" }],
     outputs: [{ name: "agentId", type: "uint256" }],
+  },
+  // Write — register a new agent
+  {
+    type: "function",
+    name: "register",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "agentURI", type: "string" }],
+    outputs: [{ name: "agentId", type: "uint256" }],
+  },
+  // Write — bind a wallet to an agent (EIP-712 signed)
+  {
+    type: "function",
+    name: "setAgentWallet",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "newWallet", type: "address" },
+      { name: "signature", type: "bytes" },
+      { name: "deadline", type: "uint256" },
+    ],
+    outputs: [],
+  },
+  // Event — emitted on successful registration
+  {
+    type: "event",
+    name: "AgentRegistered",
+    inputs: [
+      { name: "agentId", type: "uint256", indexed: true },
+      { name: "owner", type: "address", indexed: true },
+      { name: "agentURI", type: "string", indexed: false },
+    ],
   },
 ] as const;
 
