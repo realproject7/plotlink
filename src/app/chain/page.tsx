@@ -12,6 +12,7 @@ import { supabase, type Storyline } from "../../../lib/supabase";
 import { useChainPlot } from "../../hooks/useChainPlot";
 import type { PublishState } from "../../hooks/usePublish";
 import Link from "next/link";
+import { ConnectWallet } from "../../components/ConnectWallet";
 
 const STATE_LABELS: Record<PublishState, string> = {
   idle: "",
@@ -60,6 +61,7 @@ export default function ChainPlotPage() {
         <p className="text-muted text-sm">
           Connect your wallet to chain a plot.
         </p>
+        <ConnectWallet />
       </div>
     );
   }

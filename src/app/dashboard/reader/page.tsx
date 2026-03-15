@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation } from "../../../../lib/supabase";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import { formatUnits } from "viem";
+import { ConnectWallet } from "../../../components/ConnectWallet";
 
 const PAGE_SIZE = 50;
 
@@ -56,6 +57,7 @@ export default function ReaderDashboard() {
         <p className="text-muted text-sm">
           Connect your wallet to view your dashboard.
         </p>
+        <ConnectWallet />
       </div>
     );
   }

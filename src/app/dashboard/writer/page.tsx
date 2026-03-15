@@ -7,6 +7,7 @@ import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import Link from "next/link";
+import { ConnectWallet } from "../../../components/ConnectWallet";
 import { type Address } from "viem";
 
 async function fetchWriterStorylines(
@@ -39,6 +40,7 @@ export default function WriterDashboard() {
         <p className="text-muted text-sm">
           Connect your wallet to view your dashboard.
         </p>
+        <ConnectWallet />
       </div>
     );
   }
