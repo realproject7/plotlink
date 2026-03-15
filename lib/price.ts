@@ -1,6 +1,10 @@
 import { type Address, formatUnits } from "viem";
 import { publicClient } from "./viem";
 import { MCV2_BOND } from "./contracts/constants";
+import {
+  priceForNextMintFunction,
+  tokenBondFunction,
+} from "./contracts/abi";
 
 /**
  * Minimal ABIs for price display.
@@ -70,6 +74,8 @@ export const mcv2BondAbi = [
     inputs: [{ name: "token", type: "address" }],
     outputs: [],
   },
+  priceForNextMintFunction,
+  tokenBondFunction,
 ] as const;
 
 export const erc20Abi = [
@@ -122,6 +128,7 @@ export interface TokenPriceInfo {
 
 /**
  * Fetch current token price and bond info from MCV2_Bond for a storyline token.
+ * Uses priceForNextMint for a simpler, single-call price read.
  *
  * Returns null if the token has no bond or the query fails.
  */
@@ -129,14 +136,12 @@ export async function getTokenPrice(
   tokenAddress: Address,
 ): Promise<TokenPriceInfo | null> {
   try {
-    const oneToken = BigInt(10 ** 18);
-
     const [priceRaw, totalSupplyRaw] = await Promise.all([
       publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
-        functionName: "getReserveForToken",
-        args: [tokenAddress, oneToken],
+        functionName: "priceForNextMint",
+        args: [tokenAddress],
       }),
       publicClient.readContract({
         address: tokenAddress,
@@ -147,9 +152,85 @@ export async function getTokenPrice(
 
     return {
       pricePerToken: formatUnits(priceRaw, 18),
-      priceRaw,
+      priceRaw: BigInt(priceRaw),
       totalSupply: formatUnits(totalSupplyRaw, 18),
       totalSupplyRaw,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** ~24 hours of blocks on Base at 2s block time */
+const BLOCKS_PER_24H = BigInt(43200);
+
+/**
+ * Get 24h price change percentage for a token using on-chain block diff.
+ * Compares priceForNextMint at current block vs ~24h ago.
+ *
+ * Returns null if the read fails (e.g. token didn't exist 24h ago).
+ */
+export async function get24hPriceChange(
+  tokenAddress: Address,
+): Promise<{ changePercent: number; currentPrice: bigint; previousPrice: bigint } | null> {
+  try {
+    const currentBlock = await publicClient.getBlockNumber();
+    const pastBlock = currentBlock - BLOCKS_PER_24H;
+
+    const [currentPrice, previousPrice] = await Promise.all([
+      publicClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "priceForNextMint",
+        args: [tokenAddress],
+      }),
+      publicClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "priceForNextMint",
+        args: [tokenAddress],
+        blockNumber: pastBlock,
+      }),
+    ]);
+
+    const current = BigInt(currentPrice);
+    const previous = BigInt(previousPrice);
+
+    if (previous === BigInt(0)) {
+      return { changePercent: 0, currentPrice: current, previousPrice: previous };
+    }
+
+    const changePercent =
+      Number(((current - previous) * BigInt(10000)) / previous) / 100;
+
+    return { changePercent, currentPrice: current, previousPrice: previous };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Get TVL (reserve balance) for a token from its MCV2_Bond tokenBond data.
+ *
+ * Returns null if the read fails.
+ */
+export async function getTokenTVL(
+  tokenAddress: Address,
+): Promise<{ tvl: string; tvlRaw: bigint; reserveToken: Address } | null> {
+  try {
+    const result = await publicClient.readContract({
+      address: MCV2_BOND,
+      abi: mcv2BondAbi,
+      functionName: "tokenBond",
+      args: [tokenAddress],
+    });
+
+    const [, , , , reserveToken, reserveBalance] = result;
+
+    return {
+      tvl: formatUnits(reserveBalance, 18),
+      tvlRaw: reserveBalance,
+      reserveToken: reserveToken as Address,
     };
   } catch {
     return null;

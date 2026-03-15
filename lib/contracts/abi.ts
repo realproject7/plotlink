@@ -86,6 +86,35 @@ export const donateFunction = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// MCV2_Bond view functions
+// ---------------------------------------------------------------------------
+
+/** Current cost (in reserve token) to mint 1 unit of the given token. */
+export const priceForNextMintFunction = {
+  type: "function",
+  name: "priceForNextMint",
+  stateMutability: "view",
+  inputs: [{ name: "token", type: "address" }],
+  outputs: [{ name: "", type: "uint128" }],
+} as const;
+
+/** Full bond info for a token: creator, royalties, creation time, reserve. */
+export const tokenBondFunction = {
+  type: "function",
+  name: "tokenBond",
+  stateMutability: "view",
+  inputs: [{ name: "token", type: "address" }],
+  outputs: [
+    { name: "creator", type: "address" },
+    { name: "mintRoyalty", type: "uint16" },
+    { name: "burnRoyalty", type: "uint16" },
+    { name: "createdAt", type: "uint40" },
+    { name: "reserveToken", type: "address" },
+    { name: "reserveBalance", type: "uint256" },
+  ],
+} as const;
+
+// ---------------------------------------------------------------------------
 // Combined ABI (for viem contract instances)
 // ---------------------------------------------------------------------------
 
