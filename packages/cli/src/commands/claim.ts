@@ -1,6 +1,5 @@
 import type { Command } from "commander";
-import type { Address } from "viem";
-import { isAddress } from "viem";
+import { type Address, erc20Abi, formatUnits, isAddress } from "viem";
 import { buildClient } from "../sdk.js";
 
 export function registerClaim(program: Command): void {
@@ -19,7 +18,21 @@ export function registerClaim(program: Command): void {
 
         console.log("Checking royalties...");
         const info = await client.getRoyaltyInfo(tokenAddress);
-        console.log(`  Unclaimed:    ${info.unclaimed}`);
+
+        // Fetch reserve token decimals dynamically
+        let decimals = 18;
+        try {
+          decimals = await client.publicClient.readContract({
+            address: tokenAddress,
+            abi: erc20Abi,
+            functionName: "decimals",
+          });
+        } catch {
+          // Default to 18 if decimals() call fails
+        }
+
+        const formatted = formatUnits(info.unclaimed, decimals);
+        console.log(`  Unclaimed:    ${formatted}`);
         console.log(`  Beneficiary:  ${info.beneficiary}`);
 
         if (info.unclaimed === 0n) {
