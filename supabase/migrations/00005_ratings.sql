@@ -3,7 +3,7 @@
 
 CREATE TABLE ratings (
   id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  storyline_id BIGINT NOT NULL REFERENCES storylines(id),
+  storyline_id BIGINT NOT NULL REFERENCES storylines(storyline_id),
   rater_address TEXT NOT NULL,
   score       SMALLINT NOT NULL CHECK (score >= 1 AND score <= 5),
   comment     TEXT,
@@ -11,6 +11,8 @@ CREATE TABLE ratings (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (storyline_id, rater_address)
 );
+
+CREATE INDEX idx_ratings_storyline ON ratings (storyline_id);
 
 ALTER TABLE ratings ENABLE ROW LEVEL SECURITY;
 
