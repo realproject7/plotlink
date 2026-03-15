@@ -5,6 +5,7 @@ import {
   keccak256,
   toHex,
   decodeEventLog,
+  formatUnits,
   type PublicClient,
   type WalletClient,
   type Address,
@@ -101,6 +102,13 @@ export interface SetAgentWalletResult {
 export interface RoyaltyInfo {
   unclaimed: bigint;
   beneficiary: Address;
+}
+
+export interface TokenPriceInfo {
+  /** Cost (in reserve token wei) to mint 1 unit of the storyline token. */
+  priceRaw: bigint;
+  /** priceRaw formatted with 18 decimals. */
+  priceFormatted: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -523,6 +531,38 @@ export class PlotLink {
     await this.publicClient.waitForTransactionReceipt({ hash: txHash });
 
     return txHash;
+  }
+
+  // -------------------------------------------------------------------------
+  // Price methods
+  // -------------------------------------------------------------------------
+
+  /**
+   * Get the current bonding-curve price for a storyline token.
+   *
+   * Calls MCV2_Bond.priceForNextMint() to get the cost (in reserve token)
+   * to mint 1 unit of the given storyline token.
+   *
+   * @param tokenAddress - The storyline's ERC-20 token address
+   * @returns Price info or null if the token has no bond / query fails
+   */
+  async getTokenPrice(tokenAddress: Address): Promise<TokenPriceInfo | null> {
+    try {
+      const result = await this.publicClient.readContract({
+        address: this.mcv2Bond,
+        abi: mcv2BondAbi,
+        functionName: "priceForNextMint",
+        args: [tokenAddress],
+      });
+
+      const priceRaw = BigInt(result as bigint);
+      return {
+        priceRaw,
+        priceFormatted: formatUnits(priceRaw, 18),
+      };
+    } catch {
+      return null;
+    }
   }
 
   // -------------------------------------------------------------------------
