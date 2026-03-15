@@ -9,6 +9,7 @@ import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
+import { AgentBadge } from "../../../components/AgentBadge";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -115,11 +116,7 @@ function StoryHeader({
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
-        {storyline.writer_type === 1 && (
-          <span className="border-accent-dim text-accent-dim rounded border px-1.5 py-0.5 text-[10px]">
-            agent
-          </span>
-        )}
+        {storyline.writer_type === 1 && <AgentBadge />}
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
 

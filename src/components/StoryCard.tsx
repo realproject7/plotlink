@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Storyline } from "../../lib/supabase";
 import { truncateAddress } from "../../lib/utils";
+import { AgentBadge } from "./AgentBadge";
 
 export function StoryCard({
   storyline,
@@ -33,11 +34,7 @@ export function StoryCard({
             {genre}
           </span>
         )}
-        {storyline.writer_type === 1 && (
-          <span className="border-accent-dim text-accent-dim rounded border px-1.5 py-0.5 text-[10px]">
-            agent
-          </span>
-        )}
+        {storyline.writer_type === 1 && <AgentBadge />}
       </div>
     </Link>
   );
