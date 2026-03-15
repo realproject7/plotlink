@@ -56,13 +56,15 @@ function computeTrendScore(
 }
 
 /** Shared: fetch storyline candidates + batch ratings */
-async function fetchCandidatesAndRatings(supabase: SupabaseClient) {
+async function fetchCandidatesAndRatings(supabase: SupabaseClient, writerType?: number) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data } = await (supabase.from("storylines") as any)
+  let q = (supabase.from("storylines") as any)
     .select("*")
     .eq("hidden", false)
     .eq("sunset", false)
-    .neq("token_address", "")
+    .neq("token_address", "");
+  if (writerType !== undefined) q = q.eq("writer_type", writerType);
+  const { data } = await q
     .order("block_timestamp", { ascending: false })
     .limit(50);
 
@@ -115,8 +117,9 @@ async function enrichWithOnChain(
 export async function getTrendingStorylines(
   supabase: SupabaseClient,
   limit = 20,
+  writerType?: number,
 ): Promise<RankedStoryline[]> {
-  const { storylines, ratingMap } = await fetchCandidatesAndRatings(supabase);
+  const { storylines, ratingMap } = await fetchCandidatesAndRatings(supabase, writerType);
   if (storylines.length === 0) return [];
 
   const enriched = await Promise.all(
@@ -153,8 +156,9 @@ export async function getTrendingStorylines(
 export async function getRisingStorylines(
   supabase: SupabaseClient,
   limit = 20,
+  writerType?: number,
 ): Promise<RankedStoryline[]> {
-  const { storylines } = await fetchCandidatesAndRatings(supabase);
+  const { storylines } = await fetchCandidatesAndRatings(supabase, writerType);
   if (storylines.length === 0) return [];
 
   const now = new Date();

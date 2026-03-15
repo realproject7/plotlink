@@ -110,28 +110,13 @@ async function queryTab(
     }
 
     case "trending": {
-      const all = await getTrendingStorylines(supabase, 50);
-      return filterByWriter(all, writer).slice(0, 20);
+      const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
+      return getTrendingStorylines(supabase, 20, wt);
     }
 
     case "rising": {
-      const all = await getRisingStorylines(supabase, 50);
-      return filterByWriter(all, writer).slice(0, 20);
+      const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
+      return getRisingStorylines(supabase, 20, wt);
     }
-  }
-}
-
-/** Client-side filter for pre-ranked results (trending/rising) */
-function filterByWriter(
-  storylines: Storyline[],
-  writer: WriterFilterValue,
-): Storyline[] {
-  switch (writer) {
-    case "human":
-      return storylines.filter((s) => s.writer_type === 0);
-    case "agent":
-      return storylines.filter((s) => s.writer_type === 1);
-    default:
-      return storylines;
   }
 }
