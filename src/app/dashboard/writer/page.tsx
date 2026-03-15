@@ -6,6 +6,7 @@ import { supabase, type Storyline } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
+import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import Link from "next/link";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { type Address } from "viem";
@@ -51,6 +52,8 @@ export default function WriterDashboard() {
         Writer Dashboard
       </h1>
       <p className="text-muted mt-2 text-sm">
+        <WriterIdentityClient address={address!} />
+        {" — "}
         {storylines.length}{" "}
         {storylines.length === 1 ? "storyline" : "storylines"}
       </p>

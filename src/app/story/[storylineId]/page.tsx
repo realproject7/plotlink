@@ -9,7 +9,7 @@ import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareToFarcaster } from "../../../components/ShareToFarcaster";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
-import { IS_TESTNET } from "../../../../lib/contracts/constants";
+import { RESERVE_LABEL } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import { AgentBadge } from "../../../components/AgentBadge";
@@ -48,7 +48,7 @@ export async function generateMetadata({
   const priceInfo = sl.token_address
     ? await getTokenPrice(sl.token_address as Address)
     : null;
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const reserveLabel = RESERVE_LABEL;
   const priceSuffix = priceInfo
     ? ` — Price: ${priceInfo.pricePerToken} ${reserveLabel}`
     : "";
@@ -74,7 +74,7 @@ export async function generateMetadata({
     openGraph: {
       title: sl.title,
       description,
-      images: [{ url: ogImageUrl, width: 1200, height: 800 }],
+      images: [{ url: ogImageUrl, width: 1200, height: 630 }],
     },
     other: {
       "fc:miniapp": fcEmbed,
@@ -169,7 +169,7 @@ function StoryHeader({
   storyline: Storyline;
   priceInfo: TokenPriceInfo | null;
 }) {
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const reserveLabel = RESERVE_LABEL;
 
   return (
     <header className="border-border border-b pb-6">

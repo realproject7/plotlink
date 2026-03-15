@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { type Address } from "viem";
 import { createServerClient, type Storyline } from "../../../../../lib/supabase";
 import { getTokenPrice } from "../../../../../lib/price";
-import { IS_TESTNET } from "../../../../../lib/contracts/constants";
+import { RESERVE_LABEL } from "../../../../../lib/contracts/constants";
 import { truncateAddress } from "../../../../../lib/utils";
 
 export const runtime = "edge";
@@ -40,7 +40,7 @@ export async function GET(
     ? await getTokenPrice(sl.token_address as Address)
     : null;
 
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const reserveLabel = RESERVE_LABEL;
   const priceDisplay = priceInfo
     ? `${priceInfo.pricePerToken} ${reserveLabel}`
     : null;
@@ -112,7 +112,7 @@ export async function GET(
     ),
     {
       width: 1200,
-      height: 800,
+      height: 630,
     },
   );
 }
