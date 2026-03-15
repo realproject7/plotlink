@@ -67,6 +67,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     },
   });
 
+  const decimals = tvlData?.decimals;
   const earnings =
     donationsTotal !== undefined && royaltyData
       ? donationsTotal + royaltyData.unclaimed
@@ -79,13 +80,13 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           Earnings
         </span>
         <span className="text-accent font-medium">
-          {earnings !== undefined
-            ? `${formatUnits(earnings, 18)} ${reserveLabel}`
+          {earnings !== undefined && decimals !== undefined
+            ? `${formatUnits(earnings, decimals)} ${reserveLabel}`
             : "—"}
         </span>
         <span className="text-muted block text-[10px]">
-          {donationsTotal !== undefined && `D: ${formatUnits(donationsTotal, 18)}`}
-          {royaltyData && ` R: ${formatUnits(royaltyData.unclaimed, 18)}`}
+          {donationsTotal !== undefined && decimals !== undefined && `D: ${formatUnits(donationsTotal, decimals)}`}
+          {royaltyData && decimals !== undefined && ` R: ${formatUnits(royaltyData.unclaimed, decimals)}`}
         </span>
       </div>
       <div>
@@ -93,7 +94,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           Token Price
         </span>
         <span className="text-foreground">
-          {price !== undefined ? `${formatUnits(BigInt(price), 18)} ${reserveLabel}` : "—"}
+          {price !== undefined && decimals !== undefined ? `${formatUnits(BigInt(price), decimals)} ${reserveLabel}` : "—"}
         </span>
       </div>
       <div>
