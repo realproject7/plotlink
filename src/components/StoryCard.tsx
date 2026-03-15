@@ -1,9 +1,6 @@
 import Link from "next/link";
 import type { Storyline } from "../../lib/supabase";
-
-function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
+import { truncateAddress } from "../../lib/utils";
 
 export function StoryCard({
   storyline,

@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import type { Address } from "viem";
+import { truncateAddress } from "../../lib/utils";
 
 interface RatingData {
   id: number;
@@ -27,10 +28,6 @@ interface RatingsResponse {
 interface RatingWidgetProps {
   storylineId: number;
   tokenAddress: string;
-}
-
-function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
 function StarDisplay({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg" }) {

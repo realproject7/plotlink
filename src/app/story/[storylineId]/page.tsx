@@ -8,12 +8,9 @@ import { RatingSummary } from "../../../components/RatingSummary";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
+import { truncateAddress } from "../../../../lib/utils";
 
 type Params = Promise<{ storylineId: string }>;
-
-function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
 
 export default async function StoryPage({ params }: { params: Params }) {
   const { storylineId } = await params;

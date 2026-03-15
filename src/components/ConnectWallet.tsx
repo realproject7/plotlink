@@ -2,10 +2,7 @@
 
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
-
-function truncateAddress(address: string): string {
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-}
+import { truncateAddress } from "../../lib/utils";
 
 export function ConnectWallet() {
   const { address, isConnected } = useAccount();
