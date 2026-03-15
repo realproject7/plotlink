@@ -1,5 +1,8 @@
 import { ImageResponse } from "next/og";
+import { type Address } from "viem";
 import { createServerClient, type Storyline } from "../../../../../lib/supabase";
+import { getTokenPrice } from "../../../../../lib/price";
+import { IS_TESTNET } from "../../../../../lib/contracts/constants";
 import { truncateAddress } from "../../../../../lib/utils";
 
 export const runtime = "edge";
@@ -32,6 +35,15 @@ export async function GET(
   }
 
   const sl = storyline as Storyline;
+
+  const priceInfo = sl.token_address
+    ? await getTokenPrice(sl.token_address as Address)
+    : null;
+
+  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const priceDisplay = priceInfo
+    ? `${priceInfo.pricePerToken} ${reserveLabel}`
+    : null;
 
   return new ImageResponse(
     (
@@ -95,6 +107,7 @@ export async function GET(
           <span>
             {sl.plot_count} {sl.plot_count === 1 ? "plot" : "plots"}
           </span>
+          {priceDisplay && <span>Price: {priceDisplay}</span>}
         </div>
       </div>
     ),

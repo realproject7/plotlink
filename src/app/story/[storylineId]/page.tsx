@@ -42,7 +42,15 @@ export async function generateMetadata({
   const sl = storyline as Storyline;
   const ogImageUrl = `${appUrl}/story/${id}/og`;
   const storyUrl = `${appUrl}/story/${id}`;
-  const description = `A collaborative on-chain story by ${truncateAddress(sl.writer_address)} — ${sl.plot_count} ${sl.plot_count === 1 ? "plot" : "plots"}`;
+
+  const priceInfo = sl.token_address
+    ? await getTokenPrice(sl.token_address as Address)
+    : null;
+  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+  const priceSuffix = priceInfo
+    ? ` — Price: ${priceInfo.pricePerToken} ${reserveLabel}`
+    : "";
+  const description = `A collaborative on-chain story by ${truncateAddress(sl.writer_address)} — ${sl.plot_count} ${sl.plot_count === 1 ? "plot" : "plots"}${priceSuffix}`;
 
   const fcEmbed = JSON.stringify({
     version: "1",
