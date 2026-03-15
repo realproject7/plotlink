@@ -37,20 +37,29 @@ export function ReaderPortfolio() {
 
       if (!storylines || storylines.length === 0) return [];
 
-      // Check balance for each token (parallel)
+      // Batch all balanceOf checks into a single multicall
+      const balanceCalls = storylines.map((sl) => ({
+        address: sl.token_address as Address,
+        abi: erc20Abi,
+        functionName: "balanceOf" as const,
+        args: [address],
+      }));
+
+      const balanceResults = await publicClient.multicall({ contracts: balanceCalls });
+
+      // Filter to only storylines with non-zero balance
+      const held = storylines
+        .map((sl, i) => ({ sl, balance: balanceResults[i] }))
+        .filter((h) => h.balance.status === "success" && h.balance.result > BigInt(0));
+
+      if (held.length === 0) return [];
+
+      // Fetch price, 24h change, and TVL only for held tokens
       const results = await Promise.all(
-        storylines.map(async (sl): Promise<Holding | null> => {
+        held.map(async ({ sl, balance: balanceResult }): Promise<Holding | null> => {
           const tokenAddr = sl.token_address as Address;
+          const balance = balanceResult.result as bigint;
           try {
-            const balance = await publicClient.readContract({
-              address: tokenAddr,
-              abi: erc20Abi,
-              functionName: "balanceOf",
-              args: [address],
-            });
-
-            if (balance === BigInt(0)) return null;
-
             const [price, priceChangeResult, tvlResult] = await Promise.all([
               publicClient.readContract({
                 address: MCV2_BOND,
