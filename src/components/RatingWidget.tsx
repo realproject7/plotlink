@@ -121,6 +121,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
           storylineId,
           rating: selectedRating,
           comment: comment || undefined,
+          address,
           signature,
           message,
         }),
