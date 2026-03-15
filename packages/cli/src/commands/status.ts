@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { createClient } from "@supabase/supabase-js";
-import { type Address, formatUnits } from "viem";
+import { type Address, erc20Abi, formatUnits } from "viem";
 import { buildClient } from "../sdk.js";
 import { loadConfig } from "../config.js";
 
@@ -49,12 +49,36 @@ export function registerStatus(program: Command): void {
         }
 
         // -----------------------------------------------------------------
-        // 3. On-chain token price (MCV2_Bond)
+        // 3. Reserve token metadata (symbol + decimals)
+        // -----------------------------------------------------------------
+        let tokenSymbol = "TOKEN";
+        let tokenDecimals = 18;
+        try {
+          const [sym, dec] = await Promise.all([
+            client.publicClient.readContract({
+              address: info.tokenAddress,
+              abi: erc20Abi,
+              functionName: "symbol",
+            }),
+            client.publicClient.readContract({
+              address: info.tokenAddress,
+              abi: erc20Abi,
+              functionName: "decimals",
+            }),
+          ]);
+          tokenSymbol = sym;
+          tokenDecimals = dec;
+        } catch {
+          // Fall back to defaults if token doesn't support ERC-20 metadata
+        }
+
+        // -----------------------------------------------------------------
+        // 4. On-chain token price (MCV2_Bond)
         // -----------------------------------------------------------------
         const tokenPrice = await client.getTokenPrice(info.tokenAddress);
 
         // -----------------------------------------------------------------
-        // 4. On-chain royalty info
+        // 5. On-chain royalty info
         // -----------------------------------------------------------------
         let unclaimedRoyalty: bigint | null = null;
         try {
@@ -65,7 +89,7 @@ export function registerStatus(program: Command): void {
         }
 
         // -----------------------------------------------------------------
-        // 5. Fall back to event-derived plot count if no Supabase
+        // 6. Fall back to event-derived plot count if no Supabase
         // -----------------------------------------------------------------
         let plotCount: number;
         if (dbRow) {
@@ -119,11 +143,11 @@ export function registerStatus(program: Command): void {
         }
 
         if (tokenPrice) {
-          console.log(`Token price:      ${tokenPrice.priceFormatted} ETH`);
+          console.log(`Token price:      ${tokenPrice.priceFormatted} ${tokenSymbol}`);
         }
 
         if (unclaimedRoyalty !== null && unclaimedRoyalty > 0n) {
-          console.log(`Unclaimed royalty: ${formatUnits(unclaimedRoyalty, 18)} ETH`);
+          console.log(`Unclaimed royalty: ${formatUnits(unclaimedRoyalty, tokenDecimals)} ${tokenSymbol}`);
         }
       } catch (err) {
         console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
