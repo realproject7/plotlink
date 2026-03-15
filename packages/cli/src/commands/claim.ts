@@ -1,5 +1,6 @@
 import type { Command } from "commander";
 import type { Address } from "viem";
+import { isAddress } from "viem";
 import { buildClient } from "../sdk.js";
 
 export function registerClaim(program: Command): void {
@@ -9,6 +10,10 @@ export function registerClaim(program: Command): void {
     .requiredOption("-a, --address <tokenAddress>", "Storyline ERC-20 token address")
     .action(async (opts: { address: string }) => {
       try {
+        if (!isAddress(opts.address)) {
+          console.error(`Invalid address: ${opts.address}`);
+          process.exit(1);
+        }
         const tokenAddress = opts.address as Address;
         const client = buildClient({ ipfs: false });
 
