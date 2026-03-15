@@ -87,6 +87,9 @@ function loadRcFile(): RcData {
     if (existsSync(filepath)) {
       try {
         const raw = readFileSync(filepath, "utf-8");
+        console.warn(
+          "WARNING: Loading keys from .plotlinkrc — ensure this file is in .gitignore and never committed.",
+        );
         return JSON.parse(raw) as RcData;
       } catch {
         // Ignore malformed rc files
