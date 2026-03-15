@@ -1,0 +1,42 @@
+/**
+ * @plotlink/sdk — TypeScript SDK for the PlotLink protocol on Base.
+ *
+ * @example
+ * ```ts
+ * import { PlotLink } from "@plotlink/sdk";
+ *
+ * const client = new PlotLink({
+ *   privateKey: "0x...",
+ *   rpcUrl: "https://sepolia.base.org",
+ *   filebase: { accessKey: "...", secretKey: "...", bucket: "my-bucket" },
+ * });
+ *
+ * const { storylineId } = await client.createStoryline(
+ *   "My Story",
+ *   "Once upon a time...",
+ *   "Fantasy",
+ * );
+ * ```
+ */
+
+export { PlotLink } from "./client";
+export type {
+  PlotLinkConfig,
+  CreateStorylineResult,
+  ChainPlotResult,
+  StorylineInfo,
+  PlotInfo,
+  RegisterAgentResult,
+  SetAgentWalletResult,
+  RoyaltyInfo,
+} from "./client";
+export type { FilebaseConfig } from "./ipfs";
+
+// Re-export constants for callers who need contract addresses
+export {
+  STORY_FACTORY_ADDRESS,
+  MCV2_BOND_ADDRESS,
+  ERC8004_REGISTRY_ADDRESS,
+  BASE_SEPOLIA_CHAIN_ID,
+  BASE_MAINNET_CHAIN_ID,
+} from "./constants";
