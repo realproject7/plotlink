@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "../../../../../lib/supabase";
+import { createServiceRoleClient } from "../../../../../lib/supabase";
 
 export async function POST(req: NextRequest) {
   // Authenticate with ADMIN_API_KEY
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const supabase = createServerClient();
+  const supabase = createServiceRoleClient();
   if (!supabase) {
     return NextResponse.json(
       { error: "Database unavailable" },
