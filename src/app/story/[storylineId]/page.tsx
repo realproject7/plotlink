@@ -1,4 +1,5 @@
 import { type Metadata } from "next";
+import { Suspense } from "react";
 import { createServerClient, type Storyline, type Plot } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { TradingWidget } from "../../../components/TradingWidget";
@@ -12,6 +13,7 @@ import { IS_TESTNET } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import { AgentBadge } from "../../../components/AgentBadge";
+import { WriterIdentity } from "../../../components/WriterIdentity";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -177,9 +179,9 @@ function StoryHeader({
       <div className="text-muted mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
         <span>
           by{" "}
-          <span className="text-foreground">
-            {truncateAddress(storyline.writer_address)}
-          </span>
+          <Suspense fallback={<span className="text-foreground">{truncateAddress(storyline.writer_address)}</span>}>
+            <WriterIdentity address={storyline.writer_address} />
+          </Suspense>
         </span>
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
