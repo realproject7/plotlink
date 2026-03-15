@@ -21,6 +21,7 @@ interface RatingsResponse {
   ratings: RatingData[];
   average: number;
   count: number;
+  myRating: RatingData | null;
 }
 
 interface RatingWidgetProps {
@@ -60,9 +61,11 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
 
   // Fetch ratings
   const { data: ratingsData, refetch } = useQuery<RatingsResponse>({
-    queryKey: ["ratings", storylineId],
+    queryKey: ["ratings", storylineId, address],
     queryFn: async () => {
-      const res = await fetch(`/api/ratings?storylineId=${storylineId}`);
+      const params = new URLSearchParams({ storylineId: String(storylineId) });
+      if (address) params.set("raterAddress", address);
+      const res = await fetch(`/api/ratings?${params}`);
       if (!res.ok) throw new Error("Failed to fetch ratings");
       return res.json();
     },
@@ -87,9 +90,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
   // Pre-fill existing rating or reset when wallet changes
   useEffect(() => {
     if (ratingsData && address) {
-      const existing = ratingsData.ratings.find(
-        (r) => r.rater_address === address.toLowerCase(),
-      );
+      const existing = ratingsData.myRating;
       if (existing) {
         setSelectedRating(existing.rating);
         setComment(existing.comment ?? "");
@@ -187,6 +188,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             disabled={submitting}
+            maxLength={500}
             rows={2}
             className="border-border bg-background text-foreground mt-2 w-full resize-none rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
           />

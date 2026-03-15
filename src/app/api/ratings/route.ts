@@ -4,6 +4,8 @@ import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
 import { erc20Abi } from "../../../../lib/price";
 
+const MAX_COMMENT_LENGTH = 500;
+
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
@@ -23,25 +25,55 @@ export async function GET(req: NextRequest) {
     return error("Supabase not configured", 500);
   }
 
+  const limit = Math.min(Number(req.nextUrl.searchParams.get("limit") ?? 20), 100);
+  const offset = Math.max(Number(req.nextUrl.searchParams.get("offset") ?? 0), 0);
+  const sid = Number(storylineId);
+
+  // Fetch all ratings for global average/count, then slice for pagination
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: allData, error: allError } = await (db.from("ratings") as any)
+    .select("rating")
+    .eq("storyline_id", sid);
+
+  if (allError) {
+    return error(`Database error: ${allError.message}`, 500);
+  }
+
+  const allRatings = allData ?? [];
+  const count = allRatings.length;
+  const average =
+    count > 0
+      ? allRatings.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / count
+      : 0;
+
+  // Paginated query for full rating objects
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: dbError } = await (db.from("ratings") as any)
     .select("*")
-    .eq("storyline_id", Number(storylineId));
+    .eq("storyline_id", sid)
+    .order("updated_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (dbError) {
     return error(`Database error: ${dbError.message}`, 500);
   }
 
   const ratings = data ?? [];
-  const average =
-    ratings.length > 0
-      ? ratings.reduce(
-          (sum: number, r: { rating: number }) => sum + r.rating,
-          0,
-        ) / ratings.length
-      : 0;
 
-  return NextResponse.json({ ratings, average, count: ratings.length });
+  // Optionally look up the caller's own rating (may not be on current page)
+  const raterAddress = req.nextUrl.searchParams.get("raterAddress");
+  let myRating: unknown = null;
+  if (raterAddress) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: mine } = await (db.from("ratings") as any)
+      .select("*")
+      .eq("storyline_id", sid)
+      .eq("rater_address", raterAddress.toLowerCase())
+      .single();
+    myRating = mine ?? null;
+  }
+
+  return NextResponse.json({ ratings, average, count, limit, offset, myRating });
 }
 
 // ---------------------------------------------------------------------------
@@ -76,6 +108,9 @@ export async function POST(req: NextRequest) {
   }
   if (!address || !signature || !message) {
     return error("Missing address, signature, or message");
+  }
+  if (comment && comment.length > MAX_COMMENT_LENGTH) {
+    return error(`Comment must be ${MAX_COMMENT_LENGTH} characters or fewer`);
   }
 
   // Validate signed message binds to this specific action (including comment)
