@@ -14,104 +14,105 @@
 - P5-OP: Done (testnet constants auto-switch via IS_TESTNET)
 - P5-R1 through P5-R4: All done (#80, #78, #79, #81 — ABI update, ratings schema, rating API, rating UI)
 - P5-6 and P5-7: All done (#28 trending/rising, #29 dashboard stats)
+- Bug fixes #88–#95: All done (verifyMessage, comment binding, pagination, decimals, multicall, ISR cache, rising threshold, address CHECK)
 
 ---
 
-## Tonight's Queue — Bug Fixes (assign in this exact order)
+## Tonight's Queue — UI Polish (assign in this exact order)
 
-> Ordered to avoid merge conflicts: tickets touching the same files are grouped sequentially.
+> T3: Use `/frontend-design` skill for ALL tickets in this batch. Design quality is critical.
+> Design direction: Terminal/hacker aesthetic — dark background (#0a0a0a), monospace font (Geist Mono), green accent (#00ff88). Design tokens in `src/app/globals.css`.
 
-### 1. plotlink#88 — [Bug] Rating API: use verifyMessage instead of recoverMessageAddress
+### 1. plotlink#104 — [P4.5-1] Global navigation bar
 
-**What's wrong:** `src/app/api/ratings/route.ts` uses `recoverMessageAddress()` which only works for EOA wallets. Smart contract wallets (Safe, Argent) cannot rate. The spec required `verifyMessage()` from viem which supports both EOA and EIP-1271.
+Add a persistent nav bar to the root layout so users can navigate between pages from anywhere.
 
-**Fix:** Replace `recoverMessageAddress()` with `verifyMessage()` from viem.
+**Requirements:**
+- Fixed/sticky top nav bar with terminal aesthetic
+- Logo "PlotLink" (links to home)
+- Nav links: Discover, Create, Writer Dashboard, Reader Dashboard
+- Wallet connect button — move `<ConnectWallet />` from individual pages into nav
+- Remove duplicate `<ConnectWallet />` from `page.tsx`, `discover/page.tsx`, etc.
+- Mobile responsive (hamburger or compact layout)
+- Active page indicator, clean hover states
+
+**Implementation:**
+- Create `src/components/NavBar.tsx`
+- Add to `src/app/layout.tsx`
+- Remove `<ConnectWallet />` from all individual pages that currently render it
 
 **Merge checklist:**
-- [ ] `recoverMessageAddress` replaced with `verifyMessage` in `src/app/api/ratings/route.ts`
+- [ ] `NavBar` component created with all nav links
+- [ ] Added to root `layout.tsx`
+- [ ] `ConnectWallet` moved into nav, removed from individual pages
+- [ ] Mobile responsive
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 2. plotlink#92 — [Bug] Signed rating message does not bind comment
+### 2. plotlink#107 — [P4.5-4] Footer component
 
-**What's wrong:** The signed message is `"Rate storyline ${storylineId} with rating ${rating}"` — the comment is not included. A valid signature can be replayed with a different comment.
+Add a minimal footer to the app layout.
 
-**Fix:** Include the comment (or its hash) in the signed message. Update both the API verification (`src/app/api/ratings/route.ts`) and the frontend signing (`src/components/RatingWidget.tsx`).
+**Requirements:**
+- Terminal-styled footer, minimal and not heavy
+- Links: Discover, Create, GitHub repo
+- "Built on Base" text
+- Copyright / project name
+- Applied in `src/app/layout.tsx` (below `{children}`)
+
+**Implementation:**
+- Create `src/components/Footer.tsx`
+- Add to `src/app/layout.tsx`
 
 **Merge checklist:**
-- [ ] Comment included in signed message in `src/app/api/ratings/route.ts`
-- [ ] Message construction updated in `src/components/RatingWidget.tsx`
+- [ ] `Footer` component created
+- [ ] Added to root layout
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 3. plotlink#94 — [Bug] No comment length limit, rate limiting, or pagination on ratings API
+### 3. plotlink#105 — [P4.5-2] Home page — compact hero + storyline feed
 
-**What's wrong:** No max comment length (API or UI), no pagination on GET, no rate limiting on POST.
+Replace the placeholder home page with a content-first design.
 
-**Fix:**
-- Add `maxLength` (e.g., 500) on textarea in `RatingWidget.tsx` and validate server-side
-- Add `?limit=20&offset=0` pagination to GET endpoint
-- Consider simple rate limiting
+**Design intent (from operator):**
+> I want users to see the storylines that are created with just a compact hero area on the top so that they won't need to read to understand what PlotLink is. Via visiting the home page, they can instantly feel/understand what this is about.
+
+**Requirements:**
+- **Compact hero** (max ~120px height): PlotLink title + one-line tagline. NOT a full-screen splash.
+- **Storyline feed below the hero**: Show recent/active storylines immediately — reuse `StoryCard` component
+- Feed should show newest storylines first, with a "Trending" section if data exists
+- Each card links to `/story/[storylineId]`
+- "View all" link to `/discover`
+- If no storylines exist yet, show a compelling empty state with CTA to create the first story
+- Content-first: the storyline cards ARE the page, hero is just context
+
+**Implementation:**
+- Rewrite `src/app/page.tsx`
+- Fetch storylines server-side (same pattern as `discover/page.tsx`)
+- Reuse existing `StoryCard` component
+
+**Depends on:** #104 (NavBar merged, so no duplicate ConnectWallet)
 
 **Merge checklist:**
-- [ ] Comment length validated in API + UI maxLength attribute
-- [ ] GET endpoint supports pagination (`limit`, `offset` query params)
+- [ ] Compact hero section (title + tagline, not full-screen)
+- [ ] Recent storylines feed using `StoryCard`
+- [ ] "View all" link to `/discover`
+- [ ] Empty state with CTA to create
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 4. plotlink#90 — [Bug] Dashboard hardcodes 18 decimals for reserve token
+### 4. plotlink#106 — [P4.5-3] Story page layout polish
 
-**What's wrong:** `WriterTradingStats` and `ReaderPortfolio` use `formatUnits(..., 18)` everywhere. Breaks with non-18-decimal reserve tokens (e.g., USDC = 6).
+Polish the story reading page for a cohesive experience now that all widgets exist.
 
-**Key context for T3:**
-- `tokenBond()` returns `reserveToken` address — use it to call ERC-20 `decimals()`
-- Add `decimals` to the `erc20Abi` in `lib/price.ts` if not already there
-- Use actual decimals in all `formatUnits()` calls
-
-**Merge checklist:**
-- [ ] Reserve token decimals fetched via ERC-20 `decimals()` call
-- [ ] Actual decimals used in `formatUnits()` in `WriterTradingStats.tsx` and `ReaderPortfolio.tsx`
-- [ ] `npm run lint` and `npm run typecheck` pass
-
-### 5. plotlink#93 — [Bug] ReaderPortfolio scans all storylines for balanceOf — N+1
-
-**What's wrong:** `ReaderPortfolio.tsx` calls `balanceOf()` per storyline to find user holdings. Does not scale.
-
-**Fix:** Use viem `multicall` to batch all `balanceOf` checks into a single RPC call.
+**Requirements:**
+- Story content is the primary focus — reading experience first
+- Logical widget layout: trading widget, price chart, ratings, donations organized in sidebar or below-content area
+- Story metadata header: title, writer address, plot count, token price, average rating
+- Mobile responsive — widgets stack vertically on small screens
+- Consistent spacing and terminal aesthetic
 
 **Merge checklist:**
-- [ ] `balanceOf` calls batched using viem `multicall` in `ReaderPortfolio.tsx`
-- [ ] `npm run lint` and `npm run typecheck` pass
-
-### 6. plotlink#89 — [Bug] Discover page makes ~200 RPC calls per load
-
-**What's wrong:** `lib/ranking.ts` calls `get24hPriceChange()` + `getTokenTVL()` per storyline (up to 50), each making 2 on-chain reads = ~200 RPC calls. No caching.
-
-**Fix:**
-- Add Next.js caching (`unstable_cache` or `revalidate`) to the discover page
-- Consider viem `multicall` to batch on-chain reads
-- Reasonable revalidation window (e.g., 60–300 seconds)
-
-**Merge checklist:**
-- [ ] Caching or ISR revalidation added to discover page
-- [ ] On-chain reads batched where possible
-- [ ] `npm run lint` and `npm run typecheck` pass
-
-### 7. plotlink#91 — [Bug] Rising algorithm inflates scores for new storylines
-
-**What's wrong:** New storylines with zero prior window activity get near-zero `priorScore`, causing `acceleration = recent / prior` to inflate to extreme values. They always dominate the rising tab.
-
-**Fix:** Add a minimum prior activity threshold — exclude storylines from rising if they have insufficient prior window data (e.g., require at least 1 rating or plot in prior window, or cap the acceleration ratio).
-
-**Merge checklist:**
-- [ ] Minimum prior activity threshold added for rising candidates in `lib/ranking.ts`
-- [ ] `npm run lint` and `npm run typecheck` pass
-
-### 8. plotlink#95 — [Bug] No DB-level address normalization on ratings table
-
-**What's wrong:** `rater_address` is `TEXT` with no CHECK constraint. Mixed-case addresses could bypass UNIQUE dedup.
-
-**Fix:** Create migration `00006_ratings_address_check.sql` adding `CHECK (rater_address = lower(rater_address))`.
-
-**Merge checklist:**
-- [ ] Migration `00006_ratings_address_check.sql` created
+- [ ] Story content is the primary focus area
+- [ ] Widgets organized logically (not just stacked randomly)
+- [ ] Mobile responsive layout
 - [ ] `npm run lint` and `npm run typecheck` pass
 
 ---
@@ -121,17 +122,17 @@
 1. Assign ONE ticket at a time to @t3
 2. Wait for @t2a AND @t2b to both approve before merging
 3. After merge, immediately assign the next ticket
-4. Use correct original issue numbers in PR titles (e.g., `[#88]` not `[#300]`)
-5. Import contract addresses from `lib/contracts/constants.ts` — do NOT hardcode
+4. Use correct original issue numbers in PR titles (e.g., `[#104]` not `[#300]`)
+5. T3: Use `/frontend-design` skill for all tickets in this batch
 6. If T3 gets stuck after 2 review rounds, skip that ticket and note it for morning review
 7. Do NOT push to main — only merge approved PRs
 8. STOP at operator gates
 
 ## Reference
 
-- Contract constants: `lib/contracts/constants.ts` (testnet/mainnet auto-switch via `IS_TESTNET`)
-- Price utilities: `lib/price.ts` (priceForNextMint, tokenBond, get24hPriceChange, getTokenTVL)
-- Ratings API: `src/app/api/ratings/route.ts`
-- Rating UI: `src/components/RatingWidget.tsx`, `src/components/RatingSummary.tsx`
-- Ranking: `lib/ranking.ts`
-- Dashboard: `src/components/WriterTradingStats.tsx`, `src/components/ReaderPortfolio.tsx`
+- Design tokens: `src/app/globals.css` (CSS custom properties)
+- Root layout: `src/app/layout.tsx`
+- Home page: `src/app/page.tsx`
+- Discover page: `src/app/discover/page.tsx`
+- Story page: `src/app/story/[storylineId]/page.tsx`
+- Existing components: `src/components/` (StoryCard, TabNav, ConnectWallet, etc.)
