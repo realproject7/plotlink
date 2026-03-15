@@ -9,75 +9,92 @@
 ## Completed
 
 - Phase 0–4: All done
-- Phase 5 P5-1 through P5-5: All done (price display, trading widget, chart, donations, royalties)
-- Bug fixes #52, #55, #67, #68: All done
-- P5-OP: Done (testnet constants auto-switch via IS_TESTNET)
-- P5-R1 through P5-R4: All done (#80, #78, #79, #81 — ABI update, ratings schema, rating API, rating UI)
-- P5-6 and P5-7: All done (#28 trending/rising, #29 dashboard stats)
-- Bug fixes #88–#95: All done
-- UI polish #104, #107, #105, #106: All done (nav bar, footer, home page, story page)
+- Phase 5: All done (except #30 Zap — blocked on $PLOT token)
+- Bug fixes #52, #55, #67, #68, #88–#95: All done
+- UI polish #104–#107, bug fixes #112–#117: All done
 
 ---
 
-## Tonight's Queue — UI Bug Fixes (assign in this exact order)
+## Tonight's Queue — Phase 6: Agent Layer (assign in this exact order)
 
-> Ordered to avoid merge conflicts on shared files.
+### 1. plotlink#33 — [P6-2] Writer Type Filter & Agent Badge
 
-### 1. plotlink#116 — [Bug] Extract truncateAddress to shared utility
+**Requirements:**
+- Add writer type filter to discover page: "All" (default), "Human only", "Agent only"
+- Filter the Supabase query by `writer_type` column (0 = human, 1 = agent)
+- Create an agent badge component — show on StoryCard and story page for `writer_type = 1`
+- Pass filter as query param (e.g., `?tab=new&writer=agent`)
 
-Duplicated in `ConnectWallet.tsx`, `StoryCard.tsx`, and `story/[storylineId]/page.tsx`. Extract to `lib/utils.ts` and import from all three.
+**Context:** `writer_type` is already stored in the `storylines` table and set by the indexer via `detectWriterType()` in `lib/contracts/erc8004.ts`.
 
 **Merge checklist:**
-- [ ] `truncateAddress` in shared `lib/utils.ts`
-- [ ] All 3 components import from shared location
+- [ ] Writer type filter on discover page (All / Human / Agent)
+- [ ] Agent badge component on StoryCard and story page
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 2. plotlink#115 — [Bug] Missing aria-expanded on mobile nav toggle
+### 2. plotlink#32 — [P6-1] Agent Registration Wizard (Web)
 
-Add `aria-expanded={mobileOpen}` to the hamburger button in `NavBar.tsx`. Add `aria-hidden="true"` to the `[=]`/`[x]` text spans.
+3-step wizard for registering an AI agent identity via ERC-8004.
+
+**Key context for T3:**
+- ERC-8004 registry address: import from `lib/contracts/constants.ts` (`ERC8004_REGISTRY`)
+- Existing ABI helper: `lib/contracts/erc8004.ts` (has `agentOf` — will need `register` and `setAgentWallet` added)
+- Step 1: Agent profile form (name, description, genre, LLM model) → generate agentURI JSON metadata
+- Step 2: Call `register(agentURI)` on registry → returns agentId (NFT)
+- Step 3: Agent wallet links via EIP-712 typed data → call `setAgentWallet(agentId, newWallet, signature, deadline)`
+- Redirect to create storyline flow on completion
+
+**T3: Use `/frontend-design` skill for the wizard UI.**
 
 **Merge checklist:**
-- [ ] `aria-expanded` added to hamburger button
+- [ ] 3-step wizard at `/register-agent` route
+- [ ] `register` and `setAgentWallet` ABI entries added to `lib/contracts/erc8004.ts`
+- [ ] Step 1: profile form generates agentURI metadata JSON
+- [ ] Step 2: calls `register()` and shows agentId
+- [ ] Step 3: EIP-712 typed data + `setAgentWallet()`
+- [ ] Redirects to create flow on completion
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 3. plotlink#114 — [Bug] Footer copyright text below WCAG AA contrast
+### 3. plotlink#35 — [P6-4] SDK — @plotlink/sdk
 
-`text-[10px]` with `text-muted/60` is too faint. Increase to at least `text-xs` and use `text-muted` without opacity modifier.
+TypeScript SDK wrapping all PlotLink operations for programmatic access.
+
+**Requirements:**
+- Scaffold as separate package in repo (e.g., `packages/sdk/`)
+- Constructor: `new PlotLink({ privateKey, rpcUrl })`
+- Core methods: `createStoryline()`, `chainPlot()`, `getStoryline()`, `getPlots()`
+- Agent methods: `registerAgent()` wrapping ERC-8004 registration
+- Royalty method: `claimRoyalties(tokenAddress)`
+- Uses existing ABIs from `lib/contracts/` and Filebase upload from `lib/filebase.ts`
+- Bundle with tsup, proper package.json exports
 
 **Merge checklist:**
-- [ ] Copyright text meets WCAG AA contrast (4.5:1)
+- [ ] `packages/sdk/` scaffolded with tsup + TypeScript
+- [ ] Core methods: createStoryline, chainPlot, getStoryline, getPlots
+- [ ] Agent method: registerAgent
+- [ ] Royalty method: claimRoyalties
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 4. plotlink#117 — [Bug] min-h-screen double-nesting causes 44px scroll
+### 4. plotlink#34 — [P6-3] CLI — plotlink-cli
 
-Root layout has `min-h-screen` + `pt-11`. Pages also use `min-h-screen` causing overflow. Remove from individual pages or use `min-h-[calc(100vh-2.75rem)]`.
+CLI for agent operators and human writers.
 
-**Affected:** `create`, `chain`, `dashboard/reader`, `dashboard/writer`, `discover` pages.
+**Requirements:**
+- Scaffold as separate package (e.g., `packages/cli/`)
+- Commands: `plotlink create`, `plotlink chain`, `plotlink status`, `plotlink claim`, `plotlink agent register`
+- Use commander.js or similar for command parsing
+- Reads private key + RPC from env vars or config file
+- Can use `@plotlink/sdk` if SDK (#35) is merged, otherwise wrap contract calls directly
 
-**Merge checklist:**
-- [ ] No double `min-h-screen` nesting
-- [ ] Empty/error states still center vertically
-- [ ] `npm run lint` and `npm run typecheck` pass
-
-### 5. plotlink#112 — [Bug] ConnectWallet dead ends on pages
-
-Pages show "Connect your wallet to..." but no inline button since PR #108 moved it to nav. Add back inline `<ConnectWallet />` next to each prompt.
-
-**Affected:** `create`, `chain`, `dashboard/reader`, `dashboard/writer` pages.
+**Depends on:** #35 (SDK — merged by then)
 
 **Merge checklist:**
-- [ ] All "Connect your wallet" prompts have an actionable inline button
-- [ ] `npm run lint` and `npm run typecheck` pass
-
-### 6. plotlink#113 — [Bug] Mobile story page — widgets buried below content
-
-On mobile, sidebar widgets stack below all story content. Users must scroll past the entire story to trade/rate.
-
-**Fix:** Add a sticky action bar on mobile OR reorder key widgets with `order-first lg:order-none`. T3: Use `/frontend-design` skill for this ticket.
-
-**Merge checklist:**
-- [ ] Mobile users can access trading/rating without scrolling past full story
-- [ ] Desktop layout unchanged
+- [ ] `packages/cli/` scaffolded with commander.js
+- [ ] `plotlink create` — upload to IPFS + createStoryline tx
+- [ ] `plotlink chain` — upload to IPFS + chainPlot tx
+- [ ] `plotlink status` — query storyline data + token price
+- [ ] `plotlink claim` — claimRoyalties tx
+- [ ] `plotlink agent register` — ERC-8004 register + setAgentWallet
 - [ ] `npm run lint` and `npm run typecheck` pass
 
 ---
@@ -87,15 +104,17 @@ On mobile, sidebar widgets stack below all story content. Users must scroll past
 1. Assign ONE ticket at a time to @t3
 2. Wait for @t2a AND @t2b to both approve before merging
 3. After merge, immediately assign the next ticket
-4. Use correct original issue numbers in PR titles (e.g., `[#116]` not `[#300]`)
-5. If T3 gets stuck after 2 review rounds, skip that ticket and note it for morning review
-6. Do NOT push to main — only merge approved PRs
-7. STOP at operator gates
+4. Use correct original issue numbers in PR titles (e.g., `[#33]` not `[#300]`)
+5. Import contract addresses from `lib/contracts/constants.ts` — do NOT hardcode
+6. If T3 gets stuck after 2 review rounds, skip that ticket and note it for morning review
+7. Do NOT push to main — only merge approved PRs
+8. STOP at operator gates
 
 ## Reference
 
+- ERC-8004 registry: `lib/contracts/constants.ts` → `ERC8004_REGISTRY`
+- ERC-8004 ABI + detectWriterType: `lib/contracts/erc8004.ts`
+- Filebase upload: `lib/filebase.ts`
+- Contract ABIs: `lib/contracts/abi.ts`
 - Design tokens: `src/app/globals.css`
-- Root layout: `src/app/layout.tsx`
-- Nav bar: `src/components/NavBar.tsx`
-- Footer: `src/components/Footer.tsx`
-- Story page: `src/app/story/[storylineId]/page.tsx`
+- Existing components: `src/components/`
