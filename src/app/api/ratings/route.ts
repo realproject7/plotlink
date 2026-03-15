@@ -70,11 +70,19 @@ export async function POST(req: NextRequest) {
   if (!storylineId || typeof storylineId !== "number") {
     return error("Missing or invalid storylineId");
   }
-  if (!rating || typeof rating !== "number" || rating < 1 || rating > 5) {
+  if (!rating || typeof rating !== "number" || !Number.isInteger(rating) || rating < 1 || rating > 5) {
     return error("Rating must be an integer between 1 and 5");
   }
   if (!signature || !message) {
     return error("Missing signature or message");
+  }
+
+  // Validate signed message binds to this specific action
+  const expectedMessage = `Rate storyline ${storylineId} with rating ${rating}`;
+  if (message !== expectedMessage) {
+    return error(
+      `Signed message must be exactly: "${expectedMessage}"`,
+    );
   }
 
   // 1. Recover rater address from signature
