@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { recoverMessageAddress, type Address } from "viem";
+import { type Address } from "viem";
 import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
 import { erc20Abi } from "../../../../lib/price";
@@ -52,6 +52,7 @@ interface RatingBody {
   storylineId: number;
   rating: number;
   comment?: string;
+  address: string;
   signature: string;
   message: string;
 }
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     return error("Invalid JSON body");
   }
 
-  const { storylineId, rating, comment, signature, message } = body;
+  const { storylineId, rating, comment, address, signature, message } = body;
 
   // Validate inputs
   if (!storylineId || typeof storylineId !== "number") {
@@ -73,8 +74,8 @@ export async function POST(req: NextRequest) {
   if (!rating || typeof rating !== "number" || !Number.isInteger(rating) || rating < 1 || rating > 5) {
     return error("Rating must be an integer between 1 and 5");
   }
-  if (!signature || !message) {
-    return error("Missing signature or message");
+  if (!address || !signature || !message) {
+    return error("Missing address, signature, or message");
   }
 
   // Validate signed message binds to this specific action
@@ -85,13 +86,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 1. Recover rater address from signature
-  let raterAddress: Address;
+  // 1. Verify signature (supports both EOA and EIP-1271 contract wallets)
+  const raterAddress = address as Address;
   try {
-    raterAddress = await recoverMessageAddress({
+    const valid = await publicClient.verifyMessage({
+      address: raterAddress,
       message,
       signature: signature as `0x${string}`,
     });
+    if (!valid) {
+      return error("Invalid signature");
+    }
   } catch {
     return error("Failed to verify signature");
   }
