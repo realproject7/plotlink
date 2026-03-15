@@ -55,30 +55,41 @@ export default async function StoryPage({ params }: { params: Params }) {
     : null;
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
+    <div className="mx-auto max-w-5xl px-6 py-10">
       <StoryHeader storyline={storyline} priceInfo={priceInfo} />
-      {sl.token_address && priceInfo && (
-        <PriceChart
-          tokenAddress={sl.token_address as Address}
-          totalSupplyRaw={priceInfo.totalSupplyRaw}
-          currentPriceRaw={priceInfo.priceRaw}
-        />
-      )}
-      {sl.token_address && (
-        <TradingWidget tokenAddress={sl.token_address as Address} />
-      )}
-      <DonateWidget storylineId={id} />
-      {sl.token_address && (
-        <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
-      )}
-      <div className="mt-10 space-y-10">
-        {plots.map((plot) => (
-          <PlotEntry key={plot.id} plot={plot} />
-        ))}
+
+      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+        {/* Story content — primary reading area */}
+        <main>
+          {plots.length > 0 ? (
+            <div className="space-y-10">
+              {plots.map((plot) => (
+                <PlotEntry key={plot.id} plot={plot} />
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted text-sm">No plots yet.</p>
+          )}
+        </main>
+
+        {/* Sidebar — engagement widgets */}
+        <aside className="space-y-4">
+          {sl.token_address && priceInfo && (
+            <PriceChart
+              tokenAddress={sl.token_address as Address}
+              totalSupplyRaw={priceInfo.totalSupplyRaw}
+              currentPriceRaw={priceInfo.priceRaw}
+            />
+          )}
+          {sl.token_address && (
+            <TradingWidget tokenAddress={sl.token_address as Address} />
+          )}
+          <DonateWidget storylineId={id} />
+          {sl.token_address && (
+            <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
+          )}
+        </aside>
       </div>
-      {plots.length === 0 && (
-        <p className="text-muted mt-10 text-sm">No plots yet.</p>
-      )}
     </div>
   );
 }
