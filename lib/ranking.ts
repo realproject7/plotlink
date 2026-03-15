@@ -145,8 +145,10 @@ export async function getTrendingStorylines(
  * Fetch rising storylines — stories with accelerating signals.
  *
  * Computes the same 4 signals in a recent window (last 3 days) vs
- * prior window (days 3-6). The "rise" score is the ratio of recent
- * composite score to prior composite score.
+ * prior window (days 3-6). TVL is point-in-time (same for both windows,
+ * as historical TVL requires snapshots). Price change is inherently
+ * recent (24h lookback), so prior window uses the same value as a
+ * baseline denominator — acceleration comes from rating + plot signals.
  */
 export async function getRisingStorylines(
   supabase: SupabaseClient,
@@ -159,9 +161,9 @@ export async function getRisingStorylines(
   const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
   const sixDaysAgo = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Batch: fetch recent and prior ratings for all candidates
   const storylineIds = storylines.map((sl) => sl.storyline_id);
 
+  // Batch: windowed ratings
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: recentRatings } = await (supabase.from("ratings") as any)
     .select("storyline_id, rating")
@@ -175,6 +177,20 @@ export async function getRisingStorylines(
     .gte("updated_at", sixDaysAgo)
     .lt("updated_at", threeDaysAgo);
 
+  // Batch: windowed plot counts
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recentPlots } = await (supabase.from("plots") as any)
+    .select("storyline_id")
+    .in("storyline_id", storylineIds)
+    .gte("block_timestamp", threeDaysAgo);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: priorPlots } = await (supabase.from("plots") as any)
+    .select("storyline_id")
+    .in("storyline_id", storylineIds)
+    .gte("block_timestamp", sixDaysAgo)
+    .lt("block_timestamp", threeDaysAgo);
+
   function avgFromRows(rows: { storyline_id: number; rating: number }[] | null, slId: number): number {
     if (!rows) return 0;
     const filtered = rows.filter((r) => r.storyline_id === slId);
@@ -182,53 +198,48 @@ export async function getRisingStorylines(
     return filtered.reduce((s, r) => s + r.rating, 0) / filtered.length;
   }
 
-  const enriched = await Promise.all(
-    storylines.map(async (sl): Promise<RankedStoryline> => {
-      // Recent plots (last 3 days)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { count: recentPlotCount } = await (supabase.from("plots") as any)
-        .select("*", { count: "exact", head: true })
-        .eq("storyline_id", sl.storyline_id)
-        .gte("block_timestamp", threeDaysAgo);
+  function countFromRows(rows: { storyline_id: number }[] | null, slId: number): number {
+    if (!rows) return 0;
+    return rows.filter((r) => r.storyline_id === slId).length;
+  }
 
-      // Prior plots (days 3-6)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { count: priorPlotCount } = await (supabase.from("plots") as any)
-        .select("*", { count: "exact", head: true })
-        .eq("storyline_id", sl.storyline_id)
-        .gte("block_timestamp", sixDaysAgo)
-        .lt("block_timestamp", threeDaysAgo);
-
-      const { priceChange, tvlRaw, tvlDecimals } = await enrichWithOnChain(sl);
-
-      // Recent window composite
-      const recentAvgRating = avgFromRows(recentRatings as { storyline_id: number; rating: number }[] | null, sl.storyline_id);
-      const recentScore = computeTrendScore(
-        recentAvgRating,
-        priceChange, // current price change (recent by nature)
-        tvlRaw,
-        tvlDecimals,
-        recentPlotCount ?? 0,
-        threeDaysAgo,
-      );
-
-      // Prior window composite
-      const priorAvgRating = avgFromRows(priorRatings as { storyline_id: number; rating: number }[] | null, sl.storyline_id);
-      const priorScore = computeTrendScore(
-        priorAvgRating,
-        0, // no price change data for prior window
-        null, // no historical TVL
-        tvlDecimals,
-        priorPlotCount ?? 0,
-        sixDaysAgo,
-      );
-
-      // Rise = recent / prior (acceleration ratio)
-      const trendScore = recentScore / (priorScore + 0.01);
-
-      return { ...sl, trendScore };
-    }),
+  // Single parallel batch for all on-chain reads
+  const onChainResults = await Promise.all(
+    storylines.map((sl) => enrichWithOnChain(sl)),
   );
+
+  const enriched = storylines.map((sl, i): RankedStoryline => {
+    const { priceChange, tvlRaw, tvlDecimals } = onChainResults[i];
+
+    // Recent window composite (all 4 signals)
+    const recentAvgRating = avgFromRows(recentRatings as { storyline_id: number; rating: number }[] | null, sl.storyline_id);
+    const recentPlotCount = countFromRows(recentPlots as { storyline_id: number }[] | null, sl.storyline_id);
+    const recentScore = computeTrendScore(
+      recentAvgRating,
+      priceChange,
+      tvlRaw,
+      tvlDecimals,
+      recentPlotCount,
+      threeDaysAgo,
+    );
+
+    // Prior window composite (same 4 signals, same TVL + price as baseline)
+    const priorAvgRating = avgFromRows(priorRatings as { storyline_id: number; rating: number }[] | null, sl.storyline_id);
+    const priorPlotCount = countFromRows(priorPlots as { storyline_id: number }[] | null, sl.storyline_id);
+    const priorScore = computeTrendScore(
+      priorAvgRating,
+      priceChange, // same baseline — acceleration from rating/plot signals
+      tvlRaw,      // point-in-time, same for both windows
+      tvlDecimals,
+      priorPlotCount,
+      sixDaysAgo,
+    );
+
+    // Rise = recent / prior (acceleration ratio)
+    const trendScore = recentScore / (priorScore + 0.01);
+
+    return { ...sl, trendScore };
+  });
 
   enriched.sort((a, b) => b.trendScore - a.trendScore);
   return enriched.filter((s) => s.trendScore > 1).slice(0, limit);
