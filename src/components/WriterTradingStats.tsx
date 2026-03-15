@@ -67,8 +67,27 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     },
   });
 
+  const earnings =
+    donationsTotal !== undefined && royaltyData
+      ? donationsTotal + royaltyData.unclaimed
+      : undefined;
+
   return (
-    <div className="text-muted mt-3 grid grid-cols-2 gap-2 text-xs">
+    <div className="text-muted mt-3 grid grid-cols-3 gap-2 text-xs">
+      <div>
+        <span className="block text-[10px] uppercase tracking-wider">
+          Earnings
+        </span>
+        <span className="text-accent font-medium">
+          {earnings !== undefined
+            ? `${formatUnits(earnings, 18)} ${reserveLabel}`
+            : "—"}
+        </span>
+        <span className="text-muted block text-[10px]">
+          {donationsTotal !== undefined && `D: ${formatUnits(donationsTotal, 18)}`}
+          {royaltyData && ` R: ${formatUnits(royaltyData.unclaimed, 18)}`}
+        </span>
+      </div>
       <div>
         <span className="block text-[10px] uppercase tracking-wider">
           Token Price
@@ -83,26 +102,6 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
         </span>
         <span className="text-foreground">
           {tvlData ? `${tvlData.tvl} ${reserveLabel}` : "—"}
-        </span>
-      </div>
-      <div>
-        <span className="block text-[10px] uppercase tracking-wider">
-          Donations
-        </span>
-        <span className="text-foreground">
-          {donationsTotal !== undefined
-            ? `${formatUnits(donationsTotal, 18)} ${reserveLabel}`
-            : "—"}
-        </span>
-      </div>
-      <div>
-        <span className="block text-[10px] uppercase tracking-wider">
-          Royalties
-        </span>
-        <span className="text-foreground">
-          {royaltyData
-            ? `${formatUnits(royaltyData.unclaimed, 18)} ${reserveLabel}`
-            : "—"}
         </span>
       </div>
     </div>
