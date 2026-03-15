@@ -10,80 +10,115 @@
 
 - Phase 0–4: All done
 - Phase 5: All done (except #30 Zap — blocked on $PLOT)
-- Bug fixes #52, #55, #67, #68, #88–#95, #112–#117: All done
+- Bug fixes: #52, #55, #67, #68, #88–#95, #112–#117, #132–#137: All done
 - UI polish #104–#107: All done
 - Phase 6 Agent Layer #33, #32, #35, #34: All done
 
 ---
 
-## Tonight's Queue — Phase 6 Bug Fixes (assign in this exact order)
+## Tonight's Queue — Bug Fix + Phase 7 + P8-1 (assign in this exact order)
 
-> Ordered to avoid merge conflicts on shared files (config.ts, claim.ts).
+### 1. plotlink#144 — [Bug] CLI: royalty formatting uses storyline token decimals instead of reserve token
 
-### 1. plotlink#132 — [Bug] .plotlinkrc warning in CLI config
+`claim.ts` and `status.ts` fetch `decimals()` from the storyline token, but royalties are denominated in the **reserve token**.
 
-`.plotlinkrc` is already in `.gitignore` (done by operator). But `packages/cli/src/config.ts` needs a runtime warning when loading keys from file.
+**Fix:** Use `tokenBond()` to get `reserveToken` address, then fetch `decimals()` and `symbol()` from the reserve token.
 
-**Fix:** When config is loaded from `.plotlinkrc`, log to stderr: `"WARNING: Loading keys from .plotlinkrc — ensure this file is in .gitignore and never committed."`
+**Affected:** `packages/cli/src/commands/claim.ts`, `packages/cli/src/commands/status.ts`
 
 **Merge checklist:**
-- [ ] Warning logged to stderr when `.plotlinkrc` is loaded
+- [ ] Both commands read decimals/symbol from reserve token via `tokenBond()`
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 2. plotlink#137 — [Bug] Silent .plotlinkrc JSON parse errors
+### 2. plotlink#36 — [P7-1] Mini App Manifest & SDK Setup
 
-Same file `packages/cli/src/config.ts`. JSON parse errors are silently swallowed — users get confusing "Missing private key" instead of a parse error.
+Set up PlotLink as a Farcaster mini app.
 
-**Fix:** Catch JSON parse errors explicitly, log: `"Error parsing .plotlinkrc: <message>. Check your JSON syntax."` Then fall back to env vars.
+**Requirements:**
+- Install `@farcaster/miniapp-sdk` and `@farcaster/miniapp-wagmi-connector`
+- Create manifest at `public/.well-known/farcaster.json` with `homeUrl`
+- Add mini app detection — check if running inside Farcaster client
+- Call `sdk.actions.ready()` on mount when in mini app context
+
+**Reference docs:** https://miniapps.farcaster.xyz/llms-full.txt
 
 **Merge checklist:**
-- [ ] JSON parse errors logged with helpful message
-- [ ] Falls back to env vars after parse failure
+- [ ] `@farcaster/miniapp-sdk` installed
+- [ ] Manifest at `public/.well-known/farcaster.json`
+- [ ] Mini app detection + `sdk.actions.ready()` call
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 3. plotlink#133 — [Bug] CLI: no address validation
+### 3. plotlink#37 — [P7-2] Farcaster Wallet Integration
 
-`claim` and `agent register` commands cast user input directly to `Address` without validation. Invalid addresses cause confusing RPC errors.
+Add Farcaster wallet connector alongside existing wallets.
 
-**Fix:** Validate with viem `isAddress()` before casting. Show: `"Invalid address: <input>"`
+**Requirements:**
+- Add Farcaster wagmi connector from `@farcaster/miniapp-wagmi-connector`
+- Auto-detect context: use Farcaster provider when in mini app, regular wallets otherwise
+- Integrate into existing wallet setup in `src/app/providers.tsx`
 
-**Affected:** `packages/cli/src/commands/claim.ts`, `packages/cli/src/commands/agent-register.ts`
+**Depends on:** #36 (miniapp SDK installed)
 
 **Merge checklist:**
-- [ ] `isAddress()` validation in claim and agent-register commands
-- [ ] Clear error message for invalid input
+- [ ] Farcaster wagmi connector added to providers
+- [ ] Auto-detection works (Farcaster context vs standalone)
+- [ ] Existing wallet connection still works outside Farcaster
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 4. plotlink#134 — [Bug] CLI: claim shows raw bigint
+### 4. plotlink#38 — [P7-3] Social Sharing & Embed Meta Tags
 
-`packages/cli/src/commands/claim.ts` displays unclaimed amount as raw bigint instead of formatted value.
+Share stories to Farcaster + rich embed previews.
 
-**Fix:** Use `formatUnits(info.unclaimed, decimals)`. Fetch reserve token decimals same pattern as status command.
+**Requirements:**
+- "Share to Farcaster" button on story pages — calls `sdk.actions.composeCast()` with story URL
+- `fc:miniapp` meta tags on story pages via Next.js metadata API
+- Meta tags: title, description, image (3:2 ratio showing story title, writer, plot count)
+- Dynamic OG image generation for story pages
+
+**T3: Use `/frontend-design` skill for the share button.**
+
+**Depends on:** #36 (miniapp SDK)
 
 **Merge checklist:**
-- [ ] Unclaimed amount formatted with `formatUnits()`
+- [ ] Share button on story page calls `composeCast()`
+- [ ] `fc:miniapp` meta tags on story pages
+- [ ] OG image with story metadata
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 5. plotlink#136 — [Bug] CLI: hardcoded "ETH" label and 18 decimals
+### 5. plotlink#39 — [P7-4] Farcaster Identity Display
 
-`packages/cli/src/commands/status.ts` hardcodes "ETH" and 18 decimals. Wrong for USDC or mainnet $PLOT.
+Show Farcaster profile data (username, avatar) for writers.
 
-**Fix:** Fetch reserve token `symbol()` and `decimals()` via ERC-20 calls. Display actual symbol.
+**Requirements:**
+- Detect Farcaster FID from connected wallet
+- Fetch profile data (username, avatar) from Farcaster API
+- Display on story pages and dashboards where writer address is shown
+- Graceful fallback: if no FID found, show truncated address as before
+- Not required for functionality — display only
 
 **Merge checklist:**
-- [ ] Reserve token symbol and decimals fetched dynamically
-- [ ] No hardcoded "ETH" or "18"
+- [ ] FID detection from wallet address
+- [ ] Profile fetch (username, avatar)
+- [ ] Displayed on story pages and writer dashboard
+- [ ] Fallback to truncated address when no Farcaster identity
 - [ ] `npm run lint` and `npm run typecheck` pass
 
-### 6. plotlink#135 — [Bug] Discover page hardcodes genre="fiction"
+### 6. plotlink#40 — [P8-1] Content Moderation (MVP)
 
-`src/app/discover/page.tsx` and `src/app/page.tsx` pass `genre="fiction"` to every `StoryCard`. Misleading — no genre field exists in DB.
+Admin API for hiding content + audit frontend queries.
 
-**Fix:** Remove hardcoded `genre="fiction"` prop. StoryCard should handle missing genre gracefully (don't display it).
+**Requirements:**
+- `POST /api/admin/hide` — toggle `hidden = true` on storylines or plots
+- `POST /api/admin/unhide` — toggle `hidden = false`
+- Protect with admin API key check (read from `ADMIN_API_KEY` env var)
+- Use service role client for writes (bypasses RLS)
+- Audit all frontend Supabase queries to ensure they filter `hidden = true`
 
 **Merge checklist:**
-- [ ] Hardcoded genre removed from discover page and home page
-- [ ] StoryCard handles missing/undefined genre
+- [ ] Admin hide/unhide API routes created
+- [ ] Protected by API key check
+- [ ] Uses service role client
+- [ ] All frontend queries confirmed to filter `hidden = true`
 - [ ] `npm run lint` and `npm run typecheck` pass
 
 ---
@@ -93,7 +128,7 @@ Same file `packages/cli/src/config.ts`. JSON parse errors are silently swallowed
 1. Assign ONE ticket at a time to @t3
 2. Wait for @t2a AND @t2b to both approve before merging
 3. After merge, immediately assign the next ticket
-4. Use correct original issue numbers in PR titles (e.g., `[#132]` not `[#300]`)
+4. Use correct original issue numbers in PR titles (e.g., `[#144]` not `[#300]`)
 5. **NEVER store keys/secrets in plain text without .gitignore protection**
 6. **NEVER hardcode addresses, keys, or sensitive values**
 7. **Communicate via AgentChattr MCP chat by tagging agents. Your terminal is NOT visible.**
@@ -102,9 +137,9 @@ Same file `packages/cli/src/config.ts`. JSON parse errors are silently swallowed
 
 ## Reference
 
-- CLI config: `packages/cli/src/config.ts`
 - CLI commands: `packages/cli/src/commands/`
 - SDK: `packages/sdk/src/`
-- Discover page: `src/app/discover/page.tsx`
-- Home page: `src/app/page.tsx`
-- StoryCard: `src/components/StoryCard.tsx`
+- Providers: `src/app/providers.tsx`
+- Story page: `src/app/story/[storylineId]/page.tsx`
+- Design tokens: `src/app/globals.css`
+- Farcaster mini app docs: https://miniapps.farcaster.xyz/llms-full.txt
