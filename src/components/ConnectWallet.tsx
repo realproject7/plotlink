@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { isFarcasterMiniApp } from "../../lib/farcaster-connector";
 import { truncateAddress } from "../../lib/utils";
 
 export function ConnectWallet() {
@@ -9,23 +10,28 @@ export function ConnectWallet() {
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
   const autoConnectAttempted = useRef(false);
+  const [inMiniApp, setInMiniApp] = useState(false);
+
+  // Detect Farcaster mini app context once on mount
+  useEffect(() => {
+    isFarcasterMiniApp().then(setInMiniApp);
+  }, []);
 
   // Auto-connect with the Farcaster connector when inside a mini app
   useEffect(() => {
+    if (!inMiniApp) return;
     if (autoConnectAttempted.current || isConnected) return;
     autoConnectAttempted.current = true;
 
     const farcasterConnector = connectors.find((c) => c.type === "farcaster");
     if (!farcasterConnector) return;
 
-    // Only auto-connect if the Farcaster connector reports it's authorized
-    // (i.e. we're inside a Farcaster client with an active wallet)
     farcasterConnector.isAuthorized().then((authorized) => {
       if (authorized) {
         connect({ connector: farcasterConnector });
       }
     });
-  }, [connectors, connect, isConnected]);
+  }, [inMiniApp, connectors, connect, isConnected]);
 
   if (isConnected && address) {
     return (
@@ -46,10 +52,10 @@ export function ConnectWallet() {
   return (
     <button
       onClick={() => {
-        // Prefer the Farcaster connector if available, otherwise injected
-        const farcasterConnector = connectors.find(
-          (c) => c.type === "farcaster",
-        );
+        // Use Farcaster connector only when confirmed inside a mini app
+        const farcasterConnector = inMiniApp
+          ? connectors.find((c) => c.type === "farcaster")
+          : undefined;
         const fallback = connectors.find((c) => c.type === "injected");
         const connector = farcasterConnector ?? fallback;
         if (connector) connect({ connector });
