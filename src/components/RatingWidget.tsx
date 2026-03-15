@@ -111,7 +111,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
       setSuccess(false);
       setSubmitting(true);
 
-      const message = `Rate storyline ${storylineId} with rating ${selectedRating}`;
+      const message = `Rate storyline ${storylineId} with rating ${selectedRating} comment:${comment || ""}`;
       const signature = await signMessageAsync({ message });
 
       const res = await fetch("/api/ratings", {

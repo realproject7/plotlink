@@ -78,8 +78,9 @@ export async function POST(req: NextRequest) {
     return error("Missing address, signature, or message");
   }
 
-  // Validate signed message binds to this specific action
-  const expectedMessage = `Rate storyline ${storylineId} with rating ${rating}`;
+  // Validate signed message binds to this specific action (including comment)
+  const boundComment = comment ?? "";
+  const expectedMessage = `Rate storyline ${storylineId} with rating ${rating} comment:${boundComment}`;
   if (message !== expectedMessage) {
     return error(
       `Signed message must be exactly: "${expectedMessage}"`,
