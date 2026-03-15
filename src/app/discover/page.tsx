@@ -1,4 +1,5 @@
 import { createServerClient, type Storyline } from "../../../lib/supabase";
+import { getTrendingStorylines, getRisingStorylines } from "../../../lib/ranking";
 import { StoryCard } from "../../components/StoryCard";
 import { TabNav } from "../../components/TabNav";
 
@@ -34,12 +35,6 @@ export default async function DiscoverPage({
       <p className="text-muted mt-2 text-sm">Browse stories on PlotLink</p>
 
       <TabNav tabs={TABS} active={tab} className="mt-6" />
-
-      {(tab === "trending" || tab === "rising") && (
-        <p className="text-muted mt-4 text-xs italic">
-          Ranking by recency — trading-based ranking available after Phase 5.
-        </p>
-      )}
 
       <div className="mt-6 space-y-3">
         {storylines.map((s) => (
@@ -84,34 +79,12 @@ async function queryTab(
       return data ?? [];
     }
 
-    // TODO [Phase 5 / P5-6]: Replace with composite ranking signals
-    // (unique buyer count, holder diversity, recent trading activity).
-    // See ROADMAP.md P5-6a for the ranking formula spec.
     case "trending": {
-      const { data } = await supabase
-        .from("storylines")
-        .select("*")
-        .eq("hidden", false)
-        .eq("sunset", false)
-        .order("block_timestamp", { ascending: false })
-        .limit(50)
-        .returns<Storyline[]>();
-      return data ?? [];
+      return getTrendingStorylines(supabase, 20);
     }
 
-    // TODO [Phase 5 / P5-6]: Replace with acceleration-based ranking
-    // (stories with accelerating trading activity vs prior period).
-    // See ROADMAP.md P5-6b for the rising formula spec.
     case "rising": {
-      const { data } = await supabase
-        .from("storylines")
-        .select("*")
-        .eq("hidden", false)
-        .eq("sunset", false)
-        .order("block_timestamp", { ascending: false })
-        .limit(50)
-        .returns<Storyline[]>();
-      return data ?? [];
+      return getRisingStorylines(supabase, 20);
     }
   }
 }
