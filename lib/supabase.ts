@@ -11,6 +11,12 @@ export const supabase: SupabaseClient<Database> | null =
 
 // Server-side client (service role, bypasses RLS)
 export function createServerClient(): SupabaseClient<Database> | null {
+  return createServiceRoleClient();
+}
+
+// Explicit service-role client for admin / privileged operations.
+// Uses SUPABASE_SERVICE_ROLE_KEY — never expose to the browser.
+export function createServiceRoleClient(): SupabaseClient<Database> | null {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
   if (!supabaseUrl || !serviceRoleKey) return null;
 
