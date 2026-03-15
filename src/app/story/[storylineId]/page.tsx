@@ -189,7 +189,7 @@ function PlotEntry({ plot }: { plot: Plot }) {
 
 function NotFound({ message }: { message: string }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
+    <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center px-6">
       <p className="text-muted text-sm">{message}</p>
     </div>
   );

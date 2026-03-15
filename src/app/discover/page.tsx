@@ -21,7 +21,7 @@ export default async function DiscoverPage({
   const supabase = createServerClient();
   if (!supabase) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-[calc(100vh-2.75rem)] items-center justify-center">
         <p className="text-muted text-sm">Database unavailable</p>
       </div>
     );

@@ -52,7 +52,7 @@ export default function ReaderDashboard() {
 
   if (!isConnected) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
+      <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-4 px-6">
         <p className="text-muted text-sm">
           Connect your wallet to view your dashboard.
         </p>
