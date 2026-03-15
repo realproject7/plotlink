@@ -3,6 +3,8 @@ import { getTrendingStorylines, getRisingStorylines } from "../../../lib/ranking
 import { StoryCard } from "../../components/StoryCard";
 import { TabNav } from "../../components/TabNav";
 
+export const revalidate = 120; // ISR: regenerate at most every 2 minutes
+
 type SearchParams = Promise<{ tab?: string }>;
 
 const TABS = ["new", "trending", "rising", "completed"] as const;
