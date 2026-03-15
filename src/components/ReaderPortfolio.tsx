@@ -4,7 +4,7 @@ import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
-import { erc20Abi, mcv2BondAbi, get24hPriceChange } from "../../lib/price";
+import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
 import Link from "next/link";
@@ -15,6 +15,7 @@ interface Holding {
   price: bigint;
   value: bigint;
   priceChange: number | null;
+  reserveDecimals: number;
 }
 
 export function ReaderPortfolio() {
@@ -50,7 +51,7 @@ export function ReaderPortfolio() {
 
             if (balance === BigInt(0)) return null;
 
-            const [price, priceChangeResult] = await Promise.all([
+            const [price, priceChangeResult, tvlResult] = await Promise.all([
               publicClient.readContract({
                 address: MCV2_BOND,
                 abi: mcv2BondAbi,
@@ -58,9 +59,11 @@ export function ReaderPortfolio() {
                 args: [tokenAddr],
               }),
               get24hPriceChange(tokenAddr).catch(() => null),
+              getTokenTVL(tokenAddr).catch(() => null),
             ]);
 
             const priceBI = BigInt(price);
+            const reserveDecimals = tvlResult?.decimals ?? 18;
             const value = (balance * priceBI) / BigInt(10 ** 18);
 
             return {
@@ -69,6 +72,7 @@ export function ReaderPortfolio() {
               price: priceBI,
               value,
               priceChange: priceChangeResult?.changePercent ?? null,
+              reserveDecimals,
             };
           } catch {
             return null;
@@ -82,6 +86,7 @@ export function ReaderPortfolio() {
   });
 
   const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
+  const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
   const bestPick = holdings && holdings.length > 0
     ? holdings.reduce((best, h) =>
         (h.priceChange ?? -Infinity) > (best.priceChange ?? -Infinity) ? h : best
@@ -112,7 +117,7 @@ export function ReaderPortfolio() {
                 Total Value
               </span>
               <span className="text-accent text-sm font-medium">
-                {formatUnits(totalValue, 18)} {reserveLabel}
+                {formatUnits(totalValue, reserveDecimals)} {reserveLabel}
               </span>
             </div>
             {bestPick && bestPick.priceChange !== null && (
@@ -151,7 +156,7 @@ export function ReaderPortfolio() {
                 </div>
                 <div className="text-right">
                   <div className="text-foreground">
-                    {formatUnits(h.value, 18)} {reserveLabel}
+                    {formatUnits(h.value, h.reserveDecimals)} {reserveLabel}
                   </div>
                   {h.priceChange !== null && (
                     <div

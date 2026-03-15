@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
-import { mcv2BondAbi } from "../../lib/price";
+import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
 import type { Storyline } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
@@ -31,18 +31,24 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     enabled: !!tokenAddress,
   });
 
-  // Fetch TVL via tokenBond
-  const { data: bondData } = useQuery({
-    queryKey: ["writer-bond", tokenAddress],
+  // Fetch TVL via getTokenTVL (uses correct reserve token decimals)
+  const { data: tvlData } = useQuery({
+    queryKey: ["writer-tvl", tokenAddress],
+    queryFn: () => getTokenTVL(tokenAddress),
+    enabled: !!tokenAddress,
+  });
+
+  // Fetch unclaimed royalties
+  const { data: royaltyData } = useQuery({
+    queryKey: ["writer-royalty", tokenAddress],
     queryFn: async () => {
       const result = await publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
-        functionName: "tokenBond",
+        functionName: "getRoyaltyInfo",
         args: [tokenAddress],
       });
-      const [, , , , , reserveBalance] = result;
-      return { reserveBalance };
+      return { unclaimed: result[0] };
     },
     enabled: !!tokenAddress,
   });
@@ -62,7 +68,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
   });
 
   return (
-    <div className="text-muted mt-3 grid grid-cols-3 gap-2 text-xs">
+    <div className="text-muted mt-3 grid grid-cols-2 gap-2 text-xs">
       <div>
         <span className="block text-[10px] uppercase tracking-wider">
           Token Price
@@ -76,9 +82,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           TVL
         </span>
         <span className="text-foreground">
-          {bondData
-            ? `${formatUnits(bondData.reserveBalance, 18)} ${reserveLabel}`
-            : "—"}
+          {tvlData ? `${tvlData.tvl} ${reserveLabel}` : "—"}
         </span>
       </div>
       <div>
@@ -88,6 +92,16 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
         <span className="text-foreground">
           {donationsTotal !== undefined
             ? `${formatUnits(donationsTotal, 18)} ${reserveLabel}`
+            : "—"}
+        </span>
+      </div>
+      <div>
+        <span className="block text-[10px] uppercase tracking-wider">
+          Royalties
+        </span>
+        <span className="text-foreground">
+          {royaltyData
+            ? `${formatUnits(royaltyData.unclaimed, 18)} ${reserveLabel}`
             : "—"}
         </span>
       </div>
