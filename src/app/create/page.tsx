@@ -38,7 +38,7 @@ export default function CreateStorylinePage() {
 
   if (!isConnected) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6">
+      <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-4 px-6">
         <p className="text-muted text-sm">
           Connect your wallet to create a storyline.
         </p>
@@ -48,7 +48,7 @@ export default function CreateStorylinePage() {
 
   if (state === "published") {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-6">
+      <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-6 px-6">
         <h1 className="text-accent text-2xl font-bold">Storyline created!</h1>
         <div className="flex gap-3">
           <Link
