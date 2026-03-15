@@ -59,8 +59,9 @@ export function NavBar() {
             onClick={() => setMobileOpen(!mobileOpen)}
             className="text-muted hover:text-foreground p-1 text-sm transition-colors md:hidden"
             aria-label="Toggle menu"
+            aria-expanded={mobileOpen}
           >
-            {mobileOpen ? "[x]" : "[=]"}
+            <span aria-hidden="true">{mobileOpen ? "[x]" : "[=]"}</span>
           </button>
         </div>
       </div>
