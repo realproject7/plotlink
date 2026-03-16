@@ -60,6 +60,7 @@ export interface Database {
           log_index: number;
           block_timestamp: string | null;
           indexed_at: string;
+          view_count: number;
         };
         Insert: {
           id?: never;
@@ -77,6 +78,7 @@ export interface Database {
           log_index: number;
           block_timestamp?: string | null;
           indexed_at?: string;
+          view_count?: number;
         };
         Update: {
           id?: never;
@@ -94,6 +96,33 @@ export interface Database {
           log_index?: number;
           block_timestamp?: string | null;
           indexed_at?: string;
+          view_count?: number;
+        };
+      };
+      page_views: {
+        Row: {
+          id: number;
+          storyline_id: number;
+          plot_index: number | null;
+          viewer_address: string | null;
+          session_id: string;
+          viewed_at: string;
+        };
+        Insert: {
+          id?: never;
+          storyline_id: number;
+          plot_index?: number | null;
+          viewer_address?: string | null;
+          session_id: string;
+          viewed_at?: string;
+        };
+        Update: {
+          id?: never;
+          storyline_id?: number;
+          plot_index?: number | null;
+          viewer_address?: string | null;
+          session_id?: string;
+          viewed_at?: string;
         };
       };
       plots: {

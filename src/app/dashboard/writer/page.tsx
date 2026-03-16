@@ -15,6 +15,13 @@ import Link from "next/link";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { type Address } from "viem";
 
+function formatViewCountDashboard(n: number): string {
+  if (n < 1000) return String(n);
+  if (n < 10000) return `${(n / 1000).toFixed(1)}k`;
+  if (n < 1000000) return `${Math.round(n / 1000)}k`;
+  return `${(n / 1000000).toFixed(1)}M`;
+}
+
 async function fetchWriterStorylines(
   address: string,
 ): Promise<Storyline[]> {
@@ -101,12 +108,18 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         )}
       </div>
 
-      <div className="text-muted mt-3 grid grid-cols-3 gap-2 text-xs">
+      <div className="text-muted mt-3 grid grid-cols-4 gap-2 text-xs">
         <div>
           <span className="block text-[10px] uppercase tracking-wider">
             Plots
           </span>
           <span className="text-foreground">{storyline.plot_count}</span>
+        </div>
+        <div>
+          <span className="block text-[10px] uppercase tracking-wider">
+            Views
+          </span>
+          <span className="text-foreground">{formatViewCountDashboard(storyline.view_count)}</span>
         </div>
         <div>
           <span className="block text-[10px] uppercase tracking-wider">

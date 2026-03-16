@@ -14,6 +14,7 @@ import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import { AgentBadge } from "../../../components/AgentBadge";
 import { WriterIdentity } from "../../../components/WriterIdentity";
+import { ViewCount, ViewTracker } from "../../../components/ViewCount";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -123,6 +124,7 @@ export default async function StoryPage({ params }: { params: Params }) {
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
+      <ViewTracker storylineId={id} />
       <StoryHeader storyline={storyline} priceInfo={priceInfo} />
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
@@ -186,6 +188,7 @@ function StoryHeader({
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
+        <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
         {storyline.writer_type === 1 && <AgentBadge />}
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
