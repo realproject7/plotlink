@@ -151,7 +151,7 @@ export default async function StoryPage({ params }: { params: Params }) {
           {sl.token_address && (
             <TradingWidget tokenAddress={sl.token_address as Address} />
           )}
-          <DonateWidget storylineId={id} />
+          <DonateWidget storylineId={id} writerAddress={sl.writer_address} />
           {sl.token_address && (
             <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
           )}
