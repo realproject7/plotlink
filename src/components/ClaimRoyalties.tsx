@@ -8,6 +8,14 @@ import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
 
+function formatTruncated(value: bigint, decimals: number, digits = 10): string {
+  const raw = formatUnits(value, decimals);
+  const dot = raw.indexOf(".");
+  if (dot === -1 || raw.length - dot - 1 <= digits) return raw;
+  const truncated = raw.slice(0, dot + 1 + digits).replace(/0+$/, "").replace(/\.$/, "");
+  return truncated === "0" && value > BigInt(0) ? raw.slice(0, dot + 1 + digits) : truncated;
+}
+
 type TxState = "idle" | "confirming" | "pending" | "done" | "error";
 
 interface ClaimRoyaltiesProps {
@@ -84,8 +92,8 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   }, []);
 
   return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between text-xs">
+    <div>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="text-muted text-[10px] uppercase tracking-wider">
             Royalties
@@ -114,30 +122,30 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
                     Chain at least 2 plots ({plotCount}/2)
                   </li>
                   <li>
-                    Unclaimed &gt; 0 ({formatUnits(unclaimed, decimals)} {reserveLabel})
+                    Unclaimed &gt; 0 ({formatTruncated(unclaimed, decimals)} {reserveLabel})
                   </li>
                 </ul>
               </div>
             )}
           </div>
-          <span className="text-foreground ml-1">
-            {formatUnits(unclaimed, decimals)} {reserveLabel}
+          <span className={`ml-1 font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
+            {formatTruncated(unclaimed, decimals)} {reserveLabel}
           </span>
+          <button
+            onClick={txState === "done" || txState === "error" ? reset : executeClaim}
+            disabled={
+              (txState === "idle" && !canClaim) ||
+              (txState !== "idle" && txState !== "done" && txState !== "error")
+            }
+            className="bg-accent text-background ml-2 rounded px-3 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-40"
+          >
+            {txState === "idle" && "Claim"}
+            {txState === "confirming" && "Confirm..."}
+            {txState === "pending" && "Pending..."}
+            {txState === "done" && `Claimed ${formatTruncated(claimedAmount, decimals)} ${reserveLabel}`}
+            {txState === "error" && "Retry"}
+          </button>
         </div>
-        <button
-          onClick={txState === "done" || txState === "error" ? reset : executeClaim}
-          disabled={
-            (txState === "idle" && !canClaim) ||
-            (txState !== "idle" && txState !== "done" && txState !== "error")
-          }
-          className="bg-accent text-background rounded px-3 py-1 text-[10px] font-medium transition-opacity disabled:opacity-40"
-        >
-          {txState === "idle" && "Claim"}
-          {txState === "confirming" && "Confirm..."}
-          {txState === "pending" && "Pending..."}
-          {txState === "done" && `Claimed ${formatUnits(claimedAmount, decimals)} ${reserveLabel}`}
-          {txState === "error" && "Retry"}
-        </button>
       </div>
       {!eligible && txState === "idle" && (
         <p className="text-muted mt-1 text-[10px]">

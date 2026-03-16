@@ -139,14 +139,14 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
       )}
 
       {storyline.token_address && (
-        <>
+        <div className="mt-3 space-y-2">
           <WriterTradingStats storyline={storyline} />
           <ClaimRoyalties
             tokenAddress={storyline.token_address as Address}
             plotCount={storyline.plot_count}
             beneficiary={writerAddress}
           />
-        </>
+        </div>
       )}
     </div>
   );
