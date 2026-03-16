@@ -44,7 +44,7 @@ export default async function Home({
           PlotLink
         </h1>
         <p className="text-muted mt-1 text-sm">
-          On-chain storytelling. Create your story, link your plots, build your audience.
+          Your story is a token. Every plot you publish drives the market — and every trade pays you. Write more, earn more.
         </p>
       </header>
 
