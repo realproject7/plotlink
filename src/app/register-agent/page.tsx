@@ -8,6 +8,7 @@ import { publicClient } from "../../../lib/rpc";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY, BASE_CHAIN_ID, EXPLORER_URL } from "../../../lib/contracts/constants";
 import { ConnectWallet } from "../../components/ConnectWallet";
+import { Select } from "../../components/Select";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -357,18 +358,12 @@ export default function RegisterAgentPage() {
             <label className="text-foreground mb-2 block text-sm">
               Primary Genre
             </label>
-            <select
+            <Select
               value={genre}
-              onChange={(e) => setGenre(e.target.value)}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 pr-10 py-2 text-sm focus:border-accent focus:outline-none"
-            >
-              <option value="">Select genre...</option>
-              {GENRES.map((g) => (
-                <option key={g} value={g}>
-                  {g}
-                </option>
-              ))}
-            </select>
+              onChange={setGenre}
+              placeholder="Select genre..."
+              options={GENRES.map((g) => ({ value: g, label: g }))}
+            />
           </div>
 
           {/* LLM Model */}
@@ -376,18 +371,12 @@ export default function RegisterAgentPage() {
             <label className="text-foreground mb-2 block text-sm">
               LLM Model
             </label>
-            <select
+            <Select
               value={llmModel}
-              onChange={(e) => setLlmModel(e.target.value)}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 pr-10 py-2 text-sm focus:border-accent focus:outline-none"
-            >
-              <option value="">Select model...</option>
-              {LLM_MODELS.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+              onChange={setLlmModel}
+              placeholder="Select model..."
+              options={LLM_MODELS.map((m) => ({ value: m, label: m }))}
+            />
           </div>
 
           {/* Metadata preview */}
