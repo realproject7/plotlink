@@ -8,10 +8,16 @@ import {
   MAX_CONTENT_LENGTH,
 } from "../../../lib/content";
 import { usePublish, type PublishState } from "../../hooks/usePublish";
-import { storyFactoryAbi } from "../../../lib/contracts/abi";
+import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../lib/contracts/constants";
+import { decodeEventLog, encodeEventTopics } from "viem";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
+
+const STORYLINE_CREATED_TOPIC = encodeEventTopics({
+  abi: [storylineCreatedEvent],
+  eventName: "StorylineCreated",
+})[0];
 
 const STATE_LABELS: Record<PublishState, string> = {
   idle: "",
@@ -29,7 +35,7 @@ export default function CreateStorylinePage() {
   const [content, setContent] = useState("");
   const hasDeadline = true; // mandatory 7-day deadline for all storylines
 
-  const { state, error, execute, reset } = usePublish();
+  const { state, error, receipt, execute, reset } = usePublish();
   const { valid, charCount } = validateContentLength(content);
   const titleValid = title.trim().length > 0;
   const canSubmit =
@@ -49,22 +55,42 @@ export default function CreateStorylinePage() {
   }
 
   if (state === "published") {
+    // Decode storylineId from receipt logs
+    let newStorylineId: number | null = null;
+    if (receipt) {
+      const log = receipt.logs.find((l) => l.topics[0] === STORYLINE_CREATED_TOPIC);
+      if (log) {
+        try {
+          const decoded = decodeEventLog({
+            abi: storyFactoryAbi,
+            data: log.data,
+            topics: log.topics,
+          });
+          if (decoded.eventName === "StorylineCreated") {
+            newStorylineId = Number(decoded.args.storylineId);
+          }
+        } catch { /* ignore decode errors */ }
+      }
+    }
+
     return (
       <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-6 px-6">
         <h1 className="text-accent text-2xl font-bold">Storyline created!</h1>
         <div className="flex gap-3">
+          {newStorylineId != null && (
+            <Link
+              href={`/story/${newStorylineId}`}
+              className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+            >
+              View your story
+            </Link>
+          )}
           <Link
-            href="/discover"
+            href="/"
             className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-sm transition-colors"
           >
-            Discover
+            Go home
           </Link>
-          <button
-            onClick={reset}
-            className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
-          >
-            Create another
-          </button>
         </div>
       </div>
     );
