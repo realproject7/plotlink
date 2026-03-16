@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "PlotLink",
-  description: "Collaborative on-chain storytelling",
+  description: "On-chain storytelling platform. Create your story, link your plots, build your audience.",
 };
 
 export default function RootLayout({
