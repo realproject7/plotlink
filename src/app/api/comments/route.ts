@@ -1,0 +1,142 @@
+import { NextRequest, NextResponse } from "next/server";
+import { type Address } from "viem";
+import { publicClient } from "../../../../lib/rpc";
+import { createServerClient, supabase } from "../../../../lib/supabase";
+
+const MAX_COMMENT_LENGTH = 1000;
+const PAGE_SIZE = 20;
+
+function error(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+// ---------------------------------------------------------------------------
+// GET /api/comments?storylineId=N&plotIndex=M&offset=0
+// ---------------------------------------------------------------------------
+
+export async function GET(req: NextRequest) {
+  const storylineId = req.nextUrl.searchParams.get("storylineId");
+  const plotIndex = req.nextUrl.searchParams.get("plotIndex");
+
+  if (!storylineId || !plotIndex) return error("Missing storylineId or plotIndex");
+
+  const db = supabase;
+  if (!db) return error("Supabase not configured", 500);
+
+  const sid = Number(storylineId);
+  const pidx = Number(plotIndex);
+  if (isNaN(sid) || isNaN(pidx)) return error("Invalid storylineId or plotIndex");
+
+  const offset = Math.max(Number(req.nextUrl.searchParams.get("offset") ?? 0), 0);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data, error: dbError } = await (db.from("comments") as any)
+    .select("*")
+    .eq("storyline_id", sid)
+    .eq("plot_index", pidx)
+    .eq("hidden", false)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1);
+
+  if (dbError) return error(`Database error: ${dbError.message}`, 500);
+
+  // Get total count for pagination
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { count } = await (db.from("comments") as any)
+    .select("id", { count: "exact", head: true })
+    .eq("storyline_id", sid)
+    .eq("plot_index", pidx)
+    .eq("hidden", false);
+
+  return NextResponse.json({
+    comments: data ?? [],
+    total: count ?? 0,
+    offset,
+    pageSize: PAGE_SIZE,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// POST /api/comments
+// Body: { storylineId, plotIndex, content, address, signature, message }
+// Rate limit: 1 comment per address per plot per minute
+// ---------------------------------------------------------------------------
+
+interface CommentBody {
+  storylineId: number;
+  plotIndex: number;
+  content: string;
+  address: string;
+  signature: string;
+  message: string;
+}
+
+export async function POST(req: NextRequest) {
+  let body: CommentBody;
+  try {
+    body = await req.json();
+  } catch {
+    return error("Invalid JSON body");
+  }
+
+  const { storylineId, plotIndex, content, address, signature, message } = body;
+
+  if (!storylineId || typeof storylineId !== "number") return error("Missing or invalid storylineId");
+  if (typeof plotIndex !== "number" || plotIndex < 0) return error("Missing or invalid plotIndex");
+  if (!content || typeof content !== "string") return error("Missing content");
+  if (content.length > MAX_COMMENT_LENGTH) return error(`Comment must be ${MAX_COMMENT_LENGTH} characters or fewer`);
+  if (!address || !signature || !message) return error("Missing address, signature, or message");
+
+  // Validate signed message binds to this specific comment
+  const expectedMessage = `Comment on storyline ${storylineId} plot ${plotIndex}: ${content}`;
+  if (message !== expectedMessage) {
+    return error(`Signed message must be exactly: "${expectedMessage}"`);
+  }
+
+  // Verify signature
+  const commenterAddress = address as Address;
+  try {
+    const valid = await publicClient.verifyMessage({
+      address: commenterAddress,
+      message,
+      signature: signature as `0x${string}`,
+    });
+    if (!valid) return error("Invalid signature");
+  } catch {
+    return error("Failed to verify signature");
+  }
+
+  const serverClient = createServerClient();
+  if (!serverClient) return error("Supabase not configured", 500);
+
+  // Rate limit: max 1 comment per address per plot per minute
+  const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: recent } = await (serverClient.from("comments") as any)
+    .select("id")
+    .eq("storyline_id", storylineId)
+    .eq("plot_index", plotIndex)
+    .eq("commenter_address", commenterAddress.toLowerCase())
+    .gte("created_at", oneMinuteAgo)
+    .limit(1);
+
+  if (recent && recent.length > 0) {
+    return NextResponse.json(
+      { error: "Please wait before commenting again" },
+      { status: 429, headers: { "Retry-After": "60" } },
+    );
+  }
+
+  // Insert comment
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: insertError } = await (serverClient.from("comments") as any).insert({
+    storyline_id: storylineId,
+    plot_index: plotIndex,
+    commenter_address: commenterAddress.toLowerCase(),
+    content,
+  });
+
+  if (insertError) return error(`Database error: ${insertError.message}`, 500);
+
+  return NextResponse.json({ success: true });
+}

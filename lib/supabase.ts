@@ -131,6 +131,7 @@ export interface Database {
           storyline_id: number;
           plot_index: number;
           writer_address: string;
+          title: string;
           content: string | null;
           content_cid: string;
           content_hash: string;
@@ -145,6 +146,7 @@ export interface Database {
           storyline_id: number;
           plot_index: number;
           writer_address: string;
+          title?: string;
           content?: string | null;
           content_cid: string;
           content_hash: string;
@@ -159,6 +161,7 @@ export interface Database {
           storyline_id?: number;
           plot_index?: number;
           writer_address?: string;
+          title?: string;
           content?: string | null;
           content_cid?: string;
           content_hash?: string;
@@ -167,6 +170,35 @@ export interface Database {
           log_index?: number;
           block_timestamp?: string | null;
           indexed_at?: string;
+        };
+      };
+      comments: {
+        Row: {
+          id: number;
+          storyline_id: number;
+          plot_index: number;
+          commenter_address: string;
+          content: string;
+          created_at: string;
+          hidden: boolean;
+        };
+        Insert: {
+          id?: never;
+          storyline_id: number;
+          plot_index: number;
+          commenter_address: string;
+          content: string;
+          created_at?: string;
+          hidden?: boolean;
+        };
+        Update: {
+          id?: never;
+          storyline_id?: number;
+          plot_index?: number;
+          commenter_address?: string;
+          content?: string;
+          created_at?: string;
+          hidden?: boolean;
         };
       };
       donations: {
@@ -239,3 +271,4 @@ export type Storyline = Database["public"]["Tables"]["storylines"]["Row"];
 export type Plot = Database["public"]["Tables"]["plots"]["Row"];
 export type Donation = Database["public"]["Tables"]["donations"]["Row"];
 export type Rating = Database["public"]["Tables"]["ratings"]["Row"];
+export type Comment = Database["public"]["Tables"]["comments"]["Row"];
