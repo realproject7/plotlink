@@ -1,4 +1,5 @@
 import { type Metadata } from "next";
+import { redirect } from "next/navigation";
 import { createServerClient, type Storyline, type Plot } from "../../../../../lib/supabase";
 import { truncateAddress } from "../../../../../lib/utils";
 import { ViewTracker } from "../../../../components/ViewCount";
@@ -54,6 +55,11 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
 
   if (isNaN(sid) || sid <= 0 || isNaN(pidx) || pidx < 0) {
     return <NotFound message="Invalid plot URL" />;
+  }
+
+  // Genesis (plot 0) redirects to the main story page
+  if (pidx === 0) {
+    redirect(`/story/${sid}`);
   }
 
   const supabase = createServerClient();
