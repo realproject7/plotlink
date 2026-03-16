@@ -215,9 +215,9 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               if (txState !== "idle") reset();
             }}
             disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
-            className="border-border bg-background text-foreground w-full rounded border px-3 py-2 pr-14 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+            className={`border-border bg-background text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 ${tab === "sell" ? "pr-14" : ""}`}
           />
-          {balance !== undefined && (
+          {tab === "sell" && balance !== undefined && (
             <button
               type="button"
               onClick={() => setAmount(formatUnits(balance, 18))}
