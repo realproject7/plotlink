@@ -26,13 +26,13 @@ export const publicClient = createPublicClient({
  * Load-balanced RPC nodes may not have the receipt immediately after
  * `waitForTransactionReceipt` completes on the client side.
  */
-export async function getReceiptWithRetry(hash: Hex, maxAttempts = 3) {
+export async function getReceiptWithRetry(hash: Hex, maxAttempts = 5) {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await publicClient.getTransactionReceipt({ hash });
     } catch (err) {
       if (attempt === maxAttempts) throw err;
-      await new Promise((r) => setTimeout(r, attempt * 1000));
+      await new Promise((r) => setTimeout(r, attempt * 2000));
     }
   }
   throw new Error("unreachable");
