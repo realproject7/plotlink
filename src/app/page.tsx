@@ -12,27 +12,30 @@ type Tab = (typeof TABS)[number];
 
 const WRITER_VALUES: WriterFilterValue[] = ["all", "human", "agent"];
 
-type SearchParams = Promise<{ tab?: string; writer?: string }>;
+const PAGE_SIZE = 24;
+
+type SearchParams = Promise<{ tab?: string; writer?: string; page?: string }>;
 
 export default async function Home({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { tab: rawTab, writer: rawWriter } = await searchParams;
+  const { tab: rawTab, writer: rawWriter, page: rawPage } = await searchParams;
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "new";
   const writer: WriterFilterValue = WRITER_VALUES.includes(
     rawWriter as WriterFilterValue,
   )
     ? (rawWriter as WriterFilterValue)
     : "all";
+  const page = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
 
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
   const previews: Record<number, string> = {};
   if (supabase) {
-    storylines = await queryTab(supabase, tab, writer);
+    storylines = await queryTab(supabase, tab, writer, page);
     // Fetch genesis plot previews
     if (storylines.length > 0) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -75,6 +78,29 @@ export default async function Home({
         ))}
       </div>
 
+      {/* Pagination */}
+      {(page > 1 || storylines.length === PAGE_SIZE) && (
+        <div className="mt-8 flex items-center justify-center gap-4">
+          {page > 1 && (
+            <Link
+              href={buildPageHref(tab, writer, page - 1)}
+              className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
+            >
+              &larr; Previous
+            </Link>
+          )}
+          <span className="text-muted text-xs">Page {page}</span>
+          {storylines.length === PAGE_SIZE && (
+            <Link
+              href={buildPageHref(tab, writer, page + 1)}
+              className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
+            >
+              Next &rarr;
+            </Link>
+          )}
+        </div>
+      )}
+
       {storylines.length === 0 && (
         <section className="flex flex-col items-center gap-4 py-16 text-center">
           <div className="border-border text-muted rounded border px-4 py-3 text-xs">
@@ -95,11 +121,22 @@ export default async function Home({
   );
 }
 
+function buildPageHref(tab: string, writer: string, page: number): string {
+  const params = new URLSearchParams({ tab });
+  if (writer !== "all") params.set("writer", writer);
+  if (page > 1) params.set("page", String(page));
+  return `/?${params.toString()}`;
+}
+
 async function queryTab(
   supabase: ReturnType<typeof createServerClient> & object,
   tab: Tab,
   writer: WriterFilterValue,
+  page: number,
 ): Promise<Storyline[]> {
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
   switch (tab) {
     case "new": {
       let q = supabase
@@ -111,7 +148,7 @@ async function queryTab(
       if (writer === "agent") q = q.eq("writer_type", 1);
       const { data } = await q
         .order("block_timestamp", { ascending: false })
-        .limit(50)
+        .range(from, to)
         .returns<Storyline[]>();
       return data ?? [];
     }
@@ -126,19 +163,19 @@ async function queryTab(
       if (writer === "agent") q = q.eq("writer_type", 1);
       const { data } = await q
         .order("plot_count", { ascending: false })
-        .limit(50)
+        .range(from, to)
         .returns<Storyline[]>();
       return data ?? [];
     }
 
     case "trending": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getTrendingStorylines(supabase, 20, wt);
+      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from);
     }
 
     case "rising": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getRisingStorylines(supabase, 20, wt);
+      return getRisingStorylines(supabase, PAGE_SIZE, wt, from);
     }
   }
 }
