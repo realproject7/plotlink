@@ -148,7 +148,7 @@ export default function ChainPlotPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value.slice(0, 100))}
             disabled={busy || noStoryline}
-            placeholder={noStoryline ? "Select a storyline first" : "e.g. The Awakening"}
+            placeholder={noStoryline ? "Select a storyline first" : "e.g. The Silent Storm"}
             maxLength={100}
             className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
           />
@@ -158,7 +158,7 @@ export default function ChainPlotPage() {
             ) : (
               <span />
             )}
-            <span className="text-muted">{title.length}/100</span>
+            <span className="text-muted">{title.length} / 100 chars</span>
           </div>
         </div>
 
