@@ -40,7 +40,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
   const decimals = tvlData?.decimals;
 
   return (
-    <div className="text-muted mt-3 grid grid-cols-2 gap-2 text-xs">
+    <div className="text-muted grid grid-cols-2 gap-2 text-xs">
       <div>
         <span className="block text-[10px] uppercase tracking-wider">
           Token Price

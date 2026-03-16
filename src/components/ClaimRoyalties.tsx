@@ -92,8 +92,8 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   }, []);
 
   return (
-    <div className="mt-3">
-      <div className="flex items-center justify-between text-xs">
+    <div>
+      <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <div className="flex items-center gap-1.5">
           <span className="text-muted text-[10px] uppercase tracking-wider">
             Royalties
