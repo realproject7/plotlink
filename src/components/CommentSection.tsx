@@ -50,18 +50,18 @@ export function CommentSection({
   const { signMessageAsync } = useSignMessage();
   const queryClient = useQueryClient();
 
-  const [page, setPage] = useState(1);
+  const [pages, setPages] = useState(1);
+  const [extraComments, setExtraComments] = useState<Comment[]>([]);
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const queryKey = ["comments", storylineId, plotIndex, page];
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const { data, isLoading } = useQuery<CommentsResponse>({
-    queryKey,
+    queryKey: ["comments", storylineId, plotIndex],
     queryFn: async () => {
       const res = await fetch(
-        `/api/comments?storylineId=${storylineId}&plotIndex=${plotIndex}&page=${page}&limit=${PAGE_SIZE}`,
+        `/api/comments?storylineId=${storylineId}&plotIndex=${plotIndex}&page=1&limit=${PAGE_SIZE}`,
       );
       if (!res.ok) throw new Error("Failed to load comments");
       return res.json();
@@ -69,9 +69,26 @@ export function CommentSection({
     staleTime: 30000,
   });
 
-  const comments = data?.comments ?? [];
+  const firstPageComments = data?.comments ?? [];
   const total = data?.total ?? 0;
-  const hasMore = page * PAGE_SIZE < total;
+  const allComments = [...firstPageComments, ...extraComments];
+  const hasMore = pages * PAGE_SIZE < total;
+
+  const loadMore = useCallback(async () => {
+    const nextPage = pages + 1;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(
+        `/api/comments?storylineId=${storylineId}&plotIndex=${plotIndex}&page=${nextPage}&limit=${PAGE_SIZE}`,
+      );
+      if (!res.ok) throw new Error("Failed to load comments");
+      const resp: CommentsResponse = await res.json();
+      setExtraComments((prev) => [...prev, ...resp.comments]);
+      setPages(nextPage);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [pages, storylineId, plotIndex]);
 
   const handleSubmit = useCallback(async () => {
     if (!address || !content.trim()) return;
@@ -103,7 +120,8 @@ export function CommentSection({
       }
 
       setContent("");
-      setPage(1);
+      setExtraComments([]);
+      setPages(1);
       queryClient.invalidateQueries({ queryKey: ["comments", storylineId, plotIndex] });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to post comment");
@@ -151,16 +169,16 @@ export function CommentSection({
       )}
 
       {/* Comment list */}
-      {isLoading && comments.length === 0 && (
+      {isLoading && allComments.length === 0 && (
         <p className="text-muted text-xs">Loading comments...</p>
       )}
 
-      {!isLoading && comments.length === 0 && (
+      {!isLoading && allComments.length === 0 && (
         <p className="text-muted text-xs">No comments yet. Be the first!</p>
       )}
 
       <div className="space-y-4">
-        {comments.map((c) => (
+        {allComments.map((c) => (
           <div key={c.id} className="text-sm">
             <div className="flex items-baseline gap-2">
               <span className="text-foreground text-xs font-medium">
@@ -180,10 +198,11 @@ export function CommentSection({
       {/* Show more */}
       {hasMore && (
         <button
-          onClick={() => setPage((p) => p + 1)}
-          className="text-muted hover:text-accent mt-4 text-xs transition-colors"
+          onClick={loadMore}
+          disabled={loadingMore}
+          className="text-muted hover:text-accent mt-4 text-xs transition-colors disabled:opacity-50"
         >
-          Show more comments
+          {loadingMore ? "Loading..." : "Show more comments"}
         </button>
       )}
     </section>
