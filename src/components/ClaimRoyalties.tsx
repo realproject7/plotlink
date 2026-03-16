@@ -13,9 +13,10 @@ type TxState = "idle" | "confirming" | "pending" | "done" | "error";
 interface ClaimRoyaltiesProps {
   tokenAddress: Address;
   plotCount: number;
+  beneficiary: Address;
 }
 
-export function ClaimRoyalties({ tokenAddress, plotCount }: ClaimRoyaltiesProps) {
+export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRoyaltiesProps) {
   const [txState, setTxState] = useState<TxState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [claimedAmount, setClaimedAmount] = useState<bigint>(BigInt(0));
@@ -26,18 +27,15 @@ export function ClaimRoyalties({ tokenAddress, plotCount }: ClaimRoyaltiesProps)
 
   // Fetch unclaimed royalty balance
   const { data: royaltyInfo, refetch } = useQuery({
-    queryKey: ["royalty-info", tokenAddress],
+    queryKey: ["royalty-info", tokenAddress, beneficiary],
     queryFn: async () => {
-      const result = await publicClient.readContract({
+      const unclaimed = await publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "getRoyaltyInfo",
-        args: [tokenAddress],
+        args: [tokenAddress, beneficiary],
       });
-      return {
-        unclaimed: result[0],
-        beneficiary: result[1] as Address,
-      };
+      return { unclaimed };
     },
     refetchInterval: 30000,
   });

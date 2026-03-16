@@ -38,19 +38,34 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     enabled: !!tokenAddress,
   });
 
-  // Fetch unclaimed royalties
-  const { data: royaltyData } = useQuery({
-    queryKey: ["writer-royalty", tokenAddress],
+  // Fetch bond creator (royalty beneficiary)
+  const { data: bondData } = useQuery({
+    queryKey: ["writer-bond", tokenAddress],
     queryFn: async () => {
       const result = await publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
-        functionName: "getRoyaltyInfo",
+        functionName: "tokenBond",
         args: [tokenAddress],
       });
-      return { unclaimed: result[0] };
+      return { creator: result[0] as `0x${string}` };
     },
     enabled: !!tokenAddress,
+  });
+
+  // Fetch unclaimed royalties (requires creator address as beneficiary)
+  const { data: royaltyData } = useQuery({
+    queryKey: ["writer-royalty", tokenAddress, bondData?.creator],
+    queryFn: async () => {
+      const unclaimed = await publicClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "getRoyaltyInfo",
+        args: [tokenAddress, bondData!.creator],
+      });
+      return { unclaimed };
+    },
+    enabled: !!tokenAddress && !!bondData?.creator,
   });
 
   // Fetch total donations for this storyline

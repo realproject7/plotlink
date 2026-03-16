@@ -68,7 +68,7 @@ export default function WriterDashboard() {
 
       <div className="mt-8 space-y-4">
         {storylines.map((s) => (
-          <StorylineDetail key={s.id} storyline={s} />
+          <StorylineDetail key={s.id} storyline={s} writerAddress={address!} />
         ))}
         {!isLoading && !error && storylines.length === 0 && (
           <p className="text-muted py-8 text-center text-sm">
@@ -80,7 +80,7 @@ export default function WriterDashboard() {
   );
 }
 
-function StorylineDetail({ storyline }: { storyline: Storyline }) {
+function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; writerAddress: Address }) {
   return (
     <div className="border-border rounded border px-4 py-4">
       <div className="flex items-start justify-between gap-3">
@@ -139,6 +139,7 @@ function StorylineDetail({ storyline }: { storyline: Storyline }) {
           <ClaimRoyalties
             tokenAddress={storyline.token_address as Address}
             plotCount={storyline.plot_count}
+            beneficiary={writerAddress}
           />
         </>
       )}

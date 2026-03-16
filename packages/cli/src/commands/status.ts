@@ -54,6 +54,7 @@ export function registerStatus(program: Command): void {
         // -----------------------------------------------------------------
         let tokenSymbol = "TOKEN";
         let tokenDecimals = 18;
+        let bondCreator: Address | null = null;
         try {
           const bond = await client.publicClient.readContract({
             address: MCV2_BOND_ADDRESS,
@@ -61,6 +62,7 @@ export function registerStatus(program: Command): void {
             functionName: "tokenBond",
             args: [info.tokenAddress],
           });
+          bondCreator = (bond as readonly unknown[])[0] as Address;
           const reserveToken = (bond as readonly unknown[])[4] as Address;
           const [sym, dec] = await Promise.all([
             client.publicClient.readContract({
@@ -90,8 +92,10 @@ export function registerStatus(program: Command): void {
         // -----------------------------------------------------------------
         let unclaimedRoyalty: bigint | null = null;
         try {
-          const royalty = await client.getRoyaltyInfo(info.tokenAddress);
-          unclaimedRoyalty = royalty.unclaimed;
+          if (bondCreator) {
+            const royalty = await client.getRoyaltyInfo(info.tokenAddress, bondCreator);
+            unclaimedRoyalty = royalty.unclaimed;
+          }
         } catch {
           // Token may not have a bond yet
         }
