@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { formatUnits, type Address } from "viem";
+import { type Address } from "viem";
 import { getTokenTVL, getTokenPrice } from "../../lib/price";
 import { IS_TESTNET } from "../../lib/contracts/constants";
 
