@@ -6,8 +6,8 @@ export function Footer() {
       <div className="mx-auto max-w-5xl flex flex-col gap-4 text-xs">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4 text-muted">
-            <Link href="/discover" className="hover:text-foreground transition-colors">
-              discover
+            <Link href="/" className="hover:text-foreground transition-colors">
+              stories
             </Link>
             <Link href="/create" className="hover:text-foreground transition-colors">
               create
