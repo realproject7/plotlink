@@ -6,6 +6,42 @@ function error(message: string, status = 400) {
 }
 
 // ---------------------------------------------------------------------------
+// In-memory rate limiter: max 10 POST requests per IP per storyline per hour
+// ---------------------------------------------------------------------------
+
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string, storylineId: number): boolean {
+  const key = `${ip}:${storylineId}`;
+  const now = Date.now();
+  const entry = rateLimitMap.get(key);
+
+  if (!entry || now >= entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+
+  entry.count++;
+  return true;
+}
+
+// Periodically prune expired entries to prevent memory leak
+let lastPrune = Date.now();
+function pruneIfNeeded() {
+  const now = Date.now();
+  if (now - lastPrune < RATE_LIMIT_WINDOW_MS) return;
+  lastPrune = now;
+  for (const [key, entry] of rateLimitMap) {
+    if (now >= entry.resetAt) rateLimitMap.delete(key);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // GET /api/views?storylineId=N
 // ---------------------------------------------------------------------------
 
@@ -59,6 +95,16 @@ export async function POST(req: NextRequest) {
   }
   if (!sessionId || typeof sessionId !== "string" || sessionId.length > 128) {
     return error("Missing or invalid sessionId");
+  }
+
+  // Rate limit: max 10 requests per IP per storyline per hour
+  pruneIfNeeded();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  if (!checkRateLimit(ip, storylineId)) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
   }
 
   const serverClient = createServerClient();
