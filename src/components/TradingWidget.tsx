@@ -92,6 +92,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           abi: mcv2BondAbi,
           functionName: "mint",
           args: [tokenAddress, parsedAmount, maxCost, address],
+          gas: BigInt(2_000_000),
         });
         setTxHash(hash);
         setTxState("pending");
@@ -125,6 +126,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           abi: mcv2BondAbi,
           functionName: "burn",
           args: [tokenAddress, parsedAmount, minRefund, address],
+          gas: BigInt(2_000_000),
         });
         setTxHash(hash);
         setTxState("pending");

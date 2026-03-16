@@ -5,7 +5,9 @@ import { useState, useEffect } from "react";
 const DEADLINE_HOURS = 72;
 
 export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
-  const [remaining, setRemaining] = useState(() => calcRemaining(lastPlotTime));
+  const [remaining, setRemaining] = useState<number | null>(() =>
+    typeof window === "undefined" ? null : calcRemaining(lastPlotTime),
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -13,6 +15,16 @@ export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [lastPlotTime]);
+
+  if (remaining === null) {
+    return (
+      <div className="border-border bg-surface mt-4 rounded border px-3 py-2 text-xs">
+        <span className="text-muted">Deadline: </span>
+        <span className="text-accent font-medium">--:--:--</span>
+        <span className="text-muted ml-1">remaining</span>
+      </div>
+    );
+  }
 
   if (remaining <= 0) {
     return (
