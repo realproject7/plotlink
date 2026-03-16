@@ -31,7 +31,7 @@ export const SUPPORTED_CHAIN_IDS = new Set([BASE_SEPOLIA_CHAIN_ID, BASE_MAINNET_
 
 /** StoryFactory — storyline + plot management. */
 export const STORY_FACTORY_ADDRESS =
-  "0x05C4d59529807316D6fA09cdaA509adDfe85b474" as const;
+  "0x6B8d38af1773dd162Ebc6f4A8eb923F3c669605d" as const;
 
 /** MCV2_Bond — bonding curve trading, token creation, royalty distribution. */
 export const MCV2_BOND_ADDRESS =

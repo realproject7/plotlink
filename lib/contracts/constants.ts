@@ -27,7 +27,7 @@ export const EXPLORER_URL = IS_TESTNET
 /** StoryFactory — storyline + plot management */
 export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
   (IS_TESTNET
-    ? "0x05C4d59529807316D6fA09cdaA509adDfe85b474"
+    ? "0x6B8d38af1773dd162Ebc6f4A8eb923F3c669605d"
     : "0x0000000000000000000000000000000000000000")) as `0x${string}`;
 
 /** ZapPlotLinkMCV2 — one-click buy (ETH/USDC/HUNT -> storyline token) */
