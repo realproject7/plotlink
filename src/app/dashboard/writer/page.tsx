@@ -2,7 +2,9 @@
 
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
+import { formatUnits } from "viem";
 import { supabase, type Storyline } from "../../../../lib/supabase";
+import { getTokenTVL } from "../../../../lib/price";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
@@ -119,11 +121,12 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         </div>
         <div>
           <span className="block text-[10px] uppercase tracking-wider">
-            Deadline
+            Donations
           </span>
-          <span className="text-foreground">
-            {storyline.has_deadline ? "72h" : "none"}
-          </span>
+          {storyline.token_address
+            ? <DonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+            : <span className="text-foreground">—</span>
+          }
         </div>
       </div>
 
@@ -144,5 +147,40 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         </>
       )}
     </div>
+  );
+}
+
+function DonationCount({ storylineId, tokenAddress }: { storylineId: number; tokenAddress: string }) {
+  const { data } = useQuery({
+    queryKey: ["donation-count", storylineId, tokenAddress],
+    queryFn: async () => {
+      const [tvlData, rows] = await Promise.all([
+        getTokenTVL(tokenAddress as Address),
+        supabase
+          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (supabase.from("donations") as any)
+              .select("amount")
+              .eq("storyline_id", storylineId)
+              .then((r: { data: { amount: string }[] | null }) => r.data)
+          : null,
+      ]);
+      const decimals = tvlData?.decimals ?? 18;
+      if (!rows || rows.length === 0) return { total: BigInt(0), count: 0, decimals };
+      const total = (rows as { amount: string }[]).reduce(
+        (sum, d) => sum + BigInt(d.amount),
+        BigInt(0),
+      );
+      return { total, count: rows.length, decimals };
+    },
+  });
+
+  if (!data || data.count === 0) {
+    return <span className="text-foreground">—</span>;
+  }
+
+  return (
+    <span className="text-foreground">
+      {formatUnits(data.total, data.decimals)} <span className="text-muted">({data.count})</span>
+    </span>
   );
 }

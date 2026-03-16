@@ -19,9 +19,8 @@ export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
   if (remaining === null) {
     return (
       <div className="border-border bg-surface mt-4 rounded border px-3 py-2 text-xs">
-        <span className="text-muted">Deadline: </span>
+        <span className="text-muted">Next plot due in </span>
         <span className="text-accent font-medium">--:--:--</span>
-        <span className="text-muted ml-1">remaining</span>
       </div>
     );
   }
@@ -40,12 +39,11 @@ export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
 
   return (
     <div className="border-border bg-surface mt-4 rounded border px-3 py-2 text-xs">
-      <span className="text-muted">Deadline: </span>
+      <span className="text-muted">Next plot due in </span>
       <span className="text-accent font-medium">
         {String(hours).padStart(2, "0")}:{String(minutes).padStart(2, "0")}:
         {String(seconds).padStart(2, "0")}
       </span>
-      <span className="text-muted ml-1">remaining</span>
     </div>
   );
 }
