@@ -8,14 +8,16 @@ import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
 import { STORY_FACTORY, PLOT_TOKEN, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
+import { truncateAddress } from "../../lib/utils";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
 
 interface DonateWidgetProps {
   storylineId: number;
+  writerAddress?: string;
 }
 
-export function DonateWidget({ storylineId }: DonateWidgetProps) {
+export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) {
   const { address, isConnected } = useAccount();
   const [amount, setAmount] = useState("");
   const [txState, setTxState] = useState<TxState>("idle");
@@ -167,7 +169,7 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
           <span className="text-foreground">
             {formatUnits(parsedAmount, 18)} {reserveLabel}
           </span>{" "}
-          to story #{storylineId}
+          to {writerAddress ? truncateAddress(writerAddress) : `story #${storylineId}`}
         </p>
       )}
 
