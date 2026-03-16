@@ -13,6 +13,7 @@ import { useChainPlot } from "../../hooks/useChainPlot";
 import type { PublishState } from "../../hooks/usePublish";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
+import { Select } from "../../components/Select";
 
 const STATE_LABELS: Record<PublishState, string> = {
   idle: "",
@@ -120,22 +121,16 @@ export default function ChainPlotPage() {
               </Link>
             </p>
           ) : (
-            <select
-              value={storylineId ?? ""}
-              onChange={(e) =>
-                setStorylineId(e.target.value ? Number(e.target.value) : null)
-              }
+            <Select
+              value={storylineId != null ? String(storylineId) : ""}
+              onChange={(v) => setStorylineId(v ? Number(v) : null)}
               disabled={busy}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 pr-10 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-            >
-              <option value="">Select a storyline</option>
-              {storylines.map((s) => (
-                <option key={s.id} value={s.storyline_id}>
-                  {s.title} ({s.plot_count}{" "}
-                  {s.plot_count === 1 ? "plot" : "plots"})
-                </option>
-              ))}
-            </select>
+              placeholder="Select a storyline"
+              options={storylines.map((s) => ({
+                value: String(s.storyline_id),
+                label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})`,
+              }))}
+            />
           )}
         </div>
 

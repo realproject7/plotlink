@@ -46,12 +46,3 @@ select {
   padding-right: 2.5rem;
 }
 
-select option {
-  background: var(--bg-surface);
-  color: var(--text);
-}
-
-select option:checked {
-  background: var(--accent);
-  color: var(--bg);
-}
