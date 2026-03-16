@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { supabase, type Storyline } from "../../../../lib/supabase";
 import { getTokenTVL } from "../../../../lib/price";
+import { RESERVE_LABEL } from "../../../../lib/contracts/constants";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
@@ -180,7 +181,7 @@ function DonationCount({ storylineId, tokenAddress }: { storylineId: number; tok
 
   return (
     <span className="text-foreground">
-      {formatUnits(data.total, data.decimals)} <span className="text-muted">({data.count})</span>
+      {formatUnits(data.total, data.decimals)} {RESERVE_LABEL} <span className="text-muted">({data.count})</span>
     </span>
   );
 }
