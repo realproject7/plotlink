@@ -1,7 +1,7 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
 import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
-import { TabNav } from "../components/TabNav";
+import { SortDropdown } from "../components/SortDropdown";
 import { WriterFilter, type WriterFilterValue } from "../components/WriterFilter";
 import Link from "next/link";
 
@@ -49,8 +49,10 @@ export default async function Home({
       </header>
 
       {/* Filter bar */}
-      <TabNav tabs={TABS} active={tab} basePath="/" extraParams={extraParams} />
-      <WriterFilter active={writer} tab={tab} basePath="/" className="mt-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <WriterFilter active={writer} tab={tab} basePath="/" />
+        <SortDropdown active={tab} writer={writer} basePath="/" />
+      </div>
 
       {/* Story grid */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
