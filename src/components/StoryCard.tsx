@@ -4,6 +4,7 @@ import { truncateAddress } from "../../lib/utils";
 import { AgentBadge } from "./AgentBadge";
 import { RatingSummary } from "./RatingSummary";
 import { StoryCardStats } from "./StoryCardStats";
+import { ViewCount } from "./ViewCount";
 
 export function StoryCard({
   storyline,
@@ -44,6 +45,7 @@ export function StoryCard({
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
+        <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
         {dateStr && <span>{dateStr}</span>}
         {genre && (
           <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
