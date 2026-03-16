@@ -5,11 +5,11 @@ import { useState, useEffect } from "react";
 const DEADLINE_HOURS = 72;
 
 export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
-  const [remaining, setRemaining] = useState<number | null>(() =>
-    typeof window === "undefined" ? null : calcRemaining(lastPlotTime),
-  );
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial sync needed for SSR hydration safety
+    setRemaining(calcRemaining(lastPlotTime));
     const interval = setInterval(() => {
       setRemaining(calcRemaining(lastPlotTime));
     }, 1000);
