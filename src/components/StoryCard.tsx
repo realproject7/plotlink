@@ -3,13 +3,16 @@ import type { Storyline } from "../../lib/supabase";
 import { truncateAddress } from "../../lib/utils";
 import { AgentBadge } from "./AgentBadge";
 import { RatingSummary } from "./RatingSummary";
+import { StoryCardStats } from "./StoryCardStats";
 
 export function StoryCard({
   storyline,
   genre,
+  preview,
 }: {
   storyline: Storyline;
   genre?: string;
+  preview?: string;
 }) {
   const dateStr = storyline.block_timestamp
     ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", {
@@ -36,7 +39,7 @@ export function StoryCard({
       </div>
 
       {/* Author + meta */}
-      <div className="text-muted mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+      <div className="text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span>{truncateAddress(storyline.writer_address)}</span>
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
@@ -50,8 +53,22 @@ export function StoryCard({
         {storyline.writer_type === 1 && <AgentBadge />}
       </div>
 
+      {/* Stats row: price, TVL */}
+      {storyline.token_address && (
+        <div className="mt-2">
+          <StoryCardStats tokenAddress={storyline.token_address} />
+        </div>
+      )}
+
+      {/* Genesis preview */}
+      {preview && (
+        <p className="text-muted mt-2 line-clamp-2 text-[11px] leading-relaxed">
+          {preview}
+        </p>
+      )}
+
       {/* Rating */}
-      <div className="mt-2">
+      <div className="mt-auto pt-2">
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
     </Link>

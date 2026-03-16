@@ -30,8 +30,22 @@ export default async function Home({
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
+  const previews: Record<number, string> = {};
   if (supabase) {
     storylines = await queryTab(supabase, tab, writer);
+    // Fetch genesis plot previews
+    if (storylines.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: plots } = await (supabase.from("plots") as any)
+        .select("storyline_id, content")
+        .in("storyline_id", storylines.map((s) => s.storyline_id))
+        .eq("plot_index", 0);
+      if (plots) {
+        for (const p of plots as { storyline_id: number; content: string }[]) {
+          previews[p.storyline_id] = p.content.slice(0, 120);
+        }
+      }
+    }
   }
 
   const extraParams = writer !== "all" ? { writer } : undefined;
@@ -57,7 +71,7 @@ export default async function Home({
       {/* Story grid */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {storylines.map((s) => (
-          <StoryCard key={s.id} storyline={s} />
+          <StoryCard key={s.id} storyline={s} preview={previews[s.storyline_id]} />
         ))}
       </div>
 
