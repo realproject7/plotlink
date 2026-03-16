@@ -12,6 +12,7 @@ import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
+import Link from "next/link";
 import { AgentBadge } from "../../../components/AgentBadge";
 import { WriterIdentity } from "../../../components/WriterIdentity";
 import { ViewCount, ViewTracker } from "../../../components/ViewCount";
@@ -116,6 +117,8 @@ export default async function StoryPage({ params }: { params: Params }) {
     .returns<Plot[]>();
 
   const plots = plotRows ?? [];
+  const genesis = plots.find((p) => p.plot_index === 0) ?? null;
+  const chapters = plots.filter((p) => p.plot_index > 0);
 
   const sl = storyline as Storyline;
   const priceInfo = sl.token_address
@@ -128,16 +131,19 @@ export default async function StoryPage({ params }: { params: Params }) {
       <StoryHeader storyline={storyline} priceInfo={priceInfo} />
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
-        {/* Story content — primary reading area */}
+        {/* Story content — genesis + table of contents */}
         <main>
-          {plots.length > 0 ? (
-            <div className="space-y-10">
-              {plots.map((plot) => (
-                <PlotEntry key={plot.id} plot={plot} />
-              ))}
-            </div>
+          {genesis ? (
+            <GenesisSection plot={genesis} />
           ) : (
             <p className="text-muted text-sm">No plots yet.</p>
+          )}
+
+          {chapters.length > 0 && (
+            <TableOfContents
+              storylineId={id}
+              chapters={chapters}
+            />
           )}
         </main>
 
@@ -227,14 +233,12 @@ function StoryHeader({
   );
 }
 
-function PlotEntry({ plot }: { plot: Plot }) {
+function GenesisSection({ plot }: { plot: Plot }) {
   return (
-    <article className="border-border border-b pb-8 last:border-b-0">
-      <ViewTracker storylineId={plot.storyline_id} plotIndex={plot.plot_index} />
+    <section>
+      <ViewTracker storylineId={plot.storyline_id} plotIndex={0} />
       <div className="text-muted mb-3 flex items-baseline gap-3 text-xs">
-        <span className="text-accent-dim font-medium">
-          {plot.plot_index === 0 ? "Genesis" : `Plot #${plot.plot_index}`}
-        </span>
+        <span className="text-accent-dim font-medium">Genesis</span>
         {plot.block_timestamp && (
           <time dateTime={plot.block_timestamp}>
             {new Date(plot.block_timestamp).toLocaleDateString("en-US", {
@@ -254,7 +258,58 @@ function PlotEntry({ plot }: { plot: Plot }) {
           Content unavailable (CID: {plot.content_cid})
         </p>
       )}
-    </article>
+    </section>
+  );
+}
+
+function TableOfContents({
+  storylineId,
+  chapters,
+}: {
+  storylineId: number;
+  chapters: Plot[];
+}) {
+  return (
+    <section className="mt-10">
+      <h2 className="text-foreground mb-4 text-sm font-semibold uppercase tracking-wider">
+        Chapters
+      </h2>
+      <div className="divide-border divide-y">
+        {chapters.map((ch) => {
+          const chapterTitle = ch.title || `Chapter ${ch.plot_index}`;
+          const preview = ch.content ? ch.content.slice(0, 100) : "";
+          const dateStr = ch.block_timestamp
+            ? new Date(ch.block_timestamp).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+              })
+            : null;
+
+          return (
+            <Link
+              key={ch.id}
+              href={`/story/${storylineId}/${ch.plot_index}`}
+              className="hover:bg-surface/50 flex items-start justify-between gap-4 py-3 transition-colors"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="text-foreground text-sm font-medium">
+                  {chapterTitle}
+                </div>
+                {preview && (
+                  <p className="text-muted mt-0.5 truncate text-xs">
+                    {preview}
+                    {ch.content && ch.content.length > 100 ? "…" : ""}
+                  </p>
+                )}
+              </div>
+              <div className="text-muted shrink-0 text-xs">
+                {dateStr}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
