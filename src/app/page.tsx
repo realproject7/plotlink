@@ -1,7 +1,7 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
 import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
-import { TabNav } from "../components/TabNav";
+import { SortDropdown } from "../components/SortDropdown";
 import { WriterFilter, type WriterFilterValue } from "../components/WriterFilter";
 import Link from "next/link";
 
@@ -30,8 +30,22 @@ export default async function Home({
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
+  const previews: Record<number, string> = {};
   if (supabase) {
     storylines = await queryTab(supabase, tab, writer);
+    // Fetch genesis plot previews
+    if (storylines.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: plots } = await (supabase.from("plots") as any)
+        .select("storyline_id, content")
+        .in("storyline_id", storylines.map((s) => s.storyline_id))
+        .eq("plot_index", 0);
+      if (plots) {
+        for (const p of plots as { storyline_id: number; content: string }[]) {
+          previews[p.storyline_id] = p.content.slice(0, 120);
+        }
+      }
+    }
   }
 
   const extraParams = writer !== "all" ? { writer } : undefined;
@@ -49,13 +63,15 @@ export default async function Home({
       </header>
 
       {/* Filter bar */}
-      <TabNav tabs={TABS} active={tab} basePath="/" extraParams={extraParams} />
-      <WriterFilter active={writer} tab={tab} basePath="/" className="mt-4" />
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <WriterFilter active={writer} tab={tab} basePath="/" />
+        <SortDropdown active={tab} writer={writer} basePath="/" />
+      </div>
 
       {/* Story grid */}
       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {storylines.map((s) => (
-          <StoryCard key={s.id} storyline={s} />
+          <StoryCard key={s.id} storyline={s} preview={previews[s.storyline_id]} />
         ))}
       </div>
 

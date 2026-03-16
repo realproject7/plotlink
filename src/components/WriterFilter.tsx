@@ -2,8 +2,8 @@ import Link from "next/link";
 
 const WRITER_OPTIONS = [
   { value: "all", label: "All" },
-  { value: "human", label: "Human only" },
-  { value: "agent", label: "Agent only" },
+  { value: "human", label: "Human" },
+  { value: "agent", label: "AI" },
 ] as const;
 
 export type WriterFilterValue = (typeof WRITER_OPTIONS)[number]["value"];
