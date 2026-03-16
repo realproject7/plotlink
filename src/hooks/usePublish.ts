@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { useWriteContract } from "wagmi";
 import { hashContent } from "../../lib/content";
 import { publicClient } from "../../lib/rpc";
-import type { Hex, Abi } from "viem";
+import type { Hex, Abi, TransactionReceipt } from "viem";
 
 export type PublishState =
   | "idle"
@@ -39,6 +39,7 @@ export function usePublish() {
   const [state, setState] = useState<PublishState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | undefined>(undefined);
+  const [receipt, setReceipt] = useState<TransactionReceipt | undefined>(undefined);
   const cachedCid = useRef<{ cid: string; contentHash: string } | null>(null);
 
   const { writeContractAsync } = useWriteContract();
@@ -81,7 +82,9 @@ export function usePublish() {
 
         // 3. Wait for tx confirmation
         setState("pending");
-        await publicClient.waitForTransactionReceipt({ hash });
+        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+        setReceipt(receipt);
 
         // 4. Trigger indexer
         setState("indexing");
@@ -108,8 +111,9 @@ export function usePublish() {
     setState("idle");
     setError(null);
     setTxHash(undefined);
+    setReceipt(undefined);
     cachedCid.current = null;
   }, []);
 
-  return { state, error, txHash, execute, reset };
+  return { state, error, txHash, receipt, execute, reset };
 }
