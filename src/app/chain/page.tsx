@@ -52,9 +52,11 @@ export default function ChainPlotPage() {
 
   const { state, error, chainPlot, reset } = useChainPlot();
   const { valid, charCount } = validateContentLength(content);
+  const titleValid = title.trim().length > 0;
   const canSubmit =
     (state === "idle" || state === "error") &&
     storylineId !== null &&
+    titleValid &&
     valid;
 
   if (!isConnected) {
@@ -139,18 +141,25 @@ export default function ChainPlotPage() {
         {/* Chapter title */}
         <div>
           <label className="text-foreground mb-2 block text-sm">
-            Chapter Title <span className="text-muted">(optional)</span>
+            Chapter Title
           </label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value.slice(0, 100))}
             disabled={busy || noStoryline}
-            placeholder={noStoryline ? "Select a storyline first" : "e.g. The Awakening"}
+            placeholder={noStoryline ? "Select a storyline first" : "e.g. The Silent Storm"}
             maxLength={100}
             className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
           />
-          <span className="text-muted mt-1 block text-xs">{title.length}/100</span>
+          <div className="mt-1 flex justify-between text-xs">
+            {!titleValid && content.length > 0 ? (
+              <span className="text-error">Title is required</span>
+            ) : (
+              <span />
+            )}
+            <span className="text-muted">{title.length} / 100 chars</span>
+          </div>
         </div>
 
         {/* Content */}
