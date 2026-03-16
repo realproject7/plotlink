@@ -29,6 +29,10 @@ export function Select({
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
+  const allOptions = placeholder
+    ? [{ value: "", label: placeholder }, ...options]
+    : options;
+
   const selectedLabel =
     options.find((o) => o.value === value)?.label ?? placeholder;
 
@@ -67,7 +71,7 @@ export function Select({
       switch (e.key) {
         case "ArrowDown":
           e.preventDefault();
-          setFocusIndex((i) => Math.min(i + 1, options.length - 1));
+          setFocusIndex((i) => Math.min(i + 1, allOptions.length - 1));
           break;
         case "ArrowUp":
           e.preventDefault();
@@ -75,8 +79,8 @@ export function Select({
           break;
         case "Enter":
           e.preventDefault();
-          if (focusIndex >= 0 && focusIndex < options.length) {
-            onChange(options[focusIndex].value);
+          if (focusIndex >= 0 && focusIndex < allOptions.length) {
+            onChange(allOptions[focusIndex].value);
             setOpen(false);
           }
           break;
@@ -86,7 +90,7 @@ export function Select({
           break;
       }
     },
-    [disabled, open, options, focusIndex, onChange],
+    [disabled, open, allOptions, focusIndex, onChange],
   );
 
   return (
@@ -123,9 +127,9 @@ export function Select({
           onKeyDown={handleKeyDown}
           className="border-border bg-surface absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded border py-1 shadow-lg"
         >
-          {options.map((opt, i) => (
+          {allOptions.map((opt, i) => (
             <li
-              key={opt.value}
+              key={opt.value === "" ? "__placeholder__" : opt.value}
               role="option"
               aria-selected={opt.value === value}
               onMouseEnter={() => setFocusIndex(i)}
@@ -138,7 +142,9 @@ export function Select({
                   ? "bg-accent text-background"
                   : i === focusIndex
                     ? "bg-border/50 text-foreground"
-                    : "text-foreground hover:bg-border/30"
+                    : opt.value === ""
+                      ? "text-muted hover:bg-border/30"
+                      : "text-foreground hover:bg-border/30"
               }`}
             >
               {opt.label}
