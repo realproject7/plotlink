@@ -7,6 +7,7 @@ import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import type { Address } from "viem";
 import { truncateAddress } from "../../lib/utils";
+import { StarDisplay, StarInput } from "./StarRating";
 
 interface RatingData {
   id: number;
@@ -28,22 +29,6 @@ interface RatingsResponse {
 interface RatingWidgetProps {
   storylineId: number;
   tokenAddress: string;
-}
-
-function StarDisplay({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg" }) {
-  const sizeClass = size === "lg" ? "text-base" : "text-xs";
-  return (
-    <span className={sizeClass}>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={star <= Math.round(rating) ? "text-accent" : "text-muted"}
-        >
-          *
-        </span>
-      ))}
-    </span>
-  );
 }
 
 export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
@@ -149,7 +134,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
         <h2 className="text-foreground text-sm font-medium">Ratings</h2>
         {count > 0 && (
           <div className="flex items-center gap-2 text-xs">
-            <StarDisplay rating={average} />
+            <StarDisplay rating={average} size={18} />
             <span className="text-muted">
               {average.toFixed(1)} ({count})
             </span>
@@ -163,21 +148,12 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
           <label className="text-muted block text-[10px] uppercase tracking-wider">
             Your rating
           </label>
-          <div className="mt-1 flex gap-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <button
-                key={star}
-                onClick={() => setSelectedRating(star)}
-                disabled={submitting}
-                className={`rounded border px-2 py-1 text-xs transition-colors ${
-                  star <= selectedRating
-                    ? "border-accent text-accent"
-                    : "border-border text-muted hover:border-accent-dim"
-                } disabled:opacity-50`}
-              >
-                {star}
-              </button>
-            ))}
+          <div className="mt-1">
+            <StarInput
+              value={selectedRating}
+              onChange={setSelectedRating}
+              disabled={submitting}
+            />
           </div>
 
           <textarea
@@ -219,7 +195,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
                   <span className="text-foreground">
                     {truncateAddress(r.rater_address)}
                   </span>
-                  <StarDisplay rating={r.rating} />
+                  <StarDisplay rating={r.rating} size={12} />
                 </div>
                 {r.comment && (
                   <p className="text-muted mt-0.5 pl-0.5">{r.comment}</p>
