@@ -62,6 +62,7 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
         abi: storyFactoryAbi,
         functionName: "donate",
         args: [BigInt(storylineId), parsedAmount],
+        gas: BigInt(150_000),
       });
       setTxHash(hash);
 
