@@ -9,18 +9,17 @@ export function registerCreate(program: Command): void {
     .requiredOption("-t, --title <title>", "Storyline title")
     .requiredOption("-f, --file <path>", "Path to content file (plain text)")
     .requiredOption("-g, --genre <genre>", "Genre label")
-    .option("-d, --deadline", "Enable sunset deadline", false)
-    .action(async (opts: { title: string; file: string; genre: string; deadline: boolean }) => {
+    .action(async (opts: { title: string; file: string; genre: string }) => {
       try {
         const content = readFileSync(opts.file, "utf-8");
         const client = buildClient({ ipfs: true });
 
-        console.log(`Creating storyline "${opts.title}"...`);
+        console.log(`Creating storyline "${opts.title}" (7-day deadline)...`);
         const result = await client.createStoryline(
           opts.title,
           content,
           opts.genre,
-          opts.deadline,
+          true,
         );
 
         console.log("Storyline created!");
