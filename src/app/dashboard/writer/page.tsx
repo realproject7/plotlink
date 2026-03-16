@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
@@ -121,9 +122,11 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
           </span>
         </div>
         <div>
-          <span className="block text-[10px] uppercase tracking-wider">
+          <span className="text-[10px] uppercase tracking-wider">
             Donations
           </span>
+          <DonationsTooltip />
+          <br />
           {storyline.token_address
             ? <DonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
             : <span className="text-foreground">—</span>
@@ -180,6 +183,33 @@ function DonationCount({ storylineId, tokenAddress }: { storylineId: number; tok
   return (
     <span className="text-foreground">
       {formatUnits(data.total, data.decimals)} {RESERVE_LABEL} <span className="text-muted">({data.count})</span>
+    </span>
+  );
+}
+
+function DonationsTooltip() {
+  const [show, setShow] = useState(false);
+  return (
+    <span className="relative ml-1 inline-block">
+      <button
+        type="button"
+        onClick={() => setShow((v) => !v)}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        className="text-muted hover:text-foreground text-[10px] leading-none transition-colors"
+        aria-label="Donation info"
+      >
+        &#9432;
+      </button>
+      {show && (
+        <span className="border-border bg-surface absolute bottom-full left-1/2 z-50 mb-2 w-52 -translate-x-1/2 rounded border px-3 py-2 text-[10px] leading-relaxed shadow-lg">
+          <span className="text-foreground font-medium">Donations</span>
+          <br />
+          <span className="text-muted">
+            Sent directly to your wallet when donors contribute. Already in your account — no claiming needed.
+          </span>
+        </span>
+      )}
     </span>
   );
 }
