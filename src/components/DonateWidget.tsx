@@ -88,8 +88,9 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
       setTxState("pending");
       await publicClient.waitForTransactionReceipt({ hash });
 
-      // Trigger donation indexer
+      // Trigger donation indexer (delay for RPC propagation on Base Sepolia)
       setTxState("indexing");
+      await new Promise((r) => setTimeout(r, 5000));
       const indexRes = await fetch("/api/index/donation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
