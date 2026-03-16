@@ -92,6 +92,7 @@ export default function ChainPlotPage() {
   }
 
   const busy = state !== "idle" && state !== "error";
+  const noStoryline = storylineId === null;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -142,9 +143,9 @@ export default function ChainPlotPage() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            disabled={busy}
+            disabled={busy || noStoryline}
             rows={12}
-            placeholder="Write the next plot (500–10,000 characters)"
+            placeholder={noStoryline ? "Select a storyline above to chain a plot" : "Write the next plot (500–10,000 characters)"}
             className="border-border bg-surface text-foreground placeholder:text-muted w-full resize-y rounded border px-3 py-2 text-sm leading-relaxed focus:border-accent focus:outline-none disabled:opacity-50"
           />
           <div className="mt-1 text-xs">
