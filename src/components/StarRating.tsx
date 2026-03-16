@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 
 interface StarIconProps {
   /** 0 = empty, 1 = full, 0-1 = partial fill */
   fill: number;
   size: number;
+  clipId: string;
   className?: string;
 }
 
-function StarIcon({ fill, size, className = "" }: StarIconProps) {
-  const id = `star-clip-${Math.random().toString(36).slice(2, 8)}`;
+function StarIcon({ fill, size, clipId, className = "" }: StarIconProps) {
   return (
     <svg
       width={size}
@@ -21,7 +21,7 @@ function StarIcon({ fill, size, className = "" }: StarIconProps) {
     >
       {fill > 0 && fill < 1 && (
         <defs>
-          <clipPath id={id}>
+          <clipPath id={clipId}>
             <rect x="0" y="0" width={24 * fill} height="24" />
           </clipPath>
         </defs>
@@ -42,7 +42,7 @@ function StarIcon({ fill, size, className = "" }: StarIconProps) {
           stroke="currentColor"
           strokeWidth="1.5"
           className="text-accent"
-          clipPath={fill < 1 ? `url(#${id})` : undefined}
+          clipPath={fill < 1 ? `url(#${clipId})` : undefined}
         />
       )}
     </svg>
@@ -59,11 +59,12 @@ interface StarDisplayProps {
 }
 
 export function StarDisplay({ rating, size = 16 }: StarDisplayProps) {
+  const baseId = useId();
   return (
     <span className="inline-flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => {
         const fill = Math.min(1, Math.max(0, rating - (star - 1)));
-        return <StarIcon key={star} fill={fill} size={size} />;
+        return <StarIcon key={star} fill={fill} size={size} clipId={`${baseId}-${star}`} />;
       })}
     </span>
   );
@@ -81,6 +82,7 @@ interface StarInputProps {
 }
 
 export function StarInput({ value, onChange, disabled = false, size = 24 }: StarInputProps) {
+  const baseId = useId();
   const [hovered, setHovered] = useState(0);
   const display = hovered || value;
 
@@ -99,7 +101,7 @@ export function StarInput({ value, onChange, disabled = false, size = 24 }: Star
           className="cursor-pointer p-0.5 transition-transform hover:scale-110 disabled:cursor-default disabled:opacity-50"
           aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
         >
-          <StarIcon fill={star <= display ? 1 : 0} size={size} />
+          <StarIcon fill={star <= display ? 1 : 0} size={size} clipId={`${baseId}-${star}`} />
         </button>
       ))}
     </span>
