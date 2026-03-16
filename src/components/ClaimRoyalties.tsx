@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi } from "../../lib/price";
-import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
+import { MCV2_BOND, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
 
 type TxState = "idle" | "confirming" | "pending" | "done" | "error";
 
@@ -20,6 +20,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const [txState, setTxState] = useState<TxState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [claimedAmount, setClaimedAmount] = useState<bigint>(BigInt(0));
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
 
@@ -55,6 +56,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
         functionName: "claimRoyalties",
         args: [tokenAddress],
       });
+      setTxHash(hash);
 
       setTxState("pending");
       await publicClient.waitForTransactionReceipt({ hash });
@@ -107,6 +109,19 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           </span>
         )}
       </div>
+      {txHash && txState === "done" && (
+        <p className="text-muted mt-1 text-[10px]">
+          Tx:{" "}
+          <a
+            href={`${EXPLORER_URL}/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            {txHash.slice(0, 10)}...{txHash.slice(-8)}
+          </a>
+        </p>
+      )}
       {error && <p className="mt-1 text-[10px] text-red-400">{error}</p>}
     </div>
   );
