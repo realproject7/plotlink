@@ -17,20 +17,20 @@ export function registerClaim(program: Command): void {
         const tokenAddress = opts.address as Address;
         const client = buildClient({ ipfs: false });
 
+        // Fetch bond data (creator = beneficiary, reserve token for display)
         console.log("Checking royalties...");
-        const info = await client.getRoyaltyInfo(tokenAddress);
+        const bond = await client.publicClient.readContract({
+          address: MCV2_BOND_ADDRESS,
+          abi: mcv2BondAbi,
+          functionName: "tokenBond",
+          args: [tokenAddress],
+        });
+        const creator = (bond as readonly unknown[])[0] as Address;
+        const reserveToken = (bond as readonly unknown[])[4] as Address;
 
-        // Fetch reserve token address via tokenBond(), then read its decimals
         let decimals = 18;
         let symbol = "TOKEN";
         try {
-          const bond = await client.publicClient.readContract({
-            address: MCV2_BOND_ADDRESS,
-            abi: mcv2BondAbi,
-            functionName: "tokenBond",
-            args: [tokenAddress],
-          });
-          const reserveToken = (bond as readonly unknown[])[4] as Address;
           const [dec, sym] = await Promise.all([
             client.publicClient.readContract({
               address: reserveToken,
@@ -49,9 +49,10 @@ export function registerClaim(program: Command): void {
           // Default to 18/TOKEN if calls fail
         }
 
+        const info = await client.getRoyaltyInfo(tokenAddress, creator);
         const formatted = formatUnits(info.unclaimed, decimals);
         console.log(`  Unclaimed:    ${formatted} ${symbol}`);
-        console.log(`  Beneficiary:  ${info.beneficiary}`);
+        console.log(`  Beneficiary:  ${creator}`);
 
         if (info.unclaimed === 0n) {
           console.log("No royalties to claim.");

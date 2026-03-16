@@ -131,11 +131,11 @@ export const mcv2BondAbi = [
     type: "function",
     name: "getRoyaltyInfo",
     stateMutability: "view",
-    inputs: [{ name: "token", type: "address" }],
-    outputs: [
-      { name: "royalty", type: "uint256" },
-      { name: "royaltyBeneficiary", type: "address" },
+    inputs: [
+      { name: "token", type: "address" },
+      { name: "beneficiary", type: "address" },
     ],
+    outputs: [{ name: "unclaimed", type: "uint256" }],
   },
   {
     type: "function",

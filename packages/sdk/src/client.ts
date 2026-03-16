@@ -101,7 +101,6 @@ export interface SetAgentWalletResult {
 
 export interface RoyaltyInfo {
   unclaimed: bigint;
-  beneficiary: Address;
 }
 
 export interface TokenPriceInfo {
@@ -495,20 +494,18 @@ export class PlotLink {
    * Get unclaimed royalty info for a storyline token.
    *
    * @param tokenAddress - The storyline's ERC-20 token address
-   * @returns Unclaimed royalty amount and beneficiary address
+   * @param beneficiary - The royalty beneficiary (usually the bond creator)
+   * @returns Unclaimed royalty amount
    */
-  async getRoyaltyInfo(tokenAddress: Address): Promise<RoyaltyInfo> {
-    const result = await this.publicClient.readContract({
+  async getRoyaltyInfo(tokenAddress: Address, beneficiary: Address): Promise<RoyaltyInfo> {
+    const unclaimed = await this.publicClient.readContract({
       address: this.mcv2Bond,
       abi: mcv2BondAbi,
       functionName: "getRoyaltyInfo",
-      args: [tokenAddress],
+      args: [tokenAddress, beneficiary],
     });
 
-    return {
-      unclaimed: (result as [bigint, Address])[0],
-      beneficiary: (result as [bigint, Address])[1],
-    };
+    return { unclaimed: unclaimed as bigint };
   }
 
   /**
