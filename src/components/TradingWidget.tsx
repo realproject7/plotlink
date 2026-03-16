@@ -38,6 +38,22 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       ? parseUnits(amount, 18)
       : BigInt(0);
 
+  // Fetch relevant balance: reserve token for buy, storyline token for sell
+  const balanceToken = tab === "buy" ? PLOT_TOKEN : tokenAddress;
+  const { data: balance, refetch: refetchBalance } = useQuery({
+    queryKey: ["token-balance", balanceToken, address],
+    queryFn: async () => {
+      return publicClient.readContract({
+        address: balanceToken,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [address!],
+      });
+    },
+    enabled: !!address,
+    refetchInterval: 15000,
+  });
+
   // Fetch price estimate
   const { data: estimate } = useQuery({
     queryKey: ["trade-estimate", tab, tokenAddress, amount],
@@ -135,17 +151,26 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
       setTxState("done");
       setAmount("");
+      refetchBalance();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");
     }
-  }, [address, parsedAmount, estimate, tab, tokenAddress, writeContractAsync]);
+  }, [address, parsedAmount, estimate, tab, tokenAddress, writeContractAsync, refetchBalance]);
 
   const reset = useCallback(() => {
     setTxState("idle");
     setError(null);
     setTxHash(null);
   }, []);
+
+  // Pre-validate balance
+  const insufficientBalance =
+    balance !== undefined &&
+    parsedAmount > BigInt(0) &&
+    (tab === "buy"
+      ? estimate != null && applySlippage(estimate, true) > balance
+      : parsedAmount > balance);
 
   if (!isConnected) return null;
 
@@ -179,18 +204,37 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         <label className="text-muted block text-[10px] uppercase tracking-wider">
           {tab === "buy" ? "Tokens to buy" : "Tokens to sell"}
         </label>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="0.0"
-          value={amount}
-          onChange={(e) => {
-            setAmount(e.target.value);
-            if (txState !== "idle") reset();
-          }}
-          disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
-          className="border-border bg-background text-foreground mt-1 w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-        />
+        <div className="relative mt-1">
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0.0"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              if (txState !== "idle") reset();
+            }}
+            disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
+            className="border-border bg-background text-foreground w-full rounded border px-3 py-2 pr-14 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+          />
+          {balance !== undefined && (
+            <button
+              type="button"
+              onClick={() => setAmount(formatUnits(balance, 18))}
+              className="text-accent hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold"
+            >
+              MAX
+            </button>
+          )}
+        </div>
+        {balance !== undefined && (
+          <p className="text-muted mt-1 text-[10px]">
+            Balance: {formatUnits(balance, 18)} {tab === "buy" ? reserveLabel : "tokens"}
+          </p>
+        )}
+        {insufficientBalance && (
+          <p className="mt-1 text-[10px] text-red-400">Insufficient balance</p>
+        )}
       </div>
 
       {/* Estimate */}
@@ -208,7 +252,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       <button
         onClick={txState === "done" || txState === "error" ? reset : executeTrade}
         disabled={
-          (txState === "idle" && (parsedAmount === BigInt(0) || !estimate)) ||
+          (txState === "idle" && (parsedAmount === BigInt(0) || !estimate || insufficientBalance)) ||
           (txState !== "idle" && txState !== "done" && txState !== "error")
         }
         className="bg-accent text-background mt-3 w-full rounded py-2 text-xs font-medium transition-opacity disabled:opacity-40"

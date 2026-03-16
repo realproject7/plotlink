@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, useWriteContract } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
@@ -28,6 +29,24 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
     amount && !isNaN(Number(amount)) && Number(amount) > 0
       ? parseUnits(amount, 18)
       : BigInt(0);
+
+  // Fetch reserve token balance
+  const { data: balance, refetch: refetchBalance } = useQuery({
+    queryKey: ["token-balance", PLOT_TOKEN, address],
+    queryFn: async () => {
+      return publicClient.readContract({
+        address: PLOT_TOKEN,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [address!],
+      });
+    },
+    enabled: !!address,
+    refetchInterval: 15000,
+  });
+
+  const insufficientBalance =
+    balance !== undefined && parsedAmount > BigInt(0) && parsedAmount > balance;
 
   const executeDonate = useCallback(async () => {
     if (!address || parsedAmount === BigInt(0)) return;
@@ -82,11 +101,12 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
 
       setTxState("done");
       setAmount("");
+      refetchBalance();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");
     }
-  }, [address, parsedAmount, storylineId, writeContractAsync]);
+  }, [address, parsedAmount, storylineId, writeContractAsync, refetchBalance]);
 
   const reset = useCallback(() => {
     setTxState("idle");
@@ -107,18 +127,37 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
         <label className="text-muted block text-[10px] uppercase tracking-wider">
           Amount ({reserveLabel})
         </label>
-        <input
-          type="text"
-          inputMode="decimal"
-          placeholder="0.0"
-          value={amount}
-          onChange={(e) => {
-            setAmount(e.target.value);
-            if (txState !== "idle") reset();
-          }}
-          disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
-          className="border-border bg-background text-foreground mt-1 w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-        />
+        <div className="relative mt-1">
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="0.0"
+            value={amount}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              if (txState !== "idle") reset();
+            }}
+            disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
+            className="border-border bg-background text-foreground w-full rounded border px-3 py-2 pr-14 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+          />
+          {balance !== undefined && (
+            <button
+              type="button"
+              onClick={() => setAmount(formatUnits(balance, 18))}
+              className="text-accent hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold"
+            >
+              MAX
+            </button>
+          )}
+        </div>
+        {balance !== undefined && (
+          <p className="text-muted mt-1 text-[10px]">
+            Balance: {formatUnits(balance, 18)} {reserveLabel}
+          </p>
+        )}
+        {insufficientBalance && (
+          <p className="mt-1 text-[10px] text-red-400">Insufficient balance</p>
+        )}
       </div>
 
       {parsedAmount > BigInt(0) && (
@@ -134,7 +173,7 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
       <button
         onClick={txState === "done" || txState === "error" ? reset : executeDonate}
         disabled={
-          (txState === "idle" && parsedAmount === BigInt(0)) ||
+          (txState === "idle" && (parsedAmount === BigInt(0) || insufficientBalance)) ||
           (txState !== "idle" && txState !== "done" && txState !== "error")
         }
         className="bg-accent text-background mt-3 w-full rounded py-2 text-xs font-medium transition-opacity disabled:opacity-40"
