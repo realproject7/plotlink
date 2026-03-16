@@ -14,8 +14,8 @@ const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
 
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 
-function checkRateLimit(ip: string, storylineId: number): boolean {
-  const key = `${ip}:${storylineId}`;
+function checkRateLimit(ip: string, storylineId: number, plotIndex: number | null): boolean {
+  const key = `${ip}:${storylineId}:${plotIndex ?? "s"}`;
   const now = Date.now();
   const entry = rateLimitMap.get(key);
 
@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
   // Rate limit: max 10 requests per IP per storyline per hour
   pruneIfNeeded();
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (!checkRateLimit(ip, storylineId)) {
+  const plotVal = plotIndex ?? null;
+  if (!checkRateLimit(ip, storylineId, plotVal)) {
     return NextResponse.json(
       { error: "Too many requests" },
       { status: 429, headers: { "Retry-After": "3600" } },
@@ -111,7 +112,6 @@ export async function POST(req: NextRequest) {
   if (!serverClient) return error("Supabase not configured", 500);
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const plotVal = plotIndex ?? null;
 
   // Dedup: check if this session already viewed this page in the last hour
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
