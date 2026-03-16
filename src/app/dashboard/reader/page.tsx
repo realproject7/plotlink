@@ -8,6 +8,15 @@ import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
+import { RESERVE_LABEL } from "../../../../lib/contracts/constants";
+
+/** Truncate formatUnits output to at most `digits` decimal places */
+function formatTruncated(value: bigint, decimals: number, digits = 6): string {
+  const raw = formatUnits(value, decimals);
+  const dot = raw.indexOf(".");
+  if (dot === -1 || raw.length - dot - 1 <= digits) return raw;
+  return raw.slice(0, dot + 1 + digits).replace(/0+$/, "").replace(/\.$/, "");
+}
 
 const PAGE_SIZE = 50;
 
@@ -93,7 +102,7 @@ export default function ReaderDashboard() {
           {donations.length > 0 && (
             <span>
               {" "}
-              &middot; {formatUnits(totalDonated, 18)} $PLOT on this page
+              &middot; {formatTruncated(totalDonated, 18)} {RESERVE_LABEL} on this page
             </span>
           )}
         </p>
@@ -160,7 +169,7 @@ function DonationRow({ donation }: { donation: Donation }) {
         )}
       </div>
       <span className="text-accent font-medium">
-        {formatUnits(BigInt(donation.amount), 18)} $PLOT
+        {formatTruncated(BigInt(donation.amount), 18)} {RESERVE_LABEL}
       </span>
     </div>
   );
