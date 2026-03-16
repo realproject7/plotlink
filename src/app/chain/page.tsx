@@ -41,6 +41,7 @@ async function fetchWriterStorylines(address: string): Promise<Storyline[]> {
 export default function ChainPlotPage() {
   const { address, isConnected } = useAccount();
   const [storylineId, setStorylineId] = useState<number | null>(null);
+  const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
 
   const { data: storylines = [], isLoading: loadingStorylines } = useQuery({
@@ -103,7 +104,7 @@ export default function ChainPlotPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (canSubmit) chainPlot(storylineId, content);
+          if (canSubmit) chainPlot(storylineId, content, title);
         }}
         className="mt-8 space-y-6"
       >
@@ -133,6 +134,23 @@ export default function ChainPlotPage() {
               }))}
             />
           )}
+        </div>
+
+        {/* Chapter title */}
+        <div>
+          <label className="text-foreground mb-2 block text-sm">
+            Chapter Title <span className="text-muted">(optional)</span>
+          </label>
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value.slice(0, 100))}
+            disabled={busy || noStoryline}
+            placeholder={noStoryline ? "Select a storyline first" : "e.g. The Awakening"}
+            maxLength={100}
+            className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+          />
+          <span className="text-muted mt-1 block text-xs">{title.length}/100</span>
         </div>
 
         {/* Content */}
