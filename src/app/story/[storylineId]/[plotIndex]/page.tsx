@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createServerClient, type Storyline, type Plot } from "../../../../../lib/supabase";
 import { truncateAddress } from "../../../../../lib/utils";
 import { ViewTracker } from "../../../../components/ViewCount";
+import { CommentSection } from "../../../../components/CommentSection";
 import Link from "next/link";
 
 type Params = Promise<{ storylineId: string; plotIndex: string }>;
@@ -125,6 +126,9 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
           Content unavailable (CID: {p.content_cid})
         </p>
       )}
+
+      {/* Comments */}
+      <CommentSection storylineId={sid} plotIndex={pidx} />
 
       {/* Navigation */}
       <nav className="border-border mt-10 flex items-center justify-between border-t pt-6">
