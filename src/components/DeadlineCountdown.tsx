@@ -5,10 +5,11 @@ import { useState, useEffect } from "react";
 const DEADLINE_HOURS = 72;
 
 export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
-  const [remaining, setRemaining] = useState<number | null>(null);
+  const [remaining, setRemaining] = useState<number | null>(() =>
+    typeof window === "undefined" ? null : calcRemaining(lastPlotTime),
+  );
 
   useEffect(() => {
-    setRemaining(calcRemaining(lastPlotTime));
     const interval = setInterval(() => {
       setRemaining(calcRemaining(lastPlotTime));
     }, 1000);
