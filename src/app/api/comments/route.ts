@@ -4,7 +4,8 @@ import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
 
 const MAX_COMMENT_LENGTH = 1000;
-const PAGE_SIZE = 20;
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 100;
 
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -27,7 +28,9 @@ export async function GET(req: NextRequest) {
   const pidx = Number(plotIndex);
   if (isNaN(sid) || isNaN(pidx)) return error("Invalid storylineId or plotIndex");
 
-  const offset = Math.max(Number(req.nextUrl.searchParams.get("offset") ?? 0), 0);
+  const limit = Math.min(Math.max(Number(req.nextUrl.searchParams.get("limit") ?? DEFAULT_LIMIT), 1), MAX_LIMIT);
+  const page = Math.max(Number(req.nextUrl.searchParams.get("page") ?? 1), 1);
+  const offset = (page - 1) * limit;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data, error: dbError } = await (db.from("comments") as any)
@@ -36,7 +39,7 @@ export async function GET(req: NextRequest) {
     .eq("plot_index", pidx)
     .eq("hidden", false)
     .order("created_at", { ascending: false })
-    .range(offset, offset + PAGE_SIZE - 1);
+    .range(offset, offset + limit - 1);
 
   if (dbError) return error(`Database error: ${dbError.message}`, 500);
 
@@ -51,8 +54,8 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     comments: data ?? [],
     total: count ?? 0,
-    offset,
-    pageSize: PAGE_SIZE,
+    page,
+    limit,
   });
 }
 
