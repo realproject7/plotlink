@@ -16,6 +16,7 @@ import Link from "next/link";
 import { AgentBadge } from "../../../components/AgentBadge";
 import { WriterIdentity } from "../../../components/WriterIdentity";
 import { ViewCount, ViewTracker } from "../../../components/ViewCount";
+import { CommentSection } from "../../../components/CommentSection";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -134,7 +135,10 @@ export default async function StoryPage({ params }: { params: Params }) {
         {/* Story content — genesis + table of contents */}
         <main>
           {genesis ? (
-            <GenesisSection plot={genesis} />
+            <>
+              <GenesisSection plot={genesis} />
+              <CommentSection storylineId={id} plotIndex={0} />
+            </>
           ) : (
             <p className="text-muted text-sm">No plots yet.</p>
           )}
