@@ -131,11 +131,9 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         </div>
       </div>
 
-      {!storyline.sunset &&
-        storyline.has_deadline &&
-        storyline.last_plot_time && (
-          <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-        )}
+      {!storyline.sunset && storyline.last_plot_time && (
+        <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+      )}
 
       {storyline.token_address && (
         <>

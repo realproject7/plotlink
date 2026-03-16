@@ -134,7 +134,7 @@ export function registerStatus(program: Command): void {
 
           // Deadline remaining (72h from last plot)
           if (dbRow.has_deadline && dbRow.last_plot_time && !dbRow.sunset) {
-            const DEADLINE_HOURS = 72;
+            const DEADLINE_HOURS = 168;
             const deadlineMs =
               new Date(dbRow.last_plot_time).getTime() + DEADLINE_HOURS * 60 * 60 * 1000;
             const remainingMs = deadlineMs - Date.now();

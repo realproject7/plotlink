@@ -217,7 +217,7 @@ function StoryHeader({
             {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} total
           </span>
         </div>
-      ) : storyline.has_deadline && storyline.last_plot_time ? (
+      ) : storyline.last_plot_time ? (
         <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
       ) : null}
     </header>

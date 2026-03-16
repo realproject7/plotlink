@@ -27,7 +27,7 @@ export default function CreateStorylinePage() {
   const { isConnected } = useAccount();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [hasDeadline, setHasDeadline] = useState(false);
+  const hasDeadline = true; // mandatory 7-day deadline for all storylines
 
   const { state, error, execute, reset } = usePublish();
   const { valid, charCount } = validateContentLength(content);
@@ -134,22 +134,10 @@ export default function CreateStorylinePage() {
           </div>
         </div>
 
-        {/* Deadline toggle */}
-        <label className="flex cursor-pointer items-center gap-3">
-          <input
-            type="checkbox"
-            checked={hasDeadline}
-            onChange={(e) => setHasDeadline(e.target.checked)}
-            disabled={busy}
-            className="accent-accent h-4 w-4"
-          />
-          <span className="text-foreground text-sm">
-            Enable 72h deadline
-          </span>
-          <span className="text-muted text-xs">
-            Story sunsets if no new plot within 72 hours
-          </span>
-        </label>
+        {/* Deadline info */}
+        <p className="text-muted text-xs">
+          All storylines have a 7-day deadline — the story sunsets if no new plot is added within 7 days.
+        </p>
 
         {/* Status */}
         {state === "error" && (

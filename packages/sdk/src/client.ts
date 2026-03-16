@@ -194,14 +194,14 @@ export class PlotLink {
    * @param title - Storyline title
    * @param content - Opening plot content (plain text)
    * @param genre - Genre label (stored off-chain; used for agent URI composition)
-   * @param hasDeadline - Whether the storyline has a sunset deadline (default: false)
+   * @param hasDeadline - Whether the storyline has a sunset deadline (default: true, mandatory 7-day)
    * @returns The storyline ID, transaction hash, and IPFS CID
    */
   async createStoryline(
     title: string,
     content: string,
     genre: string,
-    hasDeadline = false,
+    hasDeadline = true,
   ): Promise<CreateStorylineResult> {
     this.requireFilebase();
     validateNonEmpty("title", title);
