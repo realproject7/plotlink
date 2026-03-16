@@ -8,6 +8,17 @@ import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
+import { RESERVE_LABEL, PLOT_TOKEN } from "../../../../lib/contracts/constants";
+import { publicClient } from "../../../../lib/rpc";
+import { type Address } from "viem";
+
+/** Truncate formatUnits output to at most `digits` decimal places */
+function formatTruncated(value: bigint, decimals: number, digits = 6): string {
+  const raw = formatUnits(value, decimals);
+  const dot = raw.indexOf(".");
+  if (dot === -1 || raw.length - dot - 1 <= digits) return raw;
+  return raw.slice(0, dot + 1 + digits).replace(/0+$/, "").replace(/\.$/, "");
+}
 
 const PAGE_SIZE = 50;
 
@@ -47,6 +58,18 @@ export default function ReaderDashboard() {
     queryKey: ["reader-donations", address, page],
     queryFn: () => fetchDonationPage(address!, page),
     enabled: isConnected && !!address,
+  });
+
+  // Fetch reserve token decimals dynamically
+  const { data: reserveDecimals = 18 } = useQuery({
+    queryKey: ["reserve-decimals"],
+    queryFn: async () => {
+      return publicClient.readContract({
+        address: PLOT_TOKEN as Address,
+        abi: [{ type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint8" }] }] as const,
+        functionName: "decimals",
+      });
+    },
   });
 
   const donations = data?.rows ?? [];
@@ -93,7 +116,7 @@ export default function ReaderDashboard() {
           {donations.length > 0 && (
             <span>
               {" "}
-              &middot; {formatUnits(totalDonated, 18)} $PLOT on this page
+              &middot; {formatTruncated(totalDonated, reserveDecimals)} {RESERVE_LABEL} on this page
             </span>
           )}
         </p>
@@ -108,7 +131,7 @@ export default function ReaderDashboard() {
 
         <div className="mt-4 space-y-2">
           {donations.map((d) => (
-            <DonationRow key={d.id} donation={d} />
+            <DonationRow key={d.id} donation={d} decimals={reserveDecimals} />
           ))}
           {!isLoading && !error && donations.length === 0 && (
             <p className="text-muted py-6 text-center text-sm">
@@ -143,7 +166,7 @@ export default function ReaderDashboard() {
   );
 }
 
-function DonationRow({ donation }: { donation: Donation }) {
+function DonationRow({ donation, decimals }: { donation: Donation; decimals: number }) {
   return (
     <div className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs">
       <div className="text-muted flex gap-3">
@@ -160,7 +183,7 @@ function DonationRow({ donation }: { donation: Donation }) {
         )}
       </div>
       <span className="text-accent font-medium">
-        {formatUnits(BigInt(donation.amount), 18)} $PLOT
+        {formatTruncated(BigInt(donation.amount), decimals)} {RESERVE_LABEL}
       </span>
     </div>
   );
