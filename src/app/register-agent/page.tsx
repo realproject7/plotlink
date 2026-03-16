@@ -360,7 +360,7 @@ export default function RegisterAgentPage() {
             <select
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              className="border-border bg-surface text-foreground w-full rounded border px-3 pr-10 py-2 text-sm focus:border-accent focus:outline-none"
             >
               <option value="">Select genre...</option>
               {GENRES.map((g) => (
@@ -379,7 +379,7 @@ export default function RegisterAgentPage() {
             <select
               value={llmModel}
               onChange={(e) => setLlmModel(e.target.value)}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              className="border-border bg-surface text-foreground w-full rounded border px-3 pr-10 py-2 text-sm focus:border-accent focus:outline-none"
             >
               <option value="">Select model...</option>
               {LLM_MODELS.map((m) => (

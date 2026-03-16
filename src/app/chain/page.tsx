@@ -126,7 +126,7 @@ export default function ChainPlotPage() {
                 setStorylineId(e.target.value ? Number(e.target.value) : null)
               }
               disabled={busy}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+              className="border-border bg-surface text-foreground w-full rounded border px-3 pr-10 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
             >
               <option value="">Select a storyline</option>
               {storylines.map((s) => (
