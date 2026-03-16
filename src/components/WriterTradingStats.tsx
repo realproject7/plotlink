@@ -8,6 +8,13 @@ import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
 import type { Storyline } from "../../lib/supabase";
 import { supabase } from "../../lib/supabase";
 
+function formatTruncated(value: bigint, decimals: number, digits = 6): string {
+  const raw = formatUnits(value, decimals);
+  const dot = raw.indexOf(".");
+  if (dot === -1 || raw.length - dot - 1 <= digits) return raw;
+  return raw.slice(0, dot + 1 + digits).replace(/0+$/, "").replace(/\.$/, "");
+}
+
 interface WriterTradingStatsProps {
   storyline: Storyline;
 }
@@ -38,36 +45,6 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     enabled: !!tokenAddress,
   });
 
-  // Fetch bond creator (royalty beneficiary)
-  const { data: bondData } = useQuery({
-    queryKey: ["writer-bond", tokenAddress],
-    queryFn: async () => {
-      const result = await publicClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "tokenBond",
-        args: [tokenAddress],
-      });
-      return { creator: result[0] as `0x${string}` };
-    },
-    enabled: !!tokenAddress,
-  });
-
-  // Fetch unclaimed royalties (requires creator address as beneficiary)
-  const { data: royaltyData } = useQuery({
-    queryKey: ["writer-royalty", tokenAddress, bondData?.creator],
-    queryFn: async () => {
-      const unclaimed = await publicClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "getRoyaltyInfo",
-        args: [tokenAddress, bondData!.creator],
-      });
-      return { unclaimed };
-    },
-    enabled: !!tokenAddress && !!bondData?.creator,
-  });
-
   // Fetch total donations for this storyline
   const { data: donationsTotal } = useQuery({
     queryKey: ["writer-donations", storyline.storyline_id],
@@ -83,24 +60,17 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
   });
 
   const decimals = tvlData?.decimals;
-  const earnings =
-    donationsTotal !== undefined && royaltyData
-      ? donationsTotal + royaltyData.unclaimed
-      : undefined;
 
   return (
     <div className="text-muted mt-3 grid grid-cols-3 gap-2 text-xs">
       <div>
         <span className="block text-[10px] uppercase tracking-wider">
-          Earnings
+          Donations
         </span>
         <span className="text-accent font-medium">
-          {earnings !== undefined && decimals !== undefined
-            ? `${formatUnits(earnings, decimals)} ${reserveLabel}`
+          {donationsTotal !== undefined && decimals !== undefined
+            ? `${formatTruncated(donationsTotal, decimals)} ${reserveLabel}`
             : "—"}
-        </span>
-        <span className="text-muted block text-[10px]">
-          {royaltyData && decimals !== undefined && `Royalties: ${formatUnits(royaltyData.unclaimed, decimals)}`}
         </span>
       </div>
       <div>
