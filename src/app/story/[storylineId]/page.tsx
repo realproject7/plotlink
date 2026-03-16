@@ -230,6 +230,7 @@ function StoryHeader({
 function PlotEntry({ plot }: { plot: Plot }) {
   return (
     <article className="border-border border-b pb-8 last:border-b-0">
+      <ViewTracker storylineId={plot.storyline_id} plotIndex={plot.plot_index} />
       <div className="text-muted mb-3 flex items-baseline gap-3 text-xs">
         <span className="text-accent-dim font-medium">
           {plot.plot_index === 0 ? "Genesis" : `Plot #${plot.plot_index}`}
