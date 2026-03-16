@@ -7,7 +7,7 @@ import { parseUnits, formatUnits } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
-import { STORY_FACTORY, PLOT_TOKEN, IS_TESTNET } from "../../lib/contracts/constants";
+import { STORY_FACTORY, PLOT_TOKEN, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
 
@@ -190,7 +190,15 @@ export function DonateWidget({ storylineId }: DonateWidgetProps) {
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
       {txHash && txState === "done" && (
         <p className="text-muted mt-2 text-xs">
-          Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+          Tx:{" "}
+          <a
+            href={`${EXPLORER_URL}/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            {txHash.slice(0, 10)}...{txHash.slice(-8)}
+          </a>
         </p>
       )}
     </section>
