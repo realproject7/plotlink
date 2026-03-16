@@ -5,7 +5,7 @@ import { useWriteContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
-import { mcv2BondAbi } from "../../lib/price";
+import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
 
 type TxState = "idle" | "confirming" | "pending" | "done" | "error";
@@ -41,6 +41,13 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
     },
     refetchInterval: 30000,
   });
+
+  // Fetch reserve token decimals dynamically
+  const { data: tvlData } = useQuery({
+    queryKey: ["claim-decimals", tokenAddress],
+    queryFn: () => getTokenTVL(tokenAddress),
+  });
+  const decimals = tvlData?.decimals ?? 18;
 
   const unclaimed = royaltyInfo?.unclaimed ?? BigInt(0);
   const eligible = plotCount >= 2;
@@ -107,14 +114,14 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
                     Chain at least 2 plots ({plotCount}/2)
                   </li>
                   <li>
-                    Unclaimed &gt; 0 ({formatUnits(unclaimed, 18)} {reserveLabel})
+                    Unclaimed &gt; 0 ({formatUnits(unclaimed, decimals)} {reserveLabel})
                   </li>
                 </ul>
               </div>
             )}
           </div>
           <span className="text-foreground ml-1">
-            {formatUnits(unclaimed, 18)} {reserveLabel}
+            {formatUnits(unclaimed, decimals)} {reserveLabel}
           </span>
         </div>
         <button
@@ -128,7 +135,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           {txState === "idle" && "Claim"}
           {txState === "confirming" && "Confirm..."}
           {txState === "pending" && "Pending..."}
-          {txState === "done" && `Claimed ${formatUnits(claimedAmount, 18)} ${reserveLabel}`}
+          {txState === "done" && `Claimed ${formatUnits(claimedAmount, decimals)} ${reserveLabel}`}
           {txState === "error" && "Retry"}
         </button>
       </div>
