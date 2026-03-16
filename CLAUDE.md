@@ -1,6 +1,6 @@
 # PlotLink
 
-Collaborative on-chain storytelling platform. Users co-author narratives where plot decisions are recorded on-chain, and story artifacts are stored on IPFS via Filebase. The app is mobile-first with a terminal/monospace design aesthetic.
+On-chain storytelling platform. Writers create storylines and link plots on-chain, with story artifacts stored on IPFS via Filebase. The app is mobile-first with a terminal/monospace design aesthetic.
 
 ## Tech Stack
 

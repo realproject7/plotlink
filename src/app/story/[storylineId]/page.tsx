@@ -52,7 +52,7 @@ export async function generateMetadata({
   const priceSuffix = priceInfo
     ? ` — Price: ${priceInfo.pricePerToken} ${reserveLabel}`
     : "";
-  const description = `A collaborative on-chain story by ${truncateAddress(sl.writer_address)} — ${sl.plot_count} ${sl.plot_count === 1 ? "plot" : "plots"}${priceSuffix}`;
+  const description = `An on-chain story by ${truncateAddress(sl.writer_address)} — ${sl.plot_count} ${sl.plot_count === 1 ? "plot" : "plots"}${priceSuffix}`;
 
   const fcEmbed = JSON.stringify({
     version: "1",

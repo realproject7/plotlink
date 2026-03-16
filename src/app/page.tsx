@@ -35,7 +35,7 @@ export default async function Home() {
           PlotLink
         </h1>
         <p className="text-muted mt-1 text-sm">
-          Collaborative on-chain storytelling. Write the next chapter.
+          On-chain storytelling. Create your story, link your plots, build your audience.
         </p>
       </header>
 
