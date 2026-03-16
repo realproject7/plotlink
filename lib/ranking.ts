@@ -118,6 +118,7 @@ export async function getTrendingStorylines(
   supabase: SupabaseClient,
   limit = 20,
   writerType?: number,
+  offset = 0,
 ): Promise<RankedStoryline[]> {
   const { storylines, ratingMap } = await fetchCandidatesAndRatings(supabase, writerType);
   if (storylines.length === 0) return [];
@@ -141,7 +142,7 @@ export async function getTrendingStorylines(
   );
 
   enriched.sort((a, b) => b.trendScore - a.trendScore);
-  return enriched.slice(0, limit);
+  return enriched.slice(offset, offset + limit);
 }
 
 /**
@@ -157,6 +158,7 @@ export async function getRisingStorylines(
   supabase: SupabaseClient,
   limit = 20,
   writerType?: number,
+  offset = 0,
 ): Promise<RankedStoryline[]> {
   const { storylines } = await fetchCandidatesAndRatings(supabase, writerType);
   if (storylines.length === 0) return [];
@@ -260,5 +262,5 @@ export async function getRisingStorylines(
   });
 
   enriched.sort((a, b) => b.trendScore - a.trendScore);
-  return enriched.filter((s) => s.trendScore > 1).slice(0, limit);
+  return enriched.filter((s) => s.trendScore > 1).slice(offset, offset + limit);
 }

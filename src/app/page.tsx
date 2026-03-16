@@ -170,12 +170,12 @@ async function queryTab(
 
     case "trending": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getTrendingStorylines(supabase, PAGE_SIZE, wt);
+      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from);
     }
 
     case "rising": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getRisingStorylines(supabase, PAGE_SIZE, wt);
+      return getRisingStorylines(supabase, PAGE_SIZE, wt, from);
     }
   }
 }
