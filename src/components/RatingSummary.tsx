@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { StarDisplay } from "./StarRating";
 
 interface RatingsResponse {
   average: number;
@@ -20,16 +21,11 @@ export function RatingSummary({ storylineId }: { storylineId: number }) {
   if (!data || data.count === 0) return null;
 
   return (
-    <span>
-      {[1, 2, 3, 4, 5].map((star) => (
-        <span
-          key={star}
-          className={star <= Math.round(data.average) ? "text-accent" : "text-muted"}
-        >
-          *
-        </span>
-      ))}{" "}
-      {data.average.toFixed(1)} ({data.count})
+    <span className="inline-flex items-center gap-1">
+      <StarDisplay rating={data.average} size={14} />
+      <span className="text-muted text-xs">
+        {data.average.toFixed(1)} ({data.count})
+      </span>
     </span>
   );
 }
