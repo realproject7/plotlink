@@ -83,9 +83,8 @@ export function usePublish() {
         setState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
 
-        // 4. Trigger indexer (delay for RPC propagation on Base Sepolia)
+        // 4. Trigger indexer
         setState("indexing");
-        await new Promise((r) => setTimeout(r, 5000));
         await fetch(opts.indexerRoute, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
