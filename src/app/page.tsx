@@ -1,34 +1,43 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
-import { getTrendingStorylines } from "../../lib/ranking";
+import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
+import { TabNav } from "../components/TabNav";
+import { WriterFilter, type WriterFilterValue } from "../components/WriterFilter";
 import Link from "next/link";
 
 export const revalidate = 120;
 
-export default async function Home() {
+const TABS = ["new", "trending", "rising", "completed"] as const;
+type Tab = (typeof TABS)[number];
+
+const WRITER_VALUES: WriterFilterValue[] = ["all", "human", "agent"];
+
+type SearchParams = Promise<{ tab?: string; writer?: string }>;
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const { tab: rawTab, writer: rawWriter } = await searchParams;
+  const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "new";
+  const writer: WriterFilterValue = WRITER_VALUES.includes(
+    rawWriter as WriterFilterValue,
+  )
+    ? (rawWriter as WriterFilterValue)
+    : "all";
+
   const supabase = createServerClient();
 
-  let recent: Storyline[] = [];
-  let trending: Storyline[] = [];
-
+  let storylines: Storyline[] = [];
   if (supabase) {
-    const { data } = await supabase
-      .from("storylines")
-      .select("*")
-      .eq("hidden", false)
-      .eq("sunset", false)
-      .order("block_timestamp", { ascending: false })
-      .limit(8)
-      .returns<Storyline[]>();
-
-    recent = data ?? [];
-    trending = await getTrendingStorylines(supabase, 4).catch(() => []);
+    storylines = await queryTab(supabase, tab, writer);
   }
 
-  const hasContent = recent.length > 0;
+  const extraParams = writer !== "all" ? { writer } : undefined;
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-6 py-10">
       {/* Compact hero */}
       <header className="mb-8">
         <h1 className="text-accent text-xl font-bold tracking-tight">
@@ -39,48 +48,20 @@ export default async function Home() {
         </p>
       </header>
 
-      {hasContent ? (
-        <>
-          {/* Trending section */}
-          {trending.length > 0 && (
-            <section className="mb-8">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-foreground text-sm font-medium">
-                  <span className="text-accent-dim mr-1">#</span>trending
-                </h2>
-              </div>
-              <div className="space-y-2">
-                {trending.map((s) => (
-                  <StoryCard key={s.id} storyline={s} />
-                ))}
-              </div>
-            </section>
-          )}
+      {/* Filter bar */}
+      <TabNav tabs={TABS} active={tab} basePath="/" extraParams={extraParams} />
+      <WriterFilter active={writer} tab={tab} basePath="/" className="mt-4" />
 
-          {/* Recent feed */}
-          <section>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-foreground text-sm font-medium">
-                <span className="text-accent-dim mr-1">#</span>recent
-              </h2>
-              <Link
-                href="/discover"
-                className="text-muted hover:text-accent text-xs transition-colors"
-              >
-                view all →
-              </Link>
-            </div>
-            <div className="space-y-2">
-              {recent.map((s) => (
-                <StoryCard key={s.id} storyline={s} />
-              ))}
-            </div>
-          </section>
-        </>
-      ) : (
-        /* Empty state */
+      {/* Story grid */}
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {storylines.map((s) => (
+          <StoryCard key={s.id} storyline={s} />
+        ))}
+      </div>
+
+      {storylines.length === 0 && (
         <section className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="border-border rounded border px-4 py-3 text-xs text-muted">
+          <div className="border-border text-muted rounded border px-4 py-3 text-xs">
             <span className="text-accent-dim">$</span> no storylines found
           </div>
           <p className="text-muted text-sm">
@@ -96,4 +77,52 @@ export default async function Home() {
       )}
     </div>
   );
+}
+
+async function queryTab(
+  supabase: ReturnType<typeof createServerClient> & object,
+  tab: Tab,
+  writer: WriterFilterValue,
+): Promise<Storyline[]> {
+  switch (tab) {
+    case "new": {
+      let q = supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", false);
+      if (writer === "human") q = q.eq("writer_type", 0);
+      if (writer === "agent") q = q.eq("writer_type", 1);
+      const { data } = await q
+        .order("block_timestamp", { ascending: false })
+        .limit(50)
+        .returns<Storyline[]>();
+      return data ?? [];
+    }
+
+    case "completed": {
+      let q = supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .eq("sunset", true);
+      if (writer === "human") q = q.eq("writer_type", 0);
+      if (writer === "agent") q = q.eq("writer_type", 1);
+      const { data } = await q
+        .order("plot_count", { ascending: false })
+        .limit(50)
+        .returns<Storyline[]>();
+      return data ?? [];
+    }
+
+    case "trending": {
+      const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
+      return getTrendingStorylines(supabase, 20, wt);
+    }
+
+    case "rising": {
+      const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
+      return getRisingStorylines(supabase, 20, wt);
+    }
+  }
 }

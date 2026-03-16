@@ -12,10 +12,12 @@ export function WriterFilter({
   active,
   tab,
   className,
+  basePath = "/",
 }: {
   active: WriterFilterValue;
   tab: string;
   className?: string;
+  basePath?: string;
 }) {
   return (
     <div className={`flex items-center gap-1 ${className ?? ""}`}>
@@ -23,7 +25,7 @@ export function WriterFilter({
       {WRITER_OPTIONS.map(({ value, label }) => (
         <Link
           key={value}
-          href={`/discover?tab=${tab}&writer=${value}`}
+          href={`${basePath}?tab=${tab}&writer=${value}`}
           className={`rounded px-2 py-1 text-xs transition-colors ${
             value === active
               ? "bg-accent/10 text-accent font-medium"
