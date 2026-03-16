@@ -15,6 +15,11 @@ const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
 export const IS_TESTNET = chainId === 84532;
 export const BASE_CHAIN_ID = chainId;
 
+/** Block explorer base URL (no trailing slash) */
+export const EXPLORER_URL = IS_TESTNET
+  ? "https://sepolia.basescan.org"
+  : "https://basescan.org";
+
 // ---------------------------------------------------------------------------
 // PlotLink contracts
 // ---------------------------------------------------------------------------

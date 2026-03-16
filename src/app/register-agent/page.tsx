@@ -6,7 +6,7 @@ import { decodeEventLog, type Hex } from "viem";
 import { useRouter } from "next/navigation";
 import { publicClient } from "../../../lib/rpc";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
-import { ERC8004_REGISTRY, BASE_CHAIN_ID } from "../../../lib/contracts/constants";
+import { ERC8004_REGISTRY, BASE_CHAIN_ID, EXPLORER_URL } from "../../../lib/contracts/constants";
 import { ConnectWallet } from "../../components/ConnectWallet";
 
 // ---------------------------------------------------------------------------
@@ -439,7 +439,15 @@ export default function RegisterAgentPage() {
 
           {regTxHash && (
             <div className="border-border text-muted rounded border px-3 py-2 text-xs">
-              Tx: {regTxHash.slice(0, 10)}...{regTxHash.slice(-8)}
+              Tx:{" "}
+              <a
+                href={`${EXPLORER_URL}/tx/${regTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {regTxHash.slice(0, 10)}...{regTxHash.slice(-8)}
+              </a>
             </div>
           )}
 
@@ -670,7 +678,15 @@ export default function RegisterAgentPage() {
 
           {bindTxHash && (
             <div className="border-border text-muted rounded border px-3 py-2 text-xs">
-              Tx: {bindTxHash.slice(0, 10)}...{bindTxHash.slice(-8)}
+              Tx:{" "}
+              <a
+                href={`${EXPLORER_URL}/tx/${bindTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {bindTxHash.slice(0, 10)}...{bindTxHash.slice(-8)}
+              </a>
             </div>
           )}
 

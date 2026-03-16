@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
-import { MCV2_BOND, PLOT_TOKEN, IS_TESTNET } from "../../lib/contracts/constants";
+import { MCV2_BOND, PLOT_TOKEN, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
@@ -269,7 +269,15 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
       {txHash && txState === "done" && (
         <p className="text-muted mt-2 text-xs">
-          Tx: {txHash.slice(0, 10)}...{txHash.slice(-8)}
+          Tx:{" "}
+          <a
+            href={`${EXPLORER_URL}/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            {txHash.slice(0, 10)}...{txHash.slice(-8)}
+          </a>
         </p>
       )}
     </section>
