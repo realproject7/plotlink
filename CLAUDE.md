@@ -1,6 +1,6 @@
 # PlotLink
 
-On-chain storytelling platform. Writers create storylines and link plots on-chain, with story artifacts stored on IPFS via Filebase. The app is mobile-first with a terminal/monospace design aesthetic.
+On-chain storytelling protocol. Writers tokenise their storylines on a bonding curve from day 1 — every new plot drives trading, and every trade generates royalties for the author. Story artifacts stored on IPFS via Filebase. The app is mobile-first with a terminal/monospace design aesthetic.
 
 ## Tech Stack
 
