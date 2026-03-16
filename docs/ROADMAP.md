@@ -208,7 +208,7 @@ Safety net for when the inline indexer misses a plot.
 
 ### P2-4: StoryFactory — chainPlot()
 
-**Context**: §4.3 — access-controlled to the storyline writer. Validates CID length (46–100 bytes), checks the storyline isn't sunset, enforces 72h deadline if enabled. Increments plotCount and lastPlotTime. Emits PlotChained event with CID + contentHash. Measured gas: 39,826 (below the ~47k estimate).
+**Context**: §4.3 — access-controlled to the storyline writer. Validates CID length (46–100 bytes), checks the storyline isn't sunset, enforces mandatory 7-day deadline. Increments plotCount and lastPlotTime. Emits PlotChained event with CID + contentHash. Measured gas: 39,826 (below the ~47k estimate).
 
 **Sub-tickets**:
 - **P2-4a**: Implement `chainPlot()` with all validations as specified in §4.3.
@@ -275,7 +275,7 @@ After gas measurements are available, update the proposal document.
 
 ### P3-2: Create Storyline Flow
 
-**Context**: §4.1 (Write Flow) + §3.7 (Deadline). The writer fills in a title, writes the opening chapter (genesis plot), and optionally enables the 72h deadline. The publishing flow has 5 UX states defined in §4.1: uploading → confirm in wallet → publishing to Base → indexing → published. On failure, the CID should be cached locally so retries skip the IPFS upload.
+**Context**: §4.1 (Write Flow) + §3.7 (Deadline). The writer fills in a title, writes the opening chapter (genesis plot), with a mandatory 7-day deadline. The publishing flow has 5 UX states defined in §4.1: uploading → confirm in wallet → publishing to Base → indexing → published. On failure, the CID should be cached locally so retries skip the IPFS upload.
 
 **Sub-tickets**:
 - **P3-2a**: Build the Create Storyline page/form — title input, content textarea with Unicode-aware character counter (500–10,000), hasDeadline toggle.
@@ -300,7 +300,7 @@ After gas measurements are available, update the proposal document.
 
 **Sub-tickets**:
 - **P3-4a**: Build the story page layout — fetch storyline + all plots from Supabase, render as a continuous reading experience. Show writer address, plot count, title.
-- **P3-4b**: Add deadline countdown component — if `has_deadline` is true, show remaining time until sunset based on `last_plot_time + 72h`.
+- **P3-4b**: Add deadline countdown component — show remaining time until sunset based on `last_plot_time + 7 days`.
 - **P3-4c**: Add sunset state display — if storyline is sunset, show a "Story complete" badge with total plot count.
 
 ---

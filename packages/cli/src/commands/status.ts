@@ -132,7 +132,7 @@ export function registerStatus(program: Command): void {
             console.log(`Last plot:        ${new Date(dbRow.last_plot_time).toISOString()}`);
           }
 
-          // Deadline remaining (72h from last plot)
+          // Deadline remaining (7 days from last plot)
           if (dbRow.has_deadline && dbRow.last_plot_time && !dbRow.sunset) {
             const DEADLINE_HOURS = 168;
             const deadlineMs =

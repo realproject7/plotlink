@@ -76,7 +76,7 @@ Chains a new plot to an existing storyline. Access-controlled to the storyline w
 1. Validates writer identity (`msg.sender == writer`)
 2. Validates CID length (46–100 bytes)
 3. Checks storyline is not sunset
-4. Enforces 72h deadline if enabled (`block.timestamp <= lastPlotTime + 72 hours`)
+4. Enforces mandatory 7-day deadline (`block.timestamp <= lastPlotTime + 168 hours`)
 5. Increments `plotCount` and updates `lastPlotTime`
 6. Emits `PlotChained` event
 
@@ -122,7 +122,7 @@ struct Storyline {
     address token;          // storyline token address on Mint Club
     uint256 plotCount;      // total plots chained (genesis = 1)
     uint256 lastPlotTime;   // timestamp of last plot
-    bool hasDeadline;       // whether 72h deadline is enabled
+    bool hasDeadline;       // mandatory 7-day deadline (always true)
     bool sunset;            // true if deadline expired
 }
 ```
