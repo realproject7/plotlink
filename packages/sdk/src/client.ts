@@ -254,11 +254,13 @@ export class PlotLink {
    *
    * @param storylineId - The storyline to chain onto
    * @param content - Plot content (plain text)
+   * @param title - Optional chapter title (defaults to empty string)
    * @returns Transaction hash and IPFS CID
    */
   async chainPlot(
     storylineId: bigint,
     content: string,
+    title = "",
   ): Promise<ChainPlotResult> {
     this.requireFilebase();
     validateNonEmpty("content", content);
@@ -272,7 +274,7 @@ export class PlotLink {
       address: this.storyFactory,
       abi: storyFactoryAbi,
       functionName: "chainPlot",
-      args: [storylineId, contentCid, contentHash],
+      args: [storylineId, title, contentCid, contentHash],
     });
 
     const txHash = await this.walletClient.writeContract(request);

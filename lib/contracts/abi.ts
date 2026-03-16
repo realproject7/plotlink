@@ -16,6 +16,7 @@ export const plotChainedEvent = {
     { name: "storylineId", type: "uint256", indexed: true },
     { name: "plotIndex", type: "uint256", indexed: true },
     { name: "writer", type: "address", indexed: true },
+    { name: "title", type: "string", indexed: false },
     { name: "contentCID", type: "string", indexed: false },
     { name: "contentHash", type: "bytes32", indexed: false },
   ],
@@ -68,6 +69,7 @@ export const chainPlotFunction = {
   stateMutability: "nonpayable",
   inputs: [
     { name: "storylineId", type: "uint256" },
+    { name: "title", type: "string" },
     { name: "contentCID", type: "string" },
     { name: "contentHash", type: "bytes32" },
   ],

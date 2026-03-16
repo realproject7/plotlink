@@ -13,7 +13,7 @@ export function useChainPlot() {
   const { state, error, txHash, execute, reset } = usePublish();
 
   const chainPlot = useCallback(
-    async (storylineId: number, content: string) => {
+    async (storylineId: number, content: string, title = "") => {
       await execute({
         content,
         uploadKeyPrefix: `plotlink/plots/${storylineId}`,
@@ -22,7 +22,7 @@ export function useChainPlot() {
           address: STORY_FACTORY,
           abi: storyFactoryAbi as unknown as [],
           functionName: "chainPlot",
-          args: [BigInt(storylineId), cid, contentHash],
+          args: [BigInt(storylineId), title, cid, contentHash],
         }),
       });
     },
