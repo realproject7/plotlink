@@ -4,11 +4,13 @@ export function TabNav({
   tabs,
   active,
   className,
+  basePath = "/",
   extraParams,
 }: {
   tabs: readonly string[];
   active: string;
   className?: string;
+  basePath?: string;
   extraParams?: Record<string, string>;
 }) {
   function buildHref(tab: string) {
@@ -18,7 +20,7 @@ export function TabNav({
         params.set(k, v);
       }
     }
-    return `/discover?${params.toString()}`;
+    return `${basePath}?${params.toString()}`;
   }
 
   return (

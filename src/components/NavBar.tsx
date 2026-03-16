@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { ConnectWallet } from "./ConnectWallet";
 
 const NAV_LINKS = [
-  { href: "/discover", label: "discover" },
   { href: "/create", label: "create" },
   { href: "/dashboard/writer", label: "writer" },
   { href: "/dashboard/reader", label: "reader" },
