@@ -68,7 +68,7 @@ export async function POST(req: Request) {
     return error("Unexpected event type");
   }
 
-  const { storylineId, plotIndex, writer, contentCID, contentHash } =
+  const { storylineId, plotIndex, writer, title, contentCID, contentHash } =
     decoded.args;
 
   // 4. Fetch content from IPFS (with fallback)
@@ -113,6 +113,7 @@ export async function POST(req: Request) {
     storyline_id: Number(storylineId),
     plot_index: Number(plotIndex),
     writer_address: writer.toLowerCase(),
+    title: title || "",
     content,
     content_cid: contentCID,
     content_hash: contentHash as string,
