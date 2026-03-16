@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { type Hex, decodeEventLog, encodeEventTopics } from "viem";
-import { publicClient } from "../../../../../lib/viem";
+import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
 import {
   storyFactoryAbi,
@@ -31,10 +31,10 @@ export async function POST(req: Request) {
     return error("Missing or invalid txHash");
   }
 
-  // 1. Fetch receipt
+  // 1. Fetch receipt (with retry for load-balanced RPC nodes)
   let receipt;
   try {
-    receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+    receipt = await getReceiptWithRetry(txHash);
   } catch {
     return error("Failed to fetch transaction receipt", 502);
   }
