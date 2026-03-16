@@ -100,8 +100,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
             : "—"}
         </span>
         <span className="text-muted block text-[10px]">
-          {donationsTotal !== undefined && decimals !== undefined && `D: ${formatUnits(donationsTotal, decimals)}`}
-          {royaltyData && decimals !== undefined && ` R: ${formatUnits(royaltyData.unclaimed, decimals)}`}
+          {royaltyData && decimals !== undefined && `Royalties: ${formatUnits(royaltyData.unclaimed, decimals)}`}
         </span>
       </div>
       <div>

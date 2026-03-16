@@ -2,6 +2,7 @@
 
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
+import { formatUnits } from "viem";
 import { supabase, type Storyline } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
@@ -119,11 +120,9 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         </div>
         <div>
           <span className="block text-[10px] uppercase tracking-wider">
-            Deadline
+            Donations
           </span>
-          <span className="text-foreground">
-            {storyline.has_deadline ? "72h" : "none"}
-          </span>
+          <DonationCount storylineId={storyline.storyline_id} />
         </div>
       </div>
 
@@ -144,5 +143,34 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         </>
       )}
     </div>
+  );
+}
+
+function DonationCount({ storylineId }: { storylineId: number }) {
+  const { data } = useQuery({
+    queryKey: ["donation-count", storylineId],
+    queryFn: async () => {
+      if (!supabase) return { total: BigInt(0), count: 0 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: rows } = await (supabase.from("donations") as any)
+        .select("amount")
+        .eq("storyline_id", storylineId);
+      if (!rows) return { total: BigInt(0), count: 0 };
+      const total = (rows as { amount: string }[]).reduce(
+        (sum, d) => sum + BigInt(d.amount),
+        BigInt(0),
+      );
+      return { total, count: rows.length };
+    },
+  });
+
+  if (!data || data.count === 0) {
+    return <span className="text-foreground">—</span>;
+  }
+
+  return (
+    <span className="text-foreground">
+      {formatUnits(data.total, 18)} <span className="text-muted">({data.count})</span>
+    </span>
   );
 }
