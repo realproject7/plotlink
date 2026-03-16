@@ -21,6 +21,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const [error, setError] = useState<string | null>(null);
   const [claimedAmount, setClaimedAmount] = useState<bigint>(BigInt(0));
   const [txHash, setTxHash] = useState<string | null>(null);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const { writeContractAsync } = useWriteContract();
 
@@ -43,6 +44,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
 
   const unclaimed = royaltyInfo?.unclaimed ?? BigInt(0);
   const eligible = plotCount >= 2;
+  const canClaim = eligible && unclaimed > BigInt(0);
 
   const executeClaim = useCallback(async () => {
     try {
@@ -74,41 +76,67 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
     setError(null);
   }, []);
 
-  // Don't show if no royalties to claim
-  if (unclaimed === BigInt(0) && txState === "idle") return null;
-
   return (
     <div className="mt-3">
       <div className="flex items-center justify-between text-xs">
-        <div>
+        <div className="flex items-center gap-1.5">
           <span className="text-muted text-[10px] uppercase tracking-wider">
-            Unclaimed Royalties
+            Royalties
           </span>
-          <span className="text-foreground ml-2">
+          {/* Info icon with tooltip */}
+          <div className="relative inline-block">
+            <button
+              type="button"
+              onClick={() => setShowTooltip((v) => !v)}
+              onMouseEnter={() => setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              className="text-muted hover:text-foreground text-[10px] leading-none transition-colors"
+              aria-label="Royalty info"
+            >
+              &#9432;
+            </button>
+            {showTooltip && (
+              <div className="border-border bg-surface absolute bottom-full left-1/2 z-50 mb-2 w-56 -translate-x-1/2 rounded border px-3 py-2 text-[10px] leading-relaxed shadow-lg">
+                <p className="text-foreground font-medium">Royalties</p>
+                <p className="text-muted mt-1">
+                  You earn a share of every trade on your storyline&apos;s token.
+                </p>
+                <p className="text-muted mt-1.5">To claim:</p>
+                <ul className="text-muted mt-0.5 list-inside list-disc">
+                  <li>
+                    Chain at least 2 plots ({plotCount}/2)
+                  </li>
+                  <li>
+                    Unclaimed &gt; 0 ({formatUnits(unclaimed, 18)} {reserveLabel})
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+          <span className="text-foreground ml-1">
             {formatUnits(unclaimed, 18)} {reserveLabel}
           </span>
         </div>
-        {eligible ? (
-          <button
-            onClick={txState === "done" || txState === "error" ? reset : executeClaim}
-            disabled={
-              (txState === "idle" && unclaimed === BigInt(0)) ||
-              (txState !== "idle" && txState !== "done" && txState !== "error")
-            }
-            className="bg-accent text-background rounded px-3 py-1 text-[10px] font-medium transition-opacity disabled:opacity-40"
-          >
-            {txState === "idle" && "Claim"}
-            {txState === "confirming" && "Confirm..."}
-            {txState === "pending" && "Pending..."}
-            {txState === "done" && `Claimed ${formatUnits(claimedAmount, 18)} ${reserveLabel}`}
-            {txState === "error" && "Retry"}
-          </button>
-        ) : (
-          <span className="text-muted text-[10px]">
-            Chain plot #1 to unlock
-          </span>
-        )}
+        <button
+          onClick={txState === "done" || txState === "error" ? reset : executeClaim}
+          disabled={
+            (txState === "idle" && !canClaim) ||
+            (txState !== "idle" && txState !== "done" && txState !== "error")
+          }
+          className="bg-accent text-background rounded px-3 py-1 text-[10px] font-medium transition-opacity disabled:opacity-40"
+        >
+          {txState === "idle" && "Claim"}
+          {txState === "confirming" && "Confirm..."}
+          {txState === "pending" && "Pending..."}
+          {txState === "done" && `Claimed ${formatUnits(claimedAmount, 18)} ${reserveLabel}`}
+          {txState === "error" && "Retry"}
+        </button>
       </div>
+      {!eligible && txState === "idle" && (
+        <p className="text-muted mt-1 text-[10px]">
+          Chain {2 - plotCount} more {2 - plotCount === 1 ? "plot" : "plots"} to unlock royalties
+        </p>
+      )}
       {txHash && txState === "done" && (
         <p className="text-muted mt-1 text-[10px]">
           Tx:{" "}
