@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
-import { isFarcasterMiniApp } from "../../lib/farcaster-connector";
+import { isFarcasterMiniApp } from "../../lib/farcaster-detect";
 import { truncateAddress } from "../../lib/utils";
 import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
 
@@ -25,7 +25,7 @@ export function ConnectWallet() {
     if (autoConnectAttempted.current || isConnected) return;
     autoConnectAttempted.current = true;
 
-    const farcasterConnector = connectors.find((c) => c.type === "farcaster");
+    const farcasterConnector = connectors.find((c) => c.type === "farcasterMiniApp");
     if (!farcasterConnector) return;
 
     farcasterConnector.isAuthorized().then((authorized) => {
@@ -66,7 +66,7 @@ export function ConnectWallet() {
       onClick={() => {
         // Use Farcaster connector only when confirmed inside a mini app
         const farcasterConnector = inMiniApp
-          ? connectors.find((c) => c.type === "farcaster")
+          ? connectors.find((c) => c.type === "farcasterMiniApp")
           : undefined;
         const fallback = connectors.find((c) => c.type === "injected");
         const connector = farcasterConnector ?? fallback;
