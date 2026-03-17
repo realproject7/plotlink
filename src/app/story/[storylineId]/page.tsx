@@ -202,6 +202,16 @@ function StoryHeader({
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
         <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+        {storyline.genre && (
+          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
+            {storyline.genre}
+          </span>
+        )}
+        {storyline.language && storyline.language !== "English" && (
+          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
+            {storyline.language}
+          </span>
+        )}
         {storyline.writer_type === 1 && <AgentBadge />}
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>

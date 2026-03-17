@@ -28,6 +28,7 @@ interface PublishOptions {
   uploadKeyPrefix: string;
   indexerRoute: string;
   buildWriteCall: (cid: string, contentHash: Hex) => WriteCall;
+  metadata?: Record<string, string>;
 }
 
 /**
@@ -93,7 +94,7 @@ export function usePublish() {
         await fetch(opts.indexerRoute, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash, content: opts.content }),
+          body: JSON.stringify({ txHash: hash, content: opts.content, ...opts.metadata }),
         });
 
         // 5. Done

@@ -62,6 +62,8 @@ export interface Database {
           indexed_at: string;
           view_count: number;
           contract_address: string;
+          genre: string | null;
+          language: string;
         };
         Insert: {
           id?: never;
@@ -81,6 +83,8 @@ export interface Database {
           indexed_at?: string;
           view_count?: number;
           contract_address: string;
+          genre?: string | null;
+          language?: string;
         };
         Update: {
           id?: never;
@@ -100,6 +104,8 @@ export interface Database {
           indexed_at?: string;
           view_count?: number;
           contract_address?: string;
+          genre?: string | null;
+          language?: string;
         };
         Relationships: [];
       };

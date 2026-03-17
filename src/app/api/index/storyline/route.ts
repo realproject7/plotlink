@@ -28,6 +28,8 @@ export async function POST(req: Request) {
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const fallbackContent = body.content as string | undefined;
+  const genre = (body.genre as string | undefined) || null;
+  const language = (body.language as string | undefined) || "English";
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");
@@ -139,6 +141,8 @@ export async function POST(req: Request) {
     tx_hash: txHash.toLowerCase(),
     log_index: storylineLog.logIndex!,
     contract_address: STORY_FACTORY.toLowerCase(),
+    genre,
+    language,
   };
 
   const { error: dbError } = await supabase.from("storylines").upsert(
