@@ -7,40 +7,10 @@ function error(message: string, status = 400) {
 }
 
 // ---------------------------------------------------------------------------
-// In-memory rate limiter: max 10 POST requests per IP per storyline per hour
+// Rate limit constants
 // ---------------------------------------------------------------------------
 
 const RATE_LIMIT_MAX = 10;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-
-function checkRateLimit(ip: string, storylineId: number, plotIndex: number | null): boolean {
-  const key = `${ip}:${storylineId}:${plotIndex ?? "s"}`;
-  const now = Date.now();
-  const entry = rateLimitMap.get(key);
-
-  if (!entry || now >= entry.resetAt) {
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-
-  entry.count++;
-  return true;
-}
-
-// Periodically prune expired entries to prevent memory leak
-let lastPrune = Date.now();
-function pruneIfNeeded() {
-  const now = Date.now();
-  if (now - lastPrune < RATE_LIMIT_WINDOW_MS) return;
-  lastPrune = now;
-  for (const [key, entry] of rateLimitMap) {
-    if (now >= entry.resetAt) rateLimitMap.delete(key);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // GET /api/views?storylineId=N
@@ -98,21 +68,25 @@ export async function POST(req: NextRequest) {
     return error("Missing or invalid sessionId");
   }
 
-  // Rate limit: max 10 requests per IP per storyline per hour
-  pruneIfNeeded();
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   const plotVal = plotIndex ?? null;
-  if (!checkRateLimit(ip, storylineId, plotVal)) {
-    return NextResponse.json(
-      { error: "Too many requests" },
-      { status: 429, headers: { "Retry-After": "3600" } },
-    );
-  }
 
   const serverClient = createServerClient();
   if (!serverClient) return error("Supabase not configured", 500);
 
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+  // Durable rate limit: max 10 views per session per hour (survives cold starts)
+  const { count: recentCount } = await serverClient.from("page_views")
+    .select("id", { count: "exact", head: true })
+    .eq("session_id", sessionId)
+    .gte("viewed_at", oneHourAgo);
+
+  if (recentCount !== null && recentCount >= RATE_LIMIT_MAX) {
+    return NextResponse.json(
+      { error: "Too many requests" },
+      { status: 429, headers: { "Retry-After": "3600" } },
+    );
+  }
 
   // Dedup: check if this session already viewed this page in the last hour
   let dedupQuery = serverClient.from("page_views")
