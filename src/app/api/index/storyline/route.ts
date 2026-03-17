@@ -9,6 +9,7 @@ import {
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { hashContent } from "../../../../../lib/content";
+import { GENRES, LANGUAGES } from "../../../../../lib/genres";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -28,8 +29,10 @@ export async function POST(req: Request) {
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const fallbackContent = body.content as string | undefined;
-  const genre = (body.genre as string | undefined) || null;
-  const language = (body.language as string | undefined) || "English";
+  const rawGenre = body.genre as string | undefined;
+  const rawLanguage = body.language as string | undefined;
+  const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : null;
+  const language = rawLanguage && (LANGUAGES as readonly string[]).includes(rawLanguage) ? rawLanguage : "English";
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");
