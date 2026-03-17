@@ -57,10 +57,15 @@ export default function CreateStorylinePage() {
   if (!isConnected) {
     return (
       <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-4 px-6">
-        <p className="text-muted text-sm">
-          Connect your wallet to create a storyline.
-        </p>
-        <ConnectWallet />
+        <div className="glow-border rounded-lg border border-border px-8 py-10 text-center">
+          <p className="text-lg font-bold text-foreground">Begin your story</p>
+          <p className="mt-2 text-sm text-muted">
+            Connect your wallet to create a storyline.
+          </p>
+          <div className="mt-4">
+            <ConnectWallet />
+          </div>
+        </div>
       </div>
     );
   }
@@ -86,22 +91,29 @@ export default function CreateStorylinePage() {
 
     return (
       <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-6 px-6">
-        <h1 className="text-accent text-2xl font-bold">Storyline created!</h1>
-        <div className="flex gap-3">
-          {newStorylineId != null && (
+        <div className="glow-border rounded-lg border border-border px-8 py-10 text-center">
+          <h1 className="text-2xl font-bold text-accent">
+            Storyline created!
+          </h1>
+          <p className="mt-2 text-sm text-muted">
+            Your story is now live on-chain.
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            {newStorylineId != null && (
+              <Link
+                href={`/story/${newStorylineId}`}
+                className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+              >
+                View your story
+              </Link>
+            )}
             <Link
-              href={`/story/${newStorylineId}`}
-              className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+              href="/"
+              className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-sm transition-colors"
             >
-              View your story
+              Go home
             </Link>
-          )}
-          <Link
-            href="/"
-            className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-sm transition-colors"
-          >
-            Go home
-          </Link>
+          </div>
         </div>
       </div>
     );
@@ -110,10 +122,16 @@ export default function CreateStorylinePage() {
   const busy = state !== "idle" && state !== "error";
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-accent text-2xl font-bold tracking-tight">
-        Create Storyline
-      </h1>
+    <div className="animate-in mx-auto max-w-2xl px-6 py-12">
+      {/* Manuscript header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <span className="text-accent">New</span> Storyline
+        </h1>
+        <p className="mt-1 text-xs text-muted">
+          Open a fresh manuscript. Your words become tokens.
+        </p>
+      </div>
 
       <form
         onSubmit={(e) => {
@@ -133,25 +151,25 @@ export default function CreateStorylinePage() {
               metadata: { genre, language },
             });
         }}
-        className="mt-8 space-y-6"
+        className="space-y-6"
       >
-        {/* Title */}
+        {/* Title — large, prominent */}
         <div>
-          <label className="text-foreground mb-2 block text-sm">Title</label>
+          <label className="mb-2 block text-sm text-foreground">Title</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             disabled={busy}
-            placeholder="Enter storyline title"
-            className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+            placeholder="The title of your story..."
+            className="w-full rounded border border-border bg-surface px-4 py-3 text-lg font-bold text-foreground placeholder:font-normal placeholder:text-muted/50 focus:border-accent-dim focus:outline-none disabled:opacity-50"
           />
         </div>
 
         {/* Genre + Language */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-foreground mb-2 block text-sm">Genre</label>
+            <label className="mb-2 block text-sm text-foreground">Genre</label>
             <DropdownSelect
               value={genre}
               onChange={setGenre}
@@ -161,7 +179,9 @@ export default function CreateStorylinePage() {
             />
           </div>
           <div>
-            <label className="text-foreground mb-2 block text-sm">Language</label>
+            <label className="mb-2 block text-sm text-foreground">
+              Language
+            </label>
             <DropdownSelect
               value={language}
               onChange={setLanguage}
@@ -171,18 +191,18 @@ export default function CreateStorylinePage() {
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content — manuscript style */}
         <div>
-          <label className="text-foreground mb-2 block text-sm">
+          <label className="mb-2 block text-sm text-foreground">
             Opening Chapter
           </label>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             disabled={busy}
-            rows={12}
-            placeholder="Write the genesis plot (500–10,000 characters)"
-            className="border-border bg-surface text-foreground placeholder:text-muted w-full resize-y rounded border px-3 py-2 text-sm leading-relaxed focus:border-accent focus:outline-none disabled:opacity-50"
+            rows={16}
+            placeholder="Begin your genesis plot..."
+            className="manuscript-lines w-full resize-y rounded border border-border bg-surface px-4 py-3 text-sm leading-[1.85] text-foreground placeholder:text-muted/50 focus:border-accent-dim focus:outline-none disabled:opacity-50"
           />
           <div className="mt-1 flex justify-between text-xs">
             <span
@@ -190,25 +210,27 @@ export default function CreateStorylinePage() {
                 content.length > 0 && !valid ? "text-error" : "text-muted"
               }
             >
-              {charCount.toLocaleString()} / {MIN_CONTENT_LENGTH.toLocaleString()}–
+              {charCount.toLocaleString()} / {MIN_CONTENT_LENGTH.toLocaleString()}
+              &ndash;
               {MAX_CONTENT_LENGTH.toLocaleString()} chars
             </span>
           </div>
         </div>
 
         {/* Deadline info */}
-        <p className="text-muted text-xs">
-          All storylines have a 7-day deadline — the story sunsets if no new plot is added within 7 days.
+        <p className="text-xs text-muted">
+          All storylines have a 7-day deadline — the story sunsets if no new
+          plot is added within 7 days.
         </p>
 
         {/* Status */}
         {state === "error" && (
-          <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">
+          <div className="rounded border border-error/30 px-3 py-2 text-xs text-error">
             {error}
           </div>
         )}
         {busy && (
-          <div className="border-border text-muted rounded border px-3 py-2 text-xs">
+          <div className="glow-border rounded border border-border px-3 py-2 text-xs text-muted">
             {STATE_LABELS[state]}
           </div>
         )}
@@ -217,7 +239,7 @@ export default function CreateStorylinePage() {
         <button
           type="submit"
           disabled={!canSubmit || busy}
-          className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50"
+          className="w-full rounded border border-accent py-3 text-sm font-medium text-accent transition-colors hover:bg-accent hover:text-background disabled:opacity-50"
         >
           {busy ? STATE_LABELS[state] : "Publish Storyline"}
         </button>
