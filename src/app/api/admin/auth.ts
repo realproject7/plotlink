@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { timingSafeEqual } from "node:crypto";
 import { createServiceRoleClient } from "../../../../lib/supabase";
+import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 /**
  * Constant-time string comparison that does NOT leak length.
@@ -70,9 +71,10 @@ export async function handleModeration(
 
   const hidden = action === "hide";
 
+  const contractAddr = STORY_FACTORY.toLowerCase();
   const { error: dbError } = type === "storyline"
-    ? await supabase.from("storylines").update({ hidden }).eq("storyline_id", id)
-    : await supabase.from("plots").update({ hidden }).eq("id", id);
+    ? await supabase.from("storylines").update({ hidden }).eq("storyline_id", id).eq("contract_address", contractAddr)
+    : await supabase.from("plots").update({ hidden }).eq("id", id).eq("contract_address", contractAddr);
 
   if (dbError) {
     return NextResponse.json(
