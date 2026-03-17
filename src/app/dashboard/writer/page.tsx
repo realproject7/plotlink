@@ -59,11 +59,11 @@ export default function WriterDashboard() {
   }
 
   return (
-    <div className="animate-in mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        <span className="text-accent">Writer</span> Dashboard
+    <div className="mx-auto max-w-2xl px-6 py-12">
+      <h1 className="text-accent text-2xl font-bold tracking-tight">
+        Writer Dashboard
       </h1>
-      <p className="mt-2 text-sm text-muted">
+      <p className="text-muted mt-2 text-sm">
         <WriterIdentityClient address={address!} />
         {" — "}
         {storylines.length}{" "}
@@ -94,7 +94,7 @@ export default function WriterDashboard() {
 
 function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; writerAddress: Address }) {
   return (
-    <div className="glow-border rounded-lg border border-border px-4 py-4">
+    <div className="border-border rounded border px-4 py-4">
       <div className="flex items-start justify-between gap-3">
         <Link
           href={`/story/${storyline.storyline_id}`}

@@ -27,7 +27,7 @@ export default function RootLayout({
         <Providers>
           <FarcasterMiniApp />
           <NavBar />
-          <div className="pt-12 min-h-screen">{children}</div>
+          <div className="pt-11 min-h-screen">{children}</div>
           <Footer />
         </Providers>
       </body>

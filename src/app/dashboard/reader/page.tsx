@@ -97,11 +97,11 @@ export default function ReaderDashboard() {
   const hasPrev = page > 0;
 
   return (
-    <div className="animate-in mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <h1 className="text-2xl font-bold tracking-tight text-foreground">
-        <span className="text-accent">Reader</span> Dashboard
+    <div className="mx-auto max-w-2xl px-6 py-12">
+      <h1 className="text-accent text-2xl font-bold tracking-tight">
+        Reader Dashboard
       </h1>
-      <p className="mt-2 text-sm text-muted">
+      <p className="text-muted mt-2 text-sm">
         <WriterIdentityClient address={address!} />
       </p>
 
@@ -169,7 +169,7 @@ export default function ReaderDashboard() {
 
 function DonationRow({ donation, decimals }: { donation: Donation; decimals: number }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5 text-xs transition-colors hover:border-border-subtle">
+    <div className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs">
       <div className="text-muted flex gap-3">
         <span>
           Story #{donation.storyline_id}
