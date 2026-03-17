@@ -6,6 +6,7 @@ import {
   storyFactoryAbi,
   donationEvent,
 } from "../../../../../lib/contracts/abi";
+import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import type { Database } from "../../../../../lib/supabase";
 
 /** Donation event topic0 */
@@ -89,6 +90,7 @@ export async function POST(req: Request) {
     block_timestamp: new Date(Number(blockTimestamp) * 1000).toISOString(),
     tx_hash: txHash.toLowerCase(),
     log_index: donationLog.logIndex!,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

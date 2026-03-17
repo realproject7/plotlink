@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, supabase } from "../../../../lib/supabase";
+import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
   const { data, error: dbError } = await (db.from("storylines") as any)
     .select("view_count")
     .eq("storyline_id", sid)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
   if (dbError) return error(`Database error: ${dbError.message}`, 500);
@@ -118,6 +120,7 @@ export async function POST(req: NextRequest) {
   let dedupQuery = (serverClient.from("page_views") as any)
     .select("id")
     .eq("storyline_id", storylineId)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .eq("session_id", sessionId)
     .gte("viewed_at", oneHourAgo)
     .limit(1);
@@ -141,6 +144,7 @@ export async function POST(req: NextRequest) {
     plot_index: plotVal,
     viewer_address: viewerAddress?.toLowerCase() ?? null,
     session_id: sessionId,
+    contract_address: STORY_FACTORY.toLowerCase(),
   });
 
   if (insertError) return error(`Database error: ${insertError.message}`, 500);
@@ -148,7 +152,10 @@ export async function POST(req: NextRequest) {
   // Increment denormalized counter (storyline-level views only)
   if (plotVal === null) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (serverClient.rpc as any)("increment_view_count", { sid: storylineId }).catch(() => {
+    await (serverClient.rpc as any)("increment_view_count", {
+      sid: storylineId,
+      caddr: STORY_FACTORY.toLowerCase(),
+    }).catch(() => {
       // Ignore — counter will be slightly behind but page_views table is authoritative
     });
   }

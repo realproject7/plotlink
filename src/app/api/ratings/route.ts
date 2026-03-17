@@ -3,6 +3,7 @@ import { type Address } from "viem";
 import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
 import { erc20Abi } from "../../../../lib/price";
+import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 const MAX_COMMENT_LENGTH = 500;
 
@@ -33,7 +34,8 @@ export async function GET(req: NextRequest) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: allData, error: allError } = await (db.from("ratings") as any)
     .select("rating")
-    .eq("storyline_id", sid);
+    .eq("storyline_id", sid)
+    .eq("contract_address", STORY_FACTORY.toLowerCase());
 
   if (allError) {
     return error(`Database error: ${allError.message}`, 500);
@@ -51,6 +53,7 @@ export async function GET(req: NextRequest) {
   const { data, error: dbError } = await (db.from("ratings") as any)
     .select("*")
     .eq("storyline_id", sid)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("updated_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -69,6 +72,7 @@ export async function GET(req: NextRequest) {
       .select("*")
       .eq("storyline_id", sid)
       .eq("rater_address", raterAddress.toLowerCase())
+      .eq("contract_address", STORY_FACTORY.toLowerCase())
       .single();
     myRating = mine ?? null;
   }
@@ -147,6 +151,7 @@ export async function POST(req: NextRequest) {
   const { data: storyline, error: slError } = await (serverClient.from("storylines") as any)
     .select("token_address")
     .eq("storyline_id", storylineId)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
   if (slError || !storyline) {
@@ -180,8 +185,9 @@ export async function POST(req: NextRequest) {
       rating,
       comment: comment ?? null,
       updated_at: new Date().toISOString(),
+      contract_address: STORY_FACTORY.toLowerCase(),
     },
-    { onConflict: "storyline_id,rater_address" },
+    { onConflict: "storyline_id,rater_address,contract_address" },
   );
 
   if (upsertError) {

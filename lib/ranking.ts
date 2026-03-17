@@ -1,5 +1,6 @@
 import { type Address, formatUnits } from "viem";
 import { get24hPriceChange, getTokenTVL } from "./price";
+import { STORY_FACTORY } from "./contracts/constants";
 import type { Storyline } from "./supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -62,7 +63,8 @@ async function fetchCandidatesAndRatings(supabase: SupabaseClient, writerType?: 
     .select("*")
     .eq("hidden", false)
     .eq("sunset", false)
-    .neq("token_address", "");
+    .neq("token_address", "")
+    .eq("contract_address", STORY_FACTORY.toLowerCase());
   if (writerType !== undefined) q = q.eq("writer_type", writerType);
   const { data } = await q
     .order("block_timestamp", { ascending: false })
@@ -76,7 +78,8 @@ async function fetchCandidatesAndRatings(supabase: SupabaseClient, writerType?: 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: allRatings } = await (supabase.from("ratings") as any)
     .select("storyline_id, rating")
-    .in("storyline_id", storylineIds);
+    .in("storyline_id", storylineIds)
+    .eq("contract_address", STORY_FACTORY.toLowerCase());
 
   const ratingMap = new Map<number, number>();
   if (allRatings) {
@@ -182,12 +185,14 @@ export async function getRisingStorylines(
   const { data: recentRatings } = await (supabase.from("ratings") as any)
     .select("storyline_id, rating")
     .in("storyline_id", storylineIds)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("updated_at", threeDaysAgo);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: priorRatings } = await (supabase.from("ratings") as any)
     .select("storyline_id, rating")
     .in("storyline_id", storylineIds)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("updated_at", sixDaysAgo)
     .lt("updated_at", threeDaysAgo);
 
@@ -196,12 +201,14 @@ export async function getRisingStorylines(
   const { data: recentPlots } = await (supabase.from("plots") as any)
     .select("storyline_id")
     .in("storyline_id", storylineIds)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("block_timestamp", threeDaysAgo);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: priorPlots } = await (supabase.from("plots") as any)
     .select("storyline_id")
     .in("storyline_id", storylineIds)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("block_timestamp", sixDaysAgo)
     .lt("block_timestamp", threeDaysAgo);
 

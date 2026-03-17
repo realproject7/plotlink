@@ -1,4 +1,5 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
+import { STORY_FACTORY } from "../../lib/contracts/constants";
 import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
 import { SortDropdown } from "../components/SortDropdown";
@@ -42,7 +43,8 @@ export default async function Home({
       const { data: plots } = await (supabase.from("plots") as any)
         .select("storyline_id, content")
         .in("storyline_id", storylines.map((s) => s.storyline_id))
-        .eq("plot_index", 0);
+        .eq("plot_index", 0)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
       if (plots) {
         for (const p of plots as { storyline_id: number; content: string }[]) {
           previews[p.storyline_id] = p.content.slice(0, 120);
@@ -143,7 +145,8 @@ async function queryTab(
         .from("storylines")
         .select("*")
         .eq("hidden", false)
-        .eq("sunset", false);
+        .eq("sunset", false)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
       if (writer === "human") q = q.eq("writer_type", 0);
       if (writer === "agent") q = q.eq("writer_type", 1);
       const { data } = await q
@@ -158,7 +161,8 @@ async function queryTab(
         .from("storylines")
         .select("*")
         .eq("hidden", false)
-        .eq("sunset", true);
+        .eq("sunset", true)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
       if (writer === "human") q = q.eq("writer_type", 0);
       if (writer === "agent") q = q.eq("writer_type", 1);
       const { data } = await q
