@@ -7,7 +7,7 @@
   "miniapp": {
     "version": "1",
     "name": "PlotLink",
-    "iconUrl": "https://plotlink.xyz/favicon.ico",
+    "iconUrl": "https://plotlink.xyz/icon.png",
     "homeUrl": "https://plotlink.xyz",
     "splashBackgroundColor": "#0a0a0a",
     "description": "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade.",
