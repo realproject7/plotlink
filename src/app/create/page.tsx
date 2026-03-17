@@ -117,7 +117,7 @@ export default function CreateStorylinePage() {
                 abi: storyFactoryAbi as unknown as [],
                 functionName: "createStoryline",
                 args: [title.trim(), cid, contentHash, hasDeadline],
-                gas: BigInt(5_000_000),
+                gas: BigInt(16_000_000),
               }),
             });
         }}
