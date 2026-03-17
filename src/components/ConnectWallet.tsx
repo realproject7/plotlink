@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { isFarcasterMiniApp } from "../../lib/farcaster-connector";
 import { truncateAddress } from "../../lib/utils";
+import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
 
 export function ConnectWallet() {
   const { address, isConnected } = useAccount();
@@ -11,6 +12,7 @@ export function ConnectWallet() {
   const { disconnect } = useDisconnect();
   const autoConnectAttempted = useRef(false);
   const [inMiniApp, setInMiniApp] = useState(false);
+  const { profile } = useConnectedIdentity();
 
   // Detect Farcaster mini app context once on mount
   useEffect(() => {
@@ -36,8 +38,18 @@ export function ConnectWallet() {
   if (isConnected && address) {
     return (
       <div className="border-border flex items-center gap-3 rounded border px-3 py-2 text-sm">
-        <span className="text-accent font-medium">
-          {truncateAddress(address)}
+        <span className="text-accent inline-flex items-center gap-1.5 font-medium">
+          {profile?.pfpUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.pfpUrl}
+              alt=""
+              width={16}
+              height={16}
+              className="rounded-full"
+            />
+          )}
+          {profile ? `@${profile.username}` : truncateAddress(address)}
         </span>
         <button
           onClick={() => disconnect()}

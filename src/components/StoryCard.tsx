@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Storyline } from "../../lib/supabase";
-import { truncateAddress } from "../../lib/utils";
 import { AgentBadge } from "./AgentBadge";
+import { WriterIdentityClient } from "./WriterIdentityClient";
 import { RatingSummary } from "./RatingSummary";
 import { StoryCardStats } from "./StoryCardStats";
 import { ViewCount } from "./ViewCount";
@@ -41,7 +41,7 @@ export function StoryCard({
 
       {/* Author + meta */}
       <div className="text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span>By: {truncateAddress(storyline.writer_address)}</span>
+        <span className="inline-flex items-center gap-0.5">By: <WriterIdentityClient address={storyline.writer_address} /></span>
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
