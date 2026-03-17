@@ -6,6 +6,7 @@ import { storyFactoryAbi } from "../../../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
+import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -287,30 +288,7 @@ async function processPlotChained(
   }
 
   // Reconcile parent storyline plot_count and last_plot_time (idempotent)
-  const storyId = Number(storylineId);
-  const [{ count }, { data: latestPlot }] = await Promise.all([
-    supabase
-      .from("plots")
-      .select("*", { count: "exact", head: true })
-      .eq("storyline_id", storyId),
-    supabase
-      .from("plots")
-      .select("block_timestamp")
-      .eq("storyline_id", storyId)
-      .order("block_timestamp", { ascending: false })
-      .limit(1)
-      .single(),
-  ]);
-
-  if (count !== null) {
-    await supabase
-      .from("storylines")
-      .update({
-        plot_count: count,
-        ...(latestPlot?.block_timestamp ? { last_plot_time: latestPlot.block_timestamp } : {}),
-      })
-      .eq("storyline_id", storyId);
-  }
+  await reconcileStorylinePlotCount(supabase, Number(storylineId));
 }
 
 async function processDonation(

@@ -8,6 +8,7 @@ import {
 } from "../../../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
+import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -134,29 +135,12 @@ export async function POST(req: Request) {
   }
 
   // Reconcile parent storyline plot_count and last_plot_time (idempotent)
-  const storyId = Number(storylineId);
-  const [{ count }, { data: latestPlot }] = await Promise.all([
-    supabase
-      .from("plots")
-      .select("*", { count: "exact", head: true })
-      .eq("storyline_id", storyId),
-    supabase
-      .from("plots")
-      .select("block_timestamp")
-      .eq("storyline_id", storyId)
-      .order("block_timestamp", { ascending: false })
-      .limit(1)
-      .single(),
-  ]);
-
-  if (count !== null) {
-    await supabase
-      .from("storylines")
-      .update({
-        plot_count: count,
-        ...(latestPlot?.block_timestamp ? { last_plot_time: latestPlot.block_timestamp } : {}),
-      })
-      .eq("storyline_id", storyId);
+  try {
+    await reconcileStorylinePlotCount(supabase, Number(storylineId));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown reconciliation error";
+    console.error(`[index/plot] Reconciliation failed for storyline ${storylineId}: ${msg}`);
+    return error(`Reconciliation failed: ${msg}`, 500);
   }
 
   return NextResponse.json({ success: true });
