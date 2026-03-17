@@ -118,11 +118,11 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
                 </p>
                 <p className="text-muted mt-1.5">To claim:</p>
                 <ul className="text-muted mt-0.5 list-inside list-disc">
-                  <li>
-                    Chain at least 2 plots ({plotCount}/2)
+                  <li className={eligible ? "line-through opacity-60" : ""}>
+                    Chain at least 2 plots ({plotCount}/2) {eligible && "\u2713"}
                   </li>
                   <li>
-                    Unclaimed &gt; 0 ({formatTruncated(unclaimed, decimals)} {reserveLabel})
+                    Royalties accrue when readers trade your token ({formatTruncated(unclaimed, decimals)} {reserveLabel} unclaimed)
                   </li>
                 </ul>
               </div>
@@ -149,7 +149,12 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
       </div>
       {!eligible && txState === "idle" && (
         <p className="text-muted mt-1 text-[10px]">
-          Chain {2 - plotCount} more {2 - plotCount === 1 ? "plot" : "plots"} to unlock royalties
+          Chain at least 2 plots to enable royalty claims ({plotCount}/2)
+        </p>
+      )}
+      {eligible && unclaimed === BigInt(0) && txState === "idle" && (
+        <p className="text-muted mt-1 text-[10px]">
+          No royalties yet — royalties accrue when readers trade your token
         </p>
       )}
       {txHash && txState === "done" && (
