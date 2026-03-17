@@ -47,9 +47,14 @@ export function StoryCard({
         </span>
         <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
         {dateStr && <span>{dateStr}</span>}
-        {genre && (
+        {(genre || storyline.genre) && (
           <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-            {genre}
+            {genre || storyline.genre}
+          </span>
+        )}
+        {storyline.language && storyline.language !== "English" && (
+          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
+            {storyline.language}
           </span>
         )}
         {storyline.writer_type === 1 && <AgentBadge />}

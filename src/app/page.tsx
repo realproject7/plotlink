@@ -4,6 +4,8 @@ import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
 import { SortDropdown } from "../components/SortDropdown";
 import { WriterFilter, type WriterFilterValue } from "../components/WriterFilter";
+import { GenreFilter, LanguageFilter } from "../components/GenreLanguageFilter";
+import { GENRES, LANGUAGES } from "../../lib/genres";
 import Link from "next/link";
 
 export const revalidate = 120;
@@ -15,14 +17,14 @@ const WRITER_VALUES: WriterFilterValue[] = ["all", "human", "agent"];
 
 const PAGE_SIZE = 24;
 
-type SearchParams = Promise<{ tab?: string; writer?: string; page?: string }>;
+type SearchParams = Promise<{ tab?: string; writer?: string; page?: string; genre?: string; lang?: string }>;
 
 export default async function Home({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { tab: rawTab, writer: rawWriter, page: rawPage } = await searchParams;
+  const { tab: rawTab, writer: rawWriter, page: rawPage, genre: rawGenre, lang: rawLang } = await searchParams;
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "new";
   const writer: WriterFilterValue = WRITER_VALUES.includes(
     rawWriter as WriterFilterValue,
@@ -30,13 +32,15 @@ export default async function Home({
     ? (rawWriter as WriterFilterValue)
     : "all";
   const page = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
+  const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : "all";
+  const lang = rawLang && (LANGUAGES as readonly string[]).includes(rawLang) ? rawLang : "all";
 
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
   const previews: Record<number, string> = {};
   if (supabase) {
-    storylines = await queryTab(supabase, tab, writer, page);
+    storylines = await queryTab(supabase, tab, writer, page, genre, lang);
     // Fetch genesis plot previews
     if (storylines.length > 0) {
       const { data: plots } = await supabase.from("plots")
@@ -68,7 +72,11 @@ export default async function Home({
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <WriterFilter active={writer} tab={tab} basePath="/" />
+        <div className="flex flex-wrap items-center gap-3">
+          <WriterFilter active={writer} tab={tab} basePath="/" />
+          <GenreFilter active={genre} tab={tab} writer={writer} lang={lang} />
+          <LanguageFilter active={lang} tab={tab} writer={writer} genre={genre} />
+        </div>
         <SortDropdown active={tab} writer={writer} basePath="/" />
       </div>
 
@@ -134,9 +142,20 @@ async function queryTab(
   tab: Tab,
   writer: WriterFilterValue,
   page: number,
+  genre: string,
+  lang: string,
 ): Promise<Storyline[]> {
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
+
+  function applyFilters(q: ReturnType<typeof supabase.from>) {
+    let filtered = q;
+    if (writer === "human") filtered = filtered.eq("writer_type", 0);
+    if (writer === "agent") filtered = filtered.eq("writer_type", 1);
+    if (genre !== "all") filtered = filtered.eq("genre", genre);
+    if (lang !== "all") filtered = filtered.eq("language", lang);
+    return filtered;
+  }
 
   switch (tab) {
     case "new": {
@@ -146,8 +165,7 @@ async function queryTab(
         .eq("hidden", false)
         .eq("sunset", false)
         .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (writer === "human") q = q.eq("writer_type", 0);
-      if (writer === "agent") q = q.eq("writer_type", 1);
+      q = applyFilters(q);
       const { data } = await q
         .order("block_timestamp", { ascending: false })
         .range(from, to)
@@ -162,8 +180,7 @@ async function queryTab(
         .eq("hidden", false)
         .eq("sunset", true)
         .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (writer === "human") q = q.eq("writer_type", 0);
-      if (writer === "agent") q = q.eq("writer_type", 1);
+      q = applyFilters(q);
       const { data } = await q
         .order("plot_count", { ascending: false })
         .range(from, to)
@@ -173,12 +190,16 @@ async function queryTab(
 
     case "trending": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from);
+      const g = genre !== "all" ? genre : undefined;
+      const l = lang !== "all" ? lang : undefined;
+      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
     }
 
     case "rising": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getRisingStorylines(supabase, PAGE_SIZE, wt, from);
+      const g = genre !== "all" ? genre : undefined;
+      const l = lang !== "all" ? lang : undefined;
+      return getRisingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
     }
   }
 }

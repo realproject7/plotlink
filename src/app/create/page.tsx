@@ -13,6 +13,7 @@ import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { decodeEventLog, encodeEventTopics } from "viem";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
+import { GENRES, LANGUAGES } from "../../../lib/genres";
 
 const STORYLINE_CREATED_TOPIC = encodeEventTopics({
   abi: [storylineCreatedEvent],
@@ -32,15 +33,18 @@ const STATE_LABELS: Record<PublishState, string> = {
 export default function CreateStorylinePage() {
   const { isConnected } = useAccount();
   const [title, setTitle] = useState("");
+  const [genre, setGenre] = useState("");
+  const [language, setLanguage] = useState("English");
   const [content, setContent] = useState("");
   const hasDeadline = true; // mandatory 7-day deadline for all storylines
 
   const { state, error, receipt, execute, reset } = usePublish();
   const { valid, charCount } = validateContentLength(content);
   const titleValid = title.trim().length > 0;
+  const genreValid = genre.length > 0;
   const canSubmit =
     state === "idle" || state === "error"
-      ? titleValid && valid
+      ? titleValid && genreValid && valid
       : false;
 
   if (!isConnected) {
@@ -119,6 +123,7 @@ export default function CreateStorylinePage() {
                 args: [title.trim(), cid, contentHash, hasDeadline],
                 gas: BigInt(16_000_000),
               }),
+              metadata: { genre, language },
             });
         }}
         className="mt-8 space-y-6"
@@ -134,6 +139,37 @@ export default function CreateStorylinePage() {
             placeholder="Enter storyline title"
             className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
           />
+        </div>
+
+        {/* Genre + Language */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-foreground mb-2 block text-sm">Genre</label>
+            <select
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              disabled={busy}
+              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+            >
+              <option value="">Select genre...</option>
+              {GENRES.map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-foreground mb-2 block text-sm">Language</label>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              disabled={busy}
+              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+            >
+              {LANGUAGES.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Content */}
