@@ -285,6 +285,32 @@ async function processPlotChained(
   if (plotError) {
     throw new Error(`Database error (plot): ${plotError.message}`);
   }
+
+  // Reconcile parent storyline plot_count and last_plot_time (idempotent)
+  const storyId = Number(storylineId);
+  const [{ count }, { data: latestPlot }] = await Promise.all([
+    supabase
+      .from("plots")
+      .select("*", { count: "exact", head: true })
+      .eq("storyline_id", storyId),
+    supabase
+      .from("plots")
+      .select("block_timestamp")
+      .eq("storyline_id", storyId)
+      .order("block_timestamp", { ascending: false })
+      .limit(1)
+      .single(),
+  ]);
+
+  if (count !== null) {
+    await supabase
+      .from("storylines")
+      .update({
+        plot_count: count,
+        ...(latestPlot?.block_timestamp ? { last_plot_time: latestPlot.block_timestamp } : {}),
+      })
+      .eq("storyline_id", storyId);
+  }
 }
 
 async function processDonation(
