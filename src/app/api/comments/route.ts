@@ -33,8 +33,7 @@ export async function GET(req: NextRequest) {
   const page = Math.max(Number(req.nextUrl.searchParams.get("page") ?? 1), 1);
   const offset = (page - 1) * limit;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error: dbError } = await (db.from("comments") as any)
+  const { data, error: dbError } = await db.from("comments")
     .select("*")
     .eq("storyline_id", sid)
     .eq("plot_index", pidx)
@@ -46,8 +45,7 @@ export async function GET(req: NextRequest) {
   if (dbError) return error(`Database error: ${dbError.message}`, 500);
 
   // Get total count for pagination
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count } = await (db.from("comments") as any)
+  const { count } = await db.from("comments")
     .select("id", { count: "exact", head: true })
     .eq("storyline_id", sid)
     .eq("plot_index", pidx)
@@ -117,8 +115,7 @@ export async function POST(req: NextRequest) {
 
   // Rate limit: max 1 comment per address per plot per minute
   const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recent } = await (serverClient.from("comments") as any)
+  const { data: recent } = await serverClient.from("comments")
     .select("id")
     .eq("storyline_id", storylineId)
     .eq("plot_index", plotIndex)
@@ -135,8 +132,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert comment
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: insertError } = await (serverClient.from("comments") as any).insert({
+  const { error: insertError } = await serverClient.from("comments").insert({
     storyline_id: storylineId,
     plot_index: plotIndex,
     commenter_address: commenterAddress.toLowerCase(),

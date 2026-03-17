@@ -68,14 +68,11 @@ export async function handleModeration(
     );
   }
 
-  const table = type === "storyline" ? "storylines" : "plots";
-  const idColumn = type === "storyline" ? "storyline_id" : "id";
   const hidden = action === "hide";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: dbError } = await (supabase.from(table) as any)
-    .update({ hidden })
-    .eq(idColumn, id);
+  const { error: dbError } = type === "storyline"
+    ? await supabase.from("storylines").update({ hidden }).eq("storyline_id", id)
+    : await supabase.from("plots").update({ hidden }).eq("id", id);
 
   if (dbError) {
     return NextResponse.json(

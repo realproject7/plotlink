@@ -56,8 +56,7 @@ export async function GET(req: NextRequest) {
   const sid = Number(storylineId);
   if (isNaN(sid) || sid <= 0) return error("Invalid storylineId");
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error: dbError } = await (db.from("storylines") as any)
+  const { data, error: dbError } = await db.from("storylines")
     .select("view_count")
     .eq("storyline_id", sid)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
@@ -116,8 +115,7 @@ export async function POST(req: NextRequest) {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
   // Dedup: check if this session already viewed this page in the last hour
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let dedupQuery = (serverClient.from("page_views") as any)
+  let dedupQuery = serverClient.from("page_views")
     .select("id")
     .eq("storyline_id", storylineId)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
@@ -138,8 +136,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Insert page view record
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: insertError } = await (serverClient.from("page_views") as any).insert({
+  const { error: insertError } = await serverClient.from("page_views").insert({
     storyline_id: storylineId,
     plot_index: plotVal,
     viewer_address: viewerAddress?.toLowerCase() ?? null,
@@ -151,13 +148,12 @@ export async function POST(req: NextRequest) {
 
   // Increment denormalized counter (storyline-level views only)
   if (plotVal === null) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (serverClient.rpc as any)("increment_view_count", {
+    // Ignore errors — counter will be slightly behind but page_views table is authoritative
+    const { error: rpcError } = await serverClient.rpc("increment_view_count", {
       sid: storylineId,
       caddr: STORY_FACTORY.toLowerCase(),
-    }).catch(() => {
-      // Ignore — counter will be slightly behind but page_views table is authoritative
     });
+    if (rpcError) console.warn("increment_view_count failed:", rpcError.message);
   }
 
   return NextResponse.json({ success: true, deduplicated: false });

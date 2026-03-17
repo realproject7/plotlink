@@ -173,8 +173,7 @@ function DonationCount({ storylineId, tokenAddress }: { storylineId: number; tok
       const [tvlData, rows] = await Promise.all([
         getTokenTVL(tokenAddress as Address),
         supabase
-          ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (supabase.from("donations") as any)
+          ? supabase.from("donations")
               .select("amount")
               .eq("storyline_id", storylineId)
               .eq("contract_address", STORY_FACTORY.toLowerCase())
