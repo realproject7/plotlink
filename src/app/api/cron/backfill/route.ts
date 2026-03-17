@@ -6,6 +6,7 @@ import { storyFactoryAbi } from "../../../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
+import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -285,6 +286,9 @@ async function processPlotChained(
   if (plotError) {
     throw new Error(`Database error (plot): ${plotError.message}`);
   }
+
+  // Reconcile parent storyline plot_count and last_plot_time (idempotent)
+  await reconcileStorylinePlotCount(supabase, Number(storylineId));
 }
 
 async function processDonation(

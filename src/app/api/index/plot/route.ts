@@ -8,6 +8,7 @@ import {
 } from "../../../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
+import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -131,6 +132,15 @@ export async function POST(req: Request) {
 
   if (dbError) {
     return error(`Database error: ${dbError.message}`, 500);
+  }
+
+  // Reconcile parent storyline plot_count and last_plot_time (idempotent)
+  try {
+    await reconcileStorylinePlotCount(supabase, Number(storylineId));
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown reconciliation error";
+    console.error(`[index/plot] Reconciliation failed for storyline ${storylineId}: ${msg}`);
+    return error(`Reconciliation failed: ${msg}`, 500);
   }
 
   return NextResponse.json({ success: true });
