@@ -20,6 +20,7 @@ interface WriteCall {
   abi: Abi;
   functionName: string;
   args: readonly unknown[];
+  gas?: bigint;
 }
 
 interface PublishOptions {

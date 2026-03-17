@@ -23,6 +23,7 @@ export function useChainPlot() {
           abi: storyFactoryAbi as unknown as [],
           functionName: "chainPlot",
           args: [BigInt(storylineId), title, cid, contentHash],
+          gas: BigInt(500_000),
         }),
       });
     },
