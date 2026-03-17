@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
-import { MCV2_BOND, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
+import { MCV2_BOND, IS_TESTNET, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
 
 function formatTruncated(value: bigint, decimals: number, digits = 10): string {
   const raw = formatUnits(value, decimals);
@@ -39,13 +39,13 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const { data: royaltyInfo, refetch } = useQuery({
     queryKey: ["royalty-info", tokenAddress, beneficiary],
     queryFn: async () => {
-      const unclaimed = await publicClient.readContract({
+      const [balance] = await publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "getRoyaltyInfo",
-        args: [tokenAddress, beneficiary],
+        args: [beneficiary, PLOT_TOKEN],
       });
-      return { unclaimed };
+      return { unclaimed: balance };
     },
     refetchInterval: 30000,
   });
@@ -71,7 +71,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "claimRoyalties",
-        args: [tokenAddress],
+        args: [PLOT_TOKEN],
       });
       setTxHash(hash);
 
