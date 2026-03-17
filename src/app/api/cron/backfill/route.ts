@@ -219,6 +219,7 @@ async function processStorylineCreated(
     block_timestamp: timestampISO,
     tx_hash: txHash,
     log_index: logIndex,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   const { error: storylineError } = await supabase
@@ -241,6 +242,7 @@ async function processStorylineCreated(
       block_timestamp: timestampISO,
       tx_hash: txHash,
       log_index: logIndex,
+      contract_address: STORY_FACTORY.toLowerCase(),
     };
     const { error: plotError } = await supabase
       .from("plots")
@@ -278,6 +280,7 @@ async function processPlotChained(
     block_timestamp: timestampISO,
     tx_hash: txHash,
     log_index: logIndex,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   const { error: plotError } = await supabase
@@ -306,6 +309,7 @@ async function processDonation(
     block_timestamp: timestampISO,
     tx_hash: txHash,
     log_index: logIndex,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   const { error: donationError } = await supabase
