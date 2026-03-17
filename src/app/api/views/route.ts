@@ -76,10 +76,12 @@ export async function POST(req: NextRequest) {
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
   // Durable rate limit: max 10 views per session per hour (survives cold starts)
-  const { count: recentCount } = await serverClient.from("page_views")
+  const { count: recentCount, error: countError } = await serverClient.from("page_views")
     .select("id", { count: "exact", head: true })
     .eq("session_id", sessionId)
     .gte("viewed_at", oneHourAgo);
+
+  if (countError) return error(`Database error: ${countError.message}`, 500);
 
   if (recentCount !== null && recentCount >= RATE_LIMIT_MAX) {
     return NextResponse.json(
