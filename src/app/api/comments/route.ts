@@ -114,13 +114,14 @@ export async function POST(req: NextRequest) {
   if (!serverClient) return error("Supabase not configured", 500);
 
   // Validate that the (storyline_id, plot_index) pair exists
-  const { data: plot } = await serverClient.from("plots")
+  const { data: plot, error: plotError } = await serverClient.from("plots")
     .select("id")
     .eq("storyline_id", storylineId)
     .eq("plot_index", plotIndex)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .limit(1);
 
+  if (plotError) return error(`Database error: ${plotError.message}`, 500);
   if (!plot || plot.length === 0) {
     return error("Plot does not exist");
   }
