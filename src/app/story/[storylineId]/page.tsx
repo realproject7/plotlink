@@ -22,6 +22,24 @@ type Params = Promise<{ storylineId: string }>;
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+/**
+ * Generate a cover gradient from storyline ID (same logic as StoryCard).
+ */
+function generateCoverGradient(id: number): string {
+  const h1 = (id * 137) % 360;
+  const h2 = (id * 251 + 97) % 360;
+  const h3 = (id * 83 + 199) % 360;
+  const angle = (id * 53) % 180;
+  const x = (id * 31) % 80 + 10;
+  const y = (id * 67) % 80 + 10;
+
+  return `
+    radial-gradient(ellipse at ${x}% ${y}%, hsla(${h1}, 60%, 20%, 0.7) 0%, transparent 60%),
+    radial-gradient(ellipse at ${100 - x}% ${100 - y}%, hsla(${h2}, 50%, 15%, 0.5) 0%, transparent 50%),
+    linear-gradient(${angle}deg, hsla(${h3}, 40%, 8%, 1) 0%, hsla(${h1}, 30%, 5%, 1) 100%)
+  `;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -130,12 +148,14 @@ export default async function StoryPage({ params }: { params: Params }) {
     : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="animate-in mx-auto max-w-5xl px-4 py-10 sm:px-6">
       <ViewTracker storylineId={id} />
-      <StoryHeader storyline={storyline} priceInfo={priceInfo} />
+
+      {/* Cover header with generative background */}
+      <StoryHeader storyline={sl} priceInfo={priceInfo} />
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
-        {/* Story content — genesis + table of contents */}
+        {/* Story content — immersive reading area */}
         <main>
           {genesis ? (
             <>
@@ -147,10 +167,7 @@ export default async function StoryPage({ params }: { params: Params }) {
           )}
 
           {chapters.length > 0 && (
-            <TableOfContents
-              storylineId={id}
-              chapters={chapters}
-            />
+            <TableOfContents storylineId={id} chapters={chapters} />
           )}
         </main>
 
@@ -185,41 +202,69 @@ function StoryHeader({
   priceInfo: TokenPriceInfo | null;
 }) {
   const reserveLabel = RESERVE_LABEL;
+  const coverGradient = generateCoverGradient(storyline.storyline_id);
 
   return (
-    <header className="border-border border-b pb-6">
-      <h1 className="text-accent text-2xl font-bold tracking-tight">
-        {storyline.title}
-      </h1>
-      <div className="text-muted mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-        <span>
-          by{" "}
-          <Suspense fallback={<span className="text-foreground">{truncateAddress(storyline.writer_address)}</span>}>
-            <WriterIdentity address={storyline.writer_address} />
-          </Suspense>
-        </span>
-        <span>
-          {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-        </span>
-        <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
-        {storyline.genre && (
-          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-            {storyline.genre}
+    <header className="relative overflow-hidden rounded-lg border border-border-subtle">
+      {/* Generative cover background */}
+      <div
+        className="px-6 pb-6 pt-10 sm:px-8 sm:pt-14"
+        style={{ background: coverGradient }}
+      >
+        {/* Genre + status badges */}
+        <div className="mb-4 flex flex-wrap gap-2">
+          {storyline.genre && (
+            <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] text-muted backdrop-blur-sm">
+              {storyline.genre}
+            </span>
+          )}
+          {storyline.language && storyline.language !== "English" && (
+            <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] text-muted backdrop-blur-sm">
+              {storyline.language}
+            </span>
+          )}
+          {storyline.sunset && (
+            <span className="rounded bg-black/40 px-2 py-0.5 text-[10px] text-accent-dim backdrop-blur-sm">
+              complete
+            </span>
+          )}
+        </div>
+
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          {storyline.title}
+        </h1>
+
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+          <span>
+            by{" "}
+            <Suspense
+              fallback={
+                <span className="text-foreground">
+                  {truncateAddress(storyline.writer_address)}
+                </span>
+              }
+            >
+              <WriterIdentity address={storyline.writer_address} />
+            </Suspense>
           </span>
-        )}
-        {storyline.language && storyline.language !== "English" && (
-          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-            {storyline.language}
+          <span>
+            {storyline.plot_count}{" "}
+            {storyline.plot_count === 1 ? "plot" : "plots"}
           </span>
-        )}
-        {storyline.writer_type === 1 && <AgentBadge />}
-        <RatingSummary storylineId={storyline.storyline_id} />
+          <ViewCount
+            storylineId={storyline.storyline_id}
+            initialCount={storyline.view_count}
+          />
+          {storyline.writer_type === 1 && <AgentBadge />}
+          <RatingSummary storylineId={storyline.storyline_id} />
+        </div>
       </div>
 
+      {/* Price info bar */}
       {priceInfo && (
-        <div className="border-border bg-surface mt-4 grid grid-cols-2 gap-2 rounded border px-3 py-2 text-xs">
+        <div className="grid grid-cols-2 gap-2 border-t border-border-subtle bg-surface px-6 py-3 text-xs sm:px-8">
           <div>
-            <span className="text-muted block text-[10px] uppercase tracking-wider">
+            <span className="block text-[10px] uppercase tracking-wider text-muted">
               Token Price
             </span>
             <span className="text-foreground">
@@ -227,7 +272,7 @@ function StoryHeader({
             </span>
           </div>
           <div>
-            <span className="text-muted block text-[10px] uppercase tracking-wider">
+            <span className="block text-[10px] uppercase tracking-wider text-muted">
               Supply Minted
             </span>
             <span className="text-foreground">
@@ -236,15 +281,20 @@ function StoryHeader({
           </div>
         </div>
       )}
+
+      {/* Deadline / completion */}
       {storyline.sunset ? (
-        <div className="border-border bg-surface mt-4 rounded border px-3 py-2 text-xs">
+        <div className="border-t border-border-subtle bg-surface px-6 py-2 text-xs sm:px-8">
           <span className="text-muted">Story complete</span>
-          <span className="text-foreground ml-2">
-            {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} total
+          <span className="ml-2 text-foreground">
+            {storyline.plot_count}{" "}
+            {storyline.plot_count === 1 ? "plot" : "plots"} total
           </span>
         </div>
       ) : storyline.last_plot_time ? (
-        <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+        <div className="border-t border-border-subtle px-6 sm:px-8">
+          <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+        </div>
       ) : null}
     </header>
   );
@@ -254,8 +304,8 @@ function GenesisSection({ plot }: { plot: Plot }) {
   return (
     <section>
       <ViewTracker storylineId={plot.storyline_id} plotIndex={0} />
-      <div className="text-muted mb-3 flex items-baseline gap-3 text-xs">
-        <span className="text-accent-dim font-medium">Genesis</span>
+      <div className="mb-4 flex items-baseline gap-3 text-xs text-muted">
+        <span className="font-medium text-accent-dim">Genesis</span>
         {plot.block_timestamp && (
           <time dateTime={plot.block_timestamp}>
             {new Date(plot.block_timestamp).toLocaleDateString("en-US", {
@@ -267,11 +317,9 @@ function GenesisSection({ plot }: { plot: Plot }) {
         )}
       </div>
       {plot.content ? (
-        <div className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
-          {plot.content}
-        </div>
+        <div className="reading-area whitespace-pre-wrap">{plot.content}</div>
       ) : (
-        <p className="text-muted text-sm italic">
+        <p className="text-sm italic text-muted">
           Content unavailable (CID: {plot.content_cid})
         </p>
       )}
@@ -287,11 +335,11 @@ function TableOfContents({
   chapters: Plot[];
 }) {
   return (
-    <section className="mt-10">
-      <h2 className="text-foreground mb-4 text-sm font-semibold uppercase tracking-wider">
+    <section className="mt-12">
+      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-foreground">
         Chapters
       </h2>
-      <div className="divide-border divide-y">
+      <div className="divide-y divide-border-subtle">
         {chapters.map((ch) => {
           const chapterTitle = ch.title || `Chapter ${ch.plot_index}`;
           const preview = ch.content ? ch.content.slice(0, 100) : "";
@@ -306,22 +354,20 @@ function TableOfContents({
             <Link
               key={ch.id}
               href={`/story/${storylineId}/${ch.plot_index}`}
-              className="hover:bg-surface/50 flex items-start justify-between gap-4 py-3 transition-colors"
+              className="book-spine group flex items-start justify-between gap-4 py-3.5 pl-4 transition-colors hover:bg-surface/50"
             >
               <div className="min-w-0 flex-1">
-                <div className="text-foreground text-sm font-medium">
+                <div className="text-sm font-medium text-foreground group-hover:text-accent transition-colors">
                   {chapterTitle}
                 </div>
                 {preview && (
-                  <p className="text-muted mt-0.5 truncate text-xs">
+                  <p className="mt-0.5 truncate text-xs text-muted">
                     {preview}
-                    {ch.content && ch.content.length > 100 ? "…" : ""}
+                    {ch.content && ch.content.length > 100 ? "..." : ""}
                   </p>
                 )}
               </div>
-              <div className="text-muted shrink-0 text-xs">
-                {dateStr}
-              </div>
+              <div className="shrink-0 text-xs text-muted">{dateStr}</div>
             </Link>
           );
         })}
@@ -333,7 +379,7 @@ function TableOfContents({
 function NotFound({ message }: { message: string }) {
   return (
     <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center px-6">
-      <p className="text-muted text-sm">{message}</p>
+      <p className="text-sm text-muted">{message}</p>
     </div>
   );
 }

@@ -56,18 +56,36 @@ export default async function Home({
     }
   }
 
-  const extraParams = writer !== "all" ? { writer } : undefined;
+  // Split first storyline as featured (only on first page, "new" or "trending" tab)
+  const showFeatured = page === 1 && (tab === "new" || tab === "trending") && storylines.length > 0;
+  const featured = showFeatured ? storylines[0] : null;
+  const rest = showFeatured ? storylines.slice(1) : storylines;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      {/* Compact hero */}
-      <header className="mb-8">
-        <h1 className="text-accent text-xl font-bold tracking-tight">
+    <div className="animate-in mx-auto max-w-6xl px-4 py-10 sm:px-6">
+      {/* Hero */}
+      <header className="mb-10 gen-pattern rounded-lg px-6 py-8">
+        <h1 className="text-accent text-2xl font-bold tracking-tight sm:text-3xl">
           PlotLink
         </h1>
-        <p className="text-muted mt-1 text-sm">
-          Your story is a token. Every plot you publish drives the market — and every trade pays you. Write more, earn more.
+        <p className="text-muted mt-2 max-w-lg text-sm leading-relaxed">
+          Your story is a token. Every plot you publish drives the market — and
+          every trade pays you. Write more, earn more.
         </p>
+        <div className="mt-4 flex gap-3">
+          <Link
+            href="/create"
+            className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-1.5 text-xs font-medium transition-colors"
+          >
+            start writing
+          </Link>
+          <Link
+            href="/discover"
+            className="border-border text-muted hover:text-foreground rounded border px-4 py-1.5 text-xs transition-colors"
+          >
+            discover stories
+          </Link>
+        </div>
       </header>
 
       {/* Filter bar */}
@@ -80,20 +98,48 @@ export default async function Home({
         <SortDropdown active={tab} writer={writer} basePath="/" />
       </div>
 
-      {/* Story grid */}
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {storylines.map((s) => (
-          <StoryCard key={s.id} storyline={s} preview={previews[s.storyline_id]} />
+      {/* Featured + grid shelf */}
+      {featured && (
+        <section className="mt-8">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_1fr_1fr]">
+            {/* Featured card — spans the left side */}
+            <div className="lg:row-span-2">
+              <StoryCard
+                storyline={featured}
+                preview={previews[featured.storyline_id]}
+                featured
+              />
+            </div>
+            {/* Next stories fill the remaining grid */}
+            {rest.slice(0, 4).map((s) => (
+              <StoryCard
+                key={s.id}
+                storyline={s}
+                preview={previews[s.storyline_id]}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Main story grid — book-cover layout */}
+      <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {(featured ? rest.slice(4) : rest).map((s) => (
+          <StoryCard
+            key={s.id}
+            storyline={s}
+            preview={previews[s.storyline_id]}
+          />
         ))}
       </div>
 
       {/* Pagination */}
       {(page > 1 || storylines.length === PAGE_SIZE) && (
-        <div className="mt-8 flex items-center justify-center gap-4">
+        <div className="mt-10 flex items-center justify-center gap-4">
           {page > 1 && (
             <Link
               href={buildPageHref(tab, writer, page - 1)}
-              className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
+              className="border-border text-muted hover:text-foreground hover:border-accent-dim rounded border px-4 py-2 text-xs transition-colors"
             >
               &larr; Previous
             </Link>
@@ -102,7 +148,7 @@ export default async function Home({
           {storylines.length === PAGE_SIZE && (
             <Link
               href={buildPageHref(tab, writer, page + 1)}
-              className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
+              className="border-border text-muted hover:text-foreground hover:border-accent-dim rounded border px-4 py-2 text-xs transition-colors"
             >
               Next &rarr;
             </Link>
@@ -111,8 +157,8 @@ export default async function Home({
       )}
 
       {storylines.length === 0 && (
-        <section className="flex flex-col items-center gap-4 py-16 text-center">
-          <div className="border-border text-muted rounded border px-4 py-3 text-xs">
+        <section className="flex flex-col items-center gap-4 py-20 text-center">
+          <div className="glow-border rounded border border-border px-5 py-4 text-xs text-muted">
             <span className="text-accent-dim">$</span> no storylines found
           </div>
           <p className="text-muted text-sm">
