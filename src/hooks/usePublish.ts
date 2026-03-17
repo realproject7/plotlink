@@ -89,6 +89,7 @@ export function usePublish() {
 
         // 4. Trigger indexer
         setState("indexing");
+        await new Promise((r) => setTimeout(r, 5000));
         await fetch(opts.indexerRoute, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
