@@ -6,8 +6,8 @@ import { useQuery } from "@tanstack/react-query";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import type { Address } from "viem";
-import { truncateAddress } from "../../lib/utils";
 import { StarDisplay, StarInput } from "./StarRating";
+import { FarcasterAvatar } from "./FarcasterAvatar";
 
 interface RatingData {
   id: number;
@@ -193,7 +193,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
               <div key={r.id} className="text-xs">
                 <div className="flex items-center gap-2">
                   <span className="text-foreground">
-                    {truncateAddress(r.rater_address)}
+                    <FarcasterAvatar address={r.rater_address} size={12} />
                   </span>
                   <StarDisplay rating={r.rating} size={12} />
                 </div>

@@ -8,7 +8,7 @@ import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
 import { STORY_FACTORY, PLOT_TOKEN, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
-import { truncateAddress } from "../../lib/utils";
+import { FarcasterAvatar } from "./FarcasterAvatar";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
 
@@ -169,7 +169,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
           <span className="text-foreground">
             {formatUnits(parsedAmount, 18)} {reserveLabel}
           </span>{" "}
-          to {writerAddress ? truncateAddress(writerAddress) : `story #${storylineId}`}
+          to {writerAddress ? <FarcasterAvatar address={writerAddress} size={12} linkProfile={false} /> : `story #${storylineId}`}
         </p>
       )}
 
