@@ -12,6 +12,7 @@ import { supabase, type Storyline } from "../../../lib/supabase";
 import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { useChainPlot } from "../../hooks/useChainPlot";
 import type { PublishState } from "../../hooks/usePublish";
+import { PublishRecovery } from "../../components/PublishRecovery";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { Select } from "../../components/Select";
@@ -101,6 +102,9 @@ export default function ChainPlotPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
+      {/* Recovery banner for failed indexing */}
+      <PublishRecovery />
+
       <h1 className="text-accent text-2xl font-bold tracking-tight">
         Chain Plot
       </h1>

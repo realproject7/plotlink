@@ -8,6 +8,7 @@ import {
   MAX_CONTENT_LENGTH,
 } from "../../../lib/content";
 import { usePublish, type PublishState } from "../../hooks/usePublish";
+import { PublishRecovery } from "../../components/PublishRecovery";
 import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { decodeEventLog, encodeEventTopics } from "viem";
@@ -123,6 +124,9 @@ export default function CreateStorylinePage() {
 
   return (
     <div className="animate-in mx-auto max-w-2xl px-6 py-12">
+      {/* Recovery banner for failed indexing */}
+      <PublishRecovery />
+
       {/* Manuscript header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">

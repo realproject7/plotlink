@@ -5,6 +5,7 @@ import { useWriteContract } from "wagmi";
 import { hashContent } from "../../lib/content";
 import { publicClient } from "../../lib/rpc";
 import type { Hex, Abi, TransactionReceipt } from "viem";
+import { usePublishIntent } from "./usePublishIntent";
 
 export type PublishState =
   | "idle"
@@ -36,15 +37,19 @@ interface PublishOptions {
  *
  * Manages the 5-state flow: uploading -> confirming -> pending -> indexing -> published.
  * Caches CID keyed by content hash for retry (skips re-upload if content unchanged).
+ * Integrates with usePublishIntent for crash-safe recovery.
  */
 export function usePublish() {
   const [state, setState] = useState<PublishState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | undefined>(undefined);
-  const [receipt, setReceipt] = useState<TransactionReceipt | undefined>(undefined);
+  const [receipt, setReceipt] = useState<TransactionReceipt | undefined>(
+    undefined,
+  );
   const cachedCid = useRef<{ cid: string; contentHash: string } | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const { saveIntent, persistTxHash, clearIntent } = usePublishIntent();
 
   const execute = useCallback(
     async (opts: PublishOptions) => {
@@ -75,27 +80,59 @@ export function usePublish() {
           cachedCid.current = { cid, contentHash };
         }
 
+        // Save intent before wallet confirmation
+        saveIntent({
+          content: opts.content,
+          metadata: opts.metadata ?? {},
+          indexerRoute: opts.indexerRoute,
+          uploadKeyPrefix: opts.uploadKeyPrefix,
+        });
+
         // 2. Submit tx to wallet
         setState("confirming");
         const writeCall = opts.buildWriteCall(cid, contentHash);
 
-        const hash = await writeContractAsync(writeCall);
+        let hash: Hex;
+        try {
+          hash = await writeContractAsync(writeCall);
+        } catch (err) {
+          // User rejected tx — clear intent, no recovery needed
+          clearIntent();
+          throw err;
+        }
         setTxHash(hash);
+
+        // Persist tx hash after wallet confirms
+        persistTxHash(hash);
 
         // 3. Wait for tx confirmation
         setState("pending");
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        const txReceipt = await publicClient.waitForTransactionReceipt({
+          hash,
+        });
 
-        setReceipt(receipt);
+        setReceipt(txReceipt);
 
         // 4. Trigger indexer
         setState("indexing");
         await new Promise((r) => setTimeout(r, 5000));
-        await fetch(opts.indexerRoute, {
+        const indexRes = await fetch(opts.indexerRoute, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash, content: opts.content, ...opts.metadata }),
+          body: JSON.stringify({
+            txHash: hash,
+            content: opts.content,
+            ...opts.metadata,
+          }),
         });
+
+        // 409 = already indexed, treat as success
+        if (!indexRes.ok && indexRes.status !== 409) {
+          throw new Error(`Indexing failed (${indexRes.status})`);
+        }
+
+        // Clear intent on success
+        clearIntent();
 
         // 5. Done
         setState("published");
@@ -107,7 +144,7 @@ export function usePublish() {
         setState("error");
       }
     },
-    [writeContractAsync],
+    [writeContractAsync, saveIntent, persistTxHash, clearIntent],
   );
 
   const reset = useCallback(() => {
