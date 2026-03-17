@@ -113,6 +113,18 @@ export async function POST(req: NextRequest) {
   const serverClient = createServerClient();
   if (!serverClient) return error("Supabase not configured", 500);
 
+  // Validate that the (storyline_id, plot_index) pair exists
+  const { data: plot } = await serverClient.from("plots")
+    .select("id")
+    .eq("storyline_id", storylineId)
+    .eq("plot_index", plotIndex)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
+    .limit(1);
+
+  if (!plot || plot.length === 0) {
+    return error("Plot does not exist");
+  }
+
   // Rate limit: max 1 comment per address per plot per minute
   const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
   const { data: recent } = await serverClient.from("comments")
