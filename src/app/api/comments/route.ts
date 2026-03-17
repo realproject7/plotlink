@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { type Address } from "viem";
 import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
+import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 const MAX_COMMENT_LENGTH = 1000;
 const DEFAULT_LIMIT = 20;
@@ -38,6 +39,7 @@ export async function GET(req: NextRequest) {
     .eq("storyline_id", sid)
     .eq("plot_index", pidx)
     .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -49,7 +51,8 @@ export async function GET(req: NextRequest) {
     .select("id", { count: "exact", head: true })
     .eq("storyline_id", sid)
     .eq("plot_index", pidx)
-    .eq("hidden", false);
+    .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase());
 
   return NextResponse.json({
     comments: data ?? [],
@@ -120,6 +123,7 @@ export async function POST(req: NextRequest) {
     .eq("storyline_id", storylineId)
     .eq("plot_index", plotIndex)
     .eq("commenter_address", commenterAddress.toLowerCase())
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("created_at", oneMinuteAgo)
     .limit(1);
 
@@ -137,6 +141,7 @@ export async function POST(req: NextRequest) {
     plot_index: plotIndex,
     commenter_address: commenterAddress.toLowerCase(),
     content,
+    contract_address: STORY_FACTORY.toLowerCase(),
   });
 
   if (insertError) return error(`Database error: ${insertError.message}`, 500);

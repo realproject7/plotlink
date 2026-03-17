@@ -1,6 +1,7 @@
 import { type Metadata } from "next";
 import { redirect } from "next/navigation";
 import { createServerClient, type Storyline, type Plot } from "../../../../../lib/supabase";
+import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { truncateAddress } from "../../../../../lib/utils";
 import { ViewTracker } from "../../../../components/ViewCount";
 import { CommentSection } from "../../../../components/CommentSection";
@@ -27,8 +28,8 @@ export async function generateMetadata({
   if (!supabase) return {};
 
   const [{ data: storyline }, { data: plot }] = await Promise.all([
-    supabase.from("storylines").select("*").eq("storyline_id", sid).eq("hidden", false).single(),
-    supabase.from("plots").select("*").eq("storyline_id", sid).eq("plot_index", pidx).eq("hidden", false).single(),
+    supabase.from("storylines").select("*").eq("storyline_id", sid).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).single(),
+    supabase.from("plots").select("*").eq("storyline_id", sid).eq("plot_index", pidx).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).single(),
   ]);
 
   if (!storyline || !plot) return {};
@@ -67,9 +68,9 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
   if (!supabase) return <NotFound message="Database unavailable" />;
 
   const [{ data: storyline }, { data: plot }, { data: plotRows }] = await Promise.all([
-    supabase.from("storylines").select("*").eq("storyline_id", sid).eq("hidden", false).single(),
-    supabase.from("plots").select("*").eq("storyline_id", sid).eq("plot_index", pidx).eq("hidden", false).single(),
-    supabase.from("plots").select("plot_index").eq("storyline_id", sid).eq("hidden", false).order("plot_index", { ascending: true }),
+    supabase.from("storylines").select("*").eq("storyline_id", sid).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).single(),
+    supabase.from("plots").select("*").eq("storyline_id", sid).eq("plot_index", pidx).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).single(),
+    supabase.from("plots").select("plot_index").eq("storyline_id", sid).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).order("plot_index", { ascending: true }),
   ]);
 
   if (!storyline) return <NotFound message="Storyline not found" />;

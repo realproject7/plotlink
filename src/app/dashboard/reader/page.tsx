@@ -8,7 +8,7 @@ import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
-import { RESERVE_LABEL, PLOT_TOKEN } from "../../../../lib/contracts/constants";
+import { RESERVE_LABEL, PLOT_TOKEN, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { publicClient } from "../../../../lib/rpc";
 import { type Address } from "viem";
 
@@ -38,6 +38,7 @@ async function fetchDonationPage(
     .from("donations")
     .select("*", { count: "exact" })
     .eq("donor_address", address.toLowerCase())
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("block_timestamp", { ascending: false })
     .range(from, to)
     .returns<Donation[]>();

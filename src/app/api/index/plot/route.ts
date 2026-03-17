@@ -6,6 +6,7 @@ import {
   storyFactoryAbi,
   plotChainedEvent,
 } from "../../../../../lib/contracts/abi";
+import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import type { Database } from "../../../../../lib/supabase";
 
@@ -120,6 +121,7 @@ export async function POST(req: Request) {
     block_timestamp: new Date(Number(blockTimestamp) * 1000).toISOString(),
     tx_hash: txHash.toLowerCase(),
     log_index: plotChainedLog.logIndex!,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { supabase, type Storyline } from "../../../../lib/supabase";
 import { getTokenTVL } from "../../../../lib/price";
-import { RESERVE_LABEL } from "../../../../lib/contracts/constants";
+import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
@@ -31,6 +31,7 @@ async function fetchWriterStorylines(
     .select("*")
     .eq("writer_address", address.toLowerCase())
     .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("block_timestamp", { ascending: false })
     .returns<Storyline[]>();
   if (error) throw error;
@@ -176,6 +177,7 @@ function DonationCount({ storylineId, tokenAddress }: { storylineId: number; tok
             (supabase.from("donations") as any)
               .select("amount")
               .eq("storyline_id", storylineId)
+              .eq("contract_address", STORY_FACTORY.toLowerCase())
               .then((r: { data: { amount: string }[] | null }) => r.data)
           : null,
       ]);

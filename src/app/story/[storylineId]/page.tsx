@@ -9,7 +9,7 @@ import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareToFarcaster } from "../../../components/ShareToFarcaster";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
-import { RESERVE_LABEL } from "../../../../lib/contracts/constants";
+import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import Link from "next/link";
@@ -40,6 +40,7 @@ export async function generateMetadata({
     .select("*")
     .eq("storyline_id", id)
     .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
   if (!storyline) return {};
@@ -103,6 +104,7 @@ export default async function StoryPage({ params }: { params: Params }) {
     .select("*")
     .eq("storyline_id", id)
     .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
   if (!storyline) {
@@ -114,6 +116,7 @@ export default async function StoryPage({ params }: { params: Params }) {
     .select("*")
     .eq("storyline_id", id)
     .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("plot_index", { ascending: true })
     .returns<Plot[]>();
 

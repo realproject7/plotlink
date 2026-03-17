@@ -6,6 +6,7 @@ import {
   storyFactoryAbi,
   storylineCreatedEvent,
 } from "../../../../../lib/contracts/abi";
+import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { hashContent } from "../../../../../lib/content";
 import type { Database } from "../../../../../lib/supabase";
@@ -137,6 +138,7 @@ export async function POST(req: Request) {
     block_timestamp: timestampISO,
     tx_hash: txHash.toLowerCase(),
     log_index: storylineLog.logIndex!,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -160,6 +162,7 @@ export async function POST(req: Request) {
     block_timestamp: timestampISO,
     tx_hash: txHash.toLowerCase(),
     log_index: storylineLog.logIndex!,
+    contract_address: STORY_FACTORY.toLowerCase(),
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

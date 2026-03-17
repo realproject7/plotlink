@@ -9,6 +9,7 @@ import {
   MAX_CONTENT_LENGTH,
 } from "../../../lib/content";
 import { supabase, type Storyline } from "../../../lib/supabase";
+import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { useChainPlot } from "../../hooks/useChainPlot";
 import type { PublishState } from "../../hooks/usePublish";
 import Link from "next/link";
@@ -33,6 +34,7 @@ async function fetchWriterStorylines(address: string): Promise<Storyline[]> {
     .eq("writer_address", address.toLowerCase())
     .eq("hidden", false)
     .eq("sunset", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("block_timestamp", { ascending: false })
     .returns<Storyline[]>();
   return data ?? [];

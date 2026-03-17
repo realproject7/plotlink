@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { type Address } from "viem";
 import { createServerClient, type Storyline } from "../../../../../lib/supabase";
 import { getTokenPrice } from "../../../../../lib/price";
-import { RESERVE_LABEL } from "../../../../../lib/contracts/constants";
+import { RESERVE_LABEL, STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { truncateAddress } from "../../../../../lib/utils";
 
 export const runtime = "edge";
@@ -28,6 +28,7 @@ export async function GET(
     .select("*")
     .eq("storyline_id", id)
     .eq("hidden", false)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
   if (!storyline) {

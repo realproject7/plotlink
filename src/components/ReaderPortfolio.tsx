@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
-import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
+import { MCV2_BOND, IS_TESTNET, STORY_FACTORY } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
 import Link from "next/link";
 
@@ -33,6 +33,7 @@ export function ReaderPortfolio() {
         .select("*")
         .eq("hidden", false)
         .neq("token_address", "")
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
         .returns<Storyline[]>();
 
       if (!storylines || storylines.length === 0) return [];

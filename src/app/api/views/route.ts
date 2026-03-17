@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient, supabase } from "../../../../lib/supabase";
+import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
   const { data, error: dbError } = await (db.from("storylines") as any)
     .select("view_count")
     .eq("storyline_id", sid)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
   if (dbError) return error(`Database error: ${dbError.message}`, 500);
@@ -141,6 +143,7 @@ export async function POST(req: NextRequest) {
     plot_index: plotVal,
     viewer_address: viewerAddress?.toLowerCase() ?? null,
     session_id: sessionId,
+    contract_address: STORY_FACTORY.toLowerCase(),
   });
 
   if (insertError) return error(`Database error: ${insertError.message}`, 500);
