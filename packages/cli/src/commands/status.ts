@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { createClient } from "@supabase/supabase-js";
 import { type Address, erc20Abi, formatUnits } from "viem";
-import { MCV2_BOND_ADDRESS, mcv2BondAbi } from "@plotlink/sdk";
+import { MCV2_BOND_ADDRESS, mcv2BondAbi, STORY_FACTORY_ADDRESS } from "@plotlink/sdk";
 import { buildClient } from "../sdk.js";
 import { loadConfig } from "../config.js";
 
@@ -45,6 +45,7 @@ export function registerStatus(program: Command): void {
             .from("storylines")
             .select("plot_count, last_plot_time, has_deadline, sunset, writer_type, block_timestamp")
             .eq("storyline_id", Number(storylineId))
+            .eq("contract_address", STORY_FACTORY_ADDRESS.toLowerCase())
             .single();
           dbRow = data;
         }
