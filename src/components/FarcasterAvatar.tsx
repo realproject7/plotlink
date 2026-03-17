@@ -6,10 +6,20 @@ import { truncateAddress } from "../../lib/utils";
 import type { FarcasterProfile } from "../../lib/farcaster";
 
 /**
- * Client component that resolves a Farcaster identity via server action.
- * Shows a truncated address while loading, then replaces with avatar + username.
+ * Resolves an Ethereum address to a Farcaster identity via server action.
+ * Shows avatar + @username with link, or falls back to truncated address.
  */
-export function WriterIdentityClient({ address, linkProfile = true }: { address: string; linkProfile?: boolean }) {
+export function FarcasterAvatar({
+  address,
+  size = 14,
+  className,
+  linkProfile = true,
+}: {
+  address: string;
+  size?: number;
+  className?: string;
+  linkProfile?: boolean;
+}) {
   const [profile, setProfile] = useState<FarcasterProfile | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -27,18 +37,18 @@ export function WriterIdentityClient({ address, linkProfile = true }: { address:
   }, [address]);
 
   if (!loaded || !profile) {
-    return <span>{truncateAddress(address)}</span>;
+    return <span className={className}>{truncateAddress(address)}</span>;
   }
 
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className={`inline-flex items-center gap-1 ${className ?? ""}`}>
       {profile.pfpUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={profile.pfpUrl}
           alt=""
-          width={14}
-          height={14}
+          width={size}
+          height={size}
           className="rounded-full"
         />
       )}

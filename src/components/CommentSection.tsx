@@ -3,8 +3,8 @@
 import { useState, useCallback } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { truncateAddress } from "../../lib/utils";
 import { ConnectWallet } from "./ConnectWallet";
+import { FarcasterAvatar } from "./FarcasterAvatar";
 
 interface Comment {
   id: number;
@@ -182,7 +182,7 @@ export function CommentSection({
           <div key={c.id} className="text-sm">
             <div className="flex items-baseline gap-2">
               <span className="text-foreground text-xs font-medium">
-                {truncateAddress(c.commenter_address)}
+                <FarcasterAvatar address={c.commenter_address} size={12} />
               </span>
               <span className="text-muted text-[10px]">
                 {relativeTime(c.created_at)}
