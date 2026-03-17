@@ -41,7 +41,7 @@ export function StoryCard({
 
       {/* Author + meta */}
       <div className="text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span className="inline-flex items-center gap-0.5">By: <WriterIdentityClient address={storyline.writer_address} /></span>
+        <span className="inline-flex items-center gap-0.5">By: <WriterIdentityClient address={storyline.writer_address} linkProfile={false} /></span>
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>

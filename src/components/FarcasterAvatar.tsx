@@ -13,10 +13,12 @@ export function FarcasterAvatar({
   address,
   size = 14,
   className,
+  linkProfile = true,
 }: {
   address: string;
   size?: number;
   className?: string;
+  linkProfile?: boolean;
 }) {
   const [profile, setProfile] = useState<FarcasterProfile | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -50,14 +52,18 @@ export function FarcasterAvatar({
           className="rounded-full"
         />
       )}
-      <a
-        href={`https://farcaster.com/${profile.username}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-foreground hover:text-accent transition-colors"
-      >
-        @{profile.username}
-      </a>
+      {linkProfile ? (
+        <a
+          href={`https://farcaster.com/${profile.username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground hover:text-accent transition-colors"
+        >
+          @{profile.username}
+        </a>
+      ) : (
+        <span>@{profile.username}</span>
+      )}
     </span>
   );
 }

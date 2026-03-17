@@ -9,7 +9,7 @@ import type { FarcasterProfile } from "../../lib/farcaster";
  * Client component that resolves a Farcaster identity via server action.
  * Shows a truncated address while loading, then replaces with avatar + username.
  */
-export function WriterIdentityClient({ address }: { address: string }) {
+export function WriterIdentityClient({ address, linkProfile = true }: { address: string; linkProfile?: boolean }) {
   const [profile, setProfile] = useState<FarcasterProfile | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -42,14 +42,18 @@ export function WriterIdentityClient({ address }: { address: string }) {
           className="rounded-full"
         />
       )}
-      <a
-        href={`https://farcaster.com/${profile.username}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-foreground hover:text-accent transition-colors"
-      >
-        @{profile.username}
-      </a>
+      {linkProfile ? (
+        <a
+          href={`https://farcaster.com/${profile.username}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-foreground hover:text-accent transition-colors"
+        >
+          @{profile.username}
+        </a>
+      ) : (
+        <span>@{profile.username}</span>
+      )}
     </span>
   );
 }
