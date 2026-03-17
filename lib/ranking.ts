@@ -1,7 +1,7 @@
 import { type Address, formatUnits } from "viem";
 import { get24hPriceChange, getTokenTVL } from "./price";
 import { STORY_FACTORY } from "./contracts/constants";
-import type { Storyline } from "./supabase";
+import type { Database, Storyline } from "./supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 interface RankedStoryline extends Storyline {
@@ -57,9 +57,8 @@ function computeTrendScore(
 }
 
 /** Shared: fetch storyline candidates + batch ratings */
-async function fetchCandidatesAndRatings(supabase: SupabaseClient, writerType?: number) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let q = (supabase.from("storylines") as any)
+async function fetchCandidatesAndRatings(supabase: SupabaseClient<Database>, writerType?: number) {
+  let q = supabase.from("storylines")
     .select("*")
     .eq("hidden", false)
     .eq("sunset", false)
@@ -75,8 +74,7 @@ async function fetchCandidatesAndRatings(supabase: SupabaseClient, writerType?: 
 
   // Batch: fetch all ratings for candidate storyline IDs in one query
   const storylineIds = storylines.map((sl) => sl.storyline_id);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: allRatings } = await (supabase.from("ratings") as any)
+  const { data: allRatings } = await supabase.from("ratings")
     .select("storyline_id, rating")
     .in("storyline_id", storylineIds)
     .eq("contract_address", STORY_FACTORY.toLowerCase());
@@ -84,7 +82,7 @@ async function fetchCandidatesAndRatings(supabase: SupabaseClient, writerType?: 
   const ratingMap = new Map<number, number>();
   if (allRatings) {
     const grouped = new Map<number, number[]>();
-    for (const r of allRatings as { storyline_id: number; rating: number }[]) {
+    for (const r of allRatings) {
       const arr = grouped.get(r.storyline_id) ?? [];
       arr.push(r.rating);
       grouped.set(r.storyline_id, arr);
@@ -118,7 +116,7 @@ async function enrichWithOnChain(
  * Fetch trending storylines ranked by composite score.
  */
 export async function getTrendingStorylines(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   limit = 20,
   writerType?: number,
   offset = 0,
@@ -158,7 +156,7 @@ export async function getTrendingStorylines(
  * baseline denominator — acceleration comes from rating + plot signals.
  */
 export async function getRisingStorylines(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient<Database>,
   limit = 20,
   writerType?: number,
   offset = 0,
@@ -181,15 +179,13 @@ export async function getRisingStorylines(
   const storylineIds = eligible.map((sl) => sl.storyline_id);
 
   // Batch: windowed ratings
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recentRatings } = await (supabase.from("ratings") as any)
+  const { data: recentRatings } = await supabase.from("ratings")
     .select("storyline_id, rating")
     .in("storyline_id", storylineIds)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("updated_at", threeDaysAgo);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: priorRatings } = await (supabase.from("ratings") as any)
+  const { data: priorRatings } = await supabase.from("ratings")
     .select("storyline_id, rating")
     .in("storyline_id", storylineIds)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
@@ -197,15 +193,13 @@ export async function getRisingStorylines(
     .lt("updated_at", threeDaysAgo);
 
   // Batch: windowed plot counts
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: recentPlots } = await (supabase.from("plots") as any)
+  const { data: recentPlots } = await supabase.from("plots")
     .select("storyline_id")
     .in("storyline_id", storylineIds)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .gte("block_timestamp", threeDaysAgo);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: priorPlots } = await (supabase.from("plots") as any)
+  const { data: priorPlots } = await supabase.from("plots")
     .select("storyline_id")
     .in("storyline_id", storylineIds)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
@@ -214,14 +208,14 @@ export async function getRisingStorylines(
 
   function avgFromRows(rows: { storyline_id: number; rating: number }[] | null, slId: number): number {
     if (!rows) return 0;
-    const filtered = rows.filter((r) => r.storyline_id === slId);
+    const filtered = rows.filter((r: { storyline_id: number }) => r.storyline_id === slId);
     if (filtered.length === 0) return 0;
-    return filtered.reduce((s, r) => s + r.rating, 0) / filtered.length;
+    return filtered.reduce((s: number, r: { rating: number }) => s + r.rating, 0) / filtered.length;
   }
 
   function countFromRows(rows: { storyline_id: number }[] | null, slId: number): number {
     if (!rows) return 0;
-    return rows.filter((r) => r.storyline_id === slId).length;
+    return rows.filter((r: { storyline_id: number }) => r.storyline_id === slId).length;
   }
 
   // Single parallel batch for all on-chain reads
@@ -233,8 +227,8 @@ export async function getRisingStorylines(
     const { priceChange, tvlRaw, tvlDecimals } = onChainResults[i];
 
     // Recent window composite (all 4 signals)
-    const recentAvgRating = avgFromRows(recentRatings as { storyline_id: number; rating: number }[] | null, sl.storyline_id);
-    const recentPlotCount = countFromRows(recentPlots as { storyline_id: number }[] | null, sl.storyline_id);
+    const recentAvgRating = avgFromRows(recentRatings, sl.storyline_id);
+    const recentPlotCount = countFromRows(recentPlots, sl.storyline_id);
     const recentScore = computeTrendScore(
       recentAvgRating,
       priceChange,
@@ -245,8 +239,8 @@ export async function getRisingStorylines(
     );
 
     // Prior window composite (same 4 signals, same TVL + price as baseline)
-    const priorAvgRating = avgFromRows(priorRatings as { storyline_id: number; rating: number }[] | null, sl.storyline_id);
-    const priorPlotCount = countFromRows(priorPlots as { storyline_id: number }[] | null, sl.storyline_id);
+    const priorAvgRating = avgFromRows(priorRatings, sl.storyline_id);
+    const priorPlotCount = countFromRows(priorPlots, sl.storyline_id);
     const priorScore = computeTrendScore(
       priorAvgRating,
       priceChange, // same baseline — acceleration from rating/plot signals
