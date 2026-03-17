@@ -13,7 +13,14 @@ import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { decodeEventLog, encodeEventTopics } from "viem";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
+import { DropdownSelect } from "../../components/DropdownSelect";
 import { GENRES, LANGUAGES } from "../../../lib/genres";
+
+const genreOptions = [
+  { value: "", label: "Select genre..." },
+  ...GENRES.map((g) => ({ value: g, label: g })),
+];
+const languageOptions = LANGUAGES.map((l) => ({ value: l, label: l }));
 
 const STORYLINE_CREATED_TOPIC = encodeEventTopics({
   abi: [storylineCreatedEvent],
@@ -145,30 +152,22 @@ export default function CreateStorylinePage() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-foreground mb-2 block text-sm">Genre</label>
-            <select
+            <DropdownSelect
               value={genre}
-              onChange={(e) => setGenre(e.target.value)}
+              onChange={setGenre}
+              options={genreOptions}
+              placeholder="Select genre..."
               disabled={busy}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-            >
-              <option value="">Select genre...</option>
-              {GENRES.map((g) => (
-                <option key={g} value={g}>{g}</option>
-              ))}
-            </select>
+            />
           </div>
           <div>
             <label className="text-foreground mb-2 block text-sm">Language</label>
-            <select
+            <DropdownSelect
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={setLanguage}
+              options={languageOptions}
               disabled={busy}
-              className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
-            >
-              {LANGUAGES.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
+            />
           </div>
         </div>
 

@@ -1,45 +1,50 @@
 "use client";
 
 import { GENRES, LANGUAGES } from "../../lib/genres";
+import { DropdownSelect } from "./DropdownSelect";
+
+const genreOptions = [
+  { value: "all", label: "All genres" },
+  ...GENRES.map((g) => ({ value: g, label: g })),
+];
+
+const languageOptions = [
+  { value: "all", label: "All languages" },
+  ...LANGUAGES.map((l) => ({ value: l, label: l })),
+];
 
 export function GenreFilter({ active, tab, writer, lang }: { active: string; tab: string; writer: string; lang: string }) {
   return (
-    <select
-      defaultValue={active}
-      onChange={(e) => {
+    <DropdownSelect
+      value={active}
+      onChange={(value) => {
         const params = new URLSearchParams({ tab });
         if (writer !== "all") params.set("writer", writer);
-        if (e.target.value !== "all") params.set("genre", e.target.value);
+        if (value !== "all") params.set("genre", value);
         if (lang !== "all") params.set("lang", lang);
         window.location.href = `/?${params.toString()}`;
       }}
-      className="border-border bg-surface text-muted rounded border px-2 py-1 text-xs"
-    >
-      <option value="all">All genres</option>
-      {GENRES.map((g) => (
-        <option key={g} value={g}>{g}</option>
-      ))}
-    </select>
+      options={genreOptions}
+      size="sm"
+      className="w-32"
+    />
   );
 }
 
 export function LanguageFilter({ active, tab, writer, genre }: { active: string; tab: string; writer: string; genre: string }) {
   return (
-    <select
-      defaultValue={active}
-      onChange={(e) => {
+    <DropdownSelect
+      value={active}
+      onChange={(value) => {
         const params = new URLSearchParams({ tab });
         if (writer !== "all") params.set("writer", writer);
         if (genre !== "all") params.set("genre", genre);
-        if (e.target.value !== "all") params.set("lang", e.target.value);
+        if (value !== "all") params.set("lang", value);
         window.location.href = `/?${params.toString()}`;
       }}
-      className="border-border bg-surface text-muted rounded border px-2 py-1 text-xs"
-    >
-      <option value="all">All languages</option>
-      {LANGUAGES.map((l) => (
-        <option key={l} value={l}>{l}</option>
-      ))}
-    </select>
+      options={languageOptions}
+      size="sm"
+      className="w-36"
+    />
   );
 }
