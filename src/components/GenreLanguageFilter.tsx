@@ -39,7 +39,7 @@ export function LanguageFilter({ active, tab, writer, genre }: { active: string;
         const params = new URLSearchParams({ tab });
         if (writer !== "all") params.set("writer", writer);
         if (genre !== "all") params.set("genre", genre);
-        if (value !== "all") params.set("lang", value);
+        params.set("lang", value);
         window.location.href = `/?${params.toString()}`;
       }}
       options={languageOptions}
