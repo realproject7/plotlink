@@ -22,17 +22,19 @@ const CACHE_TTL_MS = 3600_000; // 1 hour
 const cache = new Map<string, { profile: FarcasterProfile | null; expiresAt: number }>();
 const inFlight = new Map<string, Promise<FarcasterProfile | null>>();
 
-/**
- * Try Steemhunt first, then Neynar if configured. Returns null if both fail.
- */
-async function steemhuntLookup(address: string): Promise<FarcasterProfile | null> {
+// Sentinel: API responded successfully but wallet is not linked to Farcaster
+const NOT_FOUND = Symbol("NOT_FOUND");
+type LookupResult = FarcasterProfile | typeof NOT_FOUND | null; // null = transient error
+
+async function steemhuntLookup(address: string): Promise<LookupResult> {
   const res = await fetch(`${STEEMHUNT_BASE}/users/byWallet/${address}`, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
-  if (!res.ok) return null;
+  if (res.status === 404) return NOT_FOUND; // confirmed not linked
+  if (!res.ok) return null; // transient error
   const data = await res.json();
-  if (!data || !data.fid) return null;
+  if (!data || !data.fid) return NOT_FOUND;
   return {
     fid: data.fid,
     username: data.username,
@@ -41,7 +43,7 @@ async function steemhuntLookup(address: string): Promise<FarcasterProfile | null
   };
 }
 
-async function neynarLookup(address: string): Promise<FarcasterProfile | null> {
+async function neynarLookup(address: string): Promise<LookupResult> {
   const apiKey = process.env.NEYNAR_API_KEY;
   if (!apiKey) return null;
   const res = await fetch(
@@ -51,10 +53,10 @@ async function neynarLookup(address: string): Promise<FarcasterProfile | null> {
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     },
   );
-  if (!res.ok) return null;
+  if (!res.ok) return null; // transient error
   const json = await res.json();
   const users = json[address];
-  if (!Array.isArray(users) || users.length === 0) return null;
+  if (!Array.isArray(users) || users.length === 0) return NOT_FOUND;
   const user = users[0];
   return {
     fid: user.fid,
@@ -85,16 +87,29 @@ export async function lookupByAddress(
   const promise = (async () => {
     try {
       // Steemhunt first (free, no key needed)
-      const profile = await steemhuntLookup(key).catch(() => null);
-      if (profile) {
-        cache.set(key, { profile, expiresAt: Date.now() + CACHE_TTL_MS });
-        return profile;
+      const steemhunt = await steemhuntLookup(key).catch(() => null);
+      if (steemhunt && steemhunt !== NOT_FOUND) {
+        cache.set(key, { profile: steemhunt, expiresAt: Date.now() + CACHE_TTL_MS });
+        return steemhunt;
       }
 
-      // Neynar fallback
-      const fallback = await neynarLookup(key).catch(() => null);
-      cache.set(key, { profile: fallback, expiresAt: Date.now() + CACHE_TTL_MS });
-      return fallback;
+      // If Steemhunt confirmed "not linked", skip Neynar and cache null
+      if (steemhunt === NOT_FOUND) {
+        cache.set(key, { profile: null, expiresAt: Date.now() + CACHE_TTL_MS });
+        return null;
+      }
+
+      // Steemhunt had a transient error — try Neynar fallback
+      const neynar = await neynarLookup(key).catch(() => null);
+      if (neynar && neynar !== NOT_FOUND) {
+        cache.set(key, { profile: neynar, expiresAt: Date.now() + CACHE_TTL_MS });
+        return neynar;
+      }
+      // Only cache null if Neynar confirmed not found; skip cache on transient errors
+      if (neynar === NOT_FOUND) {
+        cache.set(key, { profile: null, expiresAt: Date.now() + CACHE_TTL_MS });
+      }
+      return null;
     } finally {
       inFlight.delete(key);
     }
