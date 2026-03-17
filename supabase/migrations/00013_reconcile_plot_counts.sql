@@ -13,4 +13,4 @@ FROM (
   GROUP BY storyline_id
 ) sub
 WHERE s.storyline_id = sub.storyline_id
-  AND (s.plot_count != sub.cnt OR s.last_plot_time != sub.latest);
+  AND (s.plot_count IS DISTINCT FROM sub.cnt OR s.last_plot_time IS DISTINCT FROM sub.latest);
