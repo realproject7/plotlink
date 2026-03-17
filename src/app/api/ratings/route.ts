@@ -31,8 +31,7 @@ export async function GET(req: NextRequest) {
   const sid = Number(storylineId);
 
   // Fetch all ratings for global average/count, then slice for pagination
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: allData, error: allError } = await (db.from("ratings") as any)
+  const { data: allData, error: allError } = await db.from("ratings")
     .select("rating")
     .eq("storyline_id", sid)
     .eq("contract_address", STORY_FACTORY.toLowerCase());
@@ -49,8 +48,7 @@ export async function GET(req: NextRequest) {
       : 0;
 
   // Paginated query for full rating objects
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data, error: dbError } = await (db.from("ratings") as any)
+  const { data, error: dbError } = await db.from("ratings")
     .select("*")
     .eq("storyline_id", sid)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
@@ -67,8 +65,7 @@ export async function GET(req: NextRequest) {
   const raterAddress = req.nextUrl.searchParams.get("raterAddress");
   let myRating: unknown = null;
   if (raterAddress) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: mine } = await (db.from("ratings") as any)
+    const { data: mine } = await db.from("ratings")
       .select("*")
       .eq("storyline_id", sid)
       .eq("rater_address", raterAddress.toLowerCase())
@@ -147,8 +144,7 @@ export async function POST(req: NextRequest) {
     return error("Supabase not configured", 500);
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: storyline, error: slError } = await (serverClient.from("storylines") as any)
+  const { data: storyline, error: slError } = await serverClient.from("storylines")
     .select("token_address")
     .eq("storyline_id", storylineId)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
@@ -177,8 +173,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 4. Upsert rating via service role client
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: upsertError } = await (serverClient.from("ratings") as any).upsert(
+  const { error: upsertError } = await serverClient.from("ratings").upsert(
     {
       storyline_id: storylineId,
       rater_address: raterAddress.toLowerCase(),

@@ -93,8 +93,7 @@ export async function POST(req: Request) {
     contract_address: STORY_FACTORY.toLowerCase(),
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: dbError } = await (supabase.from("donations") as any).upsert(
+  const { error: dbError } = await supabase.from("donations").upsert(
     row,
     { onConflict: "tx_hash,log_index" }
   );

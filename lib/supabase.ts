@@ -101,6 +101,7 @@ export interface Database {
           view_count?: number;
           contract_address?: string;
         };
+        Relationships: [];
       };
       page_views: {
         Row: {
@@ -130,6 +131,7 @@ export interface Database {
           viewed_at?: string;
           contract_address?: string;
         };
+        Relationships: [];
       };
       plots: {
         Row: {
@@ -180,6 +182,7 @@ export interface Database {
           indexed_at?: string;
           contract_address?: string;
         };
+        Relationships: [];
       };
       comments: {
         Row: {
@@ -212,6 +215,7 @@ export interface Database {
           hidden?: boolean;
           contract_address?: string;
         };
+        Relationships: [];
       };
       donations: {
         Row: {
@@ -247,6 +251,7 @@ export interface Database {
           indexed_at?: string;
           contract_address?: string;
         };
+        Relationships: [];
       };
       ratings: {
         Row: {
@@ -279,7 +284,41 @@ export interface Database {
           updated_at?: string;
           contract_address?: string;
         };
+        Relationships: [];
       };
+      backfill_cursor: {
+        Row: {
+          id: number;
+          last_block: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: number;
+          last_block: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: number;
+          last_block?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      increment_view_count: {
+        Args: { sid: number; caddr: string };
+        Returns: void;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
     };
   };
 }

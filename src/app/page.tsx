@@ -39,8 +39,7 @@ export default async function Home({
     storylines = await queryTab(supabase, tab, writer, page);
     // Fetch genesis plot previews
     if (storylines.length > 0) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: plots } = await (supabase.from("plots") as any)
+      const { data: plots } = await supabase.from("plots")
         .select("storyline_id, content")
         .in("storyline_id", storylines.map((s) => s.storyline_id))
         .eq("plot_index", 0)

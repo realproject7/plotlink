@@ -70,8 +70,7 @@ export async function GET(req: Request) {
   const currentBlock = await publicClient.getBlockNumber();
 
   // Read last processed block from persistent cursor
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: cursor } = await (supabase.from("backfill_cursor") as any)
+  const { data: cursor } = await supabase.from("backfill_cursor")
     .select("last_block")
     .eq("id", 1)
     .single();
@@ -162,8 +161,7 @@ export async function GET(req: Request) {
   }
 
   // Persist cursor — advance to highest block actually scanned
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: cursorError } = await (supabase.from("backfill_cursor") as any)
+  const { error: cursorError } = await supabase.from("backfill_cursor")
     .update({ last_block: Number(toBlock), updated_at: new Date().toISOString() })
     .eq("id", 1);
   if (cursorError) {
@@ -181,17 +179,15 @@ export async function GET(req: Request) {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type DecodedEvent = any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SupabaseClient = any;
+type DecodedEvent = ReturnType<typeof decodeEventLog<typeof storyFactoryAbi>>;
+type BackfillSupabaseClient = NonNullable<ReturnType<typeof createServerClient>>;
 
 async function processStorylineCreated(
   decoded: DecodedEvent,
   log: Log,
   txHash: string,
   logIndex: number,
-  supabase: SupabaseClient,
+  supabase: BackfillSupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>
 ) {
   const {
@@ -202,7 +198,7 @@ async function processStorylineCreated(
     hasDeadline,
     openingCID,
     openingHash,
-  } = decoded.args;
+  } = decoded.args as { storylineId: bigint; writer: `0x${string}`; tokenAddress: `0x${string}`; title: string; hasDeadline: boolean; openingCID: string; openingHash: `0x${string}` };
 
   const timestampISO = await getTimestamp(log.blockNumber!);
   const writerType = await detectWriterType(writer);
@@ -258,11 +254,11 @@ async function processPlotChained(
   log: Log,
   txHash: string,
   logIndex: number,
-  supabase: SupabaseClient,
+  supabase: BackfillSupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>
 ) {
   const { storylineId, plotIndex, writer, contentCID, contentHash } =
-    decoded.args;
+    decoded.args as { storylineId: bigint; plotIndex: bigint; writer: `0x${string}`; title: string; contentCID: string; contentHash: `0x${string}` };
 
   const content = await fetchIPFSContent(contentCID);
   if (content === null) return; // skip if content unavailable
@@ -296,10 +292,10 @@ async function processDonation(
   log: Log,
   txHash: string,
   logIndex: number,
-  supabase: SupabaseClient,
+  supabase: BackfillSupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>
 ) {
-  const { storylineId, donor, amount } = decoded.args;
+  const { storylineId, donor, amount } = decoded.args as { storylineId: bigint; donor: `0x${string}`; amount: bigint };
   const timestampISO = await getTimestamp(log.blockNumber!);
 
   const row: DonationInsert = {
