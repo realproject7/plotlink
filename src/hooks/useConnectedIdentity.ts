@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { getFarcasterProfile } from "../../lib/actions";
 import type { FarcasterProfile } from "../../lib/farcaster";
@@ -11,21 +11,21 @@ import type { FarcasterProfile } from "../../lib/farcaster";
  */
 export function useConnectedIdentity() {
   const { address } = useAccount();
-  const [profile, setProfile] = useState<FarcasterProfile | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{
+    profile: FarcasterProfile | null;
+    resolvedFor: string | undefined;
+  }>({ profile: null, resolvedFor: undefined });
+  const fetchingRef = useRef(false);
 
   useEffect(() => {
-    if (!address) {
-      setProfile(null);
-      return;
-    }
+    if (!address) return;
 
     let cancelled = false;
-    setLoading(true);
+    fetchingRef.current = true;
     getFarcasterProfile(address).then((p) => {
       if (!cancelled) {
-        setProfile(p);
-        setLoading(false);
+        setResult({ profile: p, resolvedFor: address });
+        fetchingRef.current = false;
       }
     });
     return () => {
@@ -33,5 +33,8 @@ export function useConnectedIdentity() {
     };
   }, [address]);
 
-  return { profile, loading };
+  if (!address) return { profile: null, loading: false };
+
+  const loading = result.resolvedFor !== address;
+  return { profile: loading ? null : result.profile, loading };
 }
