@@ -120,6 +120,7 @@ export async function POST(req: NextRequest) {
   let dedupQuery = (serverClient.from("page_views") as any)
     .select("id")
     .eq("storyline_id", storylineId)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
     .eq("session_id", sessionId)
     .gte("viewed_at", oneHourAgo)
     .limit(1);
@@ -151,7 +152,10 @@ export async function POST(req: NextRequest) {
   // Increment denormalized counter (storyline-level views only)
   if (plotVal === null) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (serverClient.rpc as any)("increment_view_count", { sid: storylineId }).catch(() => {
+    await (serverClient.rpc as any)("increment_view_count", {
+      sid: storylineId,
+      caddr: STORY_FACTORY.toLowerCase(),
+    }).catch(() => {
       // Ignore — counter will be slightly behind but page_views table is authoritative
     });
   }

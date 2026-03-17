@@ -80,7 +80,7 @@ export interface Database {
           block_timestamp?: string | null;
           indexed_at?: string;
           view_count?: number;
-          contract_address?: string;
+          contract_address: string;
         };
         Update: {
           id?: never;
@@ -119,7 +119,7 @@ export interface Database {
           viewer_address?: string | null;
           session_id: string;
           viewed_at?: string;
-          contract_address?: string;
+          contract_address: string;
         };
         Update: {
           id?: never;
@@ -162,7 +162,7 @@ export interface Database {
           log_index: number;
           block_timestamp?: string | null;
           indexed_at?: string;
-          contract_address?: string;
+          contract_address: string;
         };
         Update: {
           id?: never;
@@ -200,7 +200,7 @@ export interface Database {
           content: string;
           created_at?: string;
           hidden?: boolean;
-          contract_address?: string;
+          contract_address: string;
         };
         Update: {
           id?: never;
@@ -234,7 +234,7 @@ export interface Database {
           log_index: number;
           block_timestamp?: string | null;
           indexed_at?: string;
-          contract_address?: string;
+          contract_address: string;
         };
         Update: {
           id?: never;
@@ -267,7 +267,7 @@ export interface Database {
           comment?: string | null;
           created_at?: string;
           updated_at?: string;
-          contract_address?: string;
+          contract_address: string;
         };
         Update: {
           id?: never;

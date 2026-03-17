@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
       updated_at: new Date().toISOString(),
       contract_address: STORY_FACTORY.toLowerCase(),
     },
-    { onConflict: "storyline_id,rater_address" },
+    { onConflict: "storyline_id,rater_address,contract_address" },
   );
 
   if (upsertError) {
