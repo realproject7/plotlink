@@ -57,7 +57,12 @@ function computeTrendScore(
 }
 
 /** Shared: fetch storyline candidates + batch ratings */
-async function fetchCandidatesAndRatings(supabase: SupabaseClient<Database>, writerType?: number) {
+async function fetchCandidatesAndRatings(
+  supabase: SupabaseClient<Database>,
+  writerType?: number,
+  genre?: string,
+  lang?: string,
+) {
   let q = supabase.from("storylines")
     .select("*")
     .eq("hidden", false)
@@ -65,6 +70,8 @@ async function fetchCandidatesAndRatings(supabase: SupabaseClient<Database>, wri
     .neq("token_address", "")
     .eq("contract_address", STORY_FACTORY.toLowerCase());
   if (writerType !== undefined) q = q.eq("writer_type", writerType);
+  if (genre) q = q.eq("genre", genre);
+  if (lang) q = q.eq("language", lang);
   const { data } = await q
     .order("block_timestamp", { ascending: false })
     .limit(50);
@@ -120,8 +127,10 @@ export async function getTrendingStorylines(
   limit = 20,
   writerType?: number,
   offset = 0,
+  genre?: string,
+  lang?: string,
 ): Promise<RankedStoryline[]> {
-  const { storylines, ratingMap } = await fetchCandidatesAndRatings(supabase, writerType);
+  const { storylines, ratingMap } = await fetchCandidatesAndRatings(supabase, writerType, genre, lang);
   if (storylines.length === 0) return [];
 
   const enriched = await Promise.all(
@@ -160,8 +169,10 @@ export async function getRisingStorylines(
   limit = 20,
   writerType?: number,
   offset = 0,
+  genre?: string,
+  lang?: string,
 ): Promise<RankedStoryline[]> {
-  const { storylines } = await fetchCandidatesAndRatings(supabase, writerType);
+  const { storylines } = await fetchCandidatesAndRatings(supabase, writerType, genre, lang);
   if (storylines.length === 0) return [];
 
   const now = new Date();

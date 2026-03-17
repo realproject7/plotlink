@@ -190,12 +190,16 @@ async function queryTab(
 
     case "trending": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from);
+      const g = genre !== "all" ? genre : undefined;
+      const l = lang !== "all" ? lang : undefined;
+      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
     }
 
     case "rising": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      return getRisingStorylines(supabase, PAGE_SIZE, wt, from);
+      const g = genre !== "all" ? genre : undefined;
+      const l = lang !== "all" ? lang : undefined;
+      return getRisingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
     }
   }
 }
