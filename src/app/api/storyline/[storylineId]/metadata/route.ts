@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { type Address } from "viem";
+import { publicClient } from "../../../../../../lib/rpc";
 import { createServerClient } from "../../../../../../lib/supabase";
 import { STORY_FACTORY } from "../../../../../../lib/contracts/constants";
 import { GENRES, LANGUAGES } from "../../../../../../lib/genres";
@@ -11,6 +13,8 @@ interface PatchBody {
   genre?: string;
   language?: string;
   address: string;
+  signature: string;
+  message: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -34,10 +38,10 @@ export async function PATCH(
     return error("Invalid JSON body");
   }
 
-  const { genre, language, address } = body;
+  const { genre, language, address, signature, message } = body;
 
-  if (!address) {
-    return error("Missing address");
+  if (!address || !signature || !message) {
+    return error("Missing address, signature, or message");
   }
 
   if (!genre && !language) {
@@ -50,6 +54,27 @@ export async function PATCH(
 
   if (language && !(LANGUAGES as readonly string[]).includes(language)) {
     return error("Invalid language");
+  }
+
+  // Build expected message to prevent replay / cross-action attacks
+  const expectedMessage = `Update storyline ${storylineId} metadata genre:${genre || ""} language:${language || ""}`;
+  if (message !== expectedMessage) {
+    return error(`Signed message must be exactly: "${expectedMessage}"`);
+  }
+
+  // Verify signature (supports both EOA and EIP-1271 contract wallets)
+  const callerAddress = address as Address;
+  try {
+    const valid = await publicClient.verifyMessage({
+      address: callerAddress,
+      message,
+      signature: signature as `0x${string}`,
+    });
+    if (!valid) {
+      return error("Invalid signature");
+    }
+  } catch {
+    return error("Failed to verify signature");
   }
 
   const db = createServerClient();
@@ -69,7 +94,7 @@ export async function PATCH(
     return error("Storyline not found", 404);
   }
 
-  if (storyline.writer_address.toLowerCase() !== address.toLowerCase()) {
+  if (storyline.writer_address.toLowerCase() !== callerAddress.toLowerCase()) {
     return error("Not the storyline writer", 403);
   }
 

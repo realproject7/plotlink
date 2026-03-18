@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { supabase, type Storyline } from "../../../../lib/supabase";
@@ -196,12 +196,17 @@ function GenrePrompt({
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const queryClient = useQueryClient();
+  const { signMessageAsync } = useSignMessage();
 
   async function handleSave() {
     if (!genre) return;
     setSaving(true);
     setErr(null);
     try {
+      const langValue = language ? "" : lang;
+      const message = `Update storyline ${storylineId} metadata genre:${genre} language:${langValue}`;
+      const signature = await signMessageAsync({ message });
+
       const res = await fetch(`/api/storyline/${storylineId}/metadata`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -209,6 +214,8 @@ function GenrePrompt({
           genre,
           ...(language ? {} : { language: lang }),
           address: writerAddress,
+          signature,
+          message,
         }),
       });
       if (!res.ok) {
