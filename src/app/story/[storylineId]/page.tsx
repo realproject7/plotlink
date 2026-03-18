@@ -172,7 +172,6 @@ export default async function StoryPage({ params }: { params: Params }) {
           {sl.token_address && priceInfo && (
             <PriceChart
               tokenAddress={sl.token_address as Address}
-              totalSupplyRaw={priceInfo.totalSupplyRaw}
               currentPriceRaw={priceInfo.priceRaw}
             />
           )}
@@ -195,7 +194,6 @@ export default async function StoryPage({ params }: { params: Params }) {
               {priceInfo && (
                 <PriceChart
                   tokenAddress={sl.token_address as Address}
-                  totalSupplyRaw={priceInfo.totalSupplyRaw}
                   currentPriceRaw={priceInfo.priceRaw}
                 />
               )}
