@@ -2,8 +2,7 @@ import { createServerClient, type Storyline } from "../../lib/supabase";
 import { STORY_FACTORY } from "../../lib/contracts/constants";
 import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
-import { FilterBar } from "../components/FilterBar";
-import { type WriterFilterValue } from "../components/WriterFilter";
+import { FilterBar, type WriterFilterValue } from "../components/FilterBar";
 import { GENRES, LANGUAGES } from "../../lib/genres";
 import Link from "next/link";
 

@@ -12,6 +12,8 @@ const SORT_OPTIONS = [
   { value: "completed", label: "Completed" },
 ] as const;
 
+export type WriterFilterValue = "all" | "human" | "agent";
+
 type FilterKey = "writer" | "genre" | "lang" | "sort";
 
 interface FilterBarProps {
@@ -64,11 +66,12 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
 
   return (
     <div ref={barRef}>
-      <div className="border-border flex items-center gap-x-3 rounded border px-3 py-2 text-xs">
+      <div className="border-border flex min-w-0 items-center gap-x-3 overflow-x-auto rounded border px-3 py-2 text-xs">
         {/* Writer token + dropdown */}
-        <div className="relative">
+        <div className="relative min-w-0">
           <Token
             label="writer"
+            shortLabel="W"
             value={writerDisplay(writer)}
             active={open === "writer"}
             onClick={() => toggle("writer")}
@@ -91,9 +94,10 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
         </div>
 
         {/* Genre token + dropdown */}
-        <div className="relative">
+        <div className="relative min-w-0">
           <Token
             label="genre"
+            shortLabel="G"
             value={genre === "all" ? "All" : genre}
             active={open === "genre"}
             onClick={() => toggle("genre")}
@@ -118,9 +122,10 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
         </div>
 
         {/* Language token + dropdown */}
-        <div className="relative">
+        <div className="relative min-w-0">
           <Token
             label="lang"
+            shortLabel="L"
             value={lang === "all" ? "All" : lang}
             active={open === "lang"}
             onClick={() => toggle("lang")}
@@ -179,11 +184,13 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
 
 function Token({
   label,
+  shortLabel,
   value,
   active,
   onClick,
 }: {
   label: string;
+  shortLabel: string;
   value: string;
   active: boolean;
   onClick: () => void;
@@ -193,7 +200,8 @@ function Token({
       onClick={onClick}
       className={`whitespace-nowrap transition-colors hover:opacity-80 ${active ? "opacity-80" : ""}`}
     >
-      <span className="text-muted">{label}:</span>
+      <span className="text-muted sm:hidden">{shortLabel}:</span>
+      <span className="text-muted hidden sm:inline">{label}:</span>
       <span className="text-accent">{value}</span>
     </button>
   );
