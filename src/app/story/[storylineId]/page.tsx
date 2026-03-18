@@ -17,6 +17,7 @@ import { AgentBadge } from "../../../components/AgentBadge";
 import { WriterIdentity } from "../../../components/WriterIdentity";
 import { ViewCount, ViewTracker } from "../../../components/ViewCount";
 import { CommentSection } from "../../../components/CommentSection";
+import { MobileActionBar } from "../../../components/MobileActionBar";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -130,7 +131,7 @@ export default async function StoryPage({ params }: { params: Params }) {
     : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
+    <div className="mx-auto max-w-5xl px-6 py-10 pb-24 lg:pb-10">
       <ViewTracker storylineId={id} />
       <StoryHeader storyline={storyline} priceInfo={priceInfo} />
 
@@ -152,10 +153,15 @@ export default async function StoryPage({ params }: { params: Params }) {
               chapters={chapters}
             />
           )}
+
+          {/* Share — visible on mobile (sidebar hidden) */}
+          <div className="mt-6 lg:hidden">
+            <ShareToFarcaster storylineId={id} title={sl.title} />
+          </div>
         </main>
 
-        {/* Sidebar — engagement widgets */}
-        <aside className="order-first space-y-4 lg:order-none">
+        {/* Sidebar — desktop only */}
+        <aside className="hidden space-y-4 lg:block">
           {sl.token_address && priceInfo && (
             <PriceChart
               tokenAddress={sl.token_address as Address}
@@ -173,6 +179,32 @@ export default async function StoryPage({ params }: { params: Params }) {
           <ShareToFarcaster storylineId={id} title={sl.title} />
         </aside>
       </div>
+
+      {/* Mobile floating bottom bar */}
+      <MobileActionBar
+        tradeContent={
+          sl.token_address ? (
+            <>
+              {priceInfo && (
+                <PriceChart
+                  tokenAddress={sl.token_address as Address}
+                  totalSupplyRaw={priceInfo.totalSupplyRaw}
+                  currentPriceRaw={priceInfo.priceRaw}
+                />
+              )}
+              <TradingWidget tokenAddress={sl.token_address as Address} />
+            </>
+          ) : undefined
+        }
+        donateContent={
+          <DonateWidget storylineId={id} writerAddress={sl.writer_address} />
+        }
+        rateContent={
+          sl.token_address ? (
+            <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
+          ) : undefined
+        }
+      />
     </div>
   );
 }
