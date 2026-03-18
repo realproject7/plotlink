@@ -55,6 +55,7 @@ export function PriceChart({ tokenAddress, totalSupplyRaw, currentPriceRaw }: Pr
               functionName: "getReserveForToken",
               args: [tokenAddress, amount],
             })
+            .then((r) => (r as readonly [bigint, bigint])[0])
             .catch(() => BigInt(0)),
         );
       }

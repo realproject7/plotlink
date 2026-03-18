@@ -134,16 +134,19 @@ export const mcv2BondAbi = [
     name: "getRoyaltyInfo",
     stateMutability: "view",
     inputs: [
-      { name: "token", type: "address" },
-      { name: "beneficiary", type: "address" },
+      { name: "wallet", type: "address" },
+      { name: "reserveToken", type: "address" },
     ],
-    outputs: [{ name: "unclaimed", type: "uint256" }],
+    outputs: [
+      { name: "balance", type: "uint256" },
+      { name: "claimed", type: "uint256" },
+    ],
   },
   {
     type: "function",
     name: "claimRoyalties",
     stateMutability: "nonpayable",
-    inputs: [{ name: "token", type: "address" }],
+    inputs: [{ name: "reserveToken", type: "address" }],
     outputs: [],
   },
   {

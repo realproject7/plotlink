@@ -49,18 +49,18 @@ export function registerClaim(program: Command): void {
           // Default to 18/TOKEN if calls fail
         }
 
-        const info = await client.getRoyaltyInfo(tokenAddress, creator);
-        const formatted = formatUnits(info.unclaimed, decimals);
+        const info = await client.getRoyaltyInfo(creator, reserveToken);
+        const formatted = formatUnits(info.balance, decimals);
         console.log(`  Unclaimed:    ${formatted} ${symbol}`);
         console.log(`  Beneficiary:  ${creator}`);
 
-        if (info.unclaimed === 0n) {
+        if (info.balance === 0n) {
           console.log("No royalties to claim.");
           return;
         }
 
         console.log("Claiming royalties...");
-        const txHash = await client.claimRoyalties(tokenAddress);
+        const txHash = await client.claimRoyalties(reserveToken);
         console.log(`Royalties claimed! TX: ${txHash}`);
       } catch (err) {
         console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);

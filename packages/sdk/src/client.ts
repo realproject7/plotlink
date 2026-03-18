@@ -100,7 +100,8 @@ export interface SetAgentWalletResult {
 }
 
 export interface RoyaltyInfo {
-  unclaimed: bigint;
+  balance: bigint;
+  claimed: bigint;
 }
 
 export interface TokenPriceInfo {
@@ -493,37 +494,37 @@ export class PlotLink {
   // -------------------------------------------------------------------------
 
   /**
-   * Get unclaimed royalty info for a storyline token.
+   * Get royalty info for a beneficiary on a given reserve token.
    *
-   * @param tokenAddress - The storyline's ERC-20 token address
    * @param beneficiary - The royalty beneficiary (usually the bond creator)
-   * @returns Unclaimed royalty amount
+   * @param reserveToken - The reserve token address (e.g. WETH on testnet, $PLOT on mainnet)
+   * @returns Balance (unclaimed) and claimed royalty amounts
    */
-  async getRoyaltyInfo(tokenAddress: Address, beneficiary: Address): Promise<RoyaltyInfo> {
-    const unclaimed = await this.publicClient.readContract({
+  async getRoyaltyInfo(beneficiary: Address, reserveToken: Address): Promise<RoyaltyInfo> {
+    const [balance, claimed] = await this.publicClient.readContract({
       address: this.mcv2Bond,
       abi: mcv2BondAbi,
       functionName: "getRoyaltyInfo",
-      args: [tokenAddress, beneficiary],
-    });
+      args: [beneficiary, reserveToken],
+    }) as [bigint, bigint];
 
-    return { unclaimed: unclaimed as bigint };
+    return { balance, claimed };
   }
 
   /**
-   * Claim accumulated royalties for a storyline token from the MCV2_Bond
+   * Claim accumulated royalties for a reserve token from the MCV2_Bond
    * bonding curve contract.
    *
-   * @param tokenAddress - The storyline's ERC-20 token address
+   * @param reserveToken - The reserve token address (e.g. WETH on testnet, $PLOT on mainnet)
    * @returns Transaction hash
    */
-  async claimRoyalties(tokenAddress: Address): Promise<Hex> {
+  async claimRoyalties(reserveToken: Address): Promise<Hex> {
     const { request } = await this.publicClient.simulateContract({
       account: this.walletClient.account!,
       address: this.mcv2Bond,
       abi: mcv2BondAbi,
       functionName: "claimRoyalties",
-      args: [tokenAddress],
+      args: [reserveToken],
     });
 
     const txHash = await this.walletClient.writeContract(request);
