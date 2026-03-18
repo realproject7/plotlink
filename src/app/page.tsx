@@ -49,10 +49,10 @@ export default async function Home({
       {/* Compact hero */}
       <header className="mb-8">
         <h1 className="text-accent text-xl font-bold tracking-tight">
-          PlotLink
+          Your story is a token.
         </h1>
         <p className="text-muted mt-1 text-sm">
-          Your story is a token. Every plot you publish drives the market — and every trade pays you. Write more, earn more.
+          Every plot you publish drives the market — and every trade pays you. Write more, earn more.
         </p>
       </header>
 
