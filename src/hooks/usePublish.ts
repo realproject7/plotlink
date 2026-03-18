@@ -43,20 +43,6 @@ interface PublishOptions {
 }
 
 /**
- * Returns true if the error is a user-rejected transaction (wallet popup dismissed).
- */
-function isUserRejection(err: unknown): boolean {
-  const message =
-    err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
-  return (
-    message.includes("user rejected") ||
-    message.includes("user denied") ||
-    message.includes("rejected the request") ||
-    message.includes("cancelled")
-  );
-}
-
-/**
  * Shared publishing state machine for StoryFactory write flows.
  *
  * Manages the 5-state flow: uploading -> confirming -> pending -> indexing -> published.
@@ -100,14 +86,6 @@ export function usePublish() {
           cachedCid.current = { cid, contentHash };
         }
 
-        // Save intent before wallet confirmation
-        opts.onIntentSave?.({
-          content: opts.content,
-          metadata: opts.metadata ?? {},
-          indexerRoute: opts.indexerRoute,
-          uploadKeyPrefix: opts.uploadKeyPrefix,
-        });
-
         // 2. Submit tx to wallet
         setState("confirming");
         const writeCall = opts.buildWriteCall(cid, contentHash);
@@ -115,8 +93,15 @@ export function usePublish() {
         const hash = await writeContractAsync(writeCall);
         setTxHash(hash);
 
-        // Persist tx hash immediately after broadcast (before receipt polling)
-        // so recovery works even if receipt polling fails
+        // Save intent + tx hash only after wallet signs (not before).
+        // This avoids false recovery intents when the wallet rejects —
+        // no intent exists if writeContractAsync throws.
+        opts.onIntentSave?.({
+          content: opts.content,
+          metadata: opts.metadata ?? {},
+          indexerRoute: opts.indexerRoute,
+          uploadKeyPrefix: opts.uploadKeyPrefix,
+        });
         opts.onTxConfirmed?.(hash);
 
         // 3. Wait for tx confirmation
@@ -149,11 +134,6 @@ export function usePublish() {
           err instanceof Error ? err.message : "Unknown error";
         setError(message);
         setState("error");
-
-        // User rejected tx — clear intent (no recovery needed)
-        if (isUserRejection(err)) {
-          opts.onIndexed?.(); // reuse onIndexed to clear intent
-        }
       }
     },
     [writeContractAsync],
