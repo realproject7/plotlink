@@ -310,6 +310,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      backfill_failures: {
+        Row: {
+          id: number;
+          tx_hash: string;
+          log_index: number;
+          block_number: number;
+          event_name: string;
+          storyline_id: number;
+          reason: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          tx_hash: string;
+          log_index: number;
+          block_number: number;
+          event_name: string;
+          storyline_id: number;
+          reason: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: never;
+          tx_hash?: string;
+          log_index?: number;
+          block_number?: number;
+          event_name?: string;
+          storyline_id?: number;
+          reason?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
