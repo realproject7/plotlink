@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og";
 import { type Address } from "viem";
 import { createServerClient, type Storyline } from "../../../../../lib/supabase";
 import { getTokenPrice } from "../../../../../lib/price";
+import { lookupByAddress } from "../../../../../lib/farcaster";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { truncateAddress } from "../../../../../lib/utils";
 
@@ -37,9 +38,10 @@ export async function GET(
 
   const sl = storyline as Storyline;
 
-  const priceInfo = sl.token_address
-    ? await getTokenPrice(sl.token_address as Address)
-    : null;
+  const [priceInfo, farcasterProfile] = await Promise.all([
+    sl.token_address ? getTokenPrice(sl.token_address as Address) : null,
+    lookupByAddress(sl.writer_address).catch(() => null),
+  ]);
 
   const reserveLabel = RESERVE_LABEL;
   const priceDisplay = priceInfo
@@ -103,7 +105,7 @@ export async function GET(
             color: "#737373",
           }}
         >
-          <span>by {truncateAddress(sl.writer_address)}</span>
+          <span>by {farcasterProfile ? `@${farcasterProfile.username}` : truncateAddress(sl.writer_address)}</span>
           <span>
             {sl.plot_count} {sl.plot_count === 1 ? "plot" : "plots"}
           </span>

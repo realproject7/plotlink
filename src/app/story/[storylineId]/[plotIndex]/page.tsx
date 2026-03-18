@@ -1,8 +1,10 @@
 import { type Metadata } from "next";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createServerClient, type Storyline, type Plot } from "../../../../../lib/supabase";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { truncateAddress } from "../../../../../lib/utils";
+import { WriterIdentity } from "../../../../components/WriterIdentity";
 import { ViewTracker } from "../../../../components/ViewCount";
 import { CommentSection } from "../../../../components/CommentSection";
 import Link from "next/link";
@@ -104,7 +106,12 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
           {chapterTitle}
         </h1>
         <div className="text-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          <span>by {truncateAddress(sl.writer_address)}</span>
+          <span>
+            by{" "}
+            <Suspense fallback={<span className="text-foreground">{truncateAddress(sl.writer_address)}</span>}>
+              <WriterIdentity address={sl.writer_address} />
+            </Suspense>
+          </span>
           {p.block_timestamp && (
             <time dateTime={p.block_timestamp}>
               {new Date(p.block_timestamp).toLocaleDateString("en-US", {
