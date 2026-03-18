@@ -88,6 +88,36 @@ export const donateFunction = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// MCV2_Bond events (from MCV2_Bond.sol upstream)
+// ---------------------------------------------------------------------------
+
+export const mcv2MintedEvent = {
+  type: "event",
+  name: "Minted",
+  inputs: [
+    { name: "token", type: "address", indexed: true },
+    { name: "account", type: "address", indexed: true },
+    { name: "tokenAmount", type: "uint256", indexed: false },
+    { name: "reserveAmount", type: "uint256", indexed: false },
+    { name: "beneficiary", type: "address", indexed: false },
+  ],
+} as const;
+
+export const mcv2BurnedEvent = {
+  type: "event",
+  name: "Burned",
+  inputs: [
+    { name: "token", type: "address", indexed: true },
+    { name: "account", type: "address", indexed: true },
+    { name: "tokenAmount", type: "uint256", indexed: false },
+    { name: "refundAmount", type: "uint256", indexed: false },
+    { name: "beneficiary", type: "address", indexed: false },
+  ],
+} as const;
+
+export const mcv2BondEventAbi = [mcv2MintedEvent, mcv2BurnedEvent] as const;
+
+// ---------------------------------------------------------------------------
 // MCV2_Bond view functions
 // ---------------------------------------------------------------------------
 

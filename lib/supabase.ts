@@ -343,6 +343,51 @@ export interface Database {
         };
         Relationships: [];
       };
+      trade_history: {
+        Row: {
+          id: number;
+          token_address: string;
+          storyline_id: number;
+          event_type: string;
+          price_per_token: number;
+          total_supply: number;
+          reserve_amount: number;
+          block_number: number;
+          block_timestamp: string;
+          tx_hash: string;
+          log_index: number;
+          contract_address: string;
+        };
+        Insert: {
+          id?: never;
+          token_address: string;
+          storyline_id: number;
+          event_type: string;
+          price_per_token: number;
+          total_supply: number;
+          reserve_amount: number;
+          block_number: number;
+          block_timestamp: string;
+          tx_hash: string;
+          log_index: number;
+          contract_address: string;
+        };
+        Update: {
+          id?: never;
+          token_address?: string;
+          storyline_id?: number;
+          event_type?: string;
+          price_per_token?: number;
+          total_supply?: number;
+          reserve_amount?: number;
+          block_number?: number;
+          block_timestamp?: string;
+          tx_hash?: string;
+          log_index?: number;
+          contract_address?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
