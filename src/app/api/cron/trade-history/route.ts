@@ -108,7 +108,7 @@ export async function GET(req: Request) {
         topics: log.topics,
       });
 
-      if (decoded.eventName !== "Minted" && decoded.eventName !== "Burned") {
+      if (decoded.eventName !== "Mint" && decoded.eventName !== "Burn") {
         skipped++;
         continue;
       }
@@ -132,7 +132,7 @@ export async function GET(req: Request) {
       );
       inserted++;
     } catch (err) {
-      // Skip events that don't decode as Minted/Burned
+      // Skip events that don't decode as Mint/Burn
       if (err instanceof Error && err.message.includes("could not find")) {
         skipped++;
         continue;
@@ -171,15 +171,16 @@ async function processTradeEvent(
 ) {
   const args = decoded.args as {
     token: `0x${string}`;
-    account: `0x${string}`;
-    tokenAmount: bigint;
+    user: `0x${string}`;
+    amountMinted?: bigint;
+    amountBurned?: bigint;
     reserveAmount?: bigint;
     refundAmount?: bigint;
   };
 
-  const isMint = decoded.eventName === "Minted";
+  const isMint = decoded.eventName === "Mint";
   const reserveAmount = isMint ? args.reserveAmount! : args.refundAmount!;
-  const tokenAmount = args.tokenAmount;
+  const tokenAmount = isMint ? args.amountMinted! : args.amountBurned!;
 
   // Compute price per token (reserve per token, 18 decimals)
   const pricePerToken =

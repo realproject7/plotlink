@@ -61,20 +61,21 @@ export async function POST(req: Request) {
         topics: log.topics,
       });
 
-      if (decoded.eventName !== "Minted" && decoded.eventName !== "Burned") continue;
+      if (decoded.eventName !== "Mint" && decoded.eventName !== "Burn") continue;
 
       const args = decoded.args as {
         token: `0x${string}`;
-        tokenAmount: bigint;
+        amountMinted?: bigint;
+        amountBurned?: bigint;
         reserveAmount?: bigint;
         refundAmount?: bigint;
       };
 
       if (args.token.toLowerCase() !== tokenAddress) continue;
 
-      const isMint = decoded.eventName === "Minted";
+      const isMint = decoded.eventName === "Mint";
       const reserveAmount = isMint ? args.reserveAmount! : args.refundAmount!;
-      const tokenAmount = args.tokenAmount;
+      const tokenAmount = isMint ? args.amountMinted! : args.amountBurned!;
 
       const pricePerToken =
         tokenAmount > BigInt(0)
