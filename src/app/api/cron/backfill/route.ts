@@ -18,10 +18,12 @@ const IPFS_TIMEOUT_MS = 10_000;
  */
 const SCAN_BLOCKS = BigInt(200);
 
-/** Cron authorization — set CRON_SECRET env var to protect this endpoint */
+/** Cron authorization — fail closed in production when CRON_SECRET is unset */
 function verifyCron(req: Request): boolean {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // no secret configured = open (dev mode)
+  if (!secret) {
+    return process.env.NODE_ENV !== "production";
+  }
   const authHeader = req.headers.get("authorization");
   return authHeader === `Bearer ${secret}`;
 }
@@ -46,6 +48,32 @@ async function getBlockTimestamp(blockNumber: bigint): Promise<string> {
 type PlotInsert = Database["public"]["Tables"]["plots"]["Insert"];
 type StorylineInsert = Database["public"]["Tables"]["storylines"]["Insert"];
 type DonationInsert = Database["public"]["Tables"]["donations"]["Insert"];
+
+type BackfillSupabaseClient = NonNullable<ReturnType<typeof createServerClient>>;
+
+async function logBackfillFailure(
+  supabase: BackfillSupabaseClient,
+  opts: {
+    txHash: string;
+    logIndex: number;
+    blockNumber: number;
+    eventName: string;
+    storylineId: number;
+    reason: string;
+  }
+) {
+  const { error } = await supabase.from("backfill_failures").insert({
+    tx_hash: opts.txHash,
+    log_index: opts.logIndex,
+    block_number: opts.blockNumber,
+    event_name: opts.eventName,
+    storyline_id: opts.storylineId,
+    reason: opts.reason,
+  });
+  if (error) {
+    throw new Error(`Failed to log backfill failure: ${error.message}`);
+  }
+}
 
 export async function GET(req: Request) {
   if (!verifyCron(req)) {
@@ -100,6 +128,7 @@ export async function GET(req: Request) {
   let plotsInserted = 0;
   let donationsInserted = 0;
   let errors = 0;
+  let failures = 0;
 
   // Cache block timestamps to avoid redundant RPC calls
   const blockTimestampCache = new Map<bigint, string>();
@@ -123,7 +152,7 @@ export async function GET(req: Request) {
       const logIndex = log.logIndex!;
 
       if (decoded.eventName === "StorylineCreated") {
-        await processStorylineCreated(
+        const result = await processStorylineCreated(
           decoded,
           log,
           txHash,
@@ -132,8 +161,9 @@ export async function GET(req: Request) {
           getCachedBlockTimestamp
         );
         storylinesInserted++;
+        if (result.genesisPlotFailed) failures++;
       } else if (decoded.eventName === "PlotChained") {
-        await processPlotChained(
+        const failed = await processPlotChained(
           decoded,
           log,
           txHash,
@@ -141,7 +171,8 @@ export async function GET(req: Request) {
           supabase,
           getCachedBlockTimestamp
         );
-        plotsInserted++;
+        if (failed) failures++;
+        else plotsInserted++;
       } else if (decoded.eventName === "Donation") {
         await processDonation(
           decoded,
@@ -176,12 +207,12 @@ export async function GET(req: Request) {
       plots: plotsInserted,
       donations: donationsInserted,
     },
+    failures,
     errors,
   });
 }
 
 type DecodedEvent = ReturnType<typeof decodeEventLog<typeof storyFactoryAbi>>;
-type BackfillSupabaseClient = NonNullable<ReturnType<typeof createServerClient>>;
 
 async function processStorylineCreated(
   decoded: DecodedEvent,
@@ -190,7 +221,7 @@ async function processStorylineCreated(
   logIndex: number,
   supabase: BackfillSupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>
-) {
+): Promise<{ genesisPlotFailed: boolean }> {
   const {
     storylineId,
     writer,
@@ -228,26 +259,43 @@ async function processStorylineCreated(
 
   // Insert genesis plot
   const content = await fetchIPFSContent(openingCID);
-  if (content !== null && hashContent(content) === openingHash) {
-    const plotRow: PlotInsert = {
-      storyline_id: Number(storylineId),
-      plot_index: 0,
-      writer_address: writer.toLowerCase(),
-      content,
-      content_cid: openingCID,
-      content_hash: openingHash as string,
-      block_timestamp: timestampISO,
-      tx_hash: txHash,
-      log_index: logIndex,
-      contract_address: STORY_FACTORY.toLowerCase(),
-    };
-    const { error: plotError } = await supabase
-      .from("plots")
-      .upsert(plotRow, { onConflict: "tx_hash,log_index" });
-    if (plotError) {
-      throw new Error(`Database error (genesis plot): ${plotError.message}`);
-    }
+  if (content === null) {
+    await logBackfillFailure(supabase, {
+      txHash, logIndex, blockNumber: Number(log.blockNumber!),
+      eventName: "StorylineCreated", storylineId: Number(storylineId),
+      reason: "IPFS fetch failed for genesis plot",
+    });
+    return { genesisPlotFailed: true };
   }
+  if (hashContent(content) !== openingHash) {
+    await logBackfillFailure(supabase, {
+      txHash, logIndex, blockNumber: Number(log.blockNumber!),
+      eventName: "StorylineCreated", storylineId: Number(storylineId),
+      reason: "Content hash mismatch for genesis plot",
+    });
+    return { genesisPlotFailed: true };
+  }
+
+  const plotRow: PlotInsert = {
+    storyline_id: Number(storylineId),
+    plot_index: 0,
+    writer_address: writer.toLowerCase(),
+    content,
+    content_cid: openingCID,
+    content_hash: openingHash as string,
+    block_timestamp: timestampISO,
+    tx_hash: txHash,
+    log_index: logIndex,
+    contract_address: STORY_FACTORY.toLowerCase(),
+  };
+  const { error: plotError } = await supabase
+    .from("plots")
+    .upsert(plotRow, { onConflict: "tx_hash,log_index" });
+  if (plotError) {
+    throw new Error(`Database error (genesis plot): ${plotError.message}`);
+  }
+
+  return { genesisPlotFailed: false };
 }
 
 async function processPlotChained(
@@ -257,13 +305,27 @@ async function processPlotChained(
   logIndex: number,
   supabase: BackfillSupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>
-) {
-  const { storylineId, plotIndex, writer, contentCID, contentHash } =
+): Promise<boolean> {
+  const { storylineId, plotIndex, writer, title, contentCID, contentHash } =
     decoded.args as { storylineId: bigint; plotIndex: bigint; writer: `0x${string}`; title: string; contentCID: string; contentHash: `0x${string}` };
 
   const content = await fetchIPFSContent(contentCID);
-  if (content === null) return; // skip if content unavailable
-  if (hashContent(content) !== contentHash) return; // skip if hash mismatch
+  if (content === null) {
+    await logBackfillFailure(supabase, {
+      txHash, logIndex, blockNumber: Number(log.blockNumber!),
+      eventName: "PlotChained", storylineId: Number(storylineId),
+      reason: "IPFS fetch failed",
+    });
+    return true;
+  }
+  if (hashContent(content) !== contentHash) {
+    await logBackfillFailure(supabase, {
+      txHash, logIndex, blockNumber: Number(log.blockNumber!),
+      eventName: "PlotChained", storylineId: Number(storylineId),
+      reason: "Content hash mismatch",
+    });
+    return true;
+  }
 
   const timestampISO = await getTimestamp(log.blockNumber!);
 
@@ -271,6 +333,7 @@ async function processPlotChained(
     storyline_id: Number(storylineId),
     plot_index: Number(plotIndex),
     writer_address: writer.toLowerCase(),
+    title: title || "",
     content,
     content_cid: contentCID,
     content_hash: contentHash as string,
@@ -289,6 +352,7 @@ async function processPlotChained(
 
   // Reconcile parent storyline plot_count and last_plot_time (idempotent)
   await reconcileStorylinePlotCount(supabase, Number(storylineId));
+  return false;
 }
 
 async function processDonation(
