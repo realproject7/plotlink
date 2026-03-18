@@ -17,38 +17,32 @@ export function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/95 backdrop-blur-md">
-      <div className="mx-auto flex h-12 max-w-6xl items-center justify-between px-4">
+    <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-11 max-w-5xl items-center justify-between px-4">
         {/* Logo */}
         <Link
           href="/"
-          className="group flex items-center gap-1.5 transition-opacity hover:opacity-80"
+          className="text-accent text-sm font-bold tracking-tight transition-opacity hover:opacity-80"
         >
-          <span className="text-accent text-sm font-bold tracking-tight">
-            PlotLink
-          </span>
-          <span className="hidden text-[10px] text-muted sm:inline">
-            on-chain stories
-          </span>
+          <span className="text-muted mr-1 font-normal">$</span>
+          PlotLink
         </Link>
 
         {/* Desktop nav links */}
-        <div className="hidden items-center gap-0.5 md:flex">
+        <div className="hidden items-center gap-1 md:flex">
           {NAV_LINKS.map(({ href, label }) => {
             const active = pathname === href || pathname.startsWith(href + "/");
             return (
               <Link
                 key={href}
                 href={href}
-                className={`rounded px-3 py-1.5 text-xs transition-colors ${
+                className={`rounded px-2.5 py-1 text-xs transition-colors ${
                   active
-                    ? "bg-accent-glow text-accent"
+                    ? "bg-[var(--accent)]/10 text-accent"
                     : "text-muted hover:text-foreground"
                 }`}
               >
-                {active && (
-                  <span className="mr-0.5 text-accent-dim">&gt;</span>
-                )}
+                {active && <span className="text-accent-dim mr-0.5">&gt;</span>}
                 {label}
               </Link>
             );
@@ -76,22 +70,19 @@ export function NavBar() {
         <div className="border-t border-[var(--border)] bg-[var(--bg)] px-4 pb-3 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             {NAV_LINKS.map(({ href, label }) => {
-              const active =
-                pathname === href || pathname.startsWith(href + "/");
+              const active = pathname === href || pathname.startsWith(href + "/");
               return (
                 <Link
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`rounded px-2.5 py-2 text-xs transition-colors ${
+                  className={`rounded px-2.5 py-1.5 text-xs transition-colors ${
                     active
-                      ? "bg-accent-glow text-accent"
+                      ? "bg-[var(--accent)]/10 text-accent"
                       : "text-muted hover:text-foreground"
                   }`}
                 >
-                  {active && (
-                    <span className="text-accent-dim mr-0.5">&gt;</span>
-                  )}
+                  {active && <span className="text-accent-dim mr-0.5">&gt;</span>}
                   {label}
                 </Link>
               );
