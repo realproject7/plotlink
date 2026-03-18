@@ -1,5 +1,5 @@
 import { type Address, formatUnits } from "viem";
-import { publicClient } from "./viem";
+import { publicClient } from "./rpc";
 import { MCV2_BOND } from "./contracts/constants";
 import {
   priceForNextMintFunction,

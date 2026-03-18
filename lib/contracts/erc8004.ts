@@ -1,5 +1,5 @@
 import { type Address } from "viem";
-import { publicClient } from "../viem";
+import { publicClient } from "../rpc";
 import { ERC8004_REGISTRY } from "./constants";
 
 // ---------------------------------------------------------------------------

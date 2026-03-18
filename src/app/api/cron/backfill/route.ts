@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { decodeEventLog, type Log } from "viem";
-import { publicClient } from "../../../../../lib/viem";
+import { publicClient } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
 import { storyFactoryAbi } from "../../../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
