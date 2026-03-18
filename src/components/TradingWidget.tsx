@@ -65,7 +65,8 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         functionName: tab === "buy" ? "getReserveForToken" : "getRefundForTokens",
         args: [tokenAddress, parsedAmount],
       });
-      return result;
+      // ABI returns [amount, royalty] tuple — extract the amount
+      return (result as readonly [bigint, bigint])[0];
     },
     enabled: parsedAmount > BigInt(0),
     refetchInterval: 15000,

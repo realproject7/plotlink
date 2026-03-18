@@ -21,7 +21,10 @@ export const mcv2BondAbi = [
       { name: "token", type: "address" },
       { name: "tokensToMint", type: "uint256" },
     ],
-    outputs: [{ name: "reserveAmount", type: "uint256" }],
+    outputs: [
+      { name: "reserveAmount", type: "uint256" },
+      { name: "royalty", type: "uint256" },
+    ],
   },
   {
     type: "function",
@@ -31,7 +34,10 @@ export const mcv2BondAbi = [
       { name: "token", type: "address" },
       { name: "tokensToBurn", type: "uint256" },
     ],
-    outputs: [{ name: "refundAmount", type: "uint256" }],
+    outputs: [
+      { name: "refundAmount", type: "uint256" },
+      { name: "royalty", type: "uint256" },
+    ],
   },
   {
     type: "function",
@@ -43,7 +49,7 @@ export const mcv2BondAbi = [
       { name: "maxReserveAmount", type: "uint256" },
       { name: "receiver", type: "address" },
     ],
-    outputs: [],
+    outputs: [{ name: "", type: "uint256" }],
   },
   {
     type: "function",
@@ -55,7 +61,7 @@ export const mcv2BondAbi = [
       { name: "minRefund", type: "uint256" },
       { name: "receiver", type: "address" },
     ],
-    outputs: [],
+    outputs: [{ name: "", type: "uint256" }],
   },
   {
     type: "function",
