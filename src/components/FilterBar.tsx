@@ -66,7 +66,7 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
 
   return (
     <div ref={barRef}>
-      <div className="border-border flex min-w-0 items-center gap-x-3 overflow-x-auto rounded border px-3 py-2 text-xs">
+      <div className="border-border flex min-w-0 items-center gap-x-3 rounded border px-3 py-2 text-xs">
         {/* Writer token + dropdown */}
         <div className="relative min-w-0">
           <Token
