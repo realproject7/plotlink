@@ -84,7 +84,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
       setError(err instanceof Error ? err.message : "Claim failed");
       setTxState("error");
     }
-  }, [tokenAddress, unclaimed, writeContractAsync, refetch]);
+  }, [unclaimed, writeContractAsync, refetch]);
 
   const reset = useCallback(() => {
     setTxState("idle");
