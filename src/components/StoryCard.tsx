@@ -49,7 +49,7 @@ export function StoryCard({
 
             {/* Center: title */}
             <div className="flex flex-1 flex-col items-center justify-center px-2 text-center">
-              <h3 className="text-foreground text-base font-bold leading-tight tracking-tight sm:text-lg">
+              <h3 className="text-accent text-base font-bold leading-tight tracking-tight sm:text-lg">
                 {storyline.title}
               </h3>
               {storyline.language && storyline.language !== "English" && (
@@ -69,7 +69,7 @@ export function StoryCard({
       </div>
 
       {/* Metadata row below card */}
-      <div className="text-muted mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-1 text-[10px]">
+      <div className="text-muted mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pl-[7px] pr-1 text-[10px]">
         <div className="flex items-center gap-1">
           {storyline.token_address && (
             <>
