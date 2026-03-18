@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState } from "react";
 import { useAccount } from "wagmi";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -142,16 +142,6 @@ function CreatePage() {
     chainTitleValid &&
     chainValid;
   const chainBusy = chainState !== "idle" && chainState !== "error";
-
-  // Prefill storyline from query param when storylines load
-  useEffect(() => {
-    if (prefillStoryline && storylines.length > 0) {
-      const id = Number(prefillStoryline);
-      if (storylines.some((s) => s.storyline_id === id)) {
-        setChainStorylineId(id);
-      }
-    }
-  }, [prefillStoryline, storylines]);
 
   if (!isConnected) {
     return (
