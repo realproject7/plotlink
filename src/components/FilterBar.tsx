@@ -63,113 +63,116 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
   }
 
   return (
-    <div ref={barRef} className="relative">
+    <div ref={barRef}>
       <div className="border-border flex items-center gap-x-3 rounded border px-3 py-2 text-xs">
-        {/* Writer token */}
-        <Token
-          label="writer"
-          value={writerDisplay(writer)}
-          active={open === "writer"}
-          onClick={() => toggle("writer")}
-        />
+        {/* Writer token + dropdown */}
+        <div className="relative">
+          <Token
+            label="writer"
+            value={writerDisplay(writer)}
+            active={open === "writer"}
+            onClick={() => toggle("writer")}
+          />
+          {open === "writer" && (
+            <Dropdown>
+              {WRITER_OPTIONS.map((opt) => {
+                const val = opt.toLowerCase() === "ai" ? "agent" : opt.toLowerCase();
+                return (
+                  <DropdownItem
+                    key={val}
+                    label={opt}
+                    active={writer === val}
+                    onClick={() => navigate({ tab, writer: val, genre, lang })}
+                  />
+                );
+              })}
+            </Dropdown>
+          )}
+        </div>
 
-        {/* Genre token */}
-        <Token
-          label="genre"
-          value={genre === "all" ? "All" : genre}
-          active={open === "genre"}
-          onClick={() => toggle("genre")}
-        />
+        {/* Genre token + dropdown */}
+        <div className="relative">
+          <Token
+            label="genre"
+            value={genre === "all" ? "All" : genre}
+            active={open === "genre"}
+            onClick={() => toggle("genre")}
+          />
+          {open === "genre" && (
+            <Dropdown>
+              <DropdownItem
+                label="All genres"
+                active={genre === "all"}
+                onClick={() => navigate({ tab, writer, genre: "all", lang })}
+              />
+              {GENRES.map((g) => (
+                <DropdownItem
+                  key={g}
+                  label={g}
+                  active={genre === g}
+                  onClick={() => navigate({ tab, writer, genre: g, lang })}
+                />
+              ))}
+            </Dropdown>
+          )}
+        </div>
 
-        {/* Language token */}
-        <Token
-          label="lang"
-          value={lang === "all" ? "All" : lang}
-          active={open === "lang"}
-          onClick={() => toggle("lang")}
-        />
+        {/* Language token + dropdown */}
+        <div className="relative">
+          <Token
+            label="lang"
+            value={lang === "all" ? "All" : lang}
+            active={open === "lang"}
+            onClick={() => toggle("lang")}
+          />
+          {open === "lang" && (
+            <Dropdown>
+              <DropdownItem
+                label="All languages"
+                active={lang === "all"}
+                onClick={() => navigate({ tab, writer, genre, lang: "all" })}
+              />
+              {LANGUAGES.map((l) => (
+                <DropdownItem
+                  key={l}
+                  label={l}
+                  active={lang === l}
+                  onClick={() => navigate({ tab, writer, genre, lang: l })}
+                />
+              ))}
+            </Dropdown>
+          )}
+        </div>
 
         {/* Spacer */}
         <div className="flex-1" />
 
-        {/* Sort — icon on mobile, full label on sm+ */}
-        <button
-          onClick={() => toggle("sort")}
-          className={`text-muted hover:text-foreground shrink-0 transition-colors ${open === "sort" ? "text-accent" : ""}`}
-        >
-          <span className="sm:hidden">{"\u2195"}</span>
-          <span className="hidden sm:inline">
-            <span className="text-muted">sort:</span>
-            <span className="text-accent">{sortLabel(tab)}</span>
-          </span>
-        </button>
+        {/* Sort token + dropdown */}
+        <div className="relative shrink-0">
+          <button
+            onClick={() => toggle("sort")}
+            className={`text-muted hover:text-foreground transition-colors ${open === "sort" ? "text-accent" : ""}`}
+          >
+            <span className="sm:hidden">{"\u2195"}</span>
+            <span className="hidden sm:inline">
+              <span className="text-muted">sort:</span>
+              <span className="text-accent">{sortLabel(tab)}</span>
+            </span>
+          </button>
+          {open === "sort" && (
+            <Dropdown align="right">
+              {SORT_OPTIONS.map(({ value, label }) => (
+                <DropdownItem
+                  key={value}
+                  label={label}
+                  active={tab === value}
+                  onClick={() => navigate({ tab: value, writer, genre, lang })}
+                />
+              ))}
+            </Dropdown>
+          )}
+        </div>
       </div>
-
-      {/* Dropdowns */}
-      {open === "writer" && (
-        <Dropdown>
-          {WRITER_OPTIONS.map((opt) => {
-            const val = opt.toLowerCase() === "ai" ? "agent" : opt.toLowerCase();
-            return (
-              <DropdownItem
-                key={val}
-                label={opt}
-                active={writer === val}
-                onClick={() => navigate({ tab, writer: val, genre, lang })}
-              />
-            );
-          })}
-        </Dropdown>
-      )}
-
-      {open === "genre" && (
-        <Dropdown>
-          <DropdownItem
-            label="All genres"
-            active={genre === "all"}
-            onClick={() => navigate({ tab, writer, genre: "all", lang })}
-          />
-          {GENRES.map((g) => (
-            <DropdownItem
-              key={g}
-              label={g}
-              active={genre === g}
-              onClick={() => navigate({ tab, writer, genre: g, lang })}
-            />
-          ))}
-        </Dropdown>
-      )}
-
-      {open === "lang" && (
-        <Dropdown>
-          <DropdownItem
-            label="All languages"
-            active={lang === "all"}
-            onClick={() => navigate({ tab, writer, genre, lang: "all" })}
-          />
-          {LANGUAGES.map((l) => (
-            <DropdownItem
-              key={l}
-              label={l}
-              active={lang === l}
-              onClick={() => navigate({ tab, writer, genre, lang: l })}
-            />
-          ))}
-        </Dropdown>
-      )}
-
-      {open === "sort" && (
-        <Dropdown align="right">
-          {SORT_OPTIONS.map(({ value, label }) => (
-            <DropdownItem
-              key={value}
-              label={label}
-              active={tab === value}
-              onClick={() => navigate({ tab: value, writer, genre, lang })}
-            />
-          ))}
-        </Dropdown>
-      )}
     </div>
   );
 }
