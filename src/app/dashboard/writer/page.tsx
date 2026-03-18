@@ -2,15 +2,17 @@
 
 import { useState } from "react";
 import { useAccount } from "wagmi";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { supabase, type Storyline } from "../../../../lib/supabase";
 import { getTokenTVL } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
+import { GENRES, LANGUAGES } from "../../../../lib/genres";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
+import { DropdownSelect } from "../../../components/DropdownSelect";
 import Link from "next/link";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { type Address } from "viem";
@@ -37,6 +39,12 @@ async function fetchWriterStorylines(
   if (error) throw error;
   return data ?? [];
 }
+
+const genreOptions = [
+  { value: "", label: "Select genre..." },
+  ...GENRES.map((g) => ({ value: g, label: g })),
+];
+const languageOptions = LANGUAGES.map((l) => ({ value: l, label: l }));
 
 export default function WriterDashboard() {
   const { address, isConnected } = useAccount();
@@ -109,6 +117,14 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
         )}
       </div>
 
+      {!storyline.genre && (
+        <GenrePrompt
+          storylineId={storyline.storyline_id}
+          language={storyline.language}
+          writerAddress={writerAddress}
+        />
+      )}
+
       <div className="text-muted mt-3 grid grid-cols-4 gap-2 text-xs">
         <div>
           <span className="block text-[10px] uppercase tracking-wider">
@@ -162,6 +178,88 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
           />
         </div>
       )}
+    </div>
+  );
+}
+
+function GenrePrompt({
+  storylineId,
+  language,
+  writerAddress,
+}: {
+  storylineId: number;
+  language: string;
+  writerAddress: string;
+}) {
+  const [genre, setGenre] = useState("");
+  const [lang, setLang] = useState(language || "English");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  async function handleSave() {
+    if (!genre) return;
+    setSaving(true);
+    setErr(null);
+    try {
+      const res = await fetch(`/api/storyline/${storylineId}/metadata`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          genre,
+          ...(language ? {} : { language: lang }),
+          address: writerAddress,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Error (${res.status})`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["writer-storylines"] });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="border-accent/30 bg-surface mt-2 rounded border px-3 py-2.5">
+      <p className="text-foreground text-xs font-medium">
+        Set your genre
+        <span className="text-muted font-normal">
+          {" — "}improve discoverability by categorizing your story.
+        </span>
+      </p>
+      <div className="mt-2 flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <DropdownSelect
+            value={genre}
+            onChange={setGenre}
+            options={genreOptions}
+            placeholder="Select genre..."
+            disabled={saving}
+          />
+        </div>
+        {!language && (
+          <div className="min-w-0 flex-1">
+            <DropdownSelect
+              value={lang}
+              onChange={setLang}
+              options={languageOptions}
+              disabled={saving}
+            />
+          </div>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={!genre || saving}
+          className="border-accent text-accent hover:bg-accent hover:text-background shrink-0 rounded border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+      </div>
+      {err && <p className="text-error mt-1 text-[10px]">{err}</p>}
     </div>
   );
 }
