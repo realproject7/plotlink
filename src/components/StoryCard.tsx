@@ -4,78 +4,67 @@ import { AgentBadge } from "./AgentBadge";
 import { WriterIdentityClient } from "./WriterIdentityClient";
 import { RatingSummary } from "./RatingSummary";
 import { StoryCardStats } from "./StoryCardStats";
-import { ViewCount } from "./ViewCount";
 
 export function StoryCard({
   storyline,
   genre,
-  preview,
 }: {
   storyline: Storyline;
   genre?: string;
   preview?: string;
 }) {
-  const dateStr = storyline.block_timestamp
-    ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      })
-    : null;
+  const displayGenre = genre || storyline.genre;
 
   return (
-    <Link
-      href={`/story/${storyline.storyline_id}`}
-      className="border-border hover:border-accent-dim hover:bg-surface/50 flex flex-col rounded border px-4 py-3 transition-colors"
-    >
-      {/* Title + completion badge */}
-      <div className="flex items-start justify-between gap-2">
-        <h3 className="text-foreground text-sm font-medium leading-snug">
-          {storyline.title}
-        </h3>
-        {storyline.sunset && (
-          <span className="text-muted bg-surface shrink-0 rounded px-1.5 py-0.5 text-[10px]">
-            complete
+    <div className="flex flex-col">
+      {/* Book cover */}
+      <Link
+        href={`/story/${storyline.storyline_id}`}
+        className="border-border hover:border-accent-dim flex aspect-[2/3] flex-col justify-between rounded border px-5 py-6 transition-colors"
+      >
+        {/* Top: genre tag + completion badge */}
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-muted text-[10px] uppercase tracking-widest">
+            {displayGenre || "Uncategorized"}
           </span>
-        )}
-      </div>
-
-      {/* Author + meta */}
-      <div className="text-muted mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <span className="inline-flex items-center gap-0.5">By: <WriterIdentityClient address={storyline.writer_address} linkProfile={false} /></span>
-        <span>
-          {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-        </span>
-        <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
-        {dateStr && <span>{dateStr}</span>}
-        <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-          {genre || storyline.genre || <span className="text-muted italic">Uncategorized</span>}
-        </span>
-        {storyline.language && storyline.language !== "English" && (
-          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-            {storyline.language}
-          </span>
-        )}
-        {storyline.writer_type === 1 && <AgentBadge />}
-      </div>
-
-      {/* Stats row: price, TVL */}
-      {storyline.token_address && (
-        <div className="mt-2">
-          <StoryCardStats tokenAddress={storyline.token_address} />
+          {storyline.sunset && (
+            <span className="text-muted border-border shrink-0 rounded border px-1.5 py-0.5 text-[10px]">
+              complete
+            </span>
+          )}
         </div>
-      )}
 
-      {/* Genesis preview */}
-      {preview && (
-        <p className="text-muted mt-2 line-clamp-2 text-[11px] leading-relaxed">
-          {preview}
-        </p>
-      )}
+        {/* Center: title */}
+        <div className="flex flex-1 flex-col items-center justify-center px-2 text-center">
+          <h3 className="text-foreground text-base font-bold leading-tight tracking-tight sm:text-lg">
+            {storyline.title}
+          </h3>
+          {storyline.language && storyline.language !== "English" && (
+            <span className="text-muted mt-2 text-[10px]">
+              {storyline.language}
+            </span>
+          )}
+        </div>
 
-      {/* Rating */}
-      <div className="mt-auto pt-2">
+        {/* Bottom: author */}
+        <div className="text-muted flex items-center justify-center gap-1 text-xs">
+          <WriterIdentityClient address={storyline.writer_address} linkProfile={false} />
+          {storyline.writer_type === 1 && <AgentBadge />}
+        </div>
+      </Link>
+
+      {/* Metadata row below card */}
+      <div className="text-muted mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-1 text-[10px]">
+        <div className="flex items-center gap-2">
+          <span>
+            {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+          </span>
+          {storyline.token_address && (
+            <StoryCardStats tokenAddress={storyline.token_address} />
+          )}
+        </div>
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
-    </Link>
+    </div>
   );
 }

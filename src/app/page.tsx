@@ -81,7 +81,7 @@ export default async function Home({
       </div>
 
       {/* Story grid */}
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
         {storylines.map((s) => (
           <StoryCard key={s.id} storyline={s} preview={previews[s.storyline_id]} />
         ))}
