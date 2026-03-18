@@ -115,14 +115,15 @@ export function usePublish() {
         const hash = await writeContractAsync(writeCall);
         setTxHash(hash);
 
+        // Persist tx hash immediately after broadcast (before receipt polling)
+        // so recovery works even if receipt polling fails
+        opts.onTxConfirmed?.(hash);
+
         // 3. Wait for tx confirmation
         setState("pending");
         const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
         setReceipt(receipt);
-
-        // Persist tx hash after on-chain confirmation
-        opts.onTxConfirmed?.(hash);
 
         // 4. Trigger indexer
         setState("indexing");
