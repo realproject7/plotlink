@@ -26,20 +26,23 @@
 - Batch 8 Bug Fixes: #238, #239, #240, #248, #250, #251, #252, #255, #257, #259: All done
 - Batch 9 Bug Fixes + Genre/Language: #261, #262, #265, #269, #271, #272, #275: All done
 - Batch 10 Design Overhaul: #277: Reverted (PR #281)
+- Batch 11 Bug Fixes: #267, #268: All done
 
 ---
 
-## Tonight's Queue — Bug Fixes (Batch 11)
+## Tonight's Queue — Bug Fixes (Batch 12)
 
-### 1. plotlink#267 — Front-end recovery UI for failed indexing after successful on-chain tx
+### 1. plotlink#284 — Brittle wallet rejection detection leaves false recovery intents
 **Priority: HIGH**
-- Add UI so users can detect and retry failed indexing after a successful on-chain transaction
-- Branch: `task/267-indexing-recovery-ui` (create fresh — old branch was deleted)
+- `isUserRejection()` only matches a few patterns — non-standard wallets leave false intents in localStorage
+- Expand rejection patterns or defer intent persistence until after wallet confirmation
+- Branch: `task/284-wallet-rejection-detection`
 
-### 2. plotlink#268 — Writer dashboard prompt to set missing genre on uncategorized storylines
+### 2. plotlink#285 — Recovery retry fails permanently on IPFS upload errors
 **Priority: HIGH**
-- Prompt writers in the dashboard to set genre on storylines that have none
-- Branch: `task/268-writer-genre-prompt`
+- If IPFS upload fails, recovery banner appears but retry only re-hits indexer, not IPFS
+- Either defer intent save until after IPFS success, or include IPFS re-upload in retry flow
+- Branch: `task/285-ipfs-retry-recovery`
 
 ---
 
