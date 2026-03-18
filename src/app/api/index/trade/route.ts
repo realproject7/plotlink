@@ -36,8 +36,18 @@ export async function POST(req: Request) {
   const receipt = await getReceiptWithRetry(txHash);
   if (!receipt) return error("Receipt not found", 404);
 
-  const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
-  const timestampISO = new Date(Number(block.timestamp) * 1000).toISOString();
+  // Retry getBlock — RPC may not have the block yet on load-balanced nodes
+  let timestampISO: string;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+      timestampISO = new Date(Number(block.timestamp) * 1000).toISOString();
+      break;
+    } catch (err) {
+      if (attempt >= 5) throw err;
+      await new Promise((r) => setTimeout(r, attempt * 1000));
+    }
+  }
 
   let indexed = 0;
 
