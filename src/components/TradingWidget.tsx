@@ -78,6 +78,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
     try {
       setError(null);
       setTxHash(null);
+      let tradeHash: string | null = null;
 
       if (tab === "buy") {
         // Buy: approve PLOT_TOKEN → mint
@@ -112,6 +113,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           gas: BigInt(2_000_000),
         });
         setTxHash(hash);
+        tradeHash = hash;
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
       } else {
@@ -146,6 +148,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           gas: BigInt(2_000_000),
         });
         setTxHash(hash);
+        tradeHash = hash;
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
       }
@@ -153,6 +156,15 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       setTxState("done");
       setAmount("");
       refetchBalance();
+
+      // Index the trade for price history (fire-and-forget)
+      if (tradeHash) {
+        fetch("/api/index/trade", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ txHash: tradeHash, tokenAddress }),
+        }).catch(() => {});
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");

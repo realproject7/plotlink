@@ -1,0 +1,115 @@
+import { NextResponse } from "next/server";
+import { type Hex, decodeEventLog, formatUnits } from "viem";
+import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
+import { createServerClient } from "../../../../../lib/supabase";
+import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
+import { MCV2_BOND } from "../../../../../lib/contracts/constants";
+import { erc20Abi } from "../../../../../lib/price";
+import type { Database } from "../../../../../lib/supabase";
+
+type TradeInsert = Database["public"]["Tables"]["trade_history"]["Insert"];
+
+function error(message: string, status = 400) {
+  return NextResponse.json({ error: message }, { status });
+}
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const txHash = body.txHash as Hex | undefined;
+  const tokenAddress = (body.tokenAddress as string | undefined)?.toLowerCase();
+
+  if (!txHash) return error("txHash required");
+  if (!tokenAddress) return error("tokenAddress required");
+
+  const supabase = createServerClient();
+  if (!supabase) return error("Supabase not configured", 500);
+
+  // Look up storyline for this token
+  const { data: storyline } = await supabase
+    .from("storylines")
+    .select("storyline_id")
+    .eq("token_address", tokenAddress)
+    .single();
+
+  if (!storyline) return error("Unknown token address", 404);
+
+  const receipt = await getReceiptWithRetry(txHash);
+  if (!receipt) return error("Receipt not found", 404);
+
+  const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+  const timestampISO = new Date(Number(block.timestamp) * 1000).toISOString();
+
+  let indexed = 0;
+
+  for (const log of receipt.logs) {
+    if (log.address.toLowerCase() !== MCV2_BOND.toLowerCase()) continue;
+
+    try {
+      const decoded = decodeEventLog({
+        abi: mcv2BondEventAbi,
+        data: log.data,
+        topics: log.topics,
+      });
+
+      if (decoded.eventName !== "Minted" && decoded.eventName !== "Burned") continue;
+
+      const args = decoded.args as {
+        token: `0x${string}`;
+        tokenAmount: bigint;
+        reserveAmount?: bigint;
+        refundAmount?: bigint;
+      };
+
+      if (args.token.toLowerCase() !== tokenAddress) continue;
+
+      const isMint = decoded.eventName === "Minted";
+      const reserveAmount = isMint ? args.reserveAmount! : args.refundAmount!;
+      const tokenAmount = args.tokenAmount;
+
+      const pricePerToken =
+        tokenAmount > BigInt(0)
+          ? Number(formatUnits(reserveAmount, 18)) /
+            Number(formatUnits(tokenAmount, 18))
+          : 0;
+
+      let totalSupply = BigInt(0);
+      try {
+        totalSupply = await publicClient.readContract({
+          address: args.token,
+          abi: erc20Abi,
+          functionName: "totalSupply",
+          blockNumber: receipt.blockNumber,
+        });
+      } catch {
+        // Fall back to 0
+      }
+
+      const row: TradeInsert = {
+        token_address: tokenAddress,
+        storyline_id: storyline.storyline_id,
+        event_type: isMint ? "mint" : "burn",
+        price_per_token: pricePerToken,
+        total_supply: Number(formatUnits(totalSupply, 18)),
+        reserve_amount: Number(formatUnits(reserveAmount, 18)),
+        block_number: Number(receipt.blockNumber),
+        block_timestamp: timestampISO,
+        tx_hash: txHash.toLowerCase(),
+        log_index: log.logIndex!,
+        contract_address: MCV2_BOND.toLowerCase(),
+      };
+
+      const { error: dbError } = await supabase
+        .from("trade_history")
+        .upsert(row, { onConflict: "tx_hash,log_index" });
+      if (dbError) {
+        console.error(`Trade index DB error: ${dbError.message}`);
+      } else {
+        indexed++;
+      }
+    } catch {
+      // Skip non-matching events
+    }
+  }
+
+  return NextResponse.json({ indexed });
+}
