@@ -71,7 +71,7 @@ async function logBackfillFailure(
     reason: opts.reason,
   });
   if (error) {
-    console.error(`Failed to log backfill failure: ${error.message}`);
+    throw new Error(`Failed to log backfill failure: ${error.message}`);
   }
 }
 
