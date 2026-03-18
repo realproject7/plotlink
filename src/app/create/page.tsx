@@ -47,7 +47,7 @@ export default function CreateStorylinePage() {
   const [content, setContent] = useState("");
   const hasDeadline = true; // mandatory 7-day deadline for all storylines
 
-  const { state, error, receipt, execute, reset } = usePublish();
+  const { state, error, receipt, execute } = usePublish();
   const { pendingIntent, saveIntent, persistTxHash, clearIntent, attemptRetry } =
     usePublishIntent();
   const { valid, charCount } = validateContentLength(content);

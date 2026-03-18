@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 export interface SelectOption {
   value: string;
@@ -29,9 +29,10 @@ export function Select({
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const allOptions = placeholder
-    ? [{ value: "", label: placeholder }, ...options]
-    : options;
+  const allOptions = useMemo(
+    () => (placeholder ? [{ value: "", label: placeholder }, ...options] : options),
+    [placeholder, options],
+  );
 
   const selectedLabel =
     options.find((o) => o.value === value)?.label ?? placeholder;
