@@ -38,22 +38,8 @@ export default async function Home({
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
-  const previews: Record<number, string> = {};
   if (supabase) {
     storylines = await queryTab(supabase, tab, writer, page, genre, lang);
-    // Fetch genesis plot previews
-    if (storylines.length > 0) {
-      const { data: plots } = await supabase.from("plots")
-        .select("storyline_id, content")
-        .in("storyline_id", storylines.map((s) => s.storyline_id))
-        .eq("plot_index", 0)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (plots) {
-        for (const p of plots as { storyline_id: number; content: string }[]) {
-          previews[p.storyline_id] = p.content.slice(0, 120);
-        }
-      }
-    }
   }
 
   const extraParams = writer !== "all" ? { writer } : undefined;
@@ -81,9 +67,9 @@ export default async function Home({
       </div>
 
       {/* Story grid */}
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
         {storylines.map((s) => (
-          <StoryCard key={s.id} storyline={s} preview={previews[s.storyline_id]} />
+          <StoryCard key={s.id} storyline={s} />
         ))}
       </div>
 
