@@ -11,6 +11,8 @@ import {
 import { supabase, type Storyline } from "../../../lib/supabase";
 import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { useChainPlot } from "../../hooks/useChainPlot";
+import { usePublishIntent } from "../../hooks/usePublishIntent";
+import { RecoveryBanner } from "../../components/RecoveryBanner";
 import type { PublishState } from "../../hooks/usePublish";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
@@ -52,7 +54,13 @@ export default function ChainPlotPage() {
     enabled: isConnected && !!address,
   });
 
-  const { state, error, chainPlot, reset } = useChainPlot();
+  const { pendingIntent, saveIntent, persistTxHash, clearIntent, attemptRetry } =
+    usePublishIntent();
+  const { state, error, chainPlot, reset } = useChainPlot({
+    onIntentSave: saveIntent,
+    onTxConfirmed: persistTxHash,
+    onIndexed: clearIntent,
+  });
   const { valid, charCount } = validateContentLength(content);
   const titleValid = title.trim().length > 0;
   const canSubmit =
@@ -104,6 +112,16 @@ export default function ChainPlotPage() {
       <h1 className="text-accent text-2xl font-bold tracking-tight">
         Chain Plot
       </h1>
+
+      {pendingIntent && (
+        <div className="mt-6">
+          <RecoveryBanner
+            intent={pendingIntent}
+            onRetry={attemptRetry}
+            onDismiss={clearIntent}
+          />
+        </div>
+      )}
 
       <form
         onSubmit={(e) => {
