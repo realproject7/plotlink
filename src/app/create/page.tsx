@@ -8,6 +8,8 @@ import {
   MAX_CONTENT_LENGTH,
 } from "../../../lib/content";
 import { usePublish, type PublishState } from "../../hooks/usePublish";
+import { usePublishIntent } from "../../hooks/usePublishIntent";
+import { RecoveryBanner } from "../../components/RecoveryBanner";
 import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
 import { STORY_FACTORY } from "../../../lib/contracts/constants";
 import { decodeEventLog, encodeEventTopics } from "viem";
@@ -46,6 +48,8 @@ export default function CreateStorylinePage() {
   const hasDeadline = true; // mandatory 7-day deadline for all storylines
 
   const { state, error, receipt, execute, reset } = usePublish();
+  const { pendingIntent, saveIntent, persistTxHash, clearIntent, attemptRetry } =
+    usePublishIntent();
   const { valid, charCount } = validateContentLength(content);
   const titleValid = title.trim().length > 0;
   const genreValid = genre.length > 0;
@@ -115,6 +119,16 @@ export default function CreateStorylinePage() {
         Create Storyline
       </h1>
 
+      {pendingIntent && (
+        <div className="mt-6">
+          <RecoveryBanner
+            intent={pendingIntent}
+            onRetry={attemptRetry}
+            onDismiss={clearIntent}
+          />
+        </div>
+      )}
+
       <form
         onSubmit={(e) => {
           e.preventDefault();
@@ -131,6 +145,9 @@ export default function CreateStorylinePage() {
                 gas: BigInt(16_000_000),
               }),
               metadata: { genre, language },
+              onIntentSave: saveIntent,
+              onTxConfirmed: persistTxHash,
+              onIndexed: clearIntent,
             });
         }}
         className="mt-8 space-y-6"

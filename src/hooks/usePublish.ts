@@ -29,6 +29,31 @@ interface PublishOptions {
   indexerRoute: string;
   buildWriteCall: (cid: string, contentHash: Hex) => WriteCall;
   metadata?: Record<string, string>;
+  /** Called before wallet confirmation to save intent */
+  onIntentSave?: (opts: {
+    content: string;
+    metadata: Record<string, string>;
+    indexerRoute: string;
+    uploadKeyPrefix: string;
+  }) => void;
+  /** Called after tx confirms to persist tx hash */
+  onTxConfirmed?: (hash: string) => void;
+  /** Called after successful indexing to clear intent */
+  onIndexed?: () => void;
+}
+
+/**
+ * Returns true if the error is a user-rejected transaction (wallet popup dismissed).
+ */
+function isUserRejection(err: unknown): boolean {
+  const message =
+    err instanceof Error ? err.message.toLowerCase() : String(err).toLowerCase();
+  return (
+    message.includes("user rejected") ||
+    message.includes("user denied") ||
+    message.includes("rejected the request") ||
+    message.includes("cancelled")
+  );
 }
 
 /**
@@ -75,6 +100,14 @@ export function usePublish() {
           cachedCid.current = { cid, contentHash };
         }
 
+        // Save intent before wallet confirmation
+        opts.onIntentSave?.({
+          content: opts.content,
+          metadata: opts.metadata ?? {},
+          indexerRoute: opts.indexerRoute,
+          uploadKeyPrefix: opts.uploadKeyPrefix,
+        });
+
         // 2. Submit tx to wallet
         setState("confirming");
         const writeCall = opts.buildWriteCall(cid, contentHash);
@@ -88,6 +121,9 @@ export function usePublish() {
 
         setReceipt(receipt);
 
+        // Persist tx hash after on-chain confirmation
+        opts.onTxConfirmed?.(hash);
+
         // 4. Trigger indexer
         setState("indexing");
         await new Promise((r) => setTimeout(r, 5000));
@@ -97,6 +133,9 @@ export function usePublish() {
           body: JSON.stringify({ txHash: hash, content: opts.content, ...opts.metadata }),
         });
 
+        // Clear intent after successful indexing
+        opts.onIndexed?.();
+
         // 5. Done
         setState("published");
         cachedCid.current = null;
@@ -105,6 +144,11 @@ export function usePublish() {
           err instanceof Error ? err.message : "Unknown error";
         setError(message);
         setState("error");
+
+        // User rejected tx — clear intent (no recovery needed)
+        if (isUserRejection(err)) {
+          opts.onIndexed?.(); // reuse onIndexed to clear intent
+        }
       }
     },
     [writeContractAsync],
