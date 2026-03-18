@@ -11,7 +11,6 @@ export function StoryCard({
 }: {
   storyline: Storyline;
   genre?: string;
-  preview?: string;
 }) {
   const displayGenre = genre || storyline.genre;
 
