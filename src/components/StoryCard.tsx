@@ -68,19 +68,16 @@ export function StoryCard({
         </Link>
       </div>
 
-      {/* Metadata row below card */}
-      <div className="text-muted mt-2 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pl-[7px] pr-1 text-[10px]">
-        <div className="flex items-center gap-1">
-          {storyline.token_address && (
-            <>
-              <StoryCardTVL tokenAddress={storyline.token_address} />
-              <span>|</span>
-            </>
-          )}
-          <span>
-            {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} linked
+      {/* Metadata below card */}
+      <div className="text-muted mt-2 flex flex-col gap-0.5 pl-[7px] pr-1 text-[10px]">
+        {storyline.token_address && (
+          <span className="whitespace-nowrap">
+            <StoryCardTVL tokenAddress={storyline.token_address} />
           </span>
-        </div>
+        )}
+        <span className="whitespace-nowrap">
+          {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} linked
+        </span>
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
     </div>
