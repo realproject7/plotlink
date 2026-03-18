@@ -57,12 +57,10 @@ export default async function Home({
       </header>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <WriterFilter active={writer} tab={tab} basePath="/" />
-          <GenreFilter active={genre} tab={tab} writer={writer} lang={lang} />
-          <LanguageFilter active={lang} tab={tab} writer={writer} genre={genre} />
-        </div>
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
+        <WriterFilter active={writer} tab={tab} basePath="/" />
+        <GenreFilter active={genre} tab={tab} writer={writer} lang={lang} />
+        <LanguageFilter active={lang} tab={tab} writer={writer} genre={genre} />
         <SortDropdown active={tab} writer={writer} basePath="/" />
       </div>
 
