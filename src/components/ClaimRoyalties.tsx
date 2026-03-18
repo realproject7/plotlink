@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useWriteContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
@@ -36,7 +36,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
 
   // Fetch unclaimed royalty balance + cumulative claimed
-  const { data: royaltyInfo, refetch } = useQuery({
+  const { data: royaltyInfo } = useQuery({
     queryKey: ["royalty-info", tokenAddress, beneficiary],
     queryFn: async () => {
       const [balance, claimed] = await publicClient.readContract({
@@ -45,11 +45,6 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
         functionName: "getRoyaltyInfo",
         args: [beneficiary, PLOT_TOKEN],
       });
-      // Reset to idle when refetch brings fresh data after a claim
-      if (txState === "done") {
-        setTxState("idle");
-        setError(null);
-      }
       return { unclaimed: balance, claimed };
     },
     refetchInterval: 30000,
@@ -66,6 +61,23 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const totalClaimed = royaltyInfo?.claimed ?? BigInt(0);
   const eligible = plotCount >= 2;
   const canClaim = eligible && unclaimed > BigInt(0);
+
+  // Track dataUpdatedAt to detect refetch after claim
+  const claimDoneRef = useRef(false);
+  useEffect(() => {
+    if (txState === "done") {
+      claimDoneRef.current = true;
+    }
+  }, [txState]);
+  // Reset to idle when royaltyInfo updates after a successful claim
+  useEffect(() => {
+    if (claimDoneRef.current && txState === "done") {
+      claimDoneRef.current = false;
+      setTxState("idle");
+      setError(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [royaltyInfo]);
 
   const executeClaim = useCallback(async () => {
     try {
@@ -85,12 +97,11 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
       await publicClient.waitForTransactionReceipt({ hash });
 
       setTxState("done");
-      refetch();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Claim failed");
       setTxState("error");
     }
-  }, [unclaimed, writeContractAsync, refetch]);
+  }, [unclaimed, writeContractAsync]);
 
   const reset = useCallback(() => {
     setTxState("idle");
