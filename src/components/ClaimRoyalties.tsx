@@ -35,17 +35,22 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
 
   const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
 
-  // Fetch unclaimed royalty balance
+  // Fetch unclaimed royalty balance + cumulative claimed
   const { data: royaltyInfo, refetch } = useQuery({
     queryKey: ["royalty-info", tokenAddress, beneficiary],
     queryFn: async () => {
-      const [balance] = await publicClient.readContract({
+      const [balance, claimed] = await publicClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "getRoyaltyInfo",
         args: [beneficiary, PLOT_TOKEN],
       });
-      return { unclaimed: balance };
+      // Reset to idle when refetch brings fresh data after a claim
+      if (txState === "done") {
+        setTxState("idle");
+        setError(null);
+      }
+      return { unclaimed: balance, claimed };
     },
     refetchInterval: 30000,
   });
@@ -58,6 +63,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const decimals = tvlData?.decimals ?? 18;
 
   const unclaimed = royaltyInfo?.unclaimed ?? BigInt(0);
+  const totalClaimed = royaltyInfo?.claimed ?? BigInt(0);
   const eligible = plotCount >= 2;
   const canClaim = eligible && unclaimed > BigInt(0);
 
@@ -131,18 +137,24 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           <span className={`ml-1 font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
             {formatTruncated(unclaimed, decimals)} {reserveLabel}
           </span>
+          {totalClaimed > BigInt(0) && (
+            <span className="text-muted ml-1 text-[10px]">
+              (claimed: {formatTruncated(totalClaimed, decimals)} {reserveLabel} so far)
+            </span>
+          )}
           <button
-            onClick={txState === "done" || txState === "error" ? reset : executeClaim}
+            onClick={txState === "error" ? reset : executeClaim}
             disabled={
+              txState === "done" ||
               (txState === "idle" && !canClaim) ||
-              (txState !== "idle" && txState !== "done" && txState !== "error")
+              (txState !== "idle" && txState !== "error")
             }
             className="bg-accent text-background ml-2 rounded px-3 py-0.5 text-[10px] font-medium transition-opacity disabled:opacity-40"
           >
             {txState === "idle" && "Claim"}
             {txState === "confirming" && "Confirm..."}
             {txState === "pending" && "Pending..."}
-            {txState === "done" && `Claimed ${formatTruncated(claimedAmount, decimals)} ${reserveLabel}`}
+            {txState === "done" && "Claimed"}
             {txState === "error" && "Retry"}
           </button>
         </div>
@@ -152,14 +164,15 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           Chain at least 2 plots to enable royalty claims ({plotCount}/2)
         </p>
       )}
-      {eligible && unclaimed === BigInt(0) && txState === "idle" && (
+      {eligible && unclaimed === BigInt(0) && txState === "idle" && totalClaimed === BigInt(0) && (
         <p className="text-muted mt-1 text-[10px]">
           No royalties yet — royalties accrue when readers trade your token
         </p>
       )}
       {txHash && txState === "done" && (
         <p className="text-muted mt-1 text-[10px]">
-          Tx:{" "}
+          Claimed {formatTruncated(claimedAmount, decimals)} {reserveLabel} —{" "}
+          tx:{" "}
           <a
             href={`${EXPLORER_URL}/tx/${txHash}`}
             target="_blank"
