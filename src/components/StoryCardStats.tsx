@@ -16,6 +16,7 @@ function formatCompact(value: string): string {
   return num.toFixed(2);
 }
 
+/** Full stats row with price + TVL (used on detail pages) */
 export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
   const addr = tokenAddress as Address;
 
@@ -43,5 +44,22 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
       <span>Price: <span className="text-foreground">{price} {reserveLabel}</span></span>
       <span>TVL: <span className="text-foreground">{tvl} {reserveLabel}</span></span>
     </div>
+  );
+}
+
+/** TVL-only display for home page book cards */
+export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
+  const addr = tokenAddress as Address;
+
+  const { data: tvlData } = useQuery({
+    queryKey: ["card-tvl", tokenAddress],
+    queryFn: () => getTokenTVL(addr),
+    staleTime: 60000,
+  });
+
+  const tvl = tvlData ? formatCompact(tvlData.tvl) : "—";
+
+  return (
+    <span>TVL: <span className="text-foreground">{tvl} {reserveLabel}</span></span>
   );
 }
