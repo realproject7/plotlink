@@ -91,31 +91,33 @@ export const donateFunction = {
 // MCV2_Bond events (from MCV2_Bond.sol upstream)
 // ---------------------------------------------------------------------------
 
-export const mcv2MintedEvent = {
+export const mcv2MintEvent = {
   type: "event",
-  name: "Minted",
+  name: "Mint",
   inputs: [
     { name: "token", type: "address", indexed: true },
-    { name: "account", type: "address", indexed: true },
-    { name: "tokenAmount", type: "uint256", indexed: false },
+    { name: "user", type: "address", indexed: true },
+    { name: "receiver", type: "address", indexed: false },
+    { name: "amountMinted", type: "uint256", indexed: false },
+    { name: "reserveToken", type: "address", indexed: true },
     { name: "reserveAmount", type: "uint256", indexed: false },
-    { name: "beneficiary", type: "address", indexed: false },
   ],
 } as const;
 
-export const mcv2BurnedEvent = {
+export const mcv2BurnEvent = {
   type: "event",
-  name: "Burned",
+  name: "Burn",
   inputs: [
     { name: "token", type: "address", indexed: true },
-    { name: "account", type: "address", indexed: true },
-    { name: "tokenAmount", type: "uint256", indexed: false },
+    { name: "user", type: "address", indexed: true },
+    { name: "receiver", type: "address", indexed: false },
+    { name: "amountBurned", type: "uint256", indexed: false },
+    { name: "reserveToken", type: "address", indexed: true },
     { name: "refundAmount", type: "uint256", indexed: false },
-    { name: "beneficiary", type: "address", indexed: false },
   ],
 } as const;
 
-export const mcv2BondEventAbi = [mcv2MintedEvent, mcv2BurnedEvent] as const;
+export const mcv2BondEventAbi = [mcv2MintEvent, mcv2BurnEvent] as const;
 
 // ---------------------------------------------------------------------------
 // MCV2_Bond view functions
