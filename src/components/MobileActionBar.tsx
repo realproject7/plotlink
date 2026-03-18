@@ -60,7 +60,9 @@ export function MobileActionBar({
             className={`rounded border px-3 py-2 text-xs transition-colors ${
               open === key
                 ? "border-accent text-accent"
-                : "border-[var(--border)] text-muted hover:text-foreground"
+                : key === "trade"
+                  ? "border-accent text-accent hover:opacity-80"
+                  : "border-[var(--border)] text-muted hover:text-foreground"
             }`}
           >
             {label}
