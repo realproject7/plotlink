@@ -2,6 +2,7 @@ import { type Metadata } from "next";
 import { Suspense } from "react";
 import { createServerClient, type Storyline, type Plot } from "../../../../lib/supabase";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
+import { AddPlotButton } from "../../../components/AddPlotButton";
 import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
@@ -284,6 +285,9 @@ function StoryHeader({
       ) : storyline.last_plot_time ? (
         <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
       ) : null}
+      {!storyline.sunset && (
+        <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} />
+      )}
     </header>
   );
 }

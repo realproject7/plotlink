@@ -10,7 +10,6 @@ const NAV_LINKS = [
   { href: "/create", label: "create" },
   { href: "/dashboard/writer", label: "writer" },
   { href: "/dashboard/reader", label: "reader" },
-  { href: "/chain", label: "chain" },
 ] as const;
 
 export function NavBar() {
