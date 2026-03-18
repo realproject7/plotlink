@@ -128,14 +128,18 @@ export function usePublish() {
         // 4. Trigger indexer
         setState("indexing");
         await new Promise((r) => setTimeout(r, 5000));
-        await fetch(opts.indexerRoute, {
+        const indexerRes = await fetch(opts.indexerRoute, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ txHash: hash, content: opts.content, ...opts.metadata }),
         });
 
-        // Clear intent after successful indexing
-        opts.onIndexed?.();
+        // Only clear intent on success (2xx) or 409 (already indexed)
+        if (indexerRes.ok || indexerRes.status === 409) {
+          opts.onIndexed?.();
+        } else {
+          throw new Error(`Indexer error (${indexerRes.status})`);
+        }
 
         // 5. Done
         setState("published");
