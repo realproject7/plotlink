@@ -135,6 +135,15 @@ export default async function StoryPage({ params }: { params: Params }) {
       <ViewTracker storylineId={id} />
       <StoryHeader storyline={storyline} priceInfo={priceInfo} />
 
+      {genesis && (
+        <a
+          href="#genesis"
+          className="border-accent text-accent hover:bg-accent/10 mt-6 block w-full rounded border py-3 text-center text-sm font-medium transition-colors"
+        >
+          Read the first Plot
+        </a>
+      )}
+
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
         {/* Story content — genesis + table of contents */}
         <main>
@@ -284,7 +293,7 @@ function StoryHeader({
 
 function GenesisSection({ plot }: { plot: Plot }) {
   return (
-    <section>
+    <section id="genesis">
       <ViewTracker storylineId={plot.storyline_id} plotIndex={0} />
       <div className="text-muted mb-3 flex items-baseline gap-3 text-xs">
         <span className="text-accent-dim font-medium">Genesis</span>
