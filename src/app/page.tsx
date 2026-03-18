@@ -2,9 +2,8 @@ import { createServerClient, type Storyline } from "../../lib/supabase";
 import { STORY_FACTORY } from "../../lib/contracts/constants";
 import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
-import { SortDropdown } from "../components/SortDropdown";
-import { WriterFilter, type WriterFilterValue } from "../components/WriterFilter";
-import { GenreFilter, LanguageFilter } from "../components/GenreLanguageFilter";
+import { FilterBar } from "../components/FilterBar";
+import { type WriterFilterValue } from "../components/WriterFilter";
 import { GENRES, LANGUAGES } from "../../lib/genres";
 import Link from "next/link";
 
@@ -42,8 +41,6 @@ export default async function Home({
     storylines = await queryTab(supabase, tab, writer, page, genre, lang);
   }
 
-  const extraParams = writer !== "all" ? { writer } : undefined;
-
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
       {/* Compact hero */}
@@ -57,12 +54,7 @@ export default async function Home({
       </header>
 
       {/* Filter bar */}
-      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-between sm:gap-3">
-        <WriterFilter active={writer} tab={tab} basePath="/" />
-        <GenreFilter active={genre} tab={tab} writer={writer} lang={lang} />
-        <LanguageFilter active={lang} tab={tab} writer={writer} genre={genre} />
-        <SortDropdown active={tab} writer={writer} basePath="/" />
-      </div>
+      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} />
 
       {/* Story grid */}
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
