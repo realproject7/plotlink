@@ -1,4 +1,4 @@
-# Assignment Queue — PlotLink (2026-03-17)
+# Assignment Queue — PlotLink (2026-03-18)
 
 > T1: Work through this queue top-to-bottom. Assign ONE ticket at a time to @t3.
 > After each PR is merged, assign the next ticket immediately.
@@ -25,29 +25,21 @@
 - Batch 7 Infra + Tech Debt: #233, #230, #231, #232: All done
 - Batch 8 Bug Fixes: #238, #239, #240, #248, #250, #251, #252, #255, #257, #259: All done
 - Batch 9 Bug Fixes + Genre/Language: #261, #262, #265, #269, #271, #272, #275: All done
+- Batch 10 Design Overhaul: #277: Reverted (PR #281)
 
 ---
 
-## Tonight's Queue — Design Overhaul (Batch 10)
+## Tonight's Queue — Bug Fixes (Batch 11)
 
-> **IMPORTANT**: This is an experimental design change. T3 MUST create a git tag
-> `pre-design-overhaul` on main before starting. All changes in ONE PR for easy revert.
+### 1. plotlink#267 — Front-end recovery UI for failed indexing after successful on-chain tx
+**Priority: HIGH**
+- Add UI so users can detect and retry failed indexing after a successful on-chain transaction
+- Branch: `task/267-indexing-recovery-ui` (create fresh — old branch was deleted)
 
-### 1. plotlink#277 — Experimental UI overhaul: book-shelf discovery + unique visual identity
-**Priority: HIGH (design iteration)**
-- Redesign home page with book-cover style cards and shelf-inspired layout
-- Generative cover backgrounds from storyline data (no uploaded images)
-- Typography-forward design — literary but futuristic ("cyberpunk library")
-- Improve story detail reading experience
-- Apply visual language across all pages
-- Keep monospace font, dark theme, green accent
-- Mobile-first, accessible, no external assets
-- **Single PR, all changes** — operator will review and may request full revert
-
-### Pending (assign after #277 review)
-
-- **#267** — Front-end recovery UI for failed indexing after successful tx
-- **#268** — Writer dashboard prompt to set missing genre
+### 2. plotlink#268 — Writer dashboard prompt to set missing genre on uncategorized storylines
+**Priority: HIGH**
+- Prompt writers in the dashboard to set genre on storylines that have none
+- Branch: `task/268-writer-genre-prompt`
 
 ---
 
