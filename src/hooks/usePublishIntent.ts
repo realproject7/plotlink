@@ -128,7 +128,8 @@ export function usePublishIntent() {
       // 409 = already indexed, treat as success
       if (response.ok || response.status === 409) {
         removeIntent();
-        if (mountedRef.current) setPendingIntent(null);
+        // Don't setPendingIntent(null) here — let RecoveryBanner show
+        // the success state before unmounting
         return { success: true };
       }
 
