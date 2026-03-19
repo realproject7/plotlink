@@ -77,6 +77,10 @@ export function StoryCard({
         )}
         <span className="whitespace-nowrap">
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} linked
+          {storyline.last_plot_time &&
+            Date.now() - new Date(storyline.last_plot_time).getTime() < 24 * 60 * 60 * 1000 && (
+              <span className="text-accent ml-1 text-[10px] font-bold">NEW</span>
+            )}
         </span>
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
