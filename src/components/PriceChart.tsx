@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits } from "viem";
 import { supabase } from "../../lib/supabase";
-import { IS_TESTNET } from "../../lib/contracts/constants";
+import { RESERVE_LABEL } from "../../lib/contracts/constants";
 
 const CHART_W = 320;
 const CHART_H = 140;
@@ -36,7 +36,6 @@ function formatPrice(v: number): string {
 }
 
 export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
   const currentPrice = Number(formatUnits(currentPriceRaw, 18));
 
   const { data: tradePoints } = useQuery({
@@ -81,7 +80,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
           <p className="text-muted mt-2 text-[10px]">No trading activity yet</p>
           {currentPrice > 0 && (
             <p className="text-accent mt-1 text-xs font-medium">
-              {formatPrice(currentPrice)} {reserveLabel}
+              {formatPrice(currentPrice)} {RESERVE_LABEL}
             </p>
           )}
         </div>
@@ -202,9 +201,9 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
         <circle cx={lastX} cy={lastY} r={3} fill="var(--accent)" />
       </svg>
       <p className="text-muted mt-1 text-[10px]">
-        Price per token ({reserveLabel})
+        Price per token ({RESERVE_LABEL})
         <span className="text-accent-dim">
-          {" "}&middot; latest: {formatPrice(points[lastIdx].price)} {reserveLabel}
+          {" "}&middot; latest: {formatPrice(points[lastIdx].price)} {RESERVE_LABEL}
         </span>
       </p>
     </section>

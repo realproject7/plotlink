@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
-import { MCV2_BOND, IS_TESTNET, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
+import { MCV2_BOND, RESERVE_LABEL, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
 
 function formatTruncated(value: bigint, decimals: number, digits = 10): string {
   const raw = formatUnits(value, decimals);
@@ -32,8 +32,6 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const [showTooltip, setShowTooltip] = useState(false);
 
   const { writeContractAsync } = useWriteContract();
-
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
 
   // Fetch unclaimed royalty balance + cumulative claimed
   const { data: royaltyInfo } = useQuery({
@@ -139,18 +137,18 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
                     Chain at least 2 plots ({plotCount}/2) {eligible && "\u2713"}
                   </li>
                   <li>
-                    Royalties accrue when readers trade your token ({formatTruncated(unclaimed, decimals)} {reserveLabel} unclaimed)
+                    Royalties accrue when readers trade your token ({formatTruncated(unclaimed, decimals)} {RESERVE_LABEL} unclaimed)
                   </li>
                 </ul>
               </div>
             )}
           </div>
           <span className={`ml-1 font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
-            {formatTruncated(unclaimed, decimals)} {reserveLabel}
+            {formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}
           </span>
           {totalClaimed > BigInt(0) && (
             <span className="text-muted ml-1 text-[10px]">
-              (claimed: {formatTruncated(totalClaimed, decimals)} {reserveLabel} so far)
+              (claimed: {formatTruncated(totalClaimed, decimals)} {RESERVE_LABEL} so far)
             </span>
           )}
           <button
@@ -182,7 +180,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
       )}
       {txHash && txState === "done" && (
         <p className="text-muted mt-1 text-[10px]">
-          Claimed {formatTruncated(claimedAmount, decimals)} {reserveLabel} —{" "}
+          Claimed {formatTruncated(claimedAmount, decimals)} {RESERVE_LABEL} —{" "}
           tx:{" "}
           <a
             href={`${EXPLORER_URL}/tx/${txHash}`}

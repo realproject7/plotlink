@@ -3,9 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Address } from "viem";
 import { getTokenTVL, getTokenPrice } from "../../lib/price";
-import { IS_TESTNET } from "../../lib/contracts/constants";
-
-const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
+import { RESERVE_LABEL } from "../../lib/contracts/constants";
 
 function formatCompact(value: string): string {
   const num = parseFloat(value);
@@ -41,8 +39,8 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
 
   return (
     <div className="text-muted flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]">
-      <span>Price: <span className="text-foreground">{price} {reserveLabel}</span></span>
-      <span>TVL: <span className="text-foreground">{tvl} {reserveLabel}</span></span>
+      <span>Price: <span className="text-foreground">{price} {RESERVE_LABEL}</span></span>
+      <span>TVL: <span className="text-foreground">{tvl} {RESERVE_LABEL}</span></span>
     </div>
   );
 }
@@ -60,6 +58,6 @@ export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
   const tvl = tvlData ? formatCompact(tvlData.tvl) : "—";
 
   return (
-    <span>TVL: <span className="text-foreground">{tvl} {reserveLabel}</span></span>
+    <span>TVL: <span className="text-foreground">{tvl} {RESERVE_LABEL}</span></span>
   );
 }

@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
-import { MCV2_BOND, IS_TESTNET, STORY_FACTORY } from "../../lib/contracts/constants";
+import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
 import Link from "next/link";
 
@@ -20,8 +20,6 @@ interface Holding {
 
 export function ReaderPortfolio() {
   const { address, isConnected } = useAccount();
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
-
   const { data: holdings, isLoading } = useQuery({
     queryKey: ["reader-portfolio", address],
     queryFn: async (): Promise<Holding[]> => {
@@ -127,7 +125,7 @@ export function ReaderPortfolio() {
                 Total Value
               </span>
               <span className="text-accent text-sm font-medium">
-                {formatUnits(totalValue, reserveDecimals)} {reserveLabel}
+                {formatUnits(totalValue, reserveDecimals)} {RESERVE_LABEL}
               </span>
             </div>
             {bestPick && bestPick.priceChange !== null && (
@@ -166,7 +164,7 @@ export function ReaderPortfolio() {
                 </div>
                 <div className="text-right">
                   <div className="text-foreground">
-                    {formatUnits(h.value, h.reserveDecimals)} {reserveLabel}
+                    {formatUnits(h.value, h.reserveDecimals)} {RESERVE_LABEL}
                   </div>
                   {h.priceChange !== null && (
                     <div
