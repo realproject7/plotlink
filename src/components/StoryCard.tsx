@@ -5,6 +5,11 @@ import { WriterIdentityClient } from "./WriterIdentityClient";
 import { RatingSummary } from "./RatingSummary";
 import { StoryCardTVL } from "./StoryCardStats";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+function isWithin24h(timestamp: string): boolean {
+  return Date.now() - new Date(timestamp).getTime() < DAY_MS;
+}
+
 export function StoryCard({
   storyline,
   genre,
@@ -13,6 +18,9 @@ export function StoryCard({
   genre?: string;
 }) {
   const displayGenre = genre || storyline.genre;
+  const isNew = storyline.last_plot_time
+    ? isWithin24h(storyline.last_plot_time)
+    : false;
 
   return (
     <div className="flex flex-col">
@@ -77,6 +85,7 @@ export function StoryCard({
         )}
         <span className="whitespace-nowrap">
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} linked
+          {isNew && <span className="text-accent ml-1 text-[10px] font-bold">NEW</span>}
         </span>
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
