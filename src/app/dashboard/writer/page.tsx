@@ -152,11 +152,10 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
           </span>
         </div>
         <div>
-          <span className="text-[10px] uppercase tracking-wider">
+          <span className="block text-[10px] uppercase tracking-wider">
             Donations
+            <DonationsTooltip />
           </span>
-          <DonationsTooltip />
-          <br />
           {storyline.token_address
             ? <DonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
             : <span className="text-foreground">—</span>
