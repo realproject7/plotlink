@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { supabase, type Donation } from "../../../../lib/supabase";
+import { supabase, type Donation, type TradeHistory } from "../../../../lib/supabase";
+import { formatPrice } from "../../../../lib/format";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
+import Link from "next/link";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
@@ -106,6 +108,9 @@ export default function ReaderDashboard() {
 
       <ReaderPortfolio />
 
+      {/* --- Trading History --- */}
+      <TradingHistory address={address!} />
+
       {/* --- Donation History --- */}
       <section className="mt-8">
         <h2 className="text-foreground text-sm font-medium">
@@ -186,5 +191,110 @@ function DonationRow({ donation, decimals }: { donation: Donation; decimals: num
         )}
       </div>
     </div>
+  );
+}
+
+const TRADE_PAGE_SIZE = 10;
+
+function TradingHistory({ address }: { address: string }) {
+  const [limit, setLimit] = useState(TRADE_PAGE_SIZE);
+  const [prevAddress, setPrevAddress] = useState(address);
+  if (address !== prevAddress) {
+    setPrevAddress(address);
+    setLimit(TRADE_PAGE_SIZE);
+  }
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["reader-trades", address, limit],
+    queryFn: async () => {
+      if (!supabase) return { rows: [], totalCount: 0 };
+      const { data: rows, count } = await supabase
+        .from("trade_history")
+        .select("*", { count: "exact" })
+        .eq("user_address", address.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .range(0, limit - 1)
+        .returns<TradeHistory[]>();
+      return { rows: rows ?? [], totalCount: count ?? 0 };
+    },
+  });
+
+  const trades = data?.rows ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const hasMore = trades.length < totalCount;
+
+  return (
+    <section className="mt-8">
+      <h2 className="text-foreground text-sm font-medium">Trading History</h2>
+      <p className="text-muted mt-1 text-xs">
+        {totalCount} {totalCount === 1 ? "trade" : "trades"}
+      </p>
+
+      {isLoading && <p className="text-muted mt-4 text-sm">Loading...</p>}
+
+      <div className="mt-4 space-y-2">
+        {trades.map((t) => (
+          <div
+            key={`${t.tx_hash}-${t.log_index}`}
+            className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs"
+          >
+            <div className="text-muted flex gap-3">
+              <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-red-400 font-medium"}>
+                {t.event_type === "mint" ? "Buy" : "Sell"}
+              </span>
+              <Link
+                href={`/story/${t.storyline_id}`}
+                className="text-foreground hover:text-accent transition-colors"
+              >
+                Story #{t.storyline_id}
+              </Link>
+              {t.block_timestamp && (
+                <time dateTime={t.block_timestamp}>
+                  {new Date(t.block_timestamp).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </time>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {t.price_per_token > 0 && (
+                <span className="text-muted">
+                  {formatPrice(t.reserve_amount / t.price_per_token)} tokens
+                </span>
+              )}
+              <span className="text-foreground">
+                {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+              </span>
+              {t.tx_hash && (
+                <a
+                  href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-accent transition-colors"
+                  title="View on Basescan"
+                >
+                  &#x2197;
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+        {!isLoading && trades.length === 0 && (
+          <p className="text-muted py-6 text-center text-sm">
+            No trades yet.
+          </p>
+        )}
+      </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setLimit((l) => l + TRADE_PAGE_SIZE)}
+          className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors"
+        >
+          Load more ({totalCount - trades.length} remaining)
+        </button>
+      )}
+    </section>
   );
 }
