@@ -4,15 +4,17 @@ import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
-import { supabase, type Storyline } from "../../../../lib/supabase";
+import { supabase, type Storyline, type Donation } from "../../../../lib/supabase";
 import { getTokenTVL } from "../../../../lib/price";
-import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
+import { RESERVE_LABEL, STORY_FACTORY, EXPLORER_URL } from "../../../../lib/contracts/constants";
 import { GENRES, LANGUAGES } from "../../../../lib/genres";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { DropdownSelect } from "../../../components/DropdownSelect";
+import { truncateAddress } from "../../../../lib/utils";
+import { formatPrice } from "../../../../lib/format";
 import Link from "next/link";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { type Address } from "viem";
@@ -176,6 +178,90 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
             beneficiary={writerAddress}
           />
         </div>
+      )}
+
+      <WriterDonationHistory storylineId={storyline.storyline_id} />
+    </div>
+  );
+}
+
+const DONATION_PAGE_SIZE = 10;
+
+function WriterDonationHistory({ storylineId }: { storylineId: number }) {
+  const [limit, setLimit] = useState(DONATION_PAGE_SIZE);
+
+  const { data } = useQuery({
+    queryKey: ["writer-donations", storylineId, limit],
+    queryFn: async () => {
+      if (!supabase) return { rows: [], totalCount: 0 };
+      const { data: rows, count } = await supabase
+        .from("donations")
+        .select("*", { count: "exact" })
+        .eq("storyline_id", storylineId)
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .range(0, limit - 1)
+        .returns<Donation[]>();
+      return { rows: rows ?? [], totalCount: count ?? 0 };
+    },
+  });
+
+  const donations = data?.rows ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const hasMore = donations.length < totalCount;
+
+  if (donations.length === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <span className="text-muted block text-[10px] uppercase tracking-wider">
+        Donation History
+      </span>
+      <div className="mt-1 space-y-1">
+        {donations.map((d) => (
+          <div
+            key={d.id}
+            className="text-muted flex items-center justify-between text-[10px]"
+          >
+            <div className="flex gap-2">
+              <span className="text-foreground">
+                {truncateAddress(d.donor_address)}
+              </span>
+              {d.block_timestamp && (
+                <time dateTime={d.block_timestamp}>
+                  {new Date(d.block_timestamp).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </time>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-accent font-medium">
+                {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
+              </span>
+              {d.tx_hash && (
+                <a
+                  href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-accent transition-colors"
+                  title="View on Basescan"
+                >
+                  &#x2197;
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => setLimit((l) => l + DONATION_PAGE_SIZE)}
+          className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors"
+        >
+          Load more ({totalCount - donations.length} remaining)
+        </button>
       )}
     </div>
   );
