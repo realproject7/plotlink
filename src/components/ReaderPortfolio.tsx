@@ -3,6 +3,7 @@
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
+import { formatPrice, formatSupply } from "../../lib/format";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/constants";
@@ -125,7 +126,7 @@ export function ReaderPortfolio() {
                 Total Value
               </span>
               <span className="text-accent text-sm font-medium">
-                {formatUnits(totalValue, reserveDecimals)} {RESERVE_LABEL}
+                {formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}
               </span>
             </div>
             {bestPick && bestPick.priceChange !== null && (
@@ -159,12 +160,12 @@ export function ReaderPortfolio() {
                     {h.storyline.title}
                   </Link>
                   <div className="text-muted mt-0.5">
-                    {formatUnits(h.balance, 18)} tokens
+                    {formatSupply(formatUnits(h.balance, 18))} tokens
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-foreground">
-                    {formatUnits(h.value, h.reserveDecimals)} {RESERVE_LABEL}
+                    {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
                   </div>
                   {h.priceChange !== null && (
                     <div
