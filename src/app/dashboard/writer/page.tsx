@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits } from "viem";
@@ -188,10 +188,11 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
 const DONATION_PAGE_SIZE = 10;
 
 function WriterDonationHistory({ storylineId }: { storylineId: number }) {
-  const [limit, setLimit] = useState(DONATION_PAGE_SIZE);
+  const [offset, setOffset] = useState(0);
+  const allDonationsRef = useRef<Donation[]>([]);
 
-  const { data } = useQuery({
-    queryKey: ["writer-donations", storylineId, limit],
+  const { data, isFetching } = useQuery({
+    queryKey: ["writer-donations", storylineId, offset],
     queryFn: async () => {
       if (!supabase) return { rows: [], totalCount: 0 };
       const { data: rows, count } = await supabase
@@ -200,13 +201,23 @@ function WriterDonationHistory({ storylineId }: { storylineId: number }) {
         .eq("storyline_id", storylineId)
         .eq("contract_address", STORY_FACTORY.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .range(0, limit - 1)
+        .range(offset, offset + DONATION_PAGE_SIZE - 1)
         .returns<Donation[]>();
       return { rows: rows ?? [], totalCount: count ?? 0 };
     },
   });
 
-  const donations = data?.rows ?? [];
+  if (data) {
+    if (offset === 0) {
+      if (allDonationsRef.current.length === 0 || allDonationsRef.current[0]?.id !== data.rows[0]?.id) {
+        allDonationsRef.current = data.rows;
+      }
+    } else if (allDonationsRef.current.length === offset) {
+      allDonationsRef.current = [...allDonationsRef.current, ...data.rows];
+    }
+  }
+
+  const donations = allDonationsRef.current;
   const totalCount = data?.totalCount ?? 0;
   const hasMore = donations.length < totalCount;
 
@@ -257,10 +268,11 @@ function WriterDonationHistory({ storylineId }: { storylineId: number }) {
       </div>
       {hasMore && (
         <button
-          onClick={() => setLimit((l) => l + DONATION_PAGE_SIZE)}
-          className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors"
+          onClick={() => setOffset(donations.length)}
+          disabled={isFetching}
+          className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors disabled:opacity-50"
         >
-          Load more ({totalCount - donations.length} remaining)
+          {isFetching ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
         </button>
       )}
     </div>

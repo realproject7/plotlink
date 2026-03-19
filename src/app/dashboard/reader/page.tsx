@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation, type TradeHistory } from "../../../../lib/supabase";
@@ -31,19 +31,17 @@ interface DonationPage {
 
 async function fetchDonationPage(
   address: string,
-  _page: number,
-  limit: number = PAGE_SIZE,
+  offset: number,
+  pageSize: number = PAGE_SIZE,
 ): Promise<DonationPage> {
   if (!supabase) return { rows: [], totalCount: 0 };
-  const from = 0;
-  const to = limit - 1;
   const { data, count, error } = await supabase
     .from("donations")
     .select("*", { count: "exact" })
     .eq("donor_address", address.toLowerCase())
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("block_timestamp", { ascending: false })
-    .range(from, to)
+    .range(offset, offset + pageSize - 1)
     .returns<Donation[]>();
   if (error) throw error;
   return { rows: data ?? [], totalCount: count ?? 0 };
@@ -51,18 +49,31 @@ async function fetchDonationPage(
 
 export default function ReaderDashboard() {
   const { address, isConnected } = useAccount();
-  const [limit, setLimit] = useState(PAGE_SIZE);
+  const [offset, setOffset] = useState(0);
+  const allDonationsRef = useRef<Donation[]>([]);
+  const [prevAddress, setPrevAddress] = useState(address);
+  if (address !== prevAddress) {
+    setPrevAddress(address);
+    setOffset(0);
+    allDonationsRef.current = [];
+  }
 
-  // Reset when wallet address changes
-  useEffect(() => {
-    setLimit(PAGE_SIZE);
-  }, [address]);
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["reader-donations", address, limit],
-    queryFn: () => fetchDonationPage(address!, 0, limit),
+  const { data, isLoading, isFetching, error } = useQuery({
+    queryKey: ["reader-donations", address, offset],
+    queryFn: () => fetchDonationPage(address!, offset),
     enabled: isConnected && !!address,
   });
+
+  // Accumulate pages as new data arrives
+  if (data) {
+    if (offset === 0) {
+      if (allDonationsRef.current.length === 0 || allDonationsRef.current[0]?.id !== data.rows[0]?.id) {
+        allDonationsRef.current = data.rows;
+      }
+    } else if (allDonationsRef.current.length === offset) {
+      allDonationsRef.current = [...allDonationsRef.current, ...data.rows];
+    }
+  }
 
   // Fetch reserve token decimals dynamically
   const { data: reserveDecimals = 18 } = useQuery({
@@ -76,7 +87,7 @@ export default function ReaderDashboard() {
     },
   });
 
-  const donations = data?.rows ?? [];
+  const donations = allDonationsRef.current;
   const totalCount = data?.totalCount ?? 0;
 
   if (!isConnected) {
@@ -147,10 +158,11 @@ export default function ReaderDashboard() {
 
         {hasMore && (
           <button
-            onClick={() => setLimit((l) => l + PAGE_SIZE)}
-            className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors"
+            onClick={() => setOffset(donations.length)}
+            disabled={isFetching}
+            className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors disabled:opacity-50"
           >
-            Load more ({totalCount - donations.length} remaining)
+            {isFetching ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
           </button>
         )}
       </section>
@@ -197,15 +209,17 @@ function DonationRow({ donation, decimals }: { donation: Donation; decimals: num
 const TRADE_PAGE_SIZE = 10;
 
 function TradingHistory({ address }: { address: string }) {
-  const [limit, setLimit] = useState(TRADE_PAGE_SIZE);
+  const [offset, setOffset] = useState(0);
+  const allTradesRef = useRef<TradeHistory[]>([]);
   const [prevAddress, setPrevAddress] = useState(address);
   if (address !== prevAddress) {
     setPrevAddress(address);
-    setLimit(TRADE_PAGE_SIZE);
+    setOffset(0);
+    allTradesRef.current = [];
   }
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["reader-trades", address, limit],
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["reader-trades", address, offset],
     queryFn: async () => {
       if (!supabase) return { rows: [], totalCount: 0 };
       const { data: rows, count } = await supabase
@@ -213,13 +227,23 @@ function TradingHistory({ address }: { address: string }) {
         .select("*", { count: "exact" })
         .eq("user_address", address.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .range(0, limit - 1)
+        .range(offset, offset + TRADE_PAGE_SIZE - 1)
         .returns<TradeHistory[]>();
       return { rows: rows ?? [], totalCount: count ?? 0 };
     },
   });
 
-  const trades = data?.rows ?? [];
+  if (data) {
+    if (offset === 0) {
+      if (allTradesRef.current.length === 0 || allTradesRef.current[0]?.id !== data.rows[0]?.id) {
+        allTradesRef.current = data.rows;
+      }
+    } else if (allTradesRef.current.length === offset) {
+      allTradesRef.current = [...allTradesRef.current, ...data.rows];
+    }
+  }
+
+  const trades = allTradesRef.current;
   const totalCount = data?.totalCount ?? 0;
   const hasMore = trades.length < totalCount;
 
@@ -289,10 +313,11 @@ function TradingHistory({ address }: { address: string }) {
 
       {hasMore && (
         <button
-          onClick={() => setLimit((l) => l + TRADE_PAGE_SIZE)}
-          className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors"
+          onClick={() => setOffset(trades.length)}
+          disabled={isFetching}
+          className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors disabled:opacity-50"
         >
-          Load more ({totalCount - trades.length} remaining)
+          {isFetching ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
         </button>
       )}
     </section>
