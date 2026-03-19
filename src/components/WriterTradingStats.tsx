@@ -13,29 +13,31 @@ interface WriterTradingStatsProps {
 
 export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
   const tokenAddress = storyline.token_address as Address;
-  // Fetch token price
-  const { data: price } = useQuery({
-    queryKey: ["writer-price", tokenAddress],
+
+  // Fetch price + TVL together so they succeed/fail atomically
+  const { data } = useQuery({
+    queryKey: ["writer-stats", tokenAddress],
     queryFn: async () => {
-      const result = await publicClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "priceForNextMint",
-        args: [tokenAddress],
-      });
-      return result;
+      const [priceRaw, tvlData] = await Promise.all([
+        publicClient.readContract({
+          address: MCV2_BOND,
+          abi: mcv2BondAbi,
+          functionName: "priceForNextMint",
+          args: [tokenAddress],
+        }),
+        getTokenTVL(tokenAddress),
+      ]);
+      const decimals = tvlData?.decimals ?? 18;
+      return {
+        price: formatUnits(BigInt(priceRaw), decimals),
+        tvl: tvlData?.tvl ?? formatUnits(BigInt(0), decimals),
+        decimals,
+      };
     },
     enabled: !!tokenAddress,
+    retry: 2,
+    refetchInterval: 30000,
   });
-
-  // Fetch TVL via getTokenTVL (uses correct reserve token decimals)
-  const { data: tvlData } = useQuery({
-    queryKey: ["writer-tvl", tokenAddress],
-    queryFn: () => getTokenTVL(tokenAddress),
-    enabled: !!tokenAddress,
-  });
-
-  const decimals = tvlData?.decimals ?? 18;
 
   return (
     <div className="text-muted grid grid-cols-2 gap-2 text-xs">
@@ -44,7 +46,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           Token Price
         </span>
         <span className="text-foreground">
-          {price !== undefined ? `${formatUnits(BigInt(price), decimals)} ${RESERVE_LABEL}` : "—"}
+          {data ? `${data.price} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
       <div>
@@ -52,7 +54,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           TVL
         </span>
         <span className="text-foreground">
-          {tvlData ? `${tvlData.tvl} ${RESERVE_LABEL}` : "—"}
+          {data ? `${data.tvl} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
     </div>
