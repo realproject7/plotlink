@@ -190,6 +190,12 @@ const DONATION_PAGE_SIZE = 10;
 function WriterDonationHistory({ storylineId }: { storylineId: number }) {
   const [offset, setOffset] = useState(0);
   const allDonationsRef = useRef<Donation[]>([]);
+  const [prevStorylineId, setPrevStorylineId] = useState(storylineId);
+  if (storylineId !== prevStorylineId) {
+    setPrevStorylineId(storylineId);
+    setOffset(0);
+    allDonationsRef.current = [];
+  }
 
   const { data, isFetching } = useQuery({
     queryKey: ["writer-donations", storylineId, offset],
