@@ -143,12 +143,14 @@ export default async function StoryPage({ params }: { params: Params }) {
           {genesis ? (
             <>
               <GenesisSection plot={genesis} />
-              <a
-                href={chapters.length > 0 ? `/story/${id}/1` : "#genesis"}
-                className="border-accent text-accent hover:bg-accent/10 mt-8 block w-full rounded border py-3 text-center text-sm font-medium transition-colors"
-              >
-                Read the first Plot
-              </a>
+              {chapters.length > 0 && (
+                <a
+                  href={`/story/${id}/1`}
+                  className="border-accent text-accent hover:bg-accent/10 mt-8 block w-full rounded border py-3 text-center text-sm font-medium transition-colors"
+                >
+                  Read the first Plot
+                </a>
+              )}
               <CommentSection storylineId={id} plotIndex={0} />
             </>
           ) : (
