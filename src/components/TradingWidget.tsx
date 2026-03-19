@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
-import { MCV2_BOND, PLOT_TOKEN, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
+import { MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
@@ -32,7 +32,6 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
   const { writeContractAsync } = useWriteContract();
 
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
   const parsedAmount =
     amount && !isNaN(Number(amount)) && Number(amount) > 0
       ? parseUnits(amount, 18)
@@ -242,7 +241,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         </div>
         {balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
-            Balance: {formatUnits(balance, 18)} {tab === "buy" ? reserveLabel : "tokens"}
+            Balance: {formatUnits(balance, 18)} {tab === "buy" ? RESERVE_LABEL : "tokens"}
           </p>
         )}
         {insufficientBalance && (
@@ -255,7 +254,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         <div className="text-muted mt-2 text-xs">
           {tab === "buy" ? "Estimated cost" : "Estimated return"}:{" "}
           <span className="text-foreground">
-            {formatUnits(estimate, 18)} {reserveLabel}
+            {formatUnits(estimate, 18)} {RESERVE_LABEL}
           </span>
           <span className="ml-2">(3% slippage tolerance)</span>
         </div>

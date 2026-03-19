@@ -7,7 +7,7 @@ import { parseUnits, formatUnits } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
-import { STORY_FACTORY, PLOT_TOKEN, IS_TESTNET, EXPLORER_URL } from "../../lib/contracts/constants";
+import { STORY_FACTORY, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
 import { FarcasterAvatar } from "./FarcasterAvatar";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
@@ -26,7 +26,6 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
 
   const { writeContractAsync } = useWriteContract();
 
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
   const parsedAmount =
     amount && !isNaN(Number(amount)) && Number(amount) > 0
       ? parseUnits(amount, 18)
@@ -123,12 +122,12 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
     <section className="border-border mt-8 rounded border px-4 py-4">
       <h2 className="text-foreground text-sm font-medium">Donate to Writer</h2>
       <p className="text-muted mt-1 text-[10px]">
-        Tip the author directly with {reserveLabel}
+        Tip the author directly with {RESERVE_LABEL}
       </p>
 
       <div className="mt-3">
         <label className="text-muted block text-[10px] uppercase tracking-wider">
-          Amount ({reserveLabel})
+          Amount ({RESERVE_LABEL})
         </label>
         <div className="relative mt-1">
           <input
@@ -155,7 +154,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
         </div>
         {balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
-            Balance: {formatUnits(balance, 18)} {reserveLabel}
+            Balance: {formatUnits(balance, 18)} {RESERVE_LABEL}
           </p>
         )}
         {insufficientBalance && (
@@ -167,7 +166,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
         <p className="text-muted mt-2 text-xs">
           Donating{" "}
           <span className="text-foreground">
-            {formatUnits(parsedAmount, 18)} {reserveLabel}
+            {formatUnits(parsedAmount, 18)} {RESERVE_LABEL}
           </span>{" "}
           to {writerAddress ? <FarcasterAvatar address={writerAddress} size={12} linkProfile={false} /> : `story #${storylineId}`}
         </p>

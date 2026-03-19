@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
-import { MCV2_BOND, IS_TESTNET } from "../../lib/contracts/constants";
+import { MCV2_BOND, RESERVE_LABEL } from "../../lib/contracts/constants";
 import type { Storyline } from "../../lib/supabase";
 
 interface WriterTradingStatsProps {
@@ -13,8 +13,6 @@ interface WriterTradingStatsProps {
 
 export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
   const tokenAddress = storyline.token_address as Address;
-  const reserveLabel = IS_TESTNET ? "WETH" : "$PLOT";
-
   // Fetch token price
   const { data: price } = useQuery({
     queryKey: ["writer-price", tokenAddress],
@@ -46,7 +44,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           Token Price
         </span>
         <span className="text-foreground">
-          {price !== undefined && decimals !== undefined ? `${formatUnits(BigInt(price), decimals)} ${reserveLabel}` : "—"}
+          {price !== undefined && decimals !== undefined ? `${formatUnits(BigInt(price), decimals)} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
       <div>
@@ -54,7 +52,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           TVL
         </span>
         <span className="text-foreground">
-          {tvlData ? `${tvlData.tvl} ${reserveLabel}` : "—"}
+          {tvlData ? `${tvlData.tvl} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
     </div>
