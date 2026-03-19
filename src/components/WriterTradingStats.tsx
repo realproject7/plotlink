@@ -35,7 +35,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     enabled: !!tokenAddress,
   });
 
-  const decimals = tvlData?.decimals;
+  const decimals = tvlData?.decimals ?? 18;
 
   return (
     <div className="text-muted grid grid-cols-2 gap-2 text-xs">
@@ -44,7 +44,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           Token Price
         </span>
         <span className="text-foreground">
-          {price !== undefined && decimals !== undefined ? `${formatUnits(BigInt(price), decimals)} ${RESERVE_LABEL}` : "—"}
+          {price !== undefined ? `${formatUnits(BigInt(price), decimals)} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
       <div>
