@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { decodeEventLog } from "viem";
+import Link from "next/link";
 import { EXPLORER_URL } from "../../lib/contracts/constants";
+import { storyFactoryAbi } from "../../lib/contracts/abi";
+import { publicClient } from "../../lib/rpc";
 import type { PublishIntentData } from "../hooks/usePublishIntent";
 import { MAX_RETRY_ATTEMPTS } from "../hooks/usePublishIntent";
 
@@ -17,12 +21,66 @@ export function RecoveryBanner({
   onDismiss,
 }: RecoveryBannerProps) {
   const [retrying, setRetrying] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [storylineId, setStorylineId] = useState<number | null>(null);
   const exhausted = intent.retryCount >= MAX_RETRY_ATTEMPTS;
 
   async function handleRetry() {
     setRetrying(true);
-    await onRetry();
+    const result = await onRetry();
+    if (result.success && intent.txHash) {
+      // Parse storylineId from tx receipt for the story link
+      try {
+        const receipt = await publicClient.getTransactionReceipt({
+          hash: intent.txHash as `0x${string}`,
+        });
+        for (const log of receipt.logs) {
+          try {
+            const decoded = decodeEventLog({
+              abi: storyFactoryAbi,
+              data: log.data,
+              topics: log.topics,
+            });
+            if (decoded.eventName === "StorylineCreated") {
+              setStorylineId(Number(decoded.args.storylineId));
+              break;
+            }
+            if (decoded.eventName === "PlotChained") {
+              setStorylineId(Number(decoded.args.storylineId));
+              break;
+            }
+          } catch { /* not our event */ }
+        }
+      } catch { /* receipt fetch failed, still show success */ }
+      setSuccess(true);
+    }
     setRetrying(false);
+  }
+
+  if (success) {
+    return (
+      <div className="border-accent/40 bg-surface mb-6 rounded border p-4">
+        <p className="text-accent text-sm font-medium">
+          Storyline indexed successfully!
+        </p>
+        <div className="mt-3 flex gap-2">
+          {storylineId != null && (
+            <Link
+              href={`/story/${storylineId}`}
+              className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-3 py-1.5 text-xs font-medium transition-colors"
+            >
+              View your story
+            </Link>
+          )}
+          <Link
+            href="/"
+            className="border-border text-muted hover:text-foreground rounded border px-3 py-1.5 text-xs transition-colors"
+          >
+            Go home
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
