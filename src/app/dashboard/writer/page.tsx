@@ -1,8 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import { supabase, type Storyline, type Donation } from "../../../../lib/supabase";
 import { getTokenTVL } from "../../../../lib/price";
@@ -188,44 +188,35 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
 const DONATION_PAGE_SIZE = 10;
 
 function WriterDonationHistory({ storylineId }: { storylineId: number }) {
-  const [offset, setOffset] = useState(0);
-  const allDonationsRef = useRef<Donation[]>([]);
-  const [prevStorylineId, setPrevStorylineId] = useState(storylineId);
-  if (storylineId !== prevStorylineId) {
-    setPrevStorylineId(storylineId);
-    setOffset(0);
-    allDonationsRef.current = [];
-  }
-
-  const { data, isFetching } = useQuery({
-    queryKey: ["writer-donations", storylineId, offset],
-    queryFn: async () => {
-      if (!supabase) return { rows: [], totalCount: 0 };
+  const {
+    data,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["writer-donations", storylineId],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as Donation[], totalCount: 0 };
       const { data: rows, count } = await supabase
         .from("donations")
         .select("*", { count: "exact" })
         .eq("storyline_id", storylineId)
         .eq("contract_address", STORY_FACTORY.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .range(offset, offset + DONATION_PAGE_SIZE - 1)
+        .range(pageParam, pageParam + DONATION_PAGE_SIZE - 1)
         .returns<Donation[]>();
       return { rows: rows ?? [], totalCount: count ?? 0 };
     },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
   });
 
-  if (data) {
-    if (offset === 0) {
-      if (allDonationsRef.current.length === 0 || allDonationsRef.current[0]?.id !== data.rows[0]?.id) {
-        allDonationsRef.current = data.rows;
-      }
-    } else if (allDonationsRef.current.length === offset) {
-      allDonationsRef.current = [...allDonationsRef.current, ...data.rows];
-    }
-  }
-
-  const donations = allDonationsRef.current;
-  const totalCount = data?.totalCount ?? 0;
-  const hasMore = donations.length < totalCount;
+  const donations = data?.pages.flatMap((p) => p.rows) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
 
   if (donations.length === 0) return null;
 
@@ -272,13 +263,13 @@ function WriterDonationHistory({ storylineId }: { storylineId: number }) {
           </div>
         ))}
       </div>
-      {hasMore && (
+      {hasNextPage && (
         <button
-          onClick={() => setOffset(donations.length)}
-          disabled={isFetching}
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
           className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors disabled:opacity-50"
         >
-          {isFetching ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
+          {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
         </button>
       )}
     </div>

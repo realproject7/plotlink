@@ -1,8 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
 import { useAccount } from "wagmi";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase, type Donation, type TradeHistory } from "../../../../lib/supabase";
 import { formatPrice } from "../../../../lib/format";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
@@ -24,56 +23,39 @@ function formatTruncated(value: bigint, decimals: number, digits = 6): string {
 
 const PAGE_SIZE = 10;
 
-interface DonationPage {
-  rows: Donation[];
-  totalCount: number;
-}
-
-async function fetchDonationPage(
-  address: string,
-  offset: number,
-  pageSize: number = PAGE_SIZE,
-): Promise<DonationPage> {
-  if (!supabase) return { rows: [], totalCount: 0 };
-  const { data, count, error } = await supabase
-    .from("donations")
-    .select("*", { count: "exact" })
-    .eq("donor_address", address.toLowerCase())
-    .eq("contract_address", STORY_FACTORY.toLowerCase())
-    .order("block_timestamp", { ascending: false })
-    .range(offset, offset + pageSize - 1)
-    .returns<Donation[]>();
-  if (error) throw error;
-  return { rows: data ?? [], totalCount: count ?? 0 };
-}
-
 export default function ReaderDashboard() {
   const { address, isConnected } = useAccount();
-  const [offset, setOffset] = useState(0);
-  const allDonationsRef = useRef<Donation[]>([]);
-  const [prevAddress, setPrevAddress] = useState(address);
-  if (address !== prevAddress) {
-    setPrevAddress(address);
-    setOffset(0);
-    allDonationsRef.current = [];
-  }
 
-  const { data, isLoading, isFetching, error } = useQuery({
-    queryKey: ["reader-donations", address, offset],
-    queryFn: () => fetchDonationPage(address!, offset),
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ["reader-donations", address],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as Donation[], totalCount: 0 };
+      const { data: rows, count, error } = await supabase
+        .from("donations")
+        .select("*", { count: "exact" })
+        .eq("donor_address", address!.toLowerCase())
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .range(pageParam, pageParam + PAGE_SIZE - 1)
+        .returns<Donation[]>();
+      if (error) throw error;
+      return { rows: rows ?? [], totalCount: count ?? 0 };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
     enabled: isConnected && !!address,
   });
-
-  // Accumulate pages as new data arrives
-  if (data) {
-    if (offset === 0) {
-      if (allDonationsRef.current.length === 0 || allDonationsRef.current[0]?.id !== data.rows[0]?.id) {
-        allDonationsRef.current = data.rows;
-      }
-    } else if (allDonationsRef.current.length === offset) {
-      allDonationsRef.current = [...allDonationsRef.current, ...data.rows];
-    }
-  }
 
   // Fetch reserve token decimals dynamically
   const { data: reserveDecimals = 18 } = useQuery({
@@ -87,8 +69,8 @@ export default function ReaderDashboard() {
     },
   });
 
-  const donations = allDonationsRef.current;
-  const totalCount = data?.totalCount ?? 0;
+  const donations = data?.pages.flatMap((p) => p.rows) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
 
   if (!isConnected) {
     return (
@@ -105,8 +87,6 @@ export default function ReaderDashboard() {
     (sum, d) => sum + BigInt(d.amount),
     BigInt(0),
   );
-
-  const hasMore = donations.length < totalCount;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -132,7 +112,7 @@ export default function ReaderDashboard() {
           {donations.length > 0 && (
             <span>
               {" "}
-              &middot; {formatTruncated(totalDonated, reserveDecimals)} {RESERVE_LABEL} on this page
+              &middot; {formatTruncated(totalDonated, reserveDecimals)} {RESERVE_LABEL} total loaded
             </span>
           )}
         </p>
@@ -156,13 +136,13 @@ export default function ReaderDashboard() {
           )}
         </div>
 
-        {hasMore && (
+        {hasNextPage && (
           <button
-            onClick={() => setOffset(donations.length)}
-            disabled={isFetching}
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
             className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors disabled:opacity-50"
           >
-            {isFetching ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
+            {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
           </button>
         )}
       </section>
@@ -209,43 +189,35 @@ function DonationRow({ donation, decimals }: { donation: Donation; decimals: num
 const TRADE_PAGE_SIZE = 10;
 
 function TradingHistory({ address }: { address: string }) {
-  const [offset, setOffset] = useState(0);
-  const allTradesRef = useRef<TradeHistory[]>([]);
-  const [prevAddress, setPrevAddress] = useState(address);
-  if (address !== prevAddress) {
-    setPrevAddress(address);
-    setOffset(0);
-    allTradesRef.current = [];
-  }
-
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["reader-trades", address, offset],
-    queryFn: async () => {
-      if (!supabase) return { rows: [], totalCount: 0 };
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["reader-trades", address],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as TradeHistory[], totalCount: 0 };
       const { data: rows, count } = await supabase
         .from("trade_history")
         .select("*", { count: "exact" })
         .eq("user_address", address.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .range(offset, offset + TRADE_PAGE_SIZE - 1)
+        .range(pageParam, pageParam + TRADE_PAGE_SIZE - 1)
         .returns<TradeHistory[]>();
       return { rows: rows ?? [], totalCount: count ?? 0 };
     },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
   });
 
-  if (data) {
-    if (offset === 0) {
-      if (allTradesRef.current.length === 0 || allTradesRef.current[0]?.id !== data.rows[0]?.id) {
-        allTradesRef.current = data.rows;
-      }
-    } else if (allTradesRef.current.length === offset) {
-      allTradesRef.current = [...allTradesRef.current, ...data.rows];
-    }
-  }
-
-  const trades = allTradesRef.current;
-  const totalCount = data?.totalCount ?? 0;
-  const hasMore = trades.length < totalCount;
+  const trades = data?.pages.flatMap((p) => p.rows) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
 
   return (
     <section className="mt-8">
@@ -311,13 +283,13 @@ function TradingHistory({ address }: { address: string }) {
         )}
       </div>
 
-      {hasMore && (
+      {hasNextPage && (
         <button
-          onClick={() => setOffset(trades.length)}
-          disabled={isFetching}
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
           className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors disabled:opacity-50"
         >
-          {isFetching ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
+          {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
         </button>
       )}
     </section>
