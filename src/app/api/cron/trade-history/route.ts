@@ -215,6 +215,7 @@ async function processTradeEvent(
     tx_hash: log.transactionHash!.toLowerCase(),
     log_index: log.logIndex!,
     contract_address: MCV2_BOND.toLowerCase(),
+    user_address: args.user.toLowerCase(),
   };
 
   const { error } = await supabase

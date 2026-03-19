@@ -357,6 +357,7 @@ export interface Database {
           tx_hash: string;
           log_index: number;
           contract_address: string;
+          user_address: string | null;
         };
         Insert: {
           id?: never;
@@ -371,6 +372,7 @@ export interface Database {
           tx_hash: string;
           log_index: number;
           contract_address: string;
+          user_address?: string | null;
         };
         Update: {
           id?: never;
@@ -385,6 +387,7 @@ export interface Database {
           tx_hash?: string;
           log_index?: number;
           contract_address?: string;
+          user_address?: string | null;
         };
         Relationships: [];
       };
@@ -413,3 +416,4 @@ export type Plot = Database["public"]["Tables"]["plots"]["Row"];
 export type Donation = Database["public"]["Tables"]["donations"]["Row"];
 export type Rating = Database["public"]["Tables"]["ratings"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
+export type TradeHistory = Database["public"]["Tables"]["trade_history"]["Row"];

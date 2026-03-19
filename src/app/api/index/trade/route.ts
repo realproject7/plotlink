@@ -65,6 +65,7 @@ export async function POST(req: Request) {
 
       const args = decoded.args as {
         token: `0x${string}`;
+        user: `0x${string}`;
         amountMinted?: bigint;
         amountBurned?: bigint;
         reserveAmount?: bigint;
@@ -107,6 +108,7 @@ export async function POST(req: Request) {
         tx_hash: txHash.toLowerCase(),
         log_index: log.logIndex!,
         contract_address: MCV2_BOND.toLowerCase(),
+        user_address: args.user.toLowerCase(),
       };
 
       const { error: dbError } = await supabase
