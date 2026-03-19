@@ -14,9 +14,10 @@ import { useChainPlot } from "../../hooks/useChainPlot";
 import { usePublishIntent } from "../../hooks/usePublishIntent";
 import { RecoveryBanner } from "../../components/RecoveryBanner";
 import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
-import { STORY_FACTORY } from "../../../lib/contracts/constants";
+import { STORY_FACTORY, MCV2_BOND } from "../../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../../lib/supabase";
-import { decodeEventLog, encodeEventTopics } from "viem";
+import { publicClient } from "../../../lib/rpc";
+import { decodeEventLog, encodeEventTopics, formatEther } from "viem";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { DropdownSelect } from "../../components/DropdownSelect";
@@ -85,6 +86,19 @@ function CreatePage() {
   const [language, setLanguage] = useState("English");
   const [newContent, setNewContent] = useState("");
   const hasDeadline = true;
+
+  const { data: creationFee = BigInt(0) } = useQuery({
+    queryKey: ["mcv2-creation-fee"],
+    queryFn: async () => {
+      const fee = await publicClient.readContract({
+        address: MCV2_BOND,
+        abi: [{ type: "function", name: "creationFee", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] }] as const,
+        functionName: "creationFee",
+      });
+      return fee;
+    },
+    staleTime: 60_000,
+  });
 
   const { state: newState, error: newError, receipt, execute } = usePublish();
   const {
@@ -278,6 +292,7 @@ function CreatePage() {
                     functionName: "createStoryline",
                     args: [newTitle.trim(), cid, contentHash, hasDeadline],
                     gas: BigInt(16_000_000),
+                    value: creationFee,
                   }),
                   metadata: { genre, language },
                   onIntentSave: newSaveIntent,
@@ -341,6 +356,9 @@ function CreatePage() {
 
             <p className="text-muted text-xs">
               All storylines have a 7-day deadline &mdash; the story sunsets if no new plot is added within 7 days.
+              {creationFee > BigInt(0) && (
+                <> Creation fee: {formatEther(creationFee)} ETH.</>
+              )}
             </p>
 
             {newState === "error" && (
