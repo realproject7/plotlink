@@ -21,6 +21,7 @@ interface WriteCall {
   functionName: string;
   args: readonly unknown[];
   gas?: bigint;
+  value?: bigint;
 }
 
 interface PublishOptions {
