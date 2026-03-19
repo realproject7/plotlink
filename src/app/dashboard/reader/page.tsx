@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase, type Donation, type TradeHistory } from "../../../../lib/supabase";
 import { formatPrice } from "../../../../lib/format";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
+import Link from "next/link";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
@@ -241,7 +242,12 @@ function TradingHistory({ address }: { address: string }) {
               <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-red-400 font-medium"}>
                 {t.event_type === "mint" ? "Buy" : "Sell"}
               </span>
-              <span>Story #{t.storyline_id}</span>
+              <Link
+                href={`/story/${t.storyline_id}`}
+                className="text-foreground hover:text-accent transition-colors"
+              >
+                Story #{t.storyline_id}
+              </Link>
               {t.block_timestamp && (
                 <time dateTime={t.block_timestamp}>
                   {new Date(t.block_timestamp).toLocaleDateString("en-US", {
@@ -252,6 +258,11 @@ function TradingHistory({ address }: { address: string }) {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {t.price_per_token > 0 && (
+                <span className="text-muted">
+                  {formatPrice(t.reserve_amount / t.price_per_token)} tokens
+                </span>
+              )}
               <span className="text-foreground">
                 {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
               </span>
