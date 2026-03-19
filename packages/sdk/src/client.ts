@@ -26,10 +26,14 @@ const PlotChainedEvent = storyFactoryAbi.find(
 )!;
 import {
   STORY_FACTORY_ADDRESS,
+  STORY_FACTORY_MAINNET_ADDRESS,
   MCV2_BOND_ADDRESS,
+  MCV2_BOND_MAINNET_ADDRESS,
   ERC8004_REGISTRY_ADDRESS,
   BASE_SEPOLIA_CHAIN_ID,
+  BASE_MAINNET_CHAIN_ID,
   DEPLOYMENT_BLOCK,
+  DEPLOYMENT_BLOCK_MAINNET,
   SUPPORTED_CHAIN_IDS,
 } from "./constants";
 import { uploadWithRetry, type FilebaseConfig } from "./ipfs";
@@ -147,6 +151,7 @@ export class PlotLink {
   private readonly erc8004Registry: Address;
   private readonly filebase: FilebaseConfig | undefined;
   private readonly chain: Chain;
+  private readonly deploymentBlock: bigint;
 
   constructor(config: PlotLinkConfig) {
     const chainId = config.chainId ?? BASE_SEPOLIA_CHAIN_ID;
@@ -155,7 +160,9 @@ export class PlotLink {
         `Unsupported chainId: ${chainId}. PlotLink SDK supports Base (8453) and Base Sepolia (84532).`,
       );
     }
-    this.chain = chainId === 8453 ? base : baseSepolia;
+    const isMainnet = chainId === BASE_MAINNET_CHAIN_ID;
+    this.chain = isMainnet ? base : baseSepolia;
+    this.deploymentBlock = isMainnet ? DEPLOYMENT_BLOCK_MAINNET : DEPLOYMENT_BLOCK;
 
     const normalizedKey = config.privateKey.startsWith("0x")
       ? config.privateKey
@@ -175,8 +182,8 @@ export class PlotLink {
 
     this.address = account.address;
     this.storyFactory =
-      config.storyFactoryAddress ?? STORY_FACTORY_ADDRESS;
-    this.mcv2Bond = config.mcv2BondAddress ?? MCV2_BOND_ADDRESS;
+      config.storyFactoryAddress ?? (isMainnet ? STORY_FACTORY_MAINNET_ADDRESS : STORY_FACTORY_ADDRESS);
+    this.mcv2Bond = config.mcv2BondAddress ?? (isMainnet ? MCV2_BOND_MAINNET_ADDRESS : MCV2_BOND_ADDRESS);
     this.erc8004Registry =
       config.erc8004RegistryAddress ?? ERC8004_REGISTRY_ADDRESS;
     this.filebase = config.filebase;
@@ -298,7 +305,7 @@ export class PlotLink {
       address: this.storyFactory,
       event: StorylineCreatedEvent,
       args: { storylineId },
-      fromBlock: DEPLOYMENT_BLOCK,
+      fromBlock: this.deploymentBlock,
       toBlock: "latest",
     });
 
@@ -335,7 +342,7 @@ export class PlotLink {
       address: this.storyFactory,
       event: PlotChainedEvent,
       args: { storylineId },
-      fromBlock: DEPLOYMENT_BLOCK,
+      fromBlock: this.deploymentBlock,
       toBlock: "latest",
     });
 

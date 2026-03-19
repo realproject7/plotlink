@@ -28,7 +28,7 @@ export const EXPLORER_URL = IS_TESTNET
 export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
   (IS_TESTNET
     ? "0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229"
-    : "0x0000000000000000000000000000000000000000")) as `0x${string}`;
+    : "0x66087c0032c304Eb724544ef8Fc7C7f3E6C8CdF5")) as `0x${string}`;
 
 /** ZapPlotLinkMCV2 — one-click buy (ETH/USDC/HUNT -> storyline token) */
 export const ZAP_PLOTLINK = "0x0000000000000000000000000000000000000000" as const;
@@ -38,10 +38,10 @@ export const ZAP_PLOTLINK = "0x0000000000000000000000000000000000000000" as cons
  *  Mainnet: $PLOT ERC-20 (backed by $HUNT via Mint Club V2) */
 export const PLOT_TOKEN = (IS_TESTNET
   ? "0x4200000000000000000000000000000000000006"
-  : "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  : "0xF8A2C39111FCEB9C950aAf28A9E34EBaD99b85C1") as `0x${string}`;
 
 /** Human-readable label for the reserve token */
-export const RESERVE_LABEL = IS_TESTNET ? "WETH" : "$PLOT";
+export const RESERVE_LABEL = IS_TESTNET ? "WETH" : "PL_TEST";
 
 // ---------------------------------------------------------------------------
 // Mint Club V2
