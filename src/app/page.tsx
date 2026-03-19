@@ -1,6 +1,6 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
 import { STORY_FACTORY } from "../../lib/contracts/constants";
-import { getTrendingStorylines, getRisingStorylines } from "../../lib/ranking";
+import { getTrendingStorylines } from "../../lib/ranking";
 import { StoryCard } from "../components/StoryCard";
 import { FilterBar, type WriterFilterValue } from "../components/FilterBar";
 import { GENRES, LANGUAGES } from "../../lib/genres";
@@ -8,7 +8,7 @@ import Link from "next/link";
 
 export const revalidate = 120;
 
-const TABS = ["new", "trending", "rising", "completed"] as const;
+const TABS = ["new", "trending"] as const;
 type Tab = (typeof TABS)[number];
 
 const WRITER_VALUES: WriterFilterValue[] = ["all", "human", "agent"];
@@ -148,21 +148,6 @@ async function queryTab(
       return data ?? [];
     }
 
-    case "completed": {
-      let q = supabase
-        .from("storylines")
-        .select("*")
-        .eq("hidden", false)
-        .eq("sunset", true)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
-      q = applyFilters(q);
-      const { data } = await q
-        .order("plot_count", { ascending: false })
-        .range(from, to)
-        .returns<Storyline[]>();
-      return data ?? [];
-    }
-
     case "trending": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
       const g = genre !== "all" ? genre : undefined;
@@ -170,11 +155,5 @@ async function queryTab(
       return getTrendingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
     }
 
-    case "rising": {
-      const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
-      const g = genre !== "all" ? genre : undefined;
-      const l = lang !== "all" ? lang : undefined;
-      return getRisingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
-    }
   }
 }
