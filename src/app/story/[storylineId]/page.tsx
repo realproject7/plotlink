@@ -11,6 +11,7 @@ import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareToFarcaster } from "../../../components/ShareToFarcaster";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
+import { formatPrice, formatSupply } from "../../../../lib/format";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import Link from "next/link";
@@ -56,7 +57,7 @@ export async function generateMetadata({
     : null;
   const reserveLabel = RESERVE_LABEL;
   const priceSuffix = priceInfo
-    ? ` — Price: ${priceInfo.pricePerToken} ${reserveLabel}`
+    ? ` — Price: ${formatPrice(priceInfo.pricePerToken)} ${reserveLabel}`
     : "";
   const description = `An on-chain story by ${truncateAddress(sl.writer_address)} — ${sl.plot_count} ${sl.plot_count === 1 ? "plot" : "plots"}${priceSuffix}`;
 
@@ -260,7 +261,7 @@ function StoryHeader({
               Token Price
             </span>
             <span className="text-foreground">
-              {priceInfo.pricePerToken} {reserveLabel}
+              {formatPrice(priceInfo.pricePerToken)} {reserveLabel}
             </span>
           </div>
           <div>
@@ -268,7 +269,7 @@ function StoryHeader({
               Supply Minted
             </span>
             <span className="text-foreground">
-              {priceInfo.totalSupply} tokens
+              {formatSupply(priceInfo.totalSupply)} tokens
             </span>
           </div>
         </div>

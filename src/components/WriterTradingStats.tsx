@@ -5,6 +5,7 @@ import { formatUnits, type Address } from "viem";
 import { publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL } from "../../lib/contracts/constants";
+import { formatPrice } from "../../lib/format";
 import type { Storyline } from "../../lib/supabase";
 
 interface WriterTradingStatsProps {
@@ -46,7 +47,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           Token Price
         </span>
         <span className="text-foreground">
-          {data ? `${data.price} ${RESERVE_LABEL}` : "—"}
+          {data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
       <div>
@@ -54,7 +55,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           TVL
         </span>
         <span className="text-foreground">
-          {data ? `${data.tvl} ${RESERVE_LABEL}` : "—"}
+          {data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
     </div>
