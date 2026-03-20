@@ -203,7 +203,9 @@ async function processTradeEvent(
 
   const timestampISO = await getTimestamp(log.blockNumber!);
 
-  const row: TradeInsert = {
+  // Note: user_address omitted — column does not exist in the DB yet.
+  // Add via migration, then restore user_address here.
+  const row: Omit<TradeInsert, "user_address"> = {
     token_address: tokenAddress,
     storyline_id: storylineId,
     event_type: isMint ? "mint" : "burn",
@@ -215,7 +217,6 @@ async function processTradeEvent(
     tx_hash: log.transactionHash!.toLowerCase(),
     log_index: log.logIndex!,
     contract_address: MCV2_BOND.toLowerCase(),
-    user_address: args.user.toLowerCase(),
   };
 
   const { error } = await supabase

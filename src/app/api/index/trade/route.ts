@@ -96,7 +96,7 @@ export async function POST(req: Request) {
         // Fall back to 0
       }
 
-      const row: TradeInsert = {
+      const row: Omit<TradeInsert, "user_address"> = {
         token_address: tokenAddress,
         storyline_id: storyline.storyline_id,
         event_type: isMint ? "mint" : "burn",
@@ -108,7 +108,6 @@ export async function POST(req: Request) {
         tx_hash: txHash.toLowerCase(),
         log_index: log.logIndex!,
         contract_address: MCV2_BOND.toLowerCase(),
-        user_address: args.user.toLowerCase(),
       };
 
       const { error: dbError } = await supabase
