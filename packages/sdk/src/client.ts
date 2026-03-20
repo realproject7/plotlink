@@ -2,6 +2,7 @@ import {
   createPublicClient,
   createWalletClient,
   http,
+  fallback,
   keccak256,
   toHex,
   decodeEventLog,
@@ -50,6 +51,8 @@ export interface PlotLinkConfig {
   privateKey: string;
   /** JSON-RPC URL for the Base chain. */
   rpcUrl: string;
+  /** Optional additional RPC URLs for fallback rotation (tried in order after rpcUrl). */
+  rpcUrls?: string[];
   /** Chain ID — defaults to 84532 (Base Sepolia). */
   chainId?: number;
   /** Override StoryFactory contract address. */
@@ -169,15 +172,21 @@ export class PlotLink {
       : `0x${config.privateKey}`;
     const account = privateKeyToAccount(normalizedKey as Hex);
 
+    const allUrls = [config.rpcUrl, ...(config.rpcUrls ?? [])];
+    const transport =
+      allUrls.length > 1
+        ? fallback(allUrls.map((url) => http(url, { timeout: 10_000, retryCount: 1 })), { rank: false })
+        : http(config.rpcUrl);
+
     this.publicClient = createPublicClient({
       chain: this.chain,
-      transport: http(config.rpcUrl),
+      transport,
     });
 
     this.walletClient = createWalletClient({
       account,
       chain: this.chain,
-      transport: http(config.rpcUrl),
+      transport,
     });
 
     this.address = account.address;
