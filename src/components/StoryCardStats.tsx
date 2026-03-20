@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address } from "viem";
 import { getTokenTVL, getTokenPrice } from "../../lib/price";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
+import { useBatchTokenData } from "./BatchTokenDataProvider";
 
 function formatCompact(value: string): string {
   const num = parseFloat(value);
@@ -45,16 +46,21 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
   );
 }
 
-/** TVL-only display for home page book cards */
+/** TVL-only display for home page book cards.
+ *  Uses batch context when available (home page), falls back to individual fetch. */
 export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
+  const batchEntry = useBatchTokenData(tokenAddress);
   const addr = tokenAddress as Address;
 
-  const { data: tvlData } = useQuery({
+  // Fall back to individual fetch only if batch data not available
+  const { data: individualTvl } = useQuery({
     queryKey: ["card-tvl", tokenAddress],
     queryFn: () => getTokenTVL(addr),
     staleTime: 60000,
+    enabled: !batchEntry,
   });
 
+  const tvlData = batchEntry?.tvl ?? individualTvl;
   const tvl = tvlData ? formatCompact(tvlData.tvl) : "—";
 
   return (

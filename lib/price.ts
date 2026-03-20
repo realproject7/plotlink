@@ -264,3 +264,93 @@ export async function getTokenTVL(
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Batched multicall for multiple tokens (home page)
+// ---------------------------------------------------------------------------
+
+export interface BatchTokenEntry {
+  price: TokenPriceInfo | null;
+  tvl: { tvl: string; tvlRaw: bigint; reserveToken: Address; decimals: number } | null;
+}
+
+/**
+ * Fetch price + TVL for multiple tokens in a single multicall RPC request.
+ * Returns a Map keyed by lowercase token address.
+ *
+ * Each token produces 3 calls: priceForNextMint, totalSupply, tokenBond.
+ */
+export async function getBatchTokenData(
+  tokenAddresses: Address[],
+): Promise<Map<string, BatchTokenEntry>> {
+  const result = new Map<string, BatchTokenEntry>();
+  if (tokenAddresses.length === 0) return result;
+
+  const calls = tokenAddresses.flatMap((token) => [
+    {
+      address: MCV2_BOND as Address,
+      abi: [priceForNextMintFunction],
+      functionName: "priceForNextMint" as const,
+      args: [token] as const,
+    },
+    {
+      address: token,
+      abi: erc20Abi,
+      functionName: "totalSupply" as const,
+    },
+    {
+      address: MCV2_BOND as Address,
+      abi: [tokenBondFunction],
+      functionName: "tokenBond" as const,
+      args: [token] as const,
+    },
+  ]);
+
+  try {
+    const multicallResults = await publicClient.multicall({
+      contracts: calls,
+      allowFailure: true,
+    });
+
+    // Parse results in groups of 3 per token
+    for (let i = 0; i < tokenAddresses.length; i++) {
+      const addr = tokenAddresses[i].toLowerCase();
+      const base = i * 3;
+      const priceResult = multicallResults[base];
+      const supplyResult = multicallResults[base + 1];
+      const bondResult = multicallResults[base + 2];
+
+      let price: TokenPriceInfo | null = null;
+      if (priceResult.status === "success" && supplyResult.status === "success") {
+        const priceRaw = priceResult.result as bigint;
+        const totalSupplyRaw = supplyResult.result as bigint;
+        price = {
+          pricePerToken: formatUnits(priceRaw, 18),
+          priceRaw,
+          totalSupply: formatUnits(totalSupplyRaw, 18),
+          totalSupplyRaw,
+        };
+      }
+
+      let tvl: BatchTokenEntry["tvl"] = null;
+      if (bondResult.status === "success") {
+        const bondData = bondResult.result as readonly unknown[];
+        const reserveToken = bondData[4] as Address;
+        const reserveBalance = bondData[5] as bigint;
+        // Default to 18 decimals (PL_TEST/WETH) — avoids extra RPC call
+        tvl = {
+          tvl: formatUnits(reserveBalance, 18),
+          tvlRaw: reserveBalance,
+          reserveToken,
+          decimals: 18,
+        };
+      }
+
+      result.set(addr, { price, tvl });
+    }
+  } catch {
+    // If multicall fails entirely, return empty map (callers fall back)
+  }
+
+  return result;
+}
