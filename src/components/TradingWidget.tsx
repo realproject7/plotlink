@@ -37,39 +37,48 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       ? parseUnits(amount, 18)
       : BigInt(0);
 
-  // Fetch relevant balance: reserve token for buy, storyline token for sell
+  // Batch balance + estimate into a single multicall
   const balanceToken = tab === "buy" ? PLOT_TOKEN : tokenAddress;
-  const { data: balance, refetch: refetchBalance } = useQuery({
-    queryKey: ["token-balance", balanceToken, address],
+  const hasAmount = parsedAmount > BigInt(0);
+
+  const { data: tradeData, refetch: refetchTradeData } = useQuery({
+    queryKey: ["trade-data", balanceToken, address, tab, tokenAddress, amount],
     queryFn: async () => {
-      return publicClient.readContract({
-        address: balanceToken,
-        abi: erc20Abi,
-        functionName: "balanceOf",
-        args: [address!],
-      });
+      const contracts: Array<{ address: Address; abi: typeof erc20Abi | typeof mcv2BondAbi; functionName: string; args?: readonly unknown[] }> = [
+        {
+          address: balanceToken,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address!],
+        },
+      ];
+
+      if (hasAmount) {
+        contracts.push({
+          address: MCV2_BOND,
+          abi: mcv2BondAbi,
+          functionName: tab === "buy" ? "getReserveForToken" : "getRefundForTokens",
+          args: [tokenAddress, parsedAmount],
+        });
+      }
+
+      const results = await publicClient.multicall({ contracts, allowFailure: true });
+
+      const bal = results[0].status === "success" ? (results[0].result as bigint) : undefined;
+      let est: bigint | null = null;
+      if (hasAmount && results[1]?.status === "success") {
+        est = (results[1].result as unknown as readonly [bigint, bigint])[0];
+      }
+
+      return { balance: bal, estimate: est };
     },
     enabled: !!address,
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
-  // Fetch price estimate
-  const { data: estimate } = useQuery({
-    queryKey: ["trade-estimate", tab, tokenAddress, amount],
-    queryFn: async () => {
-      if (parsedAmount === BigInt(0)) return null;
-      const result = await publicClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: tab === "buy" ? "getReserveForToken" : "getRefundForTokens",
-        args: [tokenAddress, parsedAmount],
-      });
-      // ABI returns [amount, royalty] tuple — extract the amount
-      return (result as readonly [bigint, bigint])[0];
-    },
-    enabled: parsedAmount > BigInt(0),
-    refetchInterval: 15000,
-  });
+  const balance = tradeData?.balance;
+  const estimate = tradeData?.estimate ?? null;
+  const refetchBalance = refetchTradeData;
 
   const executeTrade = useCallback(async () => {
     if (!address || parsedAmount === BigInt(0) || !estimate) return;
