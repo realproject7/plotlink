@@ -26,7 +26,7 @@ export const DEPLOYMENT_BLOCK = BigInt(20_000_000);
  * Deployment block for PlotLink contracts on Base mainnet.
  * Used as the default fromBlock for mainnet event log queries.
  */
-export const DEPLOYMENT_BLOCK_MAINNET = BigInt(43_606_398);
+export const DEPLOYMENT_BLOCK_MAINNET = BigInt(43_609_150);
 
 /** Supported chain IDs for the PlotLink SDK. */
 export const SUPPORTED_CHAIN_IDS = new Set([BASE_SEPOLIA_CHAIN_ID, BASE_MAINNET_CHAIN_ID]);

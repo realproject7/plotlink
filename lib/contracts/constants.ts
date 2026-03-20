@@ -24,8 +24,8 @@ export const EXPLORER_URL = IS_TESTNET
 // PlotLink contracts
 // ---------------------------------------------------------------------------
 
-/** Deployment block for the v2 StoryFactory on Base mainnet */
-export const DEPLOYMENT_BLOCK = BigInt(43_606_398);
+/** Deployment block for the v3 StoryFactory on Base mainnet */
+export const DEPLOYMENT_BLOCK = BigInt(43_609_150);
 
 /** StoryFactory — storyline + plot management */
 export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
