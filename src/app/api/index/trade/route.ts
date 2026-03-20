@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { type Hex, decodeEventLog, formatUnits } from "viem";
 import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
-import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
+import { mcv2BondEventAbi, priceForNextMintFunction } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
 import type { Database } from "../../../../../lib/supabase";
@@ -78,11 +78,24 @@ export async function POST(req: Request) {
       const reserveAmount = isMint ? args.reserveAmount! : args.refundAmount!;
       const tokenAmount = isMint ? args.amountMinted! : args.amountBurned!;
 
-      const pricePerToken =
-        tokenAmount > BigInt(0)
+      // Marginal price from bonding curve (not batch average)
+      let pricePerToken = 0;
+      try {
+        const price = await publicClient.readContract({
+          address: MCV2_BOND as `0x${string}`,
+          abi: [priceForNextMintFunction],
+          functionName: "priceForNextMint",
+          args: [args.token],
+          blockNumber: receipt.blockNumber,
+        });
+        pricePerToken = Number(formatUnits(price, 18));
+      } catch {
+        // Fallback to batch average if RPC call fails
+        pricePerToken = tokenAmount > BigInt(0)
           ? Number(formatUnits(reserveAmount, 18)) /
             Number(formatUnits(tokenAmount, 18))
           : 0;
+      }
 
       let totalSupply = BigInt(0);
       try {

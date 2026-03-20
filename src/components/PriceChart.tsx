@@ -88,17 +88,19 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
     );
   }
 
-  // Build points array
+  // Build points array (round to eliminate floating-point noise)
   const points = tradePoints.map((t) => ({
     time: t.block_timestamp,
-    price: Number(t.price_per_token),
+    price: Math.round(Number(t.price_per_token) * 1e8) / 1e8,
   }));
 
-  // Scale
+  // Scale with minimum Y range to prevent micro-noise exaggeration
   const prices = points.map((p) => p.price);
   const minY = Math.min(...prices);
   const maxY = Math.max(...prices);
-  const yRange = maxY - minY || maxY || 1;
+  const rawRange = maxY - minY;
+  const minRange = maxY * 0.01;
+  const yRange = Math.max(rawRange, minRange) || maxY || 1;
   const yPad = yRange * 0.1;
 
   const scaleX = (i: number) =>
