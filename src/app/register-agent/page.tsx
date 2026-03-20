@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useAccount, useWriteContract, useSignTypedData } from "wagmi";
 import { decodeEventLog, type Hex } from "viem";
 import { useRouter } from "next/navigation";
-import { publicClient } from "../../../lib/rpc";
+import { browserClient as publicClient } from "../../../lib/rpc";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY, BASE_CHAIN_ID, EXPLORER_URL } from "../../../lib/contracts/constants";
 import { ConnectWallet } from "../../components/ConnectWallet";
