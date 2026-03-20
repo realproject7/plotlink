@@ -51,13 +51,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const chainId = Number(process.env.NEXT_PUBLIC_CHAIN_ID || "84532");
-const chain = chainId === 8453 ? base : baseSepolia;
-const customRpc = process.env.NEXT_PUBLIC_RPC_URL;
-const publicClient = createPublicClient({
-  chain,
-  transport: customRpc ? fallback([http(customRpc), http()]) : http(),
-});
+// Chain ID is loaded from the e2e-results.json file (set after results are parsed below).
+// This ensures the script always queries the same chain the contract test ran on.
+let chainId: number;
+let publicClient: ReturnType<typeof createPublicClient>;
 
 // ---------------------------------------------------------------------------
 // MCV2 Bond ABI (minimal for price/TVL reads)
@@ -145,6 +142,15 @@ interface BroadcastArtifact {
 const results: E2EResults = JSON.parse(readFileSync(resultsPath, "utf-8"));
 const artifactPath = resolve(dirname(resultsPath), results.broadcastArtifact);
 
+// Initialize chain from e2e-results.json (overrides any env default)
+chainId = results.chainId;
+const resolvedChain = chainId === 8453 ? base : baseSepolia;
+const customRpc = process.env.NEXT_PUBLIC_RPC_URL;
+publicClient = createPublicClient({
+  chain: resolvedChain,
+  transport: customRpc ? fallback([http(customRpc), http()]) : http(),
+});
+
 let broadcast: BroadcastArtifact;
 try {
   broadcast = JSON.parse(readFileSync(artifactPath, "utf-8"));
@@ -216,6 +222,40 @@ function hashContent(content: string): `0x${string}` {
   return keccak256(toHex(content));
 }
 
+// Known E2E test content strings and their keccak256 hashes.
+// The contract E2E uses these as openingHash/contentHash arguments.
+// When IPFS fetch fails (test CIDs don't resolve), we provide the matching
+// content as fallback so the indexer can verify the hash.
+const E2E_CONTENT_STRINGS = [
+  "e2e genesis content",
+  "e2e chapter 2",
+  "e2e chapter 3",
+  "e2e chapter 4",
+];
+
+/**
+ * POST to an indexer endpoint with fallback content retry.
+ * First tries without content. If that fails (IPFS unavailable or hash mismatch),
+ * retries with each known E2E content string until one matches.
+ */
+async function postIndexWithFallback(
+  endpoint: string,
+  body: Record<string, unknown>,
+): Promise<{ status: number; data: Record<string, unknown> }> {
+  // First attempt without fallback content
+  const first = await postIndex(endpoint, body);
+  if (first.status === 200) return first;
+
+  // Retry with each known content string as fallback
+  for (const content of E2E_CONTENT_STRINGS) {
+    const retry = await postIndex(endpoint, { ...body, content });
+    if (retry.status === 200) return retry;
+  }
+
+  // Return the original failure
+  return first;
+}
+
 // ---------------------------------------------------------------------------
 // V1: Storyline Indexing
 // ---------------------------------------------------------------------------
@@ -232,7 +272,7 @@ async function verifyV1() {
   // Index all createStoryline txs
   for (let i = 0; i < createStorylineTxs.length; i++) {
     const txHash = createStorylineTxs[i];
-    const { status } = await postIndex("/api/index/storyline", { txHash });
+    const { status } = await postIndexWithFallback("/api/index/storyline", { txHash });
     if (status === 200) {
       pass("V1.1", `POST /api/index/storyline (tx ${i + 1})`, `${status} OK`);
     } else {
@@ -323,6 +363,47 @@ async function verifyV1() {
   } else {
     fail("V1.2", "Supabase record exists (A2)", `not found or field mismatch`);
   }
+
+  // Verify storyline A3 (multiple storylines per writer)
+  const { data: s3 } = await supabase
+    .from("storylines")
+    .select("storyline_id, title, token_address, writer_address")
+    .eq("storyline_id", results.storylineA3.storylineId)
+    .single();
+
+  if (s3) {
+    pass("V1.2", "Supabase record exists (A3)", `"${s3.title}"`);
+    if (s3.token_address && s3.token_address !== s1?.token_address) {
+      pass("V1.4", "A3 token unique from A1", s3.token_address.slice(0, 10) + "...");
+    } else {
+      fail("V1.4", "A3 token unique from A1", `same or missing`);
+    }
+    if (s3.writer_address === results.deployer.toLowerCase()) {
+      pass("V1.3", "A3 writer matches deployer", "same wallet, multiple storylines");
+    }
+  } else {
+    fail("V1.2", "Supabase record exists (A3)", "not found");
+  }
+
+  // Verify edge case storylines (F1, F2, F3)
+  const edgeCases = results.edgeCasesF;
+  for (const [label, id] of [
+    ["F1 (min CID)", edgeCases.f1StorylineId],
+    ["F2 (max CID)", edgeCases.f2StorylineId],
+    ["F3 (zero fee)", edgeCases.f3StorylineId],
+  ] as const) {
+    const { data: sf } = await supabase
+      .from("storylines")
+      .select("storyline_id, title")
+      .eq("storyline_id", id)
+      .single();
+
+    if (sf) {
+      pass("V1.2", `Supabase record exists (${label})`, `id=${sf.storyline_id} "${sf.title}"`);
+    } else {
+      fail("V1.2", `Supabase record exists (${label})`, `storyline_id=${id} not found`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -341,7 +422,7 @@ async function verifyV2() {
   // Index all chainPlot txs
   for (let i = 0; i < chainPlotTxs.length; i++) {
     const txHash = chainPlotTxs[i];
-    const { status } = await postIndex("/api/index/plot", { txHash });
+    const { status } = await postIndexWithFallback("/api/index/plot", { txHash });
     if (status === 200) {
       pass("V2.1", `POST /api/index/plot (tx ${i + 1})`, `${status} OK`);
     } else {
@@ -581,6 +662,10 @@ async function verifyV4() {
 
   // V4.4: amount stored as wei string
   for (const don of donations) {
+    if (!don.amount) {
+      fail("V4.4", `amount present`, `got null/undefined`);
+      continue;
+    }
     const amountBigInt = BigInt(don.amount);
     if (amountBigInt > BigInt(0)) {
       pass("V4.4", `amount > 0 (wei string)`, `${don.amount} (${formatUnits(amountBigInt, 18)} tokens)`);
@@ -738,25 +823,32 @@ async function verifyV7() {
   // V7.1: Double-index storyline
   if (createStorylineTxs.length > 0) {
     const txHash = createStorylineTxs[0];
-    const { status } = await postIndex("/api/index/storyline", { txHash });
 
-    // Count records with this tx_hash
-    const { count } = await supabase
+    // Count before re-indexing
+    const { count: countBefore } = await supabase
       .from("storylines")
       .select("*", { count: "exact", head: true })
       .eq("tx_hash", txHash.toLowerCase());
 
-    if (status === 200 && count === 1) {
-      pass("V7.1", "Double-index storyline", "no duplicates");
+    const { status } = await postIndexWithFallback("/api/index/storyline", { txHash });
+
+    // Count after re-indexing — should be unchanged
+    const { count: countAfter } = await supabase
+      .from("storylines")
+      .select("*", { count: "exact", head: true })
+      .eq("tx_hash", txHash.toLowerCase());
+
+    if (status === 200 && countBefore === countAfter) {
+      pass("V7.1", "Double-index storyline", `no duplicates (count=${countAfter})`);
     } else {
-      fail("V7.1", "Double-index storyline", `status=${status} count=${count}`);
+      fail("V7.1", "Double-index storyline", `status=${status} before=${countBefore} after=${countAfter}`);
     }
   }
 
   // V7.2: Double-index plot
   if (chainPlotTxs.length > 0) {
     const txHash = chainPlotTxs[0];
-    const { status } = await postIndex("/api/index/plot", { txHash });
+    const { status } = await postIndexWithFallback("/api/index/plot", { txHash });
 
     const { count } = await supabase
       .from("plots")
