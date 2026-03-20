@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import type { Address } from "viem";
 import { StarDisplay, StarInput } from "./StarRating";

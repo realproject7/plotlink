@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useWriteContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
 

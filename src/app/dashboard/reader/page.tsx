@@ -10,7 +10,7 @@ import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
 import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { RESERVE_LABEL, PLOT_TOKEN, STORY_FACTORY, EXPLORER_URL } from "../../../../lib/contracts/constants";
-import { publicClient } from "../../../../lib/rpc";
+import { browserClient as publicClient } from "../../../../lib/rpc";
 import { type Address } from "viem";
 
 /** Truncate formatUnits output to at most `digits` decimal places */

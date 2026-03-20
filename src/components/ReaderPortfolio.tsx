@@ -4,7 +4,7 @@ import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { formatPrice, formatSupply } from "../../lib/format";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
