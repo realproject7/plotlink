@@ -74,24 +74,31 @@ export async function POST(req: Request) {
     decoded.args;
 
   // 4. Fetch content from IPFS (with fallback)
-  let content: string;
+  let content: string | null = null;
   try {
     const ipfsRes = await fetch(`${IPFS_GATEWAY}${contentCID}`, {
       signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
     });
     if (!ipfsRes.ok) throw new Error(`IPFS status ${ipfsRes.status}`);
-    content = await ipfsRes.text();
-  } catch {
-    if (!fallbackContent) {
-      return error("IPFS fetch failed and no fallback content provided", 502);
+    const ipfsContent = await ipfsRes.text();
+    // Verify IPFS content hash matches on-chain hash
+    if (hashContent(ipfsContent) === contentHash) {
+      content = ipfsContent;
     }
-    content = fallbackContent;
+    // If hash mismatches, fall through to fallback content below
+  } catch {
+    // IPFS fetch failed — fall through to fallback content below
   }
 
-  // 5. Verify content hash
-  const computedHash = hashContent(content);
-  if (computedHash !== contentHash) {
-    return error("Content hash mismatch");
+  // 5. Try fallback content if IPFS content was unavailable or hash-mismatched
+  if (!content && fallbackContent) {
+    if (hashContent(fallbackContent) === contentHash) {
+      content = fallbackContent;
+    }
+  }
+
+  if (!content) {
+    return error("Content hash mismatch (IPFS and fallback both failed)");
   }
 
   // 6. Get block timestamp
