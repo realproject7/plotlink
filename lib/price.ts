@@ -282,7 +282,9 @@ export interface BatchTokenEntry {
  */
 export async function getBatchTokenData(
   tokenAddresses: Address[],
+  client?: typeof publicClient,
 ): Promise<Map<string, BatchTokenEntry>> {
+  const rpcClient = client ?? publicClient;
   const result = new Map<string, BatchTokenEntry>();
   if (tokenAddresses.length === 0) return result;
 
@@ -307,7 +309,7 @@ export async function getBatchTokenData(
   ]);
 
   try {
-    const multicallResults = await publicClient.multicall({
+    const multicallResults = await rpcClient.multicall({
       contracts: calls,
       allowFailure: true,
     });

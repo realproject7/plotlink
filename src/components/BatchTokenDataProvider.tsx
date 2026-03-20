@@ -4,6 +4,7 @@ import { createContext, useContext, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type Address } from "viem";
 import { getBatchTokenData, type BatchTokenEntry } from "../../lib/price";
+import { browserClient } from "../../lib/rpc";
 
 type BatchTokenDataMap = Map<string, BatchTokenEntry>;
 
@@ -27,7 +28,7 @@ export function BatchTokenDataProvider({
 }) {
   const { data } = useQuery({
     queryKey: ["batch-token-data", tokenAddresses.join(",")],
-    queryFn: () => getBatchTokenData(tokenAddresses),
+    queryFn: () => getBatchTokenData(tokenAddresses, browserClient),
     staleTime: 60000,
     enabled: tokenAddresses.length > 0,
   });
