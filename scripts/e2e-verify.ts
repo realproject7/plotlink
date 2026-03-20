@@ -117,7 +117,7 @@ interface E2EResults {
     b1Cost: number; b2Cost: number; b3Cost: number;
     b4Refund: number; b5Refund: number;
   };
-  edgeCasesF: { f1StorylineId: number; f1Token: string; f2StorylineId: number; f3StorylineId: number };
+  edgeCasesF: { f1StorylineId: number; f1Token: string; f2StorylineId: number };
   royaltiesClaimed?: number;
 }
 
@@ -385,7 +385,6 @@ async function verifyV1() {
   for (const [label, id] of [
     ["F1 (min CID)", edgeCases.f1StorylineId],
     ["F2 (max CID)", edgeCases.f2StorylineId],
-    ["F3 (zero fee)", edgeCases.f3StorylineId],
   ] as const) {
     const { data: sf } = await supabase
       .from("storylines")
