@@ -18,7 +18,7 @@
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { createClient } from "@supabase/supabase-js";
-import { keccak256, toHex, formatUnits, type Address, type Hex } from "viem";
+import { keccak256, toHex, formatUnits, type Address } from "viem";
 import { createPublicClient, http, fallback } from "viem";
 import { base, baseSepolia } from "viem/chains";
 
@@ -50,11 +50,6 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
-
-// Chain ID is loaded from the e2e-results.json file (set after results are parsed below).
-// This ensures the script always queries the same chain the contract test ran on.
-let chainId: number;
-let publicClient: ReturnType<typeof createPublicClient>;
 
 // ---------------------------------------------------------------------------
 // MCV2 Bond ABI (minimal for price/TVL reads)
@@ -142,11 +137,11 @@ interface BroadcastArtifact {
 const results: E2EResults = JSON.parse(readFileSync(resultsPath, "utf-8"));
 const artifactPath = resolve(dirname(resultsPath), results.broadcastArtifact);
 
-// Initialize chain from e2e-results.json (overrides any env default)
-chainId = results.chainId;
+// Initialize chain from e2e-results.json (not env — ensures correct chain)
+const chainId = results.chainId;
 const resolvedChain = chainId === 8453 ? base : baseSepolia;
 const customRpc = process.env.NEXT_PUBLIC_RPC_URL;
-publicClient = createPublicClient({
+const publicClient = createPublicClient({
   chain: resolvedChain,
   transport: customRpc ? fallback([http(customRpc), http()]) : http(),
 });
@@ -779,7 +774,6 @@ async function verifyV6() {
     return;
   }
 
-  let hashChecked = 0;
   for (const plot of plots) {
     if (!plot.content) {
       // Content may be null for test CIDs that don't exist on IPFS
@@ -793,7 +787,6 @@ async function verifyV6() {
     // V6.2: compare to stored hash
     if (localHash === plot.content_hash) {
       pass("V6.2", `hash matches (idx=${plot.plot_index})`, localHash.slice(0, 14) + "...");
-      hashChecked++;
     } else {
       fail("V6.2", `hash matches (idx=${plot.plot_index})`, `local=${localHash.slice(0, 14)} stored=${plot.content_hash?.slice(0, 14)}`);
     }
