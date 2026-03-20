@@ -16,7 +16,7 @@ import { RecoveryBanner } from "../../components/RecoveryBanner";
 import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
 import { STORY_FACTORY, MCV2_BOND } from "../../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../../lib/supabase";
-import { publicClient } from "../../../lib/rpc";
+import { browserClient as publicClient } from "../../../lib/rpc";
 import { decodeEventLog, encodeEventTopics, formatEther } from "viem";
 import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";

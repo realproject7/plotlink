@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL } from "../../lib/contracts/constants";
 import { formatPrice } from "../../lib/format";

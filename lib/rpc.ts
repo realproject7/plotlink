@@ -67,6 +67,28 @@ export const publicClient = createPublicClient({
   transport: buildServerTransport(),
 });
 
+/**
+ * Browser-safe public client with CORS fallback transport.
+ * Use in client components ("use client") instead of publicClient.
+ */
+export const browserClient = createPublicClient({
+  chain,
+  transport: IS_MAINNET
+    ? fallback(
+        CORS_RPC_ENDPOINTS.map((url) =>
+          http(url, {
+            timeout: 5_000,
+            retryCount: 0,
+            fetchOptions: { mode: "cors", credentials: "omit" },
+          }),
+        ),
+        { rank: false },
+      )
+    : CUSTOM_RPC_URL
+      ? fallback([http(CUSTOM_RPC_URL), http()])
+      : http(),
+});
+
 // ---------------------------------------------------------------------------
 // Exports for wagmi
 // ---------------------------------------------------------------------------

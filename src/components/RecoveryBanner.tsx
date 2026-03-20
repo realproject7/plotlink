@@ -5,7 +5,7 @@ import { decodeEventLog } from "viem";
 import Link from "next/link";
 import { EXPLORER_URL } from "../../lib/contracts/constants";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import type { PublishIntentData } from "../hooks/usePublishIntent";
 import { MAX_RETRY_ATTEMPTS } from "../hooks/usePublishIntent";
 

@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useWriteContract } from "wagmi";
 import { hashContent } from "../../lib/content";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import type { Hex, Abi, TransactionReceipt } from "viem";
 
 export type PublishState =

@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits } from "viem";
-import { publicClient } from "../../lib/rpc";
+import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
 import { STORY_FACTORY, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
