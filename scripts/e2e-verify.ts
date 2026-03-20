@@ -975,7 +975,7 @@ async function main() {
   console.log(`Results file: ${resultsPath}`);
   console.log(`Broadcast artifact: ${artifactPath}`);
   console.log(`App URL: ${APP_URL}`);
-  console.log(`Chain: ${chainId} (${chain.name})`);
+  console.log(`Chain: ${chainId} (${resolvedChain.name})`);
   console.log(`Deployer: ${results.deployer}`);
   console.log(`Donor: ${results.donor}`);
   console.log(`Storylines: A1=${results.storylineA1.storylineId} A2=${results.storylineA2.storylineId} A3=${results.storylineA3.storylineId}`);
