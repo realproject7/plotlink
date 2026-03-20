@@ -2,9 +2,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
-import { browserClient as publicClient } from "../../lib/rpc";
-import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { browserClient } from "../../lib/rpc";
+import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL } from "../../lib/contracts/constants";
 import { formatPrice } from "../../lib/format";
 import type { Storyline } from "../../lib/supabase";
@@ -21,7 +20,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
     queryKey: ["writer-stats", tokenAddress],
     queryFn: async () => {
       const [priceRaw, tvlData] = await Promise.all([
-        publicClient.readContract({
+        browserClient.readContract({
           address: MCV2_BOND,
           abi: mcv2BondAbi,
           functionName: "priceForNextMint",
