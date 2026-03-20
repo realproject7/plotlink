@@ -45,11 +45,16 @@ export const storyFactoryAbi = [
       { name: "amount", type: "uint256", indexed: false },
     ],
   },
+  {
+    type: "event",
+    name: "CurveUpdated",
+    inputs: [{ name: "newStepCount", type: "uint256", indexed: false }],
+  },
   // Functions
   {
     type: "function",
     name: "createStoryline",
-    stateMutability: "nonpayable",
+    stateMutability: "payable",
     inputs: [
       { name: "title", type: "string" },
       { name: "openingCID", type: "string" },
@@ -79,6 +84,30 @@ export const storyFactoryAbi = [
       { name: "amount", type: "uint256" },
     ],
     outputs: [],
+  },
+  {
+    type: "function",
+    name: "hasSunset",
+    stateMutability: "view",
+    inputs: [{ name: "storylineId", type: "uint256" }],
+    outputs: [{ name: "", type: "bool" }],
+  },
+  {
+    type: "function",
+    name: "updateCurve",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "newRanges", type: "uint128[]" },
+      { name: "newPrices", type: "uint128[]" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "owner",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
   },
 ] as const;
 
