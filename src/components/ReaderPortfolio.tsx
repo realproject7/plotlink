@@ -4,7 +4,7 @@ import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { formatPrice, formatSupply } from "../../lib/format";
-import { browserClient as publicClient } from "../../lib/rpc";
+import { browserClient } from "../../lib/rpc";
 import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
@@ -45,7 +45,7 @@ export function ReaderPortfolio() {
         args: [address],
       }));
 
-      const balanceResults = await publicClient.multicall({ contracts: balanceCalls });
+      const balanceResults = await browserClient.multicall({ contracts: balanceCalls });
 
       // Filter to only storylines with non-zero balance
       const held = storylines
@@ -61,14 +61,14 @@ export function ReaderPortfolio() {
           const balance = balanceResult.result as bigint;
           try {
             const [price, priceChangeResult, tvlResult] = await Promise.all([
-              publicClient.readContract({
+              browserClient.readContract({
                 address: MCV2_BOND,
                 abi: mcv2BondAbi,
                 functionName: "priceForNextMint",
                 args: [tokenAddr],
               }),
-              get24hPriceChange(tokenAddr).catch(() => null),
-              getTokenTVL(tokenAddr).catch(() => null),
+              get24hPriceChange(tokenAddr, browserClient).catch(() => null),
+              getTokenTVL(tokenAddr, browserClient).catch(() => null),
             ]);
 
             const priceBI = BigInt(price);

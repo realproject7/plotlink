@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { useWriteContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
-import { browserClient as publicClient } from "../../lib/rpc";
+import { browserClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
 
@@ -37,7 +37,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const { data: royaltyInfo } = useQuery({
     queryKey: ["royalty-info", tokenAddress, beneficiary],
     queryFn: async () => {
-      const [balance, claimed] = await publicClient.readContract({
+      const [balance, claimed] = await browserClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "getRoyaltyInfo",
@@ -51,7 +51,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   // Fetch reserve token decimals dynamically
   const { data: tvlData } = useQuery({
     queryKey: ["claim-decimals", tokenAddress],
-    queryFn: () => getTokenTVL(tokenAddress),
+    queryFn: () => getTokenTVL(tokenAddress, browserClient),
   });
   const decimals = tvlData?.decimals ?? 18;
 
@@ -92,7 +92,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
       setTxHash(hash);
 
       setTxState("pending");
-      await publicClient.waitForTransactionReceipt({ hash });
+      await browserClient.waitForTransactionReceipt({ hash });
 
       setTxState("done");
     } catch (err) {
