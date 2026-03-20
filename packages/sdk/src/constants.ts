@@ -41,7 +41,7 @@ export const STORY_FACTORY_ADDRESS =
 
 /** StoryFactory — storyline + plot management (Base mainnet). */
 export const STORY_FACTORY_MAINNET_ADDRESS =
-  "0x27B4FCf333f29a3865b3B76ea00C955D7b64BD0F" as const;
+  "0x337c5b96f03fB335b433291695A4171fd5dED8B0" as const;
 
 /** MCV2_Bond — bonding curve trading (Base Sepolia). */
 export const MCV2_BOND_ADDRESS =
