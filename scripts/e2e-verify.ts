@@ -19,8 +19,8 @@ import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { keccak256, toHex, formatUnits, decodeEventLog, type Address } from "viem";
-import { createPublicClient, http, fallback } from "viem";
 import { base, baseSepolia } from "viem/chains";
+import { publicClient } from "../lib/rpc";
 
 // ---------------------------------------------------------------------------
 // CLI args
@@ -154,14 +154,9 @@ interface BroadcastArtifact {
 const results: E2EResults = JSON.parse(readFileSync(resultsPath, "utf-8"));
 const artifactPath = resolve(dirname(resultsPath), results.broadcastArtifact);
 
-// Initialize chain from e2e-results.json (not env — ensures correct chain)
+// Chain from e2e-results.json (for display only — publicClient uses env config)
 const chainId = results.chainId;
 const resolvedChain = chainId === 8453 ? base : baseSepolia;
-const customRpc = process.env.NEXT_PUBLIC_RPC_URL;
-const publicClient = createPublicClient({
-  chain: resolvedChain,
-  transport: customRpc ? fallback([http(customRpc), http()]) : http(),
-});
 
 let broadcast: BroadcastArtifact;
 try {
