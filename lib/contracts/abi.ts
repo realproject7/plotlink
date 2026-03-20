@@ -53,7 +53,7 @@ export const donationEvent = {
 export const createStorylineFunction = {
   type: "function",
   name: "createStoryline",
-  stateMutability: "nonpayable",
+  stateMutability: "payable",
   inputs: [
     { name: "title", type: "string" },
     { name: "openingCID", type: "string" },
@@ -152,11 +152,48 @@ export const tokenBondFunction = {
 // Combined ABI (for viem contract instances)
 // ---------------------------------------------------------------------------
 
+export const curveUpdatedEvent = {
+  type: "event",
+  name: "CurveUpdated",
+  inputs: [{ name: "newStepCount", type: "uint256", indexed: false }],
+} as const;
+
+export const hasSunsetFunction = {
+  type: "function",
+  name: "hasSunset",
+  stateMutability: "view",
+  inputs: [{ name: "storylineId", type: "uint256" }],
+  outputs: [{ name: "", type: "bool" }],
+} as const;
+
+export const updateCurveFunction = {
+  type: "function",
+  name: "updateCurve",
+  stateMutability: "nonpayable",
+  inputs: [
+    { name: "newRanges", type: "uint128[]" },
+    { name: "newPrices", type: "uint128[]" },
+  ],
+  outputs: [],
+} as const;
+
+export const ownerFunction = {
+  type: "function",
+  name: "owner",
+  stateMutability: "view",
+  inputs: [],
+  outputs: [{ name: "", type: "address" }],
+} as const;
+
 export const storyFactoryAbi = [
   plotChainedEvent,
   storylineCreatedEvent,
   donationEvent,
+  curveUpdatedEvent,
   createStorylineFunction,
   chainPlotFunction,
   donateFunction,
+  hasSunsetFunction,
+  updateCurveFunction,
+  ownerFunction,
 ] as const;

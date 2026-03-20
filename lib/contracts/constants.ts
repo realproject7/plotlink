@@ -28,7 +28,7 @@ export const EXPLORER_URL = IS_TESTNET
 export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
   (IS_TESTNET
     ? "0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229"
-    : "0xc278F4099298118efA8dF30DF0F4876632571948")) as `0x${string}`;
+    : "0x27B4FCf333f29a3865b3B76ea00C955D7b64BD0F")) as `0x${string}`;
 
 /** ZapPlotLinkMCV2 — one-click buy (ETH/USDC/HUNT -> storyline token) */
 export const ZAP_PLOTLINK = "0x0000000000000000000000000000000000000000" as const;
