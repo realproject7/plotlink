@@ -252,11 +252,11 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       {/* Estimate */}
       {estimate != null && parsedAmount > BigInt(0) && (
         <div className="text-muted mt-2 text-xs">
-          {tab === "buy" ? "Estimated cost" : "Estimated return"}:{" "}
+          {tab === "buy" ? "Max cost" : "Min return"}:{" "}
           <span className="text-foreground">
-            {formatUnits(estimate, 18)} {RESERVE_LABEL}
+            {formatUnits(applySlippage(estimate, tab === "buy"), 18)} {RESERVE_LABEL}
           </span>
-          <span className="ml-2">(3% slippage tolerance)</span>
+          <span className="ml-2">(incl. 3% slippage)</span>
         </div>
       )}
 
