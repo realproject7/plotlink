@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
+import { browserClient } from "../../lib/rpc";
 import { MCV2_BOND, RESERVE_LABEL } from "../../lib/contracts/constants";
 import { formatPrice } from "../../lib/format";
 import type { Storyline } from "../../lib/supabase";
@@ -26,7 +27,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
           functionName: "priceForNextMint",
           args: [tokenAddress],
         }),
-        getTokenTVL(tokenAddress),
+        getTokenTVL(tokenAddress, browserClient),
       ]);
       const decimals = tvlData?.decimals ?? 18;
       return {

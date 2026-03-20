@@ -8,11 +8,22 @@ import { browserClient } from "../../lib/rpc";
 
 type BatchTokenDataMap = Map<string, BatchTokenEntry>;
 
-const BatchTokenDataContext = createContext<BatchTokenDataMap>(new Map());
+interface BatchTokenDataContextValue {
+  data: BatchTokenDataMap;
+  isReady: boolean;
+}
 
-export function useBatchTokenData(tokenAddress: string): BatchTokenEntry | undefined {
-  const map = useContext(BatchTokenDataContext);
-  return map.get(tokenAddress.toLowerCase());
+const BatchTokenDataContext = createContext<BatchTokenDataContextValue>({
+  data: new Map(),
+  isReady: false,
+});
+
+export function useBatchTokenData(tokenAddress: string): {
+  entry: BatchTokenEntry | undefined;
+  isReady: boolean;
+} {
+  const { data, isReady } = useContext(BatchTokenDataContext);
+  return { entry: data.get(tokenAddress.toLowerCase()), isReady };
 }
 
 /**
@@ -26,7 +37,7 @@ export function BatchTokenDataProvider({
   tokenAddresses: Address[];
   children: ReactNode;
 }) {
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["batch-token-data", tokenAddresses.join(",")],
     queryFn: () => getBatchTokenData(tokenAddresses, browserClient),
     staleTime: 60000,
@@ -34,7 +45,7 @@ export function BatchTokenDataProvider({
   });
 
   return (
-    <BatchTokenDataContext.Provider value={data ?? new Map()}>
+    <BatchTokenDataContext.Provider value={{ data: data ?? new Map(), isReady: !isLoading }}>
       {children}
     </BatchTokenDataContext.Provider>
   );

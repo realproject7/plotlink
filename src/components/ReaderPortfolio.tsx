@@ -6,6 +6,7 @@ import { formatUnits, type Address } from "viem";
 import { formatPrice, formatSupply } from "../../lib/format";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib/price";
+import { browserClient } from "../../lib/rpc";
 import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
 import Link from "next/link";
@@ -67,8 +68,8 @@ export function ReaderPortfolio() {
                 functionName: "priceForNextMint",
                 args: [tokenAddr],
               }),
-              get24hPriceChange(tokenAddr).catch(() => null),
-              getTokenTVL(tokenAddr).catch(() => null),
+              get24hPriceChange(tokenAddr, browserClient).catch(() => null),
+              getTokenTVL(tokenAddr, browserClient).catch(() => null),
             ]);
 
             const priceBI = BigInt(price);

@@ -6,6 +6,7 @@ import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-quer
 import { formatUnits } from "viem";
 import { supabase, type Storyline, type Donation } from "../../../../lib/supabase";
 import { getTokenTVL } from "../../../../lib/price";
+import { browserClient } from "../../../../lib/rpc";
 import { RESERVE_LABEL, STORY_FACTORY, EXPLORER_URL } from "../../../../lib/contracts/constants";
 import { GENRES, LANGUAGES } from "../../../../lib/genres";
 import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
@@ -370,7 +371,7 @@ function DonationCount({ storylineId, tokenAddress }: { storylineId: number; tok
     queryKey: ["donation-count", storylineId, tokenAddress],
     queryFn: async () => {
       const [tvlData, rows] = await Promise.all([
-        getTokenTVL(tokenAddress as Address),
+        getTokenTVL(tokenAddress as Address, browserClient),
         supabase
           ? supabase.from("donations")
               .select("amount")

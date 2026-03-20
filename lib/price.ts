@@ -143,16 +143,18 @@ export interface TokenPriceInfo {
  */
 export async function getTokenPrice(
   tokenAddress: Address,
+  client?: typeof publicClient,
 ): Promise<TokenPriceInfo | null> {
+  const rpc = client ?? publicClient;
   try {
     const [priceRaw, totalSupplyRaw] = await Promise.all([
-      publicClient.readContract({
+      rpc.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "priceForNextMint",
         args: [tokenAddress],
       }),
-      publicClient.readContract({
+      rpc.readContract({
         address: tokenAddress,
         abi: erc20Abi,
         functionName: "totalSupply",
@@ -181,19 +183,21 @@ const BLOCKS_PER_24H = BigInt(43200);
  */
 export async function get24hPriceChange(
   tokenAddress: Address,
+  client?: typeof publicClient,
 ): Promise<{ changePercent: number; currentPrice: bigint; previousPrice: bigint } | null> {
+  const rpc = client ?? publicClient;
   try {
-    const currentBlock = await publicClient.getBlockNumber();
+    const currentBlock = await rpc.getBlockNumber();
     const pastBlock = currentBlock - BLOCKS_PER_24H;
 
     const [currentPrice, previousPrice] = await Promise.all([
-      publicClient.readContract({
+      rpc.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "priceForNextMint",
         args: [tokenAddress],
       }),
-      publicClient.readContract({
+      rpc.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "priceForNextMint",
@@ -236,9 +240,11 @@ const erc20DecimalsAbi = [
  */
 export async function getTokenTVL(
   tokenAddress: Address,
+  client?: typeof publicClient,
 ): Promise<{ tvl: string; tvlRaw: bigint; reserveToken: Address; decimals: number } | null> {
+  const rpc = client ?? publicClient;
   try {
-    const result = await publicClient.readContract({
+    const result = await rpc.readContract({
       address: MCV2_BOND,
       abi: mcv2BondAbi,
       functionName: "tokenBond",
@@ -248,7 +254,7 @@ export async function getTokenTVL(
     const [, , , , reserveToken, reserveBalance] = result;
     const reserveAddr = reserveToken as Address;
 
-    const decimals = await publicClient.readContract({
+    const decimals = await rpc.readContract({
       address: reserveAddr,
       abi: erc20DecimalsAbi,
       functionName: "decimals",

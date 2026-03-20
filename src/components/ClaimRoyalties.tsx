@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
+import { browserClient } from "../../lib/rpc";
 import { MCV2_BOND, RESERVE_LABEL, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
 
 function formatTruncated(value: bigint, decimals: number, digits = 10): string {
@@ -51,7 +52,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   // Fetch reserve token decimals dynamically
   const { data: tvlData } = useQuery({
     queryKey: ["claim-decimals", tokenAddress],
-    queryFn: () => getTokenTVL(tokenAddress),
+    queryFn: () => getTokenTVL(tokenAddress, browserClient),
   });
   const decimals = tvlData?.decimals ?? 18;
 

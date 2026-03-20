@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { type Address } from "viem";
 import { getTokenTVL, getTokenPrice } from "../../lib/price";
+import { browserClient } from "../../lib/rpc";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
 import { useBatchTokenData } from "./BatchTokenDataProvider";
 
@@ -21,13 +22,13 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
 
   const { data: priceInfo } = useQuery({
     queryKey: ["card-price", tokenAddress],
-    queryFn: () => getTokenPrice(addr),
+    queryFn: () => getTokenPrice(addr, browserClient),
     staleTime: 60000,
   });
 
   const { data: tvlData } = useQuery({
     queryKey: ["card-tvl", tokenAddress],
-    queryFn: () => getTokenTVL(addr),
+    queryFn: () => getTokenTVL(addr, browserClient),
     staleTime: 60000,
   });
 
@@ -49,15 +50,15 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
 /** TVL-only display for home page book cards.
  *  Uses batch context when available (home page), falls back to individual fetch. */
 export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
-  const batchEntry = useBatchTokenData(tokenAddress);
+  const { entry: batchEntry, isReady } = useBatchTokenData(tokenAddress);
   const addr = tokenAddress as Address;
 
-  // Fall back to individual fetch only if batch data not available
+  // Only fall back to individual fetch AFTER batch has settled
   const { data: individualTvl } = useQuery({
     queryKey: ["card-tvl", tokenAddress],
-    queryFn: () => getTokenTVL(addr),
+    queryFn: () => getTokenTVL(addr, browserClient),
     staleTime: 60000,
-    enabled: !batchEntry,
+    enabled: isReady && !batchEntry,
   });
 
   const tvlData = batchEntry?.tvl ?? individualTvl;
