@@ -1,7 +1,7 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
 import { STORY_FACTORY } from "../../lib/contracts/constants";
 import { getTrendingStorylines } from "../../lib/ranking";
-import { StoryCard } from "../components/StoryCard";
+import { StoryGrid } from "../components/StoryGrid";
 import { FilterBar, type WriterFilterValue } from "../components/FilterBar";
 import { GENRES, LANGUAGES } from "../../lib/genres";
 import Link from "next/link";
@@ -55,12 +55,8 @@ export default async function Home({
       {/* Filter bar */}
       <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} />
 
-      {/* Story grid */}
-      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
-        {storylines.map((s) => (
-          <StoryCard key={s.id} storyline={s} />
-        ))}
-      </div>
+      {/* Story grid — batched multicall for price/TVL */}
+      <StoryGrid storylines={storylines} />
 
       {/* Pagination */}
       {(page > 1 || storylines.length === PAGE_SIZE) && (
