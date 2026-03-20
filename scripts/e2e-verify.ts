@@ -112,35 +112,6 @@ const storylineCreatedAbi = [
   },
 ] as const;
 
-/**
- * Resolve the actual on-chain token address for a storyline from its
- * createStoryline tx receipt. The e2e-results.json contains simulated
- * addresses which may differ from broadcast reality.
- */
-async function resolveTokenAddress(storylineId: number): Promise<Address | null> {
-  for (const txHash of createStorylineTxs) {
-    try {
-      const receipt = await publicClient.getTransactionReceipt({ hash: txHash as `0x${string}` });
-      for (const log of receipt.logs) {
-        try {
-          const decoded = decodeEventLog({
-            abi: storylineCreatedAbi,
-            data: log.data,
-            topics: log.topics,
-          });
-          if (decoded.eventName === "StorylineCreated" && Number(decoded.args.storylineId) === storylineId) {
-            return decoded.args.tokenAddress as Address;
-          }
-        } catch {
-          // not a matching event
-        }
-      }
-    } catch {
-      // receipt fetch failed
-    }
-  }
-  return null;
-}
 
 // ---------------------------------------------------------------------------
 // Load e2e-results.json and broadcast artifact
