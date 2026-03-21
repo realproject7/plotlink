@@ -52,12 +52,6 @@ export default async function Home({
         </p>
       </header>
 
-      {/* Section heading + filter bar */}
-      <div className="mb-2">
-        <h2 className="font-body text-base font-normal italic text-[var(--text-muted)]">
-          {tab === "trending" ? "Trending" : "New & Noteworthy"}
-        </h2>
-      </div>
       <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} />
 
       {/* Story grid — batched multicall for price/TVL */}
