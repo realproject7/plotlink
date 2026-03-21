@@ -344,7 +344,7 @@ function CreatePage() {
                 disabled={newBusy}
                 rows={12}
                 placeholder="Write the genesis plot (500\u201310,000 characters)"
-                className="border-border bg-surface text-foreground placeholder:text-muted w-full resize-y rounded border px-3 py-2 text-sm leading-relaxed focus:border-accent focus:outline-none disabled:opacity-50"
+                className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
               />
               <div className="mt-1 flex justify-between text-xs">
                 <span className={newContent.length > 0 && !newValid ? "text-error" : "text-muted"}>
@@ -461,7 +461,7 @@ function CreatePage() {
                 disabled={chainBusy || noStoryline}
                 rows={12}
                 placeholder={noStoryline ? "Select a storyline above to chain a plot" : "Write the next plot (500\u201310,000 characters)"}
-                className="border-border bg-surface text-foreground placeholder:text-muted w-full resize-y rounded border px-3 py-2 text-sm leading-relaxed focus:border-accent focus:outline-none disabled:opacity-50"
+                className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
               />
               <div className="mt-1 text-xs">
                 <span className={chainContent.length > 0 && !chainValid ? "text-error" : "text-muted"}>
