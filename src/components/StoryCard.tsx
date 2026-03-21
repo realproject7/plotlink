@@ -33,11 +33,11 @@ export function StoryCard({
         {/* Drop shadow beneath book — grows on hover */}
         <div className="pointer-events-none absolute -bottom-2 left-2 right-2 h-4 rounded-sm bg-[var(--shelf-shadow)] blur-md transition-all duration-300 group-hover:-bottom-3 group-hover:left-1 group-hover:right-1 group-hover:blur-lg" />
 
-        {/* Spine — left edge with depth */}
+        {/* Spine — dark cloth-bound band */}
         <div
-          className="absolute inset-y-0 left-0 w-3 rounded-l-sm"
+          className="absolute inset-y-0 left-0 w-5 rounded-l-sm"
           style={{
-            background: "linear-gradient(to right, #A6926F, #C4A87A, #B89E72)",
+            background: "linear-gradient(to right, #1A0F0A, #2C1810, #3A2A1A)",
             transform: "translateZ(-2px)",
           }}
         />
@@ -53,7 +53,7 @@ export function StoryCard({
 
         {/* Page edges visible on bottom */}
         <div
-          className="pointer-events-none absolute -bottom-[3px] left-3 right-0 h-[3px] rounded-b-[1px]"
+          className="pointer-events-none absolute -bottom-[3px] left-5 right-0 h-[3px] rounded-b-[1px]"
           style={{
             background:
               "repeating-linear-gradient(to right, #F5EFE4 0px, #F5EFE4 1px, #E8DFD0 1px, #E8DFD0 2px)",
@@ -64,15 +64,15 @@ export function StoryCard({
         <div className="relative flex aspect-[2/3] flex-col justify-between overflow-hidden rounded-sm rounded-l-none border border-[var(--border)] bg-gradient-to-br from-[#F7F0E5] via-[#F2E8D6] to-[#EBE0CE] transition-[border-color,box-shadow] duration-300 group-hover:border-[var(--accent-dim)] group-hover:shadow-lg">
           {/* Spine inner shadow overlay */}
           <div
-            className="pointer-events-none absolute inset-y-0 left-0 w-6"
+            className="pointer-events-none absolute inset-y-0 left-0 w-8"
             style={{
               background:
-                "linear-gradient(to right, rgba(139,115,85,0.12), transparent)",
+                "linear-gradient(to right, rgba(26,15,10,0.18), transparent)",
             }}
           />
 
           {/* Content */}
-          <div className="relative flex flex-1 flex-col justify-between py-5 pl-6 pr-4">
+          <div className="relative flex flex-1 flex-col justify-between py-5 pl-7 pr-4">
             {/* Top: genre badge + completion */}
             <div className="flex items-start justify-between gap-2">
               <span className="rounded-sm bg-[var(--accent)]/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent-dim)]">
@@ -87,7 +87,7 @@ export function StoryCard({
 
             {/* Center: title displayed like printed book cover */}
             <div className="flex flex-1 flex-col items-center justify-center px-1 text-center">
-              <h3 className="font-heading text-base font-bold leading-tight tracking-tight text-[var(--accent)] sm:text-lg">
+              <h3 className="font-heading text-base font-bold leading-tight tracking-tight text-[var(--accent-title)] sm:text-lg">
                 {storyline.title}
               </h3>
               {storyline.language && storyline.language !== "English" && (

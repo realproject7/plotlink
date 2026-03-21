@@ -9,6 +9,7 @@
   --text-muted: #8B7355;
   --accent: #DAAA63;
   --accent-dim: #C4944F;
+  --accent-title: #8B4513;
   --border: #D4C5B0;
   --error: #CC3333;
 }
@@ -20,6 +21,7 @@
   --color-muted: var(--text-muted);
   --color-accent: var(--accent);
   --color-accent-dim: var(--accent-dim);
+  --color-accent-title: var(--accent-title);
   --color-border: var(--border);
   --color-error: var(--error);
   --font-heading: var(--font-montserrat);
