@@ -58,54 +58,47 @@ export function StoryCard({
           className="notebook-cover relative z-10 flex aspect-[2/3] flex-col overflow-hidden border border-[var(--border)]"
           style={{
             borderRadius: "5px 15px 15px 5px",
-            backgroundColor: "var(--accent)",
-            boxShadow: "2px 4px 12px rgba(44, 24, 16, 0.15)",
+            backgroundColor: "#F5EFE6",
+            boxShadow: "2px 4px 12px rgba(44, 24, 16, 0.1)",
           }}
         >
-          {/* Elastic band */}
+          {/* Elastic band — seamless, subtle */}
           <div
             className="pointer-events-none absolute inset-y-[-1px] right-[22px] z-20 w-[8px] rounded-[2px]"
             style={{
-              background:
-                "repeating-linear-gradient(to bottom, var(--accent-dim) 0px, var(--accent-dim) 2px, #5A2A0E 2px, #5A2A0E 4px)",
-              boxShadow: "1px 0 2px rgba(0,0,0,0.15), -1px 0 2px rgba(0,0,0,0.1)",
+              background: "rgba(139, 69, 19, 0.18)",
+              boxShadow: "1px 0 2px rgba(0,0,0,0.05), -1px 0 2px rgba(0,0,0,0.03)",
             }}
           />
 
           {/* Top area: genre badge */}
           <div className="relative z-10 px-4 pt-4">
             <div className="flex items-start justify-between gap-2">
-              <span className="rounded-sm bg-white/20 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-white/80">
+              <span className="rounded-sm bg-[var(--accent)]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent)]">
                 {displayGenre || "Uncategorized"}
               </span>
               {storyline.sunset && (
-                <span className="rounded-sm border border-white/20 px-1.5 py-0.5 text-[9px] text-white/60">
+                <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                   complete
                 </span>
               )}
             </div>
           </div>
 
-          {/* Label band with title */}
-          <div
-            className="relative z-10 mx-0 mt-auto px-4 py-3"
-            style={{
-              backgroundColor: "#e8e8e0",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-            }}
-          >
-            <h3 className="font-heading text-center text-sm font-bold leading-tight tracking-tight text-[#2C1810] sm:text-base">
+          {/* Center: title */}
+          <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 text-center">
+            <h3 className="font-heading text-sm font-bold leading-tight tracking-tight text-[var(--accent)] sm:text-base">
               {storyline.title}
             </h3>
             {storyline.language && storyline.language !== "English" && (
-              <span className="mt-1 block text-center text-[10px] text-[var(--text-muted)]">
+              <span className="mt-2 text-[10px] text-[var(--text-muted)]">
                 {storyline.language}
               </span>
             )}
           </div>
 
           {/* Bottom: author */}
-          <div className="relative z-10 flex items-center justify-center gap-1 px-4 py-3 text-xs text-white/70">
+          <div className="relative z-10 flex items-center justify-center gap-1 px-4 py-3 text-xs text-[var(--text-muted)]">
             <WriterIdentityClient address={storyline.writer_address} linkProfile={false} />
             {storyline.writer_type === 1 && <AgentBadge />}
           </div>
