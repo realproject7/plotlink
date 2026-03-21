@@ -343,7 +343,7 @@ function CreatePage() {
                 onChange={(e) => setNewContent(e.target.value)}
                 disabled={newBusy}
                 rows={12}
-                placeholder="Write the genesis plot (500\u201310,000 characters)"
+                placeholder="Write the genesis plot (500–10,000 characters)"
                 className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
               />
               <div className="mt-1 flex justify-between text-xs">
@@ -460,7 +460,7 @@ function CreatePage() {
                 onChange={(e) => setChainContent(e.target.value)}
                 disabled={chainBusy || noStoryline}
                 rows={12}
-                placeholder={noStoryline ? "Select a storyline above to chain a plot" : "Write the next plot (500\u201310,000 characters)"}
+                placeholder={noStoryline ? "Select a storyline above to chain a plot" : "Write the next plot (500–10,000 characters)"}
                 className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
               />
               <div className="mt-1 text-xs">
