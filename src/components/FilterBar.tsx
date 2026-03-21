@@ -64,7 +64,7 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
 
   return (
     <div ref={barRef}>
-      <div className="border-border flex min-w-0 items-center gap-x-3 rounded border px-3 py-2 text-xs">
+      <div className="flex min-w-0 items-center gap-x-2 rounded-full border border-[var(--border)] bg-[var(--bg-shelf)]/50 px-4 py-2 text-xs">
         {/* Writer token + dropdown */}
         <div className="relative min-w-0">
           <Token
@@ -196,11 +196,11 @@ function Token({
   return (
     <button
       onClick={onClick}
-      className={`whitespace-nowrap transition-colors hover:opacity-80 ${active ? "opacity-80" : ""}`}
+      className={`whitespace-nowrap rounded-full px-2.5 py-0.5 transition-colors hover:bg-[var(--accent)]/10 ${active ? "bg-[var(--accent)]/10" : ""}`}
     >
-      <span className="text-muted sm:hidden">{shortLabel}:</span>
-      <span className="text-muted hidden sm:inline">{label}:</span>
-      <span className="text-accent">{value}</span>
+      <span className="text-[var(--text-muted)] sm:hidden">{shortLabel}:</span>
+      <span className="text-[var(--text-muted)] hidden sm:inline">{label}:</span>
+      <span className="font-semibold text-[var(--accent)]">{value}</span>
     </button>
   );
 }

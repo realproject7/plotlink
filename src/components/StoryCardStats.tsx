@@ -40,9 +40,9 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
     : "—";
 
   return (
-    <div className="text-muted flex flex-wrap gap-x-3 gap-y-0.5 text-[10px]">
-      <span>Price: <span className="text-foreground">{price} {RESERVE_LABEL}</span></span>
-      <span>TVL: <span className="text-foreground">{tvl} {RESERVE_LABEL}</span></span>
+    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-[var(--text-muted)]">
+      <span>Price: <span className="font-semibold text-[var(--accent)]">{price} {RESERVE_LABEL}</span></span>
+      <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span></span>
     </div>
   );
 }
@@ -65,6 +65,6 @@ export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
   const tvl = tvlData ? formatCompact(tvlData.tvl) : "—";
 
   return (
-    <span>TVL: <span className="text-foreground">{tvl} {RESERVE_LABEL}</span></span>
+    <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span></span>
   );
 }

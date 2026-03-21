@@ -42,17 +42,22 @@ export default async function Home({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-10">
-      {/* Compact hero */}
-      <header className="mb-8">
-        <h1 className="text-accent text-xl font-bold tracking-tight">
-          Your story is a token.
+      {/* Hero: featured section */}
+      <header className="mb-10">
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-[var(--accent)] sm:text-3xl">
+          The Bookshelf
         </h1>
-        <p className="text-muted mt-1 text-sm">
-          Every plot you publish drives the market — and every trade pays you. Write more, earn more.
+        <p className="mt-2 font-body text-sm leading-relaxed text-[var(--text-muted)]">
+          Every plot you publish drives the market — and every trade pays you. Browse the shelf, pick a story.
         </p>
       </header>
 
-      {/* Filter bar */}
+      {/* Section heading + filter bar */}
+      <div className="mb-2">
+        <h2 className="font-body text-base font-normal italic text-[var(--text-muted)]">
+          {tab === "trending" ? "Trending" : "New & Noteworthy"}
+        </h2>
+      </div>
       <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} />
 
       {/* Story grid — batched multicall for price/TVL */}

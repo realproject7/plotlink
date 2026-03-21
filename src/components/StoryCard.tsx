@@ -23,61 +23,94 @@ export function StoryCard({
     : false;
 
   return (
-    <div className="flex flex-col">
-      {/* Book cover with page-thickness lines */}
-      <div className="relative mr-0 mb-[6px] ml-[6px]">
-        {/* Page layer 2 (furthest back) */}
-        <div className="border-border/40 pointer-events-none absolute -bottom-[5px] -left-[5px] right-[5px] top-[5px] rounded border" />
-        {/* Page layer 1 */}
-        <div className="border-border/60 pointer-events-none absolute -bottom-[3px] -left-[3px] right-[3px] top-[3px] rounded border" />
+    <div className="group flex flex-col" style={{ perspective: "800px" }}>
+      {/* 3D Book with spine */}
+      <Link
+        href={`/story/${storyline.storyline_id}`}
+        className="relative block transition-transform duration-300 ease-out group-hover:-translate-y-1.5"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        {/* Drop shadow beneath book — grows on hover */}
+        <div className="pointer-events-none absolute -bottom-2 left-2 right-2 h-4 rounded-sm bg-[var(--shelf-shadow)] blur-md transition-all duration-300 group-hover:-bottom-3 group-hover:left-1 group-hover:right-1 group-hover:blur-lg" />
 
-        {/* Main card (front cover) */}
-        <Link
-          href={`/story/${storyline.storyline_id}`}
-          className="border-border hover:border-accent-dim relative flex aspect-[2/3] flex-col justify-between rounded border transition-colors"
-        >
-          {/* Spine edge — thicker left border */}
-          <div className="bg-border absolute inset-y-0 left-0 w-[3px] rounded-l" />
+        {/* Spine — left edge with depth */}
+        <div
+          className="absolute inset-y-0 left-0 w-3 rounded-l-sm"
+          style={{
+            background: "linear-gradient(to right, #A6926F, #C4A87A, #B89E72)",
+            transform: "translateZ(-2px)",
+          }}
+        />
 
-          {/* Top edge — page block thickness */}
-          <div className="bg-border/40 absolute inset-x-0 top-0 h-[1px]" />
+        {/* Page edges visible on right side */}
+        <div
+          className="pointer-events-none absolute inset-y-1 -right-[3px] w-[3px] rounded-r-[1px]"
+          style={{
+            background:
+              "repeating-linear-gradient(to bottom, #F5EFE4 0px, #F5EFE4 1px, #E8DFD0 1px, #E8DFD0 2px)",
+          }}
+        />
 
-          <div className="flex flex-1 flex-col justify-between py-6 pl-6 pr-5">
-            {/* Top: genre tag + completion badge */}
+        {/* Page edges visible on bottom */}
+        <div
+          className="pointer-events-none absolute -bottom-[3px] left-3 right-0 h-[3px] rounded-b-[1px]"
+          style={{
+            background:
+              "repeating-linear-gradient(to right, #F5EFE4 0px, #F5EFE4 1px, #E8DFD0 1px, #E8DFD0 2px)",
+          }}
+        />
+
+        {/* Front cover */}
+        <div className="relative flex aspect-[2/3] flex-col justify-between overflow-hidden rounded-sm rounded-l-none border border-[var(--border)] bg-gradient-to-br from-[#F7F0E5] via-[#F2E8D6] to-[#EBE0CE] transition-[border-color,box-shadow] duration-300 group-hover:border-[var(--accent-dim)] group-hover:shadow-lg">
+          {/* Spine inner shadow overlay */}
+          <div
+            className="pointer-events-none absolute inset-y-0 left-0 w-6"
+            style={{
+              background:
+                "linear-gradient(to right, rgba(139,115,85,0.12), transparent)",
+            }}
+          />
+
+          {/* Content */}
+          <div className="relative flex flex-1 flex-col justify-between py-5 pl-6 pr-4">
+            {/* Top: genre badge + completion */}
             <div className="flex items-start justify-between gap-2">
-              <span className="text-muted text-[10px] uppercase tracking-widest">
+              <span className="rounded-sm bg-[var(--accent)]/15 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent-dim)]">
                 {displayGenre || "Uncategorized"}
               </span>
               {storyline.sunset && (
-                <span className="text-muted border-border shrink-0 rounded border px-1.5 py-0.5 text-[10px]">
+                <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                   complete
                 </span>
               )}
             </div>
 
-            {/* Center: title */}
-            <div className="flex flex-1 flex-col items-center justify-center px-2 text-center">
-              <h3 className="text-accent text-base font-bold leading-tight tracking-tight sm:text-lg">
+            {/* Center: title displayed like printed book cover */}
+            <div className="flex flex-1 flex-col items-center justify-center px-1 text-center">
+              <h3 className="font-heading text-base font-bold leading-tight tracking-tight text-[var(--accent)] sm:text-lg">
                 {storyline.title}
               </h3>
               {storyline.language && storyline.language !== "English" && (
-                <span className="text-muted mt-2 text-[10px]">
+                <span className="mt-2 text-[10px] text-[var(--text-muted)]">
                   {storyline.language}
                 </span>
               )}
             </div>
 
-            {/* Bottom: author */}
-            <div className="text-muted flex items-center justify-center gap-1 text-xs">
+            {/* Bottom: author name like a printed book */}
+            <div className="flex items-center justify-center gap-1 text-xs text-[var(--text-muted)]">
               <WriterIdentityClient address={storyline.writer_address} linkProfile={false} />
               {storyline.writer_type === 1 && <AgentBadge />}
             </div>
           </div>
-        </Link>
-      </div>
 
-      {/* Metadata below card */}
-      <div className="text-muted mt-2 flex flex-col gap-0.5 pl-[7px] pr-1 text-[10px]">
+          {/* Decorative horizontal rule near bottom */}
+          <div className="mx-5 mb-4 h-px bg-[var(--border)]/60" />
+        </div>
+      </Link>
+
+      {/* Metadata below book */}
+      <div className="mt-2.5 flex flex-col gap-0.5 pl-1 pr-1 text-[10px] text-[var(--text-muted)]">
         {storyline.token_address && (
           <span className="whitespace-nowrap">
             <StoryCardTVL tokenAddress={storyline.token_address} />
@@ -85,7 +118,7 @@ export function StoryCard({
         )}
         <span className="whitespace-nowrap">
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} linked
-          {isNew && <span className="text-accent ml-1 text-[10px] font-bold">NEW</span>}
+          {isNew && <span className="ml-1 text-[10px] font-bold text-[var(--accent)]">NEW</span>}
         </span>
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
