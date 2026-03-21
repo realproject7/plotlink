@@ -120,12 +120,15 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   // Y-axis ticks
   const yTicks = [minY, (minY + maxY) / 2, maxY];
 
-  // X-axis time labels (first, mid, last)
-  const xLabels = [
+  // X-axis time labels (first, mid, last) — deduplicated when indices overlap
+  const xLabelCandidates = [
     { idx: 0, label: formatTime(points[0].time) },
     { idx: Math.floor(lastIdx / 2), label: formatTime(points[Math.floor(lastIdx / 2)].time) },
     { idx: lastIdx, label: formatTime(points[lastIdx].time) },
   ];
+  const xLabels = xLabelCandidates.filter(
+    (item, i, arr) => arr.findIndex((a) => a.idx === item.idx) === i,
+  );
 
   return (
     <section className="border-border mt-4 rounded border px-4 py-4">
