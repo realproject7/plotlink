@@ -239,7 +239,7 @@ function CreatePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-accent text-2xl font-bold tracking-tight">Create</h1>
+      <h1 className="font-body text-2xl font-bold tracking-tight text-accent">Create</h1>
 
       {/* Tab bar */}
       <div className="mt-6 flex gap-2">
