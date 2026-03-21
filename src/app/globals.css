@@ -11,9 +11,9 @@
   --accent-dim: #6B3410;
   --border: #D4C5B0;
   --error: #CC3333;
-  --paper-line: hsl(234, 40%, 90%);
-  --paper-margin: hsl(350, 60%, 92%);
-  --paper-bg: #FFFCF7;
+  --paper-line: hsl(234, 25%, 93%);
+  --paper-margin: hsl(350, 35%, 93%);
+  --paper-bg: #F5F0E8;
 }
 
 @theme inline {
@@ -48,56 +48,49 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Ruled notebook paper */
 .ruled-paper {
+  --line-height: 26px;
   background: var(--paper-bg);
-  padding: 3.5rem 2rem 1rem 4.5rem;
+  padding: calc(var(--line-height) * 2) 2rem var(--line-height) 4.5rem;
   font-size: 1rem;
-  line-height: 1.6;
+  line-height: var(--line-height);
   color: var(--text);
   background-image:
     linear-gradient(
       90deg,
       transparent, transparent 3.5rem,
       var(--paper-margin) 3.5rem,
-      var(--paper-margin) 3.75rem,
-      transparent 3.75rem
-    ),
-    linear-gradient(
-      var(--paper-bg), var(--paper-bg) 2.5rem,
-      transparent 2.5rem
+      var(--paper-margin) calc(3.5rem + 2px),
+      transparent calc(3.5rem + 2px)
     ),
     repeating-linear-gradient(
       transparent,
-      transparent calc(1.6em - 2px),
-      var(--paper-line) calc(1.6em - 2px),
-      var(--paper-line) 1.6em,
-      transparent 1.6em
+      transparent calc(var(--line-height) - 1px),
+      var(--paper-line) calc(var(--line-height) - 1px),
+      var(--paper-line) var(--line-height)
     );
-  box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.08);
+  background-position-y: calc(var(--line-height) * 2);
+  box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.06);
   border-radius: 4px;
 }
 
 @media (max-width: 640px) {
   .ruled-paper {
-    padding: 2.5rem 1rem 1rem 2.5rem;
+    padding: calc(var(--line-height) * 2) 1rem var(--line-height) 2.5rem;
     background-image:
       linear-gradient(
         90deg,
         transparent, transparent 1.75rem,
         var(--paper-margin) 1.75rem,
-        var(--paper-margin) 2rem,
-        transparent 2rem
-      ),
-      linear-gradient(
-        var(--paper-bg), var(--paper-bg) 1.5rem,
-        transparent 1.5rem
+        var(--paper-margin) calc(1.75rem + 2px),
+        transparent calc(1.75rem + 2px)
       ),
       repeating-linear-gradient(
         transparent,
-        transparent calc(1.6em - 2px),
-        var(--paper-line) calc(1.6em - 2px),
-        var(--paper-line) 1.6em,
-        transparent 1.6em
+        transparent calc(var(--line-height) - 1px),
+        var(--paper-line) calc(var(--line-height) - 1px),
+        var(--paper-line) var(--line-height)
       );
+    background-position-y: calc(var(--line-height) * 2);
   }
 }
 
