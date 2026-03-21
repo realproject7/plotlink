@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { type Address } from "viem";
 import { type Storyline } from "../../lib/supabase";
 import { BatchTokenDataProvider } from "./BatchTokenDataProvider";
@@ -17,13 +18,34 @@ function chunk<T>(arr: T[], size: number): T[][] {
 }
 
 /**
+ * Hook that returns the current shelf size (columns per row).
+ * Uses matchMedia to stay in sync with the CSS breakpoint.
+ */
+function useShelfSize(): number {
+  const [cols, setCols] = useState(3);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 1024px)");
+    const update = () => setCols(mql.matches ? 3 : 2);
+    update();
+    mql.addEventListener("change", update);
+    return () => mql.removeEventListener("change", update);
+  }, []);
+
+  return cols;
+}
+
+/**
  * A single bookshelf row: books sitting on a visible shelf surface.
  */
-function ShelfRow({ children }: { children: React.ReactNode }) {
+function ShelfRow({ children, cols }: { children: React.ReactNode; cols: number }) {
   return (
     <div className="relative pb-3">
       {/* Books */}
-      <div className="relative z-10 grid grid-cols-2 gap-x-4 gap-y-0 lg:grid-cols-3">
+      <div
+        className="relative z-10 grid gap-x-4 gap-y-0"
+        style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+      >
         {children}
       </div>
 
@@ -51,22 +73,22 @@ function ShelfRow({ children }: { children: React.ReactNode }) {
  * Fetches price + TVL for all visible stories in a single multicall
  * instead of 4 individual RPC calls per card.
  *
- * Books are displayed on shelves — each row of 2 (mobile) or 3 (desktop)
- * books sits on a visible shelf surface.
+ * Books are displayed on shelves — each visual row of books sits on
+ * a visible shelf surface. Shelf size adapts to viewport (2 on mobile, 3 on desktop).
  */
 export function StoryGrid({ storylines }: { storylines: Storyline[] }) {
   const tokenAddresses = storylines
     .map((s) => s.token_address)
     .filter((addr): addr is string => !!addr) as Address[];
 
-  // We chunk by 3 (desktop cols) — CSS handles showing 2 cols on mobile
-  const shelves = chunk(storylines, 3);
+  const cols = useShelfSize();
+  const shelves = chunk(storylines, cols);
 
   return (
     <BatchTokenDataProvider tokenAddresses={tokenAddresses}>
       <div className="mt-6 flex flex-col gap-6">
         {shelves.map((shelf, i) => (
-          <ShelfRow key={i}>
+          <ShelfRow key={`${cols}-${i}`} cols={cols}>
             {shelf.map((s) => (
               <StoryCard key={s.id} storyline={s} />
             ))}
