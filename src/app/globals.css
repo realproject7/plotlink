@@ -25,19 +25,18 @@
   --color-accent-dim: var(--accent-dim);
   --color-border: var(--border);
   --color-error: var(--error);
-  --font-heading: var(--font-montserrat);
-  --font-body: var(--font-libre-caslon);
+  --font-heading: var(--font-geist-mono);
+  --font-body: var(--font-geist-mono);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-libre-caslon), "Libre Caslon Text", Georgia,
-    "Times New Roman", serif;
+  font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-montserrat), Montserrat, system-ui, sans-serif;
+  font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
 }
 
 /* Selection */
