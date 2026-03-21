@@ -27,7 +27,7 @@ export function StoryCard({
       {/* 3D Book with spine */}
       <Link
         href={`/story/${storyline.storyline_id}`}
-        className="relative block transition-transform duration-300 ease-out group-hover:-translate-y-1.5"
+        className="relative block transition-transform duration-300 ease-out [transform:rotateY(-3deg)] group-hover:[transform:rotateY(0deg)_translateY(-6px)]"
         style={{ transformStyle: "preserve-3d" }}
       >
         {/* Drop shadow beneath book — grows on hover */}
