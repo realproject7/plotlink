@@ -70,7 +70,7 @@ export async function GET(
             alignItems: "center",
             gap: "12px",
             fontSize: "24px",
-            color: "#DAAA63",
+            color: "#8B4513",
           }}
         >
           PlotLink
@@ -88,7 +88,7 @@ export async function GET(
             style={{
               fontSize: "48px",
               fontWeight: 700,
-              color: "#DAAA63",
+              color: "#8B4513",
               overflow: "hidden",
             }}
           >

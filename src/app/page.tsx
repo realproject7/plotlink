@@ -45,10 +45,10 @@ export default async function Home({
       {/* Hero: featured section */}
       <header className="mb-10">
         <h1 className="font-heading text-2xl font-bold tracking-tight text-[var(--accent)] sm:text-3xl">
-          The Bookshelf
+          Your story is a token.
         </h1>
         <p className="mt-2 font-body text-sm leading-relaxed text-[var(--text-muted)]">
-          Every plot you publish drives the market — and every trade pays you. Browse the shelf, pick a story.
+          Every plot you publish drives the market — and every trade pays you. Write more, earn more.
         </p>
       </header>
 
