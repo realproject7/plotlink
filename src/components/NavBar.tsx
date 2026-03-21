@@ -21,8 +21,7 @@ export function NavBar() {
         {/* Logo */}
         <Link
           href="/"
-          className="font-[var(--font-heading)] text-sm font-semibold tracking-tight text-[var(--text)] transition-opacity hover:opacity-80"
-          style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}
+          className="text-sm font-semibold tracking-tight text-[var(--text)] transition-opacity hover:opacity-80"
         >
           PlotLink
         </Link>

@@ -1,21 +1,14 @@
 import type { Metadata } from "next";
-import { Montserrat, Libre_Caslon_Text } from "next/font/google";
+import { Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import { NavBar } from "../components/NavBar";
 import { Footer } from "../components/Footer";
 import { FarcasterMiniApp } from "../components/FarcasterMiniApp";
 import "./globals.css";
 
-const montserrat = Montserrat({
-  variable: "--font-montserrat",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
-  weight: ["500", "600"],
-});
-
-const libreCaslon = Libre_Caslon_Text({
-  variable: "--font-libre-caslon",
-  subsets: ["latin"],
-  weight: "400",
 });
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -41,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${montserrat.variable} ${libreCaslon.variable} antialiased`}>
+      <body className={`${geistMono.variable} antialiased`}>
         <Providers>
           <FarcasterMiniApp />
           <NavBar />
