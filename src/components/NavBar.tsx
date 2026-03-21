@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ConnectWallet } from "./ConnectWallet";
 
 const NAV_LINKS = [
-  { href: "/create", label: "create" },
-  { href: "/dashboard/writer", label: "writer" },
-  { href: "/dashboard/reader", label: "reader" },
+  { href: "/create", label: "Create" },
+  { href: "/dashboard/writer", label: "Writer" },
+  { href: "/dashboard/reader", label: "Reader" },
 ] as const;
 
 export function NavBar() {
@@ -22,10 +21,10 @@ export function NavBar() {
         {/* Logo */}
         <Link
           href="/"
-          className="text-accent text-sm font-bold tracking-tight transition-opacity hover:opacity-80"
+          className="font-[var(--font-heading)] text-sm font-semibold tracking-tight text-[var(--text)] transition-opacity hover:opacity-80"
+          style={{ fontFamily: "var(--font-montserrat), Montserrat, sans-serif" }}
         >
-          <Image src="/plotlink-logo-symbol.svg" alt="" width={18} height={18} className="mr-1.5 inline-block align-middle" />
-          <span className="align-middle">PlotLink</span>
+          PlotLink
         </Link>
 
         {/* Desktop nav links */}
@@ -36,13 +35,12 @@ export function NavBar() {
               <Link
                 key={href}
                 href={href}
-                className={`rounded px-2.5 py-1 text-xs transition-colors ${
+                className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                   active
-                    ? "bg-[var(--accent)]/10 text-accent"
+                    ? "bg-[var(--accent)]/15 text-accent"
                     : "text-muted hover:text-foreground"
                 }`}
               >
-                {active && <span className="text-accent-dim mr-0.5">&gt;</span>}
                 {label}
               </Link>
             );
@@ -56,11 +54,24 @@ export function NavBar() {
           </div>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-muted hover:text-foreground p-1 text-sm transition-colors md:hidden"
+            className="text-muted hover:text-foreground p-1 transition-colors md:hidden"
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
           >
-            <span aria-hidden="true">{mobileOpen ? "[x]" : "[=]"}</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {mobileOpen ? (
+                <>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </>
+              ) : (
+                <>
+                  <line x1="3" y1="6" x2="21" y2="6" />
+                  <line x1="3" y1="12" x2="21" y2="12" />
+                  <line x1="3" y1="18" x2="21" y2="18" />
+                </>
+              )}
+            </svg>
           </button>
         </div>
       </div>
@@ -76,13 +87,12 @@ export function NavBar() {
                   key={href}
                   href={href}
                   onClick={() => setMobileOpen(false)}
-                  className={`rounded px-2.5 py-1.5 text-xs transition-colors ${
+                  className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
                     active
-                      ? "bg-[var(--accent)]/10 text-accent"
+                      ? "bg-[var(--accent)]/15 text-accent"
                       : "text-muted hover:text-foreground"
                   }`}
                 >
-                  {active && <span className="text-accent-dim mr-0.5">&gt;</span>}
                   {label}
                 </Link>
               );
