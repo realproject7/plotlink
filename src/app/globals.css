@@ -1,14 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --bg: #0a0a0a;
-  --bg-surface: #111111;
-  --text: #e0e0e0;
-  --text-muted: #737373;
-  --accent: #00ff88;
-  --accent-dim: #00cc6a;
-  --border: #2a2a2a;
-  --error: #ff4444;
+  --bg: #E8DFD0;
+  --bg-surface: #FFFFFF;
+  --bg-shelf: #DDD3C2;
+  --shelf-shadow: rgba(44, 24, 16, 0.08);
+  --text: #2C1810;
+  --text-muted: #8B7355;
+  --accent: #DAAA63;
+  --accent-dim: #C4944F;
+  --border: #D4C5B0;
+  --error: #CC3333;
 }
 
 @theme inline {
@@ -20,29 +22,33 @@
   --color-accent-dim: var(--accent-dim);
   --color-border: var(--border);
   --color-error: var(--error);
-  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-montserrat);
+  --font-body: var(--font-libre-caslon);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono",
-    Menlo, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-libre-caslon), "Libre Caslon Text", Georgia,
+    "Times New Roman", serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-montserrat), Montserrat, system-ui, sans-serif;
 }
 
 /* Selection */
 ::selection {
   background: var(--accent);
-  color: var(--bg);
+  color: var(--bg-surface);
 }
 
 /* Custom select dropdown styling */
 select {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238B7355' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.5rem;
 }
-
