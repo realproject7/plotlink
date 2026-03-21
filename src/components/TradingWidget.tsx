@@ -254,7 +254,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           </p>
         )}
         {insufficientBalance && (
-          <p className="mt-1 text-[10px] text-red-400">Insufficient balance</p>
+          <p className="mt-1 text-[10px] text-error">Insufficient balance</p>
         )}
       </div>
 
@@ -262,7 +262,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       {estimate != null && parsedAmount > BigInt(0) && (
         <div className="text-muted mt-2 text-xs">
           {tab === "buy" ? "Max cost" : "Min return"}:{" "}
-          <span className="text-foreground">
+          <span className="font-semibold text-accent">
             {formatUnits(applySlippage(estimate, tab === "buy"), 18)} {RESERVE_LABEL}
           </span>
           <span className="ml-2">(incl. 3% slippage)</span>
@@ -287,7 +287,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       </button>
 
       {/* Status */}
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-error">{error}</p>}
       {txHash && txState === "done" && (
         <p className="text-muted mt-2 text-xs">
           Tx:{" "}

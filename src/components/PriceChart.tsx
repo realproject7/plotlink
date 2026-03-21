@@ -181,6 +181,18 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
           </text>
         ))}
 
+        {/* Area fill under price line */}
+        <defs>
+          <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.15" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon
+          points={`${linePoints} ${scaleX(lastIdx)},${PAD.top + PLOT_H} ${PAD.left},${PAD.top + PLOT_H}`}
+          fill="url(#priceGradient)"
+        />
+
         {/* Price line */}
         <polyline
           points={linePoints}

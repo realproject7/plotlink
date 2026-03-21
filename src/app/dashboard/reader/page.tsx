@@ -90,7 +90,7 @@ export default function ReaderDashboard() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="text-accent text-2xl font-bold tracking-tight">
+      <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
         Reader Dashboard
       </h1>
       <p className="text-muted mt-2 text-sm">
@@ -120,7 +120,7 @@ export default function ReaderDashboard() {
         {isLoading && <p className="text-muted mt-4 text-sm">Loading...</p>}
 
         {error && (
-          <p className="mt-4 text-sm text-red-400">
+          <p className="mt-4 text-sm text-error">
             Failed to load donations. Please try again.
           </p>
         )}
@@ -235,7 +235,7 @@ function TradingHistory({ address }: { address: string }) {
             className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs"
           >
             <div className="text-muted flex gap-3">
-              <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-red-400 font-medium"}>
+              <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-error font-medium"}>
                 {t.event_type === "mint" ? "Buy" : "Sell"}
               </span>
               <Link

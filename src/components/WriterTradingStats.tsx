@@ -46,7 +46,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
         <span className="block text-[10px] uppercase tracking-wider">
           Token Price
         </span>
-        <span className="text-foreground">
+        <span className="font-semibold text-accent">
           {data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>
@@ -54,7 +54,7 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
         <span className="block text-[10px] uppercase tracking-wider">
           TVL
         </span>
-        <span className="text-foreground">
+        <span className="font-semibold text-accent">
           {data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}
         </span>
       </div>

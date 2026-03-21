@@ -84,7 +84,7 @@ export function RecoveryBanner({
   }
 
   return (
-    <div className="border-accent/40 bg-surface mb-6 rounded border p-4">
+    <div className="mb-6 rounded border border-[var(--accent)]/40 bg-[var(--bg-shelf)]/50 p-4">
       <p className="text-foreground text-sm font-medium">
         Your previous story was published on-chain but indexing failed.
       </p>

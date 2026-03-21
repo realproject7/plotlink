@@ -70,7 +70,7 @@ export async function generateMetadata({
         type: "launch_miniapp",
         url: storyUrl,
         name: "PlotLink",
-        splashBackgroundColor: "#0a0a0a",
+        splashBackgroundColor: "#E8DFD0",
       },
     },
   });
@@ -228,7 +228,7 @@ function StoryHeader({
 
   return (
     <header className="border-border border-b pb-6">
-      <h1 className="text-accent text-2xl font-bold tracking-tight">
+      <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
         {storyline.title}
       </h1>
       <div className="text-muted mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
@@ -262,7 +262,7 @@ function StoryHeader({
             <span className="text-muted block text-[10px] uppercase tracking-wider">
               Token Price
             </span>
-            <span className="text-foreground">
+            <span className="font-semibold text-accent">
               {formatPrice(priceInfo.pricePerToken)} {reserveLabel}
             </span>
           </div>
@@ -270,7 +270,7 @@ function StoryHeader({
             <span className="text-muted block text-[10px] uppercase tracking-wider">
               Supply Minted
             </span>
-            <span className="text-foreground">
+            <span className="font-semibold text-accent">
               {formatSupply(priceInfo.totalSupply)} tokens
             </span>
           </div>
@@ -310,7 +310,7 @@ function GenesisSection({ plot }: { plot: Plot }) {
         )}
       </div>
       {plot.content ? (
-        <div className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+        <div className="rounded border border-border bg-surface/50 px-5 py-4 text-foreground whitespace-pre-wrap text-sm leading-relaxed">
           {plot.content}
         </div>
       ) : (

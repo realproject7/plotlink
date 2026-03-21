@@ -192,7 +192,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           </a>
         </p>
       )}
-      {error && <p className="mt-1 text-[10px] text-red-400">{error}</p>}
+      {error && <p className="mt-1 text-[10px] text-error">{error}</p>}
     </div>
   );
 }
