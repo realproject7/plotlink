@@ -43,6 +43,30 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--bg-surface);
 }
 
+/* Moleskine notebook cards */
+.moleskine-notebook {
+  position: relative;
+  transition: transform 0.4s ease-in-out;
+  perspective: 800px;
+}
+
+.notebook-cover {
+  transition: transform 0.5s linear, box-shadow 0.5s linear;
+  transform-style: preserve-3d;
+  transform-origin: left center 0px;
+}
+
+@media (hover: hover) {
+  .moleskine-notebook:hover {
+    transform: rotateZ(-10deg);
+  }
+  .moleskine-notebook:hover .notebook-cover {
+    transform: rotateY(-50deg);
+    z-index: 999;
+    box-shadow: 20px 10px 50px rgba(0, 0, 0, 0.2);
+  }
+}
+
 /* Custom select dropdown styling */
 select {
   appearance: none;
