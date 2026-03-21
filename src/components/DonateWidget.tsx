@@ -158,14 +158,14 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
           </p>
         )}
         {insufficientBalance && (
-          <p className="mt-1 text-[10px] text-red-400">Insufficient balance</p>
+          <p className="mt-1 text-[10px] text-error">Insufficient balance</p>
         )}
       </div>
 
       {parsedAmount > BigInt(0) && (
         <p className="text-muted mt-2 text-xs">
           Donating{" "}
-          <span className="text-foreground">
+          <span className="font-semibold text-accent">
             {formatUnits(parsedAmount, 18)} {RESERVE_LABEL}
           </span>{" "}
           to {writerAddress ? <FarcasterAvatar address={writerAddress} size={12} linkProfile={false} /> : `story #${storylineId}`}
@@ -189,7 +189,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
         {txState === "error" && "Retry"}
       </button>
 
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-2 text-xs text-error">{error}</p>}
       {txHash && txState === "done" && (
         <p className="text-muted mt-2 text-xs">
           Tx:{" "}

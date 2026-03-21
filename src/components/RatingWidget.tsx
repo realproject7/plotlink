@@ -174,7 +174,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
             {submitting ? "Signing..." : success ? "Updated!" : "Submit Rating"}
           </button>
 
-          {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+          {error && <p className="mt-2 text-xs text-error">{error}</p>}
         </div>
       ) : isConnected ? (
         <p className="text-muted mt-3 text-xs">

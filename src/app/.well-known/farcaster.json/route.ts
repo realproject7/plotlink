@@ -24,7 +24,7 @@ export function GET() {
       imageUrl: `${appUrl}/og-image.png`,
       buttonTitle: "Open PlotLink",
       splashImageUrl: `${appUrl}/splash.png`,
-      splashBackgroundColor: "#0a0a0a",
+      splashBackgroundColor: "#E8DFD0",
     },
   });
 }

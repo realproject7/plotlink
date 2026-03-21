@@ -58,9 +58,9 @@ export async function GET(
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "60px",
-          backgroundColor: "#0a0a0a",
-          color: "#e0e0e0",
-          fontFamily: "monospace",
+          backgroundColor: "#E8DFD0",
+          color: "#2C1810",
+          fontFamily: "Georgia, serif",
         }}
       >
         {/* Top: branding */}
@@ -70,7 +70,7 @@ export async function GET(
             alignItems: "center",
             gap: "12px",
             fontSize: "24px",
-            color: "#00ff88",
+            color: "#DAAA63",
           }}
         >
           PlotLink
@@ -88,7 +88,7 @@ export async function GET(
             style={{
               fontSize: "48px",
               fontWeight: 700,
-              color: "#00ff88",
+              color: "#DAAA63",
               overflow: "hidden",
             }}
           >
@@ -102,7 +102,7 @@ export async function GET(
             display: "flex",
             gap: "32px",
             fontSize: "22px",
-            color: "#737373",
+            color: "#8B7355",
           }}
         >
           <span>by {farcasterProfile ? `@${farcasterProfile.username}` : truncateAddress(sl.writer_address)}</span>

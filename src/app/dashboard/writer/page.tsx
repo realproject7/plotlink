@@ -84,7 +84,7 @@ export default function WriterDashboard() {
       {isLoading && <p className="text-muted mt-8 text-sm">Loading...</p>}
 
       {error && (
-        <p className="mt-8 text-sm text-red-400">
+        <p className="mt-8 text-sm text-error">
           Failed to load storylines. Please try again.
         </p>
       )}

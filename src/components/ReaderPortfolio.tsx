@@ -137,7 +137,7 @@ export function ReaderPortfolio() {
                 <span className="text-foreground">
                   {bestPick.storyline.title.slice(0, 20)}
                   {bestPick.storyline.title.length > 20 ? "..." : ""}{" "}
-                  <span className={bestPick.priceChange >= 0 ? "text-accent" : "text-red-400"}>
+                  <span className={bestPick.priceChange >= 0 ? "text-accent" : "text-error"}>
                     {bestPick.priceChange >= 0 ? "+" : ""}
                     {bestPick.priceChange.toFixed(1)}%
                   </span>
@@ -169,7 +169,7 @@ export function ReaderPortfolio() {
                   </div>
                   {h.priceChange !== null && (
                     <div
-                      className={`text-[10px] ${h.priceChange >= 0 ? "text-accent" : "text-red-400"}`}
+                      className={`text-[10px] ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}
                     >
                       {h.priceChange >= 0 ? "+" : ""}
                       {h.priceChange.toFixed(1)}%

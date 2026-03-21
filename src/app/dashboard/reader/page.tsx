@@ -120,7 +120,7 @@ export default function ReaderDashboard() {
         {isLoading && <p className="text-muted mt-4 text-sm">Loading...</p>}
 
         {error && (
-          <p className="mt-4 text-sm text-red-400">
+          <p className="mt-4 text-sm text-error">
             Failed to load donations. Please try again.
           </p>
         )}
@@ -235,7 +235,7 @@ function TradingHistory({ address }: { address: string }) {
             className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs"
           >
             <div className="text-muted flex gap-3">
-              <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-red-400 font-medium"}>
+              <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-error font-medium"}>
                 {t.event_type === "mint" ? "Buy" : "Sell"}
               </span>
               <Link
