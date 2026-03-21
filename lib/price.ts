@@ -5,6 +5,7 @@ import {
   priceForNextMintFunction,
   tokenBondFunction,
 } from "./contracts/abi";
+import { priceCache } from "./cache";
 
 /**
  * Minimal ABIs for price display.
@@ -146,7 +147,7 @@ export async function getTokenPrice(
   client?: typeof publicClient,
 ): Promise<TokenPriceInfo | null> {
   const rpc = client ?? publicClient;
-  try {
+  const fetcher = async () => {
     const [priceRaw, totalSupplyRaw] = await Promise.all([
       rpc.readContract({
         address: MCV2_BOND,
@@ -166,7 +167,12 @@ export async function getTokenPrice(
       priceRaw: BigInt(priceRaw),
       totalSupply: formatUnits(totalSupplyRaw, 18),
       totalSupplyRaw,
-    };
+    } satisfies TokenPriceInfo;
+  };
+
+  try {
+    if (client) return await fetcher();
+    return await priceCache.get(`price:${tokenAddress.toLowerCase()}`, fetcher, 60);
   } catch {
     return null;
   }
@@ -186,7 +192,7 @@ export async function get24hPriceChange(
   client?: typeof publicClient,
 ): Promise<{ changePercent: number; currentPrice: bigint; previousPrice: bigint } | null> {
   const rpc = client ?? publicClient;
-  try {
+  const fetcher = async () => {
     const currentBlock = await rpc.getBlockNumber();
     const pastBlock = currentBlock - BLOCKS_PER_24H;
 
@@ -217,6 +223,11 @@ export async function get24hPriceChange(
       Number(((current - previous) * BigInt(10000)) / previous) / 100;
 
     return { changePercent, currentPrice: current, previousPrice: previous };
+  };
+
+  try {
+    if (client) return await fetcher();
+    return await priceCache.get(`24h:${tokenAddress.toLowerCase()}`, fetcher, 60);
   } catch {
     return null;
   }
@@ -243,7 +254,7 @@ export async function getTokenTVL(
   client?: typeof publicClient,
 ): Promise<{ tvl: string; tvlRaw: bigint; reserveToken: Address; decimals: number } | null> {
   const rpc = client ?? publicClient;
-  try {
+  const fetcher = async () => {
     const result = await rpc.readContract({
       address: MCV2_BOND,
       abi: mcv2BondAbi,
@@ -266,6 +277,11 @@ export async function getTokenTVL(
       reserveToken: reserveAddr,
       decimals,
     };
+  };
+
+  try {
+    if (client) return await fetcher();
+    return await priceCache.get(`tvl:${tokenAddress.toLowerCase()}`, fetcher, 60);
   } catch {
     return null;
   }
@@ -290,37 +306,37 @@ export async function getBatchTokenData(
   tokenAddresses: Address[],
   client?: typeof publicClient,
 ): Promise<Map<string, BatchTokenEntry>> {
+  if (tokenAddresses.length === 0) return new Map();
+
   const rpcClient = client ?? publicClient;
-  const result = new Map<string, BatchTokenEntry>();
-  if (tokenAddresses.length === 0) return result;
+  const fetcher = async () => {
+    const result = new Map<string, BatchTokenEntry>();
 
-  const calls = tokenAddresses.flatMap((token) => [
-    {
-      address: MCV2_BOND as Address,
-      abi: [priceForNextMintFunction],
-      functionName: "priceForNextMint" as const,
-      args: [token] as const,
-    },
-    {
-      address: token,
-      abi: erc20Abi,
-      functionName: "totalSupply" as const,
-    },
-    {
-      address: MCV2_BOND as Address,
-      abi: [tokenBondFunction],
-      functionName: "tokenBond" as const,
-      args: [token] as const,
-    },
-  ]);
+    const calls = tokenAddresses.flatMap((token) => [
+      {
+        address: MCV2_BOND as Address,
+        abi: [priceForNextMintFunction],
+        functionName: "priceForNextMint" as const,
+        args: [token] as const,
+      },
+      {
+        address: token,
+        abi: erc20Abi,
+        functionName: "totalSupply" as const,
+      },
+      {
+        address: MCV2_BOND as Address,
+        abi: [tokenBondFunction],
+        functionName: "tokenBond" as const,
+        args: [token] as const,
+      },
+    ]);
 
-  try {
     const multicallResults = await rpcClient.multicall({
       contracts: calls,
       allowFailure: true,
     });
 
-    // Parse results in groups of 3 per token
     for (let i = 0; i < tokenAddresses.length; i++) {
       const addr = tokenAddresses[i].toLowerCase();
       const base = i * 3;
@@ -345,7 +361,6 @@ export async function getBatchTokenData(
         const bondData = bondResult.result as readonly unknown[];
         const reserveToken = bondData[4] as Address;
         const reserveBalance = bondData[5] as bigint;
-        // Default to 18 decimals (PL_TEST/WETH) — avoids extra RPC call
         tvl = {
           tvl: formatUnits(reserveBalance, 18),
           tvlRaw: reserveBalance,
@@ -356,9 +371,12 @@ export async function getBatchTokenData(
 
       result.set(addr, { price, tvl });
     }
-  } catch {
-    // If multicall fails entirely, return empty map (callers fall back)
-  }
 
-  return result;
+    return result;
+  };
+
+  if (client) return fetcher().catch(() => new Map());
+
+  const cacheKey = `batch:${tokenAddresses.map((a) => a.toLowerCase()).sort().join(",")}`;
+  return priceCache.get(cacheKey, fetcher, 60).catch(() => new Map());
 }

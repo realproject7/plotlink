@@ -18,9 +18,13 @@ const PUBLIC_RPC_ENDPOINTS = [
   "https://base.drpc.org",
   "https://base.llamarpc.com",
   "https://base.meowrpc.com",
-  "https://developer-access-mainnet.base.org",
   "https://base-mainnet.public.blastapi.io",
   "https://1rpc.io/base",
+  "https://base.gateway.tenderly.co",
+  "https://rpc.notadegen.com/base",
+  "https://base.blockpi.network/v1/rpc/public",
+  "https://developer-access-mainnet.base.org",
+  "https://base.api.onfinality.io/public",
 ];
 
 export const RPC_ENDPOINTS = CUSTOM_RPC_URL
@@ -29,11 +33,18 @@ export const RPC_ENDPOINTS = CUSTOM_RPC_URL
 
 /** Client-side CORS-enabled RPC endpoints for wagmi/browser. */
 const PUBLIC_CORS_ENDPOINTS = [
-  "https://mainnet.base.org",
   "https://base-rpc.publicnode.com",
+  "https://mainnet.base.org",
   "https://base.drpc.org",
   "https://base.llamarpc.com",
   "https://base.meowrpc.com",
+  "https://base-mainnet.public.blastapi.io",
+  "https://1rpc.io/base",
+  "https://base.gateway.tenderly.co",
+  "https://rpc.notadegen.com/base",
+  "https://base.blockpi.network/v1/rpc/public",
+  "https://developer-access-mainnet.base.org",
+  "https://base.api.onfinality.io/public",
 ];
 
 export const CORS_RPC_ENDPOINTS = CUSTOM_RPC_URL
@@ -49,7 +60,7 @@ function buildServerTransport() {
     return CUSTOM_RPC_URL ? fallback([http(CUSTOM_RPC_URL), http()]) : http();
   }
   return fallback(
-    RPC_ENDPOINTS.map((url) => http(url, { timeout: 10_000, retryCount: 1 })),
+    RPC_ENDPOINTS.map((url) => http(url, { timeout: 2_000, retryCount: 0, batch: true })),
     { rank: false },
   );
 }
@@ -77,8 +88,9 @@ export const browserClient = createPublicClient({
     ? fallback(
         CORS_RPC_ENDPOINTS.map((url) =>
           http(url, {
-            timeout: 5_000,
+            timeout: 2_000,
             retryCount: 0,
+            batch: true,
             fetchOptions: { mode: "cors", credentials: "omit" },
           }),
         ),
@@ -104,8 +116,9 @@ export function createFallbackTransport() {
   return fallback(
     CORS_RPC_ENDPOINTS.map((url) =>
       http(url, {
-        timeout: 5_000,
+        timeout: 2_000,
         retryCount: 0,
+        batch: true,
         fetchOptions: { mode: "cors", credentials: "omit" },
       }),
     ),
@@ -126,7 +139,11 @@ function getRpcDisplayName(url: string): string {
   if (url.includes("meowrpc.com")) return "MeowRPC";
   if (url.includes("1rpc.io")) return "1RPC";
   if (url.includes("blastapi.io")) return "BlastAPI";
+  if (url.includes("tenderly.co")) return "Tenderly";
+  if (url.includes("notadegen.com")) return "NotADegen";
+  if (url.includes("blockpi.network")) return "BlockPI";
   if (url.includes("developer-access")) return "Base Dev";
+  if (url.includes("onfinality.io")) return "OnFinality";
   return "RPC";
 }
 
@@ -149,7 +166,7 @@ export async function withServerRpcFallback<T>(
     try {
       const client = createPublicClient({
         chain,
-        transport: http(url, { timeout: 10_000, retryCount: 0 }),
+        transport: http(url, { timeout: 2_000, retryCount: 0 }),
       }) as PublicClient;
       const result = await operation(client);
       if (i > 0) console.log(`${prefix} Success with ${name} (attempt ${i + 1})`);
