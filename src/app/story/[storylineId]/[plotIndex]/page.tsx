@@ -126,7 +126,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
 
       {/* Plot content */}
       {p.content ? (
-        <div className="text-foreground whitespace-pre-wrap text-sm leading-relaxed">
+        <div className="ruled-paper whitespace-pre-wrap">
           {p.content}
         </div>
       ) : (

@@ -11,6 +11,9 @@
   --accent-dim: #6B3410;
   --border: #D4C5B0;
   --error: #CC3333;
+  --paper-line: hsl(234, 62%, 86%);
+  --paper-margin: hsl(350, 100%, 91%);
+  --paper-bg: hsl(0, 15%, 95%);
 }
 
 @theme inline {
@@ -41,6 +44,61 @@ h1, h2, h3, h4, h5, h6 {
 ::selection {
   background: var(--accent);
   color: var(--bg-surface);
+}
+
+/* Ruled notebook paper */
+.ruled-paper {
+  background: var(--paper-bg);
+  padding: 3.5rem 2rem 1rem 4.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text);
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent, transparent 3.5rem,
+      var(--paper-margin) 3.5rem,
+      var(--paper-margin) 3.75rem,
+      transparent 3.75rem
+    ),
+    linear-gradient(
+      var(--paper-bg), var(--paper-bg) 2.5rem,
+      transparent 2.5rem
+    ),
+    repeating-linear-gradient(
+      transparent,
+      transparent calc(1.6em - 2px),
+      var(--paper-line) calc(1.6em - 2px),
+      var(--paper-line) 1.6em,
+      transparent 1.6em
+    );
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+
+@media (max-width: 640px) {
+  .ruled-paper {
+    padding: 2.5rem 1rem 1rem 2.5rem;
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent, transparent 1.75rem,
+        var(--paper-margin) 1.75rem,
+        var(--paper-margin) 2rem,
+        transparent 2rem
+      ),
+      linear-gradient(
+        var(--paper-bg), var(--paper-bg) 1.5rem,
+        transparent 1.5rem
+      ),
+      repeating-linear-gradient(
+        transparent,
+        transparent calc(1.6em - 2px),
+        var(--paper-line) calc(1.6em - 2px),
+        var(--paper-line) 1.6em,
+        transparent 1.6em
+      );
+  }
 }
 
 /* Moleskine notebook cards */
