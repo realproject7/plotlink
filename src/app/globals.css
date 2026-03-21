@@ -11,9 +11,9 @@
   --accent-dim: #6B3410;
   --border: #D4C5B0;
   --error: #CC3333;
-  --paper-line: hsl(234, 30%, 92%);
-  --paper-margin: hsl(350, 40%, 94%);
-  --paper-bg: hsl(30, 20%, 96%);
+  --paper-line: hsl(234, 40%, 90%);
+  --paper-margin: hsl(350, 60%, 92%);
+  --paper-bg: #FFFCF7;
 }
 
 @theme inline {
@@ -72,7 +72,7 @@ h1, h2, h3, h4, h5, h6 {
       var(--paper-line) 1.6em,
       transparent 1.6em
     );
-  box-shadow: 0 0 0.5rem rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 0.75rem rgba(0, 0, 0, 0.08);
   border-radius: 4px;
 }
 
