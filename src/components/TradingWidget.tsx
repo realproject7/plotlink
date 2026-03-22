@@ -7,7 +7,7 @@ import { parseUnits, formatUnits, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
 import { MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL, ZAP_PLOTLINK } from "../../lib/contracts/constants";
-import { getZapQuote, buildZapMintTx, type ZapMode } from "../../lib/zap";
+import { getZapQuote, buildZapMintTx } from "../../lib/zap";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";

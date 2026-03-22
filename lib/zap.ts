@@ -6,9 +6,9 @@
  * tokens on the MCV2 bonding curve in a single transaction.
  */
 
-import { type Address, encodeAbiParameters, decodeFunctionResult, encodeFunctionData, parseAbi } from "viem";
+import { type Address, parseAbi } from "viem";
 import { browserClient as publicClient } from "./rpc";
-import { ZAP_PLOTLINK, UNISWAP_V4_QUOTER, PLOT_TOKEN, UNISWAP_V4_POOL_MANAGER } from "./contracts/constants";
+import { ZAP_PLOTLINK, UNISWAP_V4_QUOTER, PLOT_TOKEN } from "./contracts/constants";
 
 // ---------------------------------------------------------------------------
 // ABI (only the functions we call)
@@ -26,17 +26,71 @@ export const zapPlotLinkAbi = parseAbi([
  *
  * These functions are NOT view — they execute state changes internally and
  * revert with the result. Must be called via eth_call (simulateContract).
- *
- * QuoteExactSingleParams struct:
- *   PoolKey poolKey (currency0, currency1, fee, tickSpacing, hooks)
- *   bool zeroForOne
- *   uint128 exactAmount
- *   bytes hookData
  */
-const quoterAbi = parseAbi([
-  "function quoteExactInputSingle(((address,address,uint24,int24,address),bool,uint128,bytes) params) external returns (uint256 amountOut, uint256 gasEstimate)",
-  "function quoteExactOutputSingle(((address,address,uint24,int24,address),bool,uint128,bytes) params) external returns (uint256 amountIn, uint256 gasEstimate)",
-]);
+const quoterAbi = [
+  {
+    name: "quoteExactInputSingle",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          {
+            name: "poolKey",
+            type: "tuple",
+            components: [
+              { name: "currency0", type: "address" },
+              { name: "currency1", type: "address" },
+              { name: "fee", type: "uint24" },
+              { name: "tickSpacing", type: "int24" },
+              { name: "hooks", type: "address" },
+            ],
+          },
+          { name: "zeroForOne", type: "bool" },
+          { name: "exactAmount", type: "uint128" },
+          { name: "hookData", type: "bytes" },
+        ],
+      },
+    ],
+    outputs: [
+      { name: "amountOut", type: "uint256" },
+      { name: "gasEstimate", type: "uint256" },
+    ],
+  },
+  {
+    name: "quoteExactOutputSingle",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [
+      {
+        name: "params",
+        type: "tuple",
+        components: [
+          {
+            name: "poolKey",
+            type: "tuple",
+            components: [
+              { name: "currency0", type: "address" },
+              { name: "currency1", type: "address" },
+              { name: "fee", type: "uint24" },
+              { name: "tickSpacing", type: "int24" },
+              { name: "hooks", type: "address" },
+            ],
+          },
+          { name: "zeroForOne", type: "bool" },
+          { name: "exactAmount", type: "uint128" },
+          { name: "hookData", type: "bytes" },
+        ],
+      },
+    ],
+    outputs: [
+      { name: "amountIn", type: "uint256" },
+      { name: "gasEstimate", type: "uint256" },
+    ],
+  },
+] as const;
 
 const WETH: Address = "0x4200000000000000000000000000000000000006";
 const POOL_FEE = 3000; // 0.30% — must match deployed pool
@@ -85,14 +139,14 @@ async function quoteEthToPlot(ethAmount: bigint): Promise<bigint> {
       functionName: "quoteExactInputSingle",
       args: [
         {
-          0: { 0: currency0, 1: currency1, 2: POOL_FEE, 3: TICK_SPACING, 4: HOOKS },
-          1: zeroForOne,
-          2: BigInt(ethAmount) as unknown as bigint & { readonly _tag: "uint128" },
-          3: "0x" as `0x${string}`,
-        } as any,
+          poolKey: { currency0, currency1, fee: POOL_FEE, tickSpacing: TICK_SPACING, hooks: HOOKS },
+          zeroForOne,
+          exactAmount: ethAmount,
+          hookData: "0x",
+        },
       ],
     });
-    return (result as readonly [bigint, bigint])[0];
+    return result[0];
   } catch {
     // Fallback: if quoter call fails, return 0 to indicate unavailable
     return BigInt(0);
@@ -114,14 +168,14 @@ async function quotePlotToEth(plotAmount: bigint): Promise<bigint> {
       functionName: "quoteExactOutputSingle",
       args: [
         {
-          0: { 0: currency0, 1: currency1, 2: POOL_FEE, 3: TICK_SPACING, 4: HOOKS },
-          1: zeroForOne,
-          2: BigInt(plotAmount) as unknown as bigint & { readonly _tag: "uint128" },
-          3: "0x" as `0x${string}`,
-        } as any,
+          poolKey: { currency0, currency1, fee: POOL_FEE, tickSpacing: TICK_SPACING, hooks: HOOKS },
+          zeroForOne,
+          exactAmount: plotAmount,
+          hookData: "0x",
+        },
       ],
     });
-    return (result as readonly [bigint, bigint])[0];
+    return result[0];
   } catch {
     return BigInt(0);
   }
@@ -228,4 +282,33 @@ export function buildZapMintTx(
       gas: BigInt(3_000_000),
     };
   }
+}
+
+/**
+ * Execute a zap mint end-to-end: get quote, then submit transaction.
+ *
+ * @param tokenAddress Storyline token address
+ * @param amount Token amount (exact-output) or ETH amount in wei (exact-input)
+ * @param mode Zap mode
+ * @param receiver Address to receive minted tokens
+ * @param writeContractAsync wagmi writeContractAsync function
+ * @returns Transaction hash
+ */
+export async function executeZapMint(
+  tokenAddress: Address,
+  amount: bigint,
+  mode: ZapMode,
+  receiver: Address,
+  writeContractAsync: (args: ReturnType<typeof buildZapMintTx>) => Promise<Address>,
+): Promise<Address> {
+  const quote = await getZapQuote(tokenAddress, amount, mode);
+  const tx = buildZapMintTx(
+    tokenAddress,
+    amount,
+    mode,
+    receiver,
+    quote.ethCost,
+    quote.tokensOut,
+  );
+  return writeContractAsync(tx);
 }
