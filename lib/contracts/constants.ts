@@ -35,7 +35,7 @@ export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
 
 /** ZapPlotLink — one-click buy (ETH -> PLOT -> storyline token via Uniswap V4 + MCV2) */
 export const ZAP_PLOTLINK = (IS_TESTNET
-  ? "0x38b010F2eFf786d44048E290325d00dC642Aa0D7"
+  ? "0xC7C47D820D2D5b09797be2F438Cf329Ad7315682"
   : "0x0000000000000000000000000000000000000000") as `0x${string}`;
 
 /** $PLOT protocol token
@@ -46,7 +46,7 @@ export const PLOT_TOKEN = (IS_TESTNET
   : "0xF8A2C39111FCEB9C950aAf28A9E34EBaD99b85C1") as `0x${string}`;
 
 /** Human-readable label for the reserve token */
-export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PLOT";
+export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PL_TEST";
 
 // ---------------------------------------------------------------------------
 // Mint Club V2
