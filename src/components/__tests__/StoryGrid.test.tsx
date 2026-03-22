@@ -50,6 +50,10 @@ function makeStoryline(id: number, title: string): Storyline {
   } as unknown as Storyline;
 }
 
+// Note: The current StoryGrid implementation uses a plain CSS grid
+// (grid-cols-2 / lg:grid-cols-3) rather than useShelfSize() or chunk() helpers.
+// Responsive behavior is handled entirely by Tailwind CSS classes, not JS logic.
+// Tests cover the actual implementation: card rendering, empty state, and grid classes.
 describe("StoryGrid", () => {
   it("renders correct number of story cards", () => {
     const storylines = [
