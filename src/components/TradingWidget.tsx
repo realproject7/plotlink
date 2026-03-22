@@ -1,49 +1,64 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useBalance, useWriteContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
-import { MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
+import { MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL, ZAP_PLOTLINK } from "../../lib/contracts/constants";
+import { getZapQuote, buildZapMintTx, type ZapMode } from "../../lib/zap";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
+type PayToken = "ETH" | "PLOT";
 
 const SLIPPAGE_BPS = 300; // 3% slippage tolerance
 
 function applySlippage(amount: bigint, isBuy: boolean): bigint {
   if (isBuy) {
-    // Max cost = estimate * (1 + slippage)
     return amount + (amount * BigInt(SLIPPAGE_BPS)) / BigInt(10000);
   }
-  // Min refund = estimate * (1 - slippage)
   return amount - (amount * BigInt(SLIPPAGE_BPS)) / BigInt(10000);
 }
+
+const isZapAvailable = ZAP_PLOTLINK !== "0x0000000000000000000000000000000000000000";
 
 export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const { address, isConnected } = useAccount();
   const [tab, setTab] = useState<Tab>("buy");
+  const [payToken, setPayToken] = useState<PayToken>(isZapAvailable ? "ETH" : "PLOT");
   const [amount, setAmount] = useState("");
   const [txState, setTxState] = useState<TxState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({ address });
 
   const parsedAmount =
     amount && !isNaN(Number(amount)) && Number(amount) > 0
       ? parseUnits(amount, 18)
       : BigInt(0);
 
-  // Batch balance + estimate into a single multicall
+  const isEthMode = tab === "buy" && payToken === "ETH" && isZapAvailable;
+
+  // Batch balance + estimate into a single multicall (PLOT mode / sell)
   const balanceToken = tab === "buy" ? PLOT_TOKEN : tokenAddress;
   const hasAmount = parsedAmount > BigInt(0);
 
   const { data: tradeData, refetch: refetchTradeData } = useQuery({
-    queryKey: ["trade-data", balanceToken, address, tab, tokenAddress, amount],
+    queryKey: ["trade-data", balanceToken, address, tab, tokenAddress, amount, payToken],
     queryFn: async () => {
+      if (isEthMode) {
+        // ETH mode: use zap quote instead of multicall
+        let zapQuote = null;
+        if (hasAmount) {
+          zapQuote = await getZapQuote(tokenAddress, parsedAmount, "exact-output");
+        }
+        return { balance: undefined, estimate: null, zapQuote };
+      }
+
       const contracts: Array<{ address: Address; abi: typeof erc20Abi | typeof mcv2BondAbi; functionName: string; args?: readonly unknown[] }> = [
         {
           address: balanceToken,
@@ -70,29 +85,41 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         est = (results[1].result as unknown as readonly [bigint, bigint])[0];
       }
 
-      return { balance: bal, estimate: est };
+      return { balance: bal, estimate: est, zapQuote: null };
     },
     enabled: !!address,
     refetchInterval: 60000,
   });
 
-  const balance = tradeData?.balance;
+  const balance = isEthMode ? ethBalanceData?.value : tradeData?.balance;
   const estimate = tradeData?.estimate ?? null;
-  const refetchBalance = refetchTradeData;
+  const zapQuote = tradeData?.zapQuote ?? null;
+  const refetchBalance = useCallback(() => {
+    refetchTradeData();
+    if (isEthMode) refetchEthBalance();
+  }, [refetchTradeData, refetchEthBalance, isEthMode]);
 
   const executeTrade = useCallback(async () => {
-    if (!address || parsedAmount === BigInt(0) || !estimate) return;
+    if (!address || parsedAmount === BigInt(0)) return;
 
     try {
       setError(null);
       setTxHash(null);
       let tradeHash: string | null = null;
 
-      if (tab === "buy") {
-        // Buy: approve PLOT_TOKEN → mint
+      if (isEthMode && zapQuote) {
+        // ETH mode: use ZapPlotLink
+        setTxState("confirming");
+        const tx = buildZapMintTx(tokenAddress, parsedAmount, "exact-output", address, zapQuote.ethCost);
+        const hash = await writeContractAsync(tx);
+        setTxHash(hash);
+        tradeHash = hash;
+        setTxState("pending");
+        await publicClient.waitForTransactionReceipt({ hash });
+      } else if (tab === "buy" && estimate) {
+        // PLOT mode: approve PLOT_TOKEN → mint
         const maxCost = applySlippage(estimate, true);
 
-        // Check allowance
         const allowance = await publicClient.readContract({
           address: PLOT_TOKEN,
           abi: erc20Abi,
@@ -111,7 +138,6 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
         }
 
-        // Mint
         setTxState("confirming");
         const hash = await writeContractAsync({
           address: MCV2_BOND,
@@ -124,11 +150,10 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         tradeHash = hash;
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
-      } else {
+      } else if (tab === "sell" && estimate) {
         // Sell: approve storyline token → burn → receive PLOT_TOKEN
         const minRefund = applySlippage(estimate, false);
 
-        // Check allowance for storyline token
         const allowance = await publicClient.readContract({
           address: tokenAddress,
           abi: erc20Abi,
@@ -159,6 +184,8 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         tradeHash = hash;
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
+      } else {
+        return;
       }
 
       setTxState("done");
@@ -177,7 +204,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");
     }
-  }, [address, parsedAmount, estimate, tab, tokenAddress, writeContractAsync, refetchBalance]);
+  }, [address, parsedAmount, estimate, zapQuote, tab, isEthMode, tokenAddress, writeContractAsync, refetchBalance]);
 
   const reset = useCallback(() => {
     setTxState("idle");
@@ -189,9 +216,11 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const insufficientBalance =
     balance !== undefined &&
     parsedAmount > BigInt(0) &&
-    (tab === "buy"
-      ? estimate != null && applySlippage(estimate, true) > balance
-      : parsedAmount > balance);
+    (isEthMode
+      ? zapQuote != null && zapQuote.ethCost > balance
+      : tab === "buy"
+        ? estimate != null && applySlippage(estimate, true) > balance
+        : parsedAmount > balance);
 
   if (!isConnected) return null;
 
@@ -219,6 +248,30 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           </button>
         ))}
       </div>
+
+      {/* Pay token selector (buy tab only) */}
+      {tab === "buy" && isZapAvailable && (
+        <div className="mt-2 flex items-center gap-1">
+          <span className="text-muted text-[10px] uppercase tracking-wider">Pay with</span>
+          {(["ETH", "PLOT"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setPayToken(t);
+                setAmount("");
+                reset();
+              }}
+              className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                payToken === t
+                  ? "bg-accent text-background"
+                  : "border-border text-muted hover:text-foreground border"
+              }`}
+            >
+              {t === "PLOT" ? RESERVE_LABEL : "ETH"}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Amount input */}
       <div className="mt-3">
@@ -250,7 +303,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         </div>
         {balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
-            Balance: {formatUnits(balance, 18)} {tab === "buy" ? RESERVE_LABEL : "tokens"}
+            Balance: {formatUnits(balance, 18)} {isEthMode ? "ETH" : tab === "buy" ? RESERVE_LABEL : "tokens"}
           </p>
         )}
         {insufficientBalance && (
@@ -259,7 +312,16 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       </div>
 
       {/* Estimate */}
-      {estimate != null && parsedAmount > BigInt(0) && (
+      {isEthMode && zapQuote && parsedAmount > BigInt(0) && (
+        <div className="text-muted mt-2 text-xs">
+          Est. cost:{" "}
+          <span className="font-semibold text-accent">
+            {formatUnits(zapQuote.ethCost, 18)} ETH
+          </span>
+          <span className="ml-2">(incl. 0.5% swap slippage)</span>
+        </div>
+      )}
+      {!isEthMode && estimate != null && parsedAmount > BigInt(0) && (
         <div className="text-muted mt-2 text-xs">
           {tab === "buy" ? "Max cost" : "Min return"}:{" "}
           <span className="font-semibold text-accent">
@@ -273,12 +335,16 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       <button
         onClick={txState === "done" || txState === "error" ? reset : executeTrade}
         disabled={
-          (txState === "idle" && (parsedAmount === BigInt(0) || !estimate || insufficientBalance)) ||
+          (txState === "idle" && (
+            parsedAmount === BigInt(0) ||
+            (isEthMode ? !zapQuote : !estimate) ||
+            insufficientBalance
+          )) ||
           (txState !== "idle" && txState !== "done" && txState !== "error")
         }
         className="bg-accent text-background mt-3 w-full rounded py-2 text-xs font-medium transition-opacity disabled:opacity-40"
       >
-        {txState === "idle" && (tab === "buy" ? "Buy Tokens" : "Sell Tokens")}
+        {txState === "idle" && (tab === "buy" ? `Buy with ${isEthMode ? "ETH" : RESERVE_LABEL}` : "Sell Tokens")}
         {txState === "approving" && "Approving..."}
         {txState === "confirming" && "Confirm in wallet..."}
         {txState === "pending" && "Pending..."}
