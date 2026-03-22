@@ -2,7 +2,6 @@ import { test, expect } from "@playwright/test";
 
 test.describe("Story Detail Page", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to first story from home page to get a valid storyline
     await page.goto("/");
     const storyLink = page.locator("a[href^='/story/']").first();
     await expect(storyLink).toBeVisible({ timeout: 15000 });
@@ -11,34 +10,35 @@ test.describe("Story Detail Page", () => {
   });
 
   test("page loads with story title and plots", async ({ page }) => {
-    // Story title in heading
     const heading = page.locator("h1, h2").first();
     await expect(heading).toBeVisible({ timeout: 10000 });
-    // Title should not be empty
     const text = await heading.textContent();
     expect(text?.trim().length).toBeGreaterThan(0);
   });
 
   test("plots section renders", async ({ page }) => {
-    // Plot content should be visible — look for plot text or "plots linked" indicator
     const plotContent = page.locator("article, [class*='plot'], p").first();
     await expect(plotContent).toBeVisible({ timeout: 10000 });
   });
 
   test("ruled paper styling is present", async ({ page }) => {
-    // Ruled paper uses either inline style or a CSS class
     const ruledByStyle = page.locator("[style*='repeating-linear-gradient']");
     const ruledByClass = page.locator("[class*='ruled'], [class*='notebook'], [class*='paper']");
-    const hasRuled = (await ruledByStyle.count()) > 0 || (await ruledByClass.count()) > 0;
-    expect(hasRuled).toBe(true);
+    const count = (await ruledByStyle.count()) + (await ruledByClass.count());
+    expect(count).toBeGreaterThan(0);
   });
 
-  test("donation history section renders", async ({ page }) => {
-    // Look for donation-related content
-    const donationSection = page.getByText(/donat/i).first();
-    // Donation section may or may not have entries — just check it exists
-    if (await donationSection.isVisible({ timeout: 5000 }).catch(() => false)) {
-      await expect(donationSection).toBeVisible();
+  test("donate widget section present on page", async ({ page }) => {
+    // DonateWidget may require wallet connection to render fully
+    // Check for "Donate" text anywhere on the page, or verify graceful absence
+    const donateText = page.getByText(/donat/i).first();
+    const hasDonate = await donateText.isVisible({ timeout: 5000 }).catch(() => false);
+    // If wallet not connected, widget may not render — verify page still loads
+    if (!hasDonate) {
+      // Page should still have loaded without errors
+      await expect(page.locator("h1, h2").first()).toBeVisible();
+    } else {
+      await expect(donateText).toBeVisible();
     }
   });
 
@@ -50,23 +50,17 @@ test.describe("Story Detail Page", () => {
       }
     });
 
-    // Wait for chart to potentially render
-    await page.waitForTimeout(3000);
+    // Wait for chart component to mount
+    await page.locator("canvas, svg, [class*='chart'], [class*='price']").first().waitFor({ timeout: 10000 }).catch(() => {});
 
-    // No duplicate key warnings
     expect(warnings).toEqual([]);
   });
 
-  test("TradingWidget visible with buy/sell tabs and pay token selector", async ({ page }) => {
-    // TradingWidget returns null when wallet not connected
-    // But the "Trade" section or buy/sell UI may still be rendered in some states
-    // Check that the page loaded successfully without errors
-    await expect(page.locator("body")).toBeVisible();
-
-    // If wallet were connected, we'd see:
-    // - Buy/Sell tabs
-    // - ETH/USDC/HUNT/PLOT selector
-    // Since no wallet, widget returns null — this is the expected graceful behavior
+  test("TradingWidget returns null when wallet not connected", async ({ page }) => {
+    // TradingWidget returns null when isConnected=false
+    // Verify the Trade section heading is NOT visible (widget didn't render)
+    const tradeSection = page.locator("section").filter({ hasText: "Trade" });
+    await expect(tradeSection).not.toBeVisible({ timeout: 3000 });
   });
 
   test("no console errors on story page", async ({ page }) => {
@@ -77,14 +71,14 @@ test.describe("Story Detail Page", () => {
       }
     });
 
-    await page.waitForTimeout(3000);
+    // Wait for page to fully load
+    await page.locator("h1, h2").first().waitFor({ timeout: 10000 });
 
     const realErrors = errors.filter(
       (e) =>
         !e.includes("Failed to fetch") &&
         !e.includes("net::ERR") &&
         !e.includes("Hydration") &&
-        !e.includes("Warning:") &&
         !e.includes("RPC") &&
         !e.includes("favicon"),
     );
