@@ -33,18 +33,20 @@ export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
     ? "0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229"
     : "0x337c5b96f03fB335b433291695A4171fd5dED8B0")) as `0x${string}`;
 
-/** ZapPlotLinkMCV2 — one-click buy (ETH/USDC/HUNT -> storyline token) */
-export const ZAP_PLOTLINK = "0x0000000000000000000000000000000000000000" as const;
+/** ZapPlotLink — one-click buy (ETH -> PLOT -> storyline token via Uniswap V4 + MCV2) */
+export const ZAP_PLOTLINK = (IS_TESTNET
+  ? "0x38b010F2eFf786d44048E290325d00dC642Aa0D7"
+  : "0x0000000000000000000000000000000000000000") as `0x${string}`;
 
 /** $PLOT protocol token
- *  Testnet: WETH (stand-in reserve token)
+ *  Testnet: PL_TEST ERC-20 on Base Sepolia
  *  Mainnet: $PLOT ERC-20 (backed by $HUNT via Mint Club V2) */
 export const PLOT_TOKEN = (IS_TESTNET
-  ? "0x4200000000000000000000000000000000000006"
+  ? "0x6Ef4A3f654F2AfcEa8A8704D61Be5271536c13Fa"
   : "0xF8A2C39111FCEB9C950aAf28A9E34EBaD99b85C1") as `0x${string}`;
 
 /** Human-readable label for the reserve token */
-export const RESERVE_LABEL = IS_TESTNET ? "WETH" : "PL_TEST";
+export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PLOT";
 
 // ---------------------------------------------------------------------------
 // Mint Club V2
@@ -63,6 +65,9 @@ export const MCV2_BOND_PERIPHERY = (IS_TESTNET
 // ---------------------------------------------------------------------------
 // Uniswap V4 (Base)
 // ---------------------------------------------------------------------------
+
+/** PoolManager — V4 core pool operations */
+export const UNISWAP_V4_POOL_MANAGER = "0x05E73354cFDd6745C338b50BcFDfA3Aa6fA03408" as const;
 
 /** Universal Router — swap execution */
 export const UNISWAP_V4_ROUTER = "0x6fF5693b99212Da76ad316178A184AB56D299b43" as const;
