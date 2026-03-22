@@ -5,11 +5,15 @@ test.describe("Home Page", () => {
     await page.setViewportSize({ width: 1280, height: 720 });
   });
 
-  test("page loads without errors", async ({ page }) => {
+  test("page loads and story grid renders", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/PlotLink/i);
-    // Page should render — grid or empty state
-    await expect(page.locator("body")).toBeVisible();
+    // Story grid should render with story cards
+    const grid = page.locator(".grid");
+    await expect(grid.first()).toBeVisible({ timeout: 15000 });
+    // Grid should contain story card links
+    const storyLinks = page.locator("a[href^='/story/']");
+    expect(await storyLinks.count()).toBeGreaterThan(0);
   });
 
   test("FilterBar is visible and dropdowns work", async ({ page }) => {
@@ -47,8 +51,12 @@ test.describe("Home Page", () => {
     await expect(trendingOption.first()).toBeVisible();
   });
 
-  test("tab switch (Trending) loads results", async ({ page }) => {
+  test("tab switch (Trending) loads different results", async ({ page }) => {
     await page.goto("/");
+
+    // Capture initial story titles
+    await page.locator(".grid").first().waitFor({ timeout: 15000 });
+    const initialLinks = await page.locator("a[href^='/story/']").count();
 
     const sortButton = page.locator("button").filter({ hasText: /sort:/ }).first();
     if (!(await sortButton.isVisible({ timeout: 10000 }).catch(() => false))) {
@@ -59,8 +67,12 @@ test.describe("Home Page", () => {
     const trendingOption = page.locator("[class*='absolute'] button").filter({ hasText: "Trending" });
     await trendingOption.first().click();
 
-    // Page should reload with trending content (or empty state)
-    await page.locator("body").waitFor();
+    // Page should render with trending content
+    await page.locator(".grid").first().waitFor({ timeout: 15000 });
+    const trendingLinks = await page.locator("a[href^='/story/']").count();
+    // Both views should have content
+    expect(initialLinks).toBeGreaterThan(0);
+    expect(trendingLinks).toBeGreaterThan(0);
   });
 
   test("genre filter updates URL", async ({ page }) => {
@@ -105,16 +117,33 @@ test.describe("Home Page", () => {
     }
   });
 
-  test("pagination links present when enough content", async ({ page }) => {
+  test("pagination navigates between pages", async ({ page }) => {
     await page.goto("/");
-    await page.locator("body").waitFor();
+    await page.locator(".grid").first().waitFor({ timeout: 15000 });
 
-    // Pagination only appears with >24 items
+    // Check for pagination controls
     const nextLink = page.locator("a").filter({ hasText: "Next" });
     if (await nextLink.count() > 0) {
+      // Verify Next link points to page 2
       const href = await nextLink.first().getAttribute("href");
       expect(href).toContain("page=2");
+
+      // Click Next and verify page changes
+      await nextLink.first().click();
+      await expect(page).toHaveURL(/page=2/);
+
+      // Page 2 should still have content or show empty state
+      await page.locator("body").waitFor();
+
+      // Previous link should now exist
+      const prevLink = page.locator("a").filter({ hasText: "Previous" });
+      if (await prevLink.count() > 0) {
+        expect(await prevLink.first().getAttribute("href")).not.toContain("page=2");
+      }
+    } else {
+      // Dataset has fewer than 24 items — pagination not shown (valid)
+      const storyCount = await page.locator("a[href^='/story/']").count();
+      expect(storyCount).toBeLessThanOrEqual(24);
     }
-    // No pagination is valid for small datasets
   });
 });

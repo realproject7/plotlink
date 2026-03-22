@@ -54,7 +54,11 @@ test.describe("Story Detail Page", () => {
     expect(warnings).toEqual([]);
   });
 
-  test("TradingWidget returns null when wallet not connected", async ({ page }) => {
+  test("TradingWidget: disconnected state returns null (buy/sell tabs require wallet)", async ({ page }) => {
+    // TradingWidget component returns null when isConnected=false.
+    // The buy/sell tabs and ETH/USDC/HUNT/PLOT selector are only rendered
+    // when a wallet is connected. Without a wallet connection (which E2E
+    // tests don't have per spec), the Trade section is correctly absent.
     const tradeSection = page.locator("section").filter({ hasText: "Trade" });
     await expect(tradeSection).not.toBeVisible({ timeout: 3000 });
   });
