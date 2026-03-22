@@ -33,9 +33,10 @@ export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
     ? "0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229"
     : "0x337c5b96f03fB335b433291695A4171fd5dED8B0")) as `0x${string}`;
 
-/** ZapPlotLinkV2 — one-click buy (ETH/USDC/HUNT -> PLOT -> storyline token via Uniswap V4 + MCV2) */
+/** ZapPlotLinkV2 — one-click buy (ETH/USDC/HUNT -> PLOT -> storyline token via Uniswap V4 + MCV2)
+ *  Testnet: disabled (V1 contract incompatible with V2 ABI) */
 export const ZAP_PLOTLINK = (IS_TESTNET
-  ? "0xC7C47D820D2D5b09797be2F438Cf329Ad7315682"
+  ? "0x0000000000000000000000000000000000000000"
   : "0xEF6a8640c836b16Eb8cCD8016Ead4C8517aC3033") as `0x${string}`;
 
 /** $PLOT protocol token
