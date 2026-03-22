@@ -6,12 +6,15 @@ import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
-import { MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL, ZAP_PLOTLINK } from "../../lib/contracts/constants";
+import {
+  MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL,
+  ZAP_PLOTLINK, SUPPORTED_ZAP_TOKENS, ETH_ADDRESS,
+} from "../../lib/contracts/constants";
 import { getZapQuote, buildZapMintTx } from "../../lib/zap";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
-type PayToken = "ETH" | "PLOT";
+type PayToken = "ETH" | "USDC" | "HUNT" | "PLOT";
 
 const SLIPPAGE_BPS = 300; // 3% slippage tolerance
 
@@ -23,6 +26,16 @@ function applySlippage(amount: bigint, isBuy: boolean): bigint {
 }
 
 const isZapAvailable = ZAP_PLOTLINK !== "0x0000000000000000000000000000000000000000";
+
+function getTokenDecimals(payToken: PayToken): number {
+  if (payToken === "USDC") return 6;
+  return 18;
+}
+
+function getTokenAddress(payToken: PayToken): Address {
+  const token = SUPPORTED_ZAP_TOKENS.find((t) => t.symbol === payToken);
+  return token?.address ?? ETH_ADDRESS as Address;
+}
 
 export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const { address, isConnected } = useAccount();
@@ -36,29 +49,58 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const { writeContractAsync } = useWriteContract();
   const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({ address });
 
+  const isPlotMode = payToken === "PLOT" || !isZapAvailable;
+  const isEthMode = payToken === "ETH" && isZapAvailable;
+  const isErc20ZapMode = (payToken === "USDC" || payToken === "HUNT") && isZapAvailable;
+  const isZapMode = tab === "buy" && !isPlotMode && isZapAvailable;
+
   const parsedAmount =
     amount && !isNaN(Number(amount)) && Number(amount) > 0
-      ? parseUnits(amount, 18)
+      ? parseUnits(amount, 18) // storyline tokens are always 18 decimals
       : BigInt(0);
 
-  const isEthMode = tab === "buy" && payToken === "ETH" && isZapAvailable;
-
-  // Batch balance + estimate into a single multicall (PLOT mode / sell)
-  const balanceToken = tab === "buy" ? PLOT_TOKEN : tokenAddress;
   const hasAmount = parsedAmount > BigInt(0);
 
+  // Balance token for PLOT mode / sell
+  const balanceToken = tab === "buy" && isPlotMode ? PLOT_TOKEN : tokenAddress;
+  // ERC-20 balance token for USDC/HUNT modes
+  const erc20BalanceToken = isErc20ZapMode ? getTokenAddress(payToken) : undefined;
+
   const { data: tradeData, refetch: refetchTradeData } = useQuery({
-    queryKey: ["trade-data", balanceToken, address, tab, tokenAddress, amount, payToken],
+    queryKey: ["trade-data", address, tab, tokenAddress, amount, payToken],
     queryFn: async () => {
-      if (isEthMode) {
-        // ETH mode: use zap quote instead of multicall
+      if (tab === "buy" && isZapMode) {
+        // Zap mode (ETH/USDC/HUNT): get quote from contract
         let zapQuote = null;
+        let erc20Balance: bigint | undefined;
+
         if (hasAmount) {
-          zapQuote = await getZapQuote(tokenAddress, parsedAmount, "exact-output");
+          try {
+            zapQuote = await getZapQuote(
+              getTokenAddress(payToken),
+              tokenAddress,
+              parsedAmount,
+              "exact-output",
+            );
+          } catch {
+            zapQuote = null;
+          }
         }
-        return { balance: undefined, estimate: null, zapQuote };
+
+        // Fetch ERC-20 balance for USDC/HUNT
+        if (isErc20ZapMode && erc20BalanceToken && address) {
+          erc20Balance = await publicClient.readContract({
+            address: erc20BalanceToken,
+            abi: erc20Abi,
+            functionName: "balanceOf",
+            args: [address],
+          });
+        }
+
+        return { balance: erc20Balance, estimate: null, zapQuote };
       }
 
+      // PLOT mode or sell: existing multicall
       const contracts: Array<{ address: Address; abi: typeof erc20Abi | typeof mcv2BondAbi; functionName: string; args?: readonly unknown[] }> = [
         {
           address: balanceToken,
@@ -91,9 +133,17 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
     refetchInterval: 60000,
   });
 
-  const balance = isEthMode ? ethBalanceData?.value : tradeData?.balance;
+  // Resolve balance based on mode
+  const balance = (() => {
+    if (tab === "sell") return tradeData?.balance;
+    if (isEthMode) return ethBalanceData?.value;
+    if (isErc20ZapMode) return tradeData?.balance;
+    return tradeData?.balance; // PLOT mode
+  })();
+
   const estimate = tradeData?.estimate ?? null;
   const zapQuote = tradeData?.zapQuote ?? null;
+
   const refetchBalance = useCallback(() => {
     refetchTradeData();
     if (isEthMode) refetchEthBalance();
@@ -107,17 +157,39 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       setTxHash(null);
       let tradeHash: string | null = null;
 
-      if (isEthMode && zapQuote) {
-        // ETH mode: use ZapPlotLink
+      if (tab === "buy" && isZapMode && zapQuote) {
+        const fromToken = getTokenAddress(payToken);
+
+        // ERC-20 zap tokens need approval to ZAP_PLOTLINK first
+        if (isErc20ZapMode) {
+          const allowance = await publicClient.readContract({
+            address: fromToken,
+            abi: erc20Abi,
+            functionName: "allowance",
+            args: [address, ZAP_PLOTLINK],
+          });
+
+          if (allowance < zapQuote.fromTokenAmount) {
+            setTxState("approving");
+            const approveHash = await writeContractAsync({
+              address: fromToken,
+              abi: erc20Abi,
+              functionName: "approve",
+              args: [ZAP_PLOTLINK, zapQuote.fromTokenAmount],
+            });
+            await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          }
+        }
+
         setTxState("confirming");
-        const tx = buildZapMintTx(tokenAddress, parsedAmount, "exact-output", address, zapQuote.ethCost);
+        const tx = buildZapMintTx(fromToken, tokenAddress, parsedAmount, "exact-output", zapQuote);
         const hash = await writeContractAsync(tx);
         setTxHash(hash);
         tradeHash = hash;
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
-      } else if (tab === "buy" && estimate) {
-        // PLOT mode: approve PLOT_TOKEN → mint
+      } else if (tab === "buy" && isPlotMode && estimate) {
+        // PLOT mode: approve PLOT_TOKEN → MCV2_Bond.mint
         const maxCost = applySlippage(estimate, true);
 
         const allowance = await publicClient.readContract({
@@ -204,7 +276,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");
     }
-  }, [address, parsedAmount, estimate, zapQuote, tab, isEthMode, tokenAddress, writeContractAsync, refetchBalance]);
+  }, [address, parsedAmount, estimate, zapQuote, tab, payToken, isZapMode, isPlotMode, isErc20ZapMode, tokenAddress, writeContractAsync, refetchBalance]);
 
   const reset = useCallback(() => {
     setTxState("idle");
@@ -213,16 +285,20 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   }, []);
 
   // Pre-validate balance
-  const insufficientBalance =
-    balance !== undefined &&
-    parsedAmount > BigInt(0) &&
-    (isEthMode
-      ? zapQuote != null && zapQuote.ethCost > balance
-      : tab === "buy"
-        ? estimate != null && applySlippage(estimate, true) > balance
-        : parsedAmount > balance);
+  const insufficientBalance = (() => {
+    if (balance === undefined || parsedAmount <= BigInt(0)) return false;
+    if (tab === "sell") return parsedAmount > balance;
+    if (isZapMode && zapQuote) return zapQuote.fromTokenAmount > balance;
+    if (isPlotMode && estimate) return applySlippage(estimate, true) > balance;
+    return false;
+  })();
 
   if (!isConnected) return null;
+
+  // Display helpers
+  const balanceDecimals = isEthMode ? 18 : isErc20ZapMode ? getTokenDecimals(payToken) : 18;
+  const balanceLabel = isZapMode ? payToken : tab === "buy" ? RESERVE_LABEL : "tokens";
+  const estimateDecimals = isZapMode ? (isEthMode ? 18 : getTokenDecimals(payToken)) : 18;
 
   return (
     <section className="border-border mt-8 rounded border px-4 py-4">
@@ -253,7 +329,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       {tab === "buy" && isZapAvailable && (
         <div className="mt-2 flex items-center gap-1">
           <span className="text-muted text-[10px] uppercase tracking-wider">Pay with</span>
-          {(["ETH", "PLOT"] as const).map((t) => (
+          {(["ETH", "USDC", "HUNT", "PLOT"] as const).map((t) => (
             <button
               key={t}
               onClick={() => {
@@ -267,7 +343,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
                   : "border-border text-muted hover:text-foreground border"
               }`}
             >
-              {t === "PLOT" ? RESERVE_LABEL : "ETH"}
+              {t === "PLOT" ? RESERVE_LABEL : t}
             </button>
           ))}
         </div>
@@ -303,7 +379,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         </div>
         {balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
-            Balance: {formatUnits(balance, 18)} {isEthMode ? "ETH" : tab === "buy" ? RESERVE_LABEL : "tokens"}
+            Balance: {formatUnits(balance, balanceDecimals)} {balanceLabel}
           </p>
         )}
         {insufficientBalance && (
@@ -312,16 +388,16 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       </div>
 
       {/* Estimate */}
-      {isEthMode && zapQuote && parsedAmount > BigInt(0) && (
+      {isZapMode && zapQuote && parsedAmount > BigInt(0) && (
         <div className="text-muted mt-2 text-xs">
           Est. cost:{" "}
           <span className="font-semibold text-accent">
-            {formatUnits(zapQuote.ethCost, 18)} ETH
+            {formatUnits(zapQuote.fromTokenAmount, estimateDecimals)} {payToken}
           </span>
-          <span className="ml-2">(incl. 0.5% swap slippage)</span>
+          <span className="ml-2">(incl. 3% slippage)</span>
         </div>
       )}
-      {!isEthMode && estimate != null && parsedAmount > BigInt(0) && (
+      {!isZapMode && estimate != null && parsedAmount > BigInt(0) && (
         <div className="text-muted mt-2 text-xs">
           {tab === "buy" ? "Max cost" : "Min return"}:{" "}
           <span className="font-semibold text-accent">
@@ -337,14 +413,14 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         disabled={
           (txState === "idle" && (
             parsedAmount === BigInt(0) ||
-            (isEthMode ? !zapQuote : !estimate) ||
+            (isZapMode ? !zapQuote : !estimate) ||
             insufficientBalance
           )) ||
           (txState !== "idle" && txState !== "done" && txState !== "error")
         }
         className="bg-accent text-background mt-3 w-full rounded py-2 text-xs font-medium transition-opacity disabled:opacity-40"
       >
-        {txState === "idle" && (tab === "buy" ? `Buy with ${isEthMode ? "ETH" : RESERVE_LABEL}` : "Sell Tokens")}
+        {txState === "idle" && (tab === "buy" ? `Buy with ${payToken === "PLOT" ? RESERVE_LABEL : payToken}` : "Sell Tokens")}
         {txState === "approving" && "Approving..."}
         {txState === "confirming" && "Confirm in wallet..."}
         {txState === "pending" && "Pending..."}

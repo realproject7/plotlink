@@ -33,10 +33,11 @@ export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
     ? "0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229"
     : "0x337c5b96f03fB335b433291695A4171fd5dED8B0")) as `0x${string}`;
 
-/** ZapPlotLink — one-click buy (ETH -> PLOT -> storyline token via Uniswap V4 + MCV2) */
+/** ZapPlotLinkV2 — one-click buy (ETH/USDC/HUNT -> PLOT -> storyline token via Uniswap V4 + MCV2)
+ *  Testnet: disabled (V1 contract incompatible with V2 ABI) */
 export const ZAP_PLOTLINK = (IS_TESTNET
-  ? "0xC7C47D820D2D5b09797be2F438Cf329Ad7315682"
-  : "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  ? "0x0000000000000000000000000000000000000000"
+  : "0xEF6a8640c836b16Eb8cCD8016Ead4C8517aC3033") as `0x${string}`;
 
 /** $PLOT protocol token
  *  Testnet: PL_TEST ERC-20 on Base Sepolia
@@ -47,6 +48,26 @@ export const PLOT_TOKEN = (IS_TESTNET
 
 /** Human-readable label for the reserve token */
 export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PLOT";
+
+// ---------------------------------------------------------------------------
+// Supported Zap input tokens (Base)
+// ---------------------------------------------------------------------------
+
+/** USDC on Base */
+export const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const;
+
+/** HUNT on Base */
+export const HUNT = "0x37f0c2915CeCC7e977183B8543Fc0864d03E064C" as const;
+
+/** ETH represented as address(0) in the Zap contract */
+export const ETH_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
+
+/** Supported input tokens for the Zap UI selector */
+export const SUPPORTED_ZAP_TOKENS = [
+  { symbol: "ETH", address: ETH_ADDRESS as `0x${string}`, decimals: 18 },
+  { symbol: "USDC", address: USDC as `0x${string}`, decimals: 6 },
+  { symbol: "HUNT", address: HUNT as `0x${string}`, decimals: 18 },
+] as const;
 
 // ---------------------------------------------------------------------------
 // Mint Club V2
