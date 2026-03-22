@@ -1,22 +1,17 @@
 import { test, expect } from "@playwright/test";
 
+// Deterministic storyline ID from Base mainnet StoryFactory.
+// Use the earliest visible storyline on the discover page.
+const STORYLINE_ID = 12;
+
 test.describe("Story Detail Page", () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to first story from home page
-    await page.goto("/");
-    const storyLink = page.locator("a[href^='/story/']").first();
-    // If no stories exist (empty DB), skip all story detail tests
-    if (!(await storyLink.isVisible({ timeout: 15000 }).catch(() => false))) {
-      test.skip();
-      return;
-    }
-    await storyLink.click();
-    await expect(page).toHaveURL(/\/story\/\d+/);
+    await page.goto(`/story/${STORYLINE_ID}`);
   });
 
-  test("page loads with story title and plots", async ({ page }) => {
+  test("page loads with story title", async ({ page }) => {
     const heading = page.locator("h1, h2").first();
-    await expect(heading).toBeVisible({ timeout: 10000 });
+    await expect(heading).toBeVisible({ timeout: 15000 });
     const text = await heading.textContent();
     expect(text?.trim().length).toBeGreaterThan(0);
   });
@@ -34,6 +29,7 @@ test.describe("Story Detail Page", () => {
   });
 
   test("donate widget section present on page", async ({ page }) => {
+    // DonateWidget may require wallet connection to render
     const donateText = page.getByText(/donat/i).first();
     const hasDonate = await donateText.isVisible({ timeout: 5000 }).catch(() => false);
     if (!hasDonate) {
@@ -71,7 +67,7 @@ test.describe("Story Detail Page", () => {
       }
     });
 
-    await page.locator("h1, h2").first().waitFor({ timeout: 10000 });
+    await page.locator("h1, h2").first().waitFor({ timeout: 15000 });
 
     const realErrors = errors.filter(
       (e) =>

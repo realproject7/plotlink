@@ -21,7 +21,6 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
-    continue-on-error: true  # E2E tests depend on database/RPC availability
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
