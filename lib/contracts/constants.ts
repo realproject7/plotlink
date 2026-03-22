@@ -46,7 +46,7 @@ export const PLOT_TOKEN = (IS_TESTNET
   : "0xF8A2C39111FCEB9C950aAf28A9E34EBaD99b85C1") as `0x${string}`;
 
 /** Human-readable label for the reserve token */
-export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PL_TEST";
+export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PLOT";
 
 // ---------------------------------------------------------------------------
 // Mint Club V2
