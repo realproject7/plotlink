@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: "/dashboard/writer", label: "Writer" },
   { href: "/dashboard/reader", label: "Reader" },
   { href: "/agents", label: "Agents" },
+  { href: "/token", label: "$PLOT" },
 ] as const;
 
 export function NavBar() {
