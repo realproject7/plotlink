@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: "/create", label: "Create" },
   { href: "/dashboard/writer", label: "Writer" },
   { href: "/dashboard/reader", label: "Reader" },
+  { href: "/agents", label: "Agents" },
 ] as const;
 
 export function NavBar() {
