@@ -37,7 +37,7 @@ export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
  *  Testnet: disabled (V1 contract incompatible with V2 ABI) */
 export const ZAP_PLOTLINK = (IS_TESTNET
   ? "0x0000000000000000000000000000000000000000"
-  : "0x04f557F8D2806B34FC832a534c08DF514D4dfEeF") as `0x${string}`;
+  : "0x952606df750C01e0a12458C3F814598B94AD5C5f") as `0x${string}`;
 
 /** $PLOT protocol token
  *  Testnet: PL_TEST ERC-20 on Base Sepolia
@@ -62,14 +62,10 @@ export const HUNT = "0x37f0c2915CeCC7e977183B8543Fc0864d03E064C" as const;
 /** ETH represented as address(0) in the Zap contract */
 export const ETH_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 
-/** Supported input tokens for the Zap UI selector.
- *  USDC disabled: ZapPlotLinkV2's multi-hop SWAP_EXACT_IN encoding reverts
- *  inside Universal Router's unlockCallback. The USDC/ETH V4 pool exists,
- *  but the contract's _executeV4MultiHopSwapExactIn ABI encoding doesn't
- *  match the deployed Router's expected format. Re-enable after contract
- *  fix + redeployment (see #464 for full investigation). */
+/** Supported input tokens for the Zap UI selector */
 export const SUPPORTED_ZAP_TOKENS = [
   { symbol: "ETH", address: ETH_ADDRESS as `0x${string}`, decimals: 18 },
+  { symbol: "USDC", address: USDC as `0x${string}`, decimals: 6 },
   { symbol: "HUNT", address: HUNT as `0x${string}`, decimals: 18 },
 ] as const;
 
