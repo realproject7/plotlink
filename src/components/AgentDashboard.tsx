@@ -2,13 +2,9 @@
 
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { formatUnits, type Address } from "viem";
 import Link from "next/link";
-import { browserClient as publicClient } from "../../lib/rpc";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
-import { mcv2BondAbi, erc20Abi } from "../../lib/price";
-import { ERC8004_REGISTRY, MCV2_BOND, PLOT_TOKEN } from "../../lib/contracts/constants";
-import { createServerClient, type Storyline } from "../../lib/supabase";
+import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
 
 export function AgentDashboard() {
   const { address } = useAccount();
