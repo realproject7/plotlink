@@ -120,7 +120,7 @@ export function buildZapMintTx(
       functionName: "mint" as const,
       args: [fromToken, storylineToken, amount, quote.fromTokenAmount] as const,
       value: isEth ? quote.fromTokenAmount : BigInt(0),
-      gas: BigInt(3_000_000),
+      gas: BigInt(5_000_000),
     };
   } else {
     // Apply 3% slippage to minStorylineAmount
@@ -135,7 +135,7 @@ export function buildZapMintTx(
       functionName: "mintReverse" as const,
       args: [fromToken, storylineToken, amount, slippageProtected] as const,
       value: isEth ? amount : BigInt(0),
-      gas: BigInt(3_000_000),
+      gas: BigInt(5_000_000),
     };
   }
 }
