@@ -37,6 +37,8 @@ function getTokenAddress(payToken: PayToken): Address {
   return token?.address ?? ETH_ADDRESS as Address;
 }
 
+const ETH_GAS_BUFFER = BigInt("1000000000000000"); // 0.001 ETH reserved for gas
+
 export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const { address, isConnected } = useAccount();
   const [tab, setTab] = useState<Tab>("buy");
@@ -149,6 +151,44 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
     if (isEthMode) refetchEthBalance();
   }, [refetchTradeData, refetchEthBalance, isEthMode]);
 
+  // MAX button handler for buy tab
+  const handleBuyMax = useCallback(async () => {
+    if (!address || !isConnected) return;
+
+    try {
+      let maxBalance: bigint;
+      if (isEthMode) {
+        const ethBal = ethBalanceData?.value ?? BigInt(0);
+        maxBalance = ethBal > ETH_GAS_BUFFER ? ethBal - ETH_GAS_BUFFER : BigInt(0);
+      } else if (isErc20ZapMode && erc20BalanceToken) {
+        maxBalance = await publicClient.readContract({
+          address: erc20BalanceToken,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
+      } else {
+        // PLOT mode
+        maxBalance = await publicClient.readContract({
+          address: PLOT_TOKEN,
+          abi: erc20Abi,
+          functionName: "balanceOf",
+          args: [address],
+        });
+      }
+
+      if (maxBalance <= BigInt(0)) return;
+
+      const fromToken = getTokenAddress(payToken);
+      const quote = await getZapQuote(fromToken, tokenAddress, maxBalance, "exact-input");
+      if (quote.tokensOut && quote.tokensOut > BigInt(0)) {
+        setAmount(formatUnits(quote.tokensOut, 18));
+      }
+    } catch {
+      // Silently fail — user can enter amount manually
+    }
+  }, [address, isConnected, isEthMode, isErc20ZapMode, erc20BalanceToken, payToken, tokenAddress, ethBalanceData]);
+
   const executeTrade = useCallback(async () => {
     if (!address || parsedAmount === BigInt(0)) return;
 
@@ -189,7 +229,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
       } else if (tab === "buy" && isPlotMode && estimate) {
-        // PLOT mode: approve PLOT_TOKEN → MCV2_Bond.mint
+        // PLOT mode: approve PLOT_TOKEN -> MCV2_Bond.mint
         const maxCost = applySlippage(estimate, true);
 
         const allowance = await publicClient.readContract({
@@ -223,7 +263,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         setTxState("pending");
         await publicClient.waitForTransactionReceipt({ hash });
       } else if (tab === "sell" && estimate) {
-        // Sell: approve storyline token → burn → receive PLOT_TOKEN
+        // Sell: approve storyline token -> burn -> receive PLOT_TOKEN
         const minRefund = applySlippage(estimate, false);
 
         const allowance = await publicClient.readContract({
@@ -302,7 +342,12 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
   return (
     <section className="border-border mt-8 rounded border px-4 py-4">
-      <h2 className="text-foreground text-sm font-medium">Trade</h2>
+      <h2 className="text-foreground group relative text-sm font-medium">
+        Trade to Support
+        <span className="bg-background border-border text-muted pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-64 rounded border p-2 text-[10px] font-normal leading-snug shadow-md group-hover:block">
+          Every trade generates a 5% creator royalty — buying and selling these story tokens directly supports the writer to keep continuing this story.
+        </span>
+      </h2>
 
       {/* Tabs */}
       <div className="mt-3 flex gap-2">
@@ -325,34 +370,44 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         ))}
       </div>
 
-      {/* Pay token selector (buy tab only) */}
+      {/* Pay token selector (buy tab only) + balance */}
       {tab === "buy" && isZapAvailable && (
-        <div className="mt-2 flex items-center gap-1">
-          <span className="text-muted text-[10px] uppercase tracking-wider">Pay with</span>
-          {(["ETH", "USDC", "HUNT", "PLOT"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => {
-                setPayToken(t);
-                setAmount("");
-                reset();
-              }}
-              className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                payToken === t
-                  ? "bg-accent text-background"
-                  : "border-border text-muted hover:text-foreground border"
-              }`}
-            >
-              {t === "PLOT" ? RESERVE_LABEL : t}
-            </button>
-          ))}
+        <div className="mt-2">
+          <div className="flex items-center gap-1">
+            <span className="text-muted text-[10px] uppercase tracking-wider">Pay with</span>
+            {(["ETH", "USDC", "HUNT", "PLOT"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  setPayToken(t);
+                  setAmount("");
+                  reset();
+                }}
+                className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  payToken === t
+                    ? "bg-accent text-background"
+                    : "border-border text-muted hover:text-foreground border"
+                }`}
+              >
+                {t === "PLOT" ? RESERVE_LABEL : t}
+              </button>
+            ))}
+          </div>
+          {balance !== undefined && (
+            <p className="text-muted mt-1 text-[10px]">
+              Balance: {formatUnits(balance, balanceDecimals)} {balanceLabel}
+            </p>
+          )}
+          {insufficientBalance && (
+            <p className="mt-1 text-[10px] text-error">Insufficient balance</p>
+          )}
         </div>
       )}
 
       {/* Amount input */}
       <div className="mt-3">
         <label className="text-muted block text-[10px] uppercase tracking-wider">
-          {tab === "buy" ? "Tokens to buy" : "Tokens to sell"}
+          {tab === "buy" ? "Story tokens to buy" : "Tokens to sell"}
         </label>
         <div className="relative mt-1">
           <input
@@ -365,7 +420,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               if (txState !== "idle") reset();
             }}
             disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
-            className={`border-border bg-background text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 ${tab === "sell" ? "pr-14" : ""}`}
+            className={`border-border bg-background text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 ${tab === "sell" || tab === "buy" ? "pr-14" : ""}`}
           />
           {tab === "sell" && balance !== undefined && (
             <button
@@ -376,13 +431,23 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               MAX
             </button>
           )}
+          {tab === "buy" && balance !== undefined && (
+            <button
+              type="button"
+              onClick={handleBuyMax}
+              className="text-accent hover:text-foreground absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold"
+            >
+              MAX
+            </button>
+          )}
         </div>
-        {balance !== undefined && (
+        {/* Balance for sell tab and non-zap buy (PLOT direct) */}
+        {(tab === "sell" || !isZapAvailable) && balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
             Balance: {formatUnits(balance, balanceDecimals)} {balanceLabel}
           </p>
         )}
-        {insufficientBalance && (
+        {(tab === "sell" || !isZapAvailable) && insufficientBalance && (
           <p className="mt-1 text-[10px] text-error">Insufficient balance</p>
         )}
       </div>
