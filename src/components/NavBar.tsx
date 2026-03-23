@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { ConnectWallet } from "./ConnectWallet";
 
 const NAV_LINKS = [
@@ -23,9 +24,18 @@ export function NavBar() {
         {/* Logo */}
         <Link
           href="/"
-          className="text-sm font-semibold tracking-tight text-[var(--text)] transition-opacity hover:opacity-80"
+          className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
         >
-          PlotLink
+          <Image
+            src="/plotlink-logo-symbol.svg"
+            alt=""
+            width={20}
+            height={24}
+            className="h-5 w-auto"
+          />
+          <span className="font-heading text-sm font-bold tracking-tight text-[var(--text)]">
+            PlotLink
+          </span>
         </Link>
 
         {/* Desktop nav links */}
