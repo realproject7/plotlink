@@ -4,7 +4,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { formatUnits, erc20Abi } from "viem";
 import { useState } from "react";
 import {
-  PLOT_TOKEN, MCV2_BOND, EXPLORER_URL,
+  PLOT_TOKEN, EXPLORER_URL,
 } from "../../../lib/contracts/constants";
 
 const BASESCAN_URL = `${EXPLORER_URL}/token/${PLOT_TOKEN}`;
