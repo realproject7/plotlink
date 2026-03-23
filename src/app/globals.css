@@ -25,17 +25,22 @@
   --color-accent-dim: var(--accent-dim);
   --color-border: var(--border);
   --color-error: var(--error);
-  --font-heading: var(--font-geist-mono);
-  --font-body: var(--font-geist-mono);
+  --font-heading: var(--font-lora);
+  --font-body: var(--font-lora);
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
+  font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
 }
 
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+}
+
+/* Monospace elements: addresses, code blocks, contract data */
+code, pre, .font-mono {
   font-family: var(--font-geist-mono), "Geist Mono", ui-monospace, monospace;
 }
 
@@ -47,7 +52,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Ruled notebook paper */
 .ruled-paper {
-  --line-height: 26px;
+  --line-height: 28px;
   background: var(--paper-bg);
   padding: calc(var(--line-height) * 2) 2rem var(--line-height) 4.5rem;
   font-size: 1rem;
