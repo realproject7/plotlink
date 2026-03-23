@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Lora, Geist_Mono } from "next/font/google";
+import { Lora, Inter, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import { NavBar } from "../components/NavBar";
 import { Footer } from "../components/Footer";
@@ -8,6 +8,11 @@ import "./globals.css";
 
 const lora = Lora({
   variable: "--font-lora",
+  subsets: ["latin"],
+});
+
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -39,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${lora.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${lora.variable} ${inter.variable} ${geistMono.variable} antialiased`}>
         <Providers>
           <FarcasterMiniApp />
           <NavBar />
