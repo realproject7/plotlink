@@ -33,7 +33,7 @@ export function NavBar() {
             height={24}
             className="h-5 w-auto"
           />
-          <span className="font-heading text-sm font-bold tracking-tight text-[var(--text)]">
+          <span className="font-heading text-lg font-bold tracking-tight text-[var(--accent)]">
             PlotLink
           </span>
         </Link>
