@@ -100,7 +100,7 @@ export default function TokenPage() {
           <div className="flex items-start gap-3">
             <span className="bg-accent/10 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold">3</span>
             <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Creator royalties</span> — 5% mint/burn royalty on every trade flows directly to the story writer.
+              <span className="text-foreground font-semibold">Creator royalties</span> — 1% mint and 1% burn royalty on every trade flows directly to the story writer.
             </p>
           </div>
         </div>
