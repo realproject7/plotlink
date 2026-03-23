@@ -126,7 +126,7 @@ export default function TokenPage() {
           <div className="flex items-start gap-3">
             <span className="text-accent text-sm">&#8226;</span>
             <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Use the Zap</span> — buy story tokens with ETH, USDC, or HUNT and the zap contract handles PLOT conversion automatically.
+              <span className="text-foreground font-semibold">Use the Zap</span> — buy story tokens with ETH or HUNT and the zap contract handles PLOT conversion automatically.
             </p>
           </div>
         </div>

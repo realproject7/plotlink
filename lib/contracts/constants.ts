@@ -62,10 +62,14 @@ export const HUNT = "0x37f0c2915CeCC7e977183B8543Fc0864d03E064C" as const;
 /** ETH represented as address(0) in the Zap contract */
 export const ETH_ADDRESS = "0x0000000000000000000000000000000000000000" as const;
 
-/** Supported input tokens for the Zap UI selector */
+/** Supported input tokens for the Zap UI selector.
+ *  USDC disabled: no USDC/ETH Uniswap V4 pool exists on Base mainnet with
+ *  the contract's configured params (fee=500, tickSpacing=10). The V4 Quoter
+ *  returns garbage values for uninitialized pools, making estimates appear
+ *  valid while actual swaps revert. Re-enable when a V4 pool is deployed
+ *  and ZapPlotLinkV2.setUsdcPoolKey() is updated to match. */
 export const SUPPORTED_ZAP_TOKENS = [
   { symbol: "ETH", address: ETH_ADDRESS as `0x${string}`, decimals: 18 },
-  { symbol: "USDC", address: USDC as `0x${string}`, decimals: 6 },
   { symbol: "HUNT", address: HUNT as `0x${string}`, decimals: 18 },
 ] as const;
 
