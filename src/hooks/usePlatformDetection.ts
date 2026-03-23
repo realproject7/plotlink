@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 
 export type Platform = "farcaster" | "base" | "web";
 
+/** Base App's client FID in the Farcaster protocol */
+const BASE_APP_CLIENT_FID = 309857;
+
 export function usePlatformDetection() {
   const [platform, setPlatform] = useState<Platform>("web");
   const [isLoading, setIsLoading] = useState(true);
@@ -17,7 +20,7 @@ export function usePlatformDetection() {
         const context = await sdk.context;
         if (!context?.client || cancelled) return;
 
-        if (context.client.clientFid === 309857) {
+        if (context.client.clientFid === BASE_APP_CLIENT_FID) {
           setPlatform("base");
         } else {
           setPlatform("farcaster");

@@ -5,8 +5,9 @@ import { formatUnits, erc20Abi } from "viem";
 import { useState } from "react";
 import Image from "next/image";
 import {
-  PLOT_TOKEN, EXPLORER_URL,
+  PLOT_TOKEN, EXPLORER_URL, MCV2_BOND,
 } from "../../../lib/contracts/constants";
+import { priceForNextMintFunction } from "../../../lib/contracts/abi";
 import { SwapInterface } from "../../components/token/SwapInterface";
 
 const BASESCAN_URL = `${EXPLORER_URL}/token/${PLOT_TOKEN}`;
@@ -31,8 +32,20 @@ export default function TokenPage() {
     functionName: "totalSupply",
   });
 
+  const { data: priceRaw, isLoading: priceLoading } = useReadContract({
+    address: MCV2_BOND,
+    abi: [priceForNextMintFunction],
+    functionName: "priceForNextMint",
+    args: [PLOT_TOKEN],
+  });
+
   const formattedBalance = balance ? formatUnits(balance, 18) : "0";
   const formattedSupply = totalSupply ? formatUnits(totalSupply, 18) : "0";
+  const formattedPrice = priceRaw ? formatUnits(priceRaw, 18) : null;
+  const marketCap =
+    formattedPrice && totalSupply
+      ? parseFloat(formattedPrice) * parseFloat(formattedSupply)
+      : null;
 
   const handleCopyAddress = async () => {
     try {
@@ -140,24 +153,39 @@ export default function TokenPage() {
       <div className="border-border rounded border p-5">
         <h3 className="text-foreground text-sm font-bold mb-4">Token Information</h3>
 
-        {/* Stats Grid — Price + Total Supply */}
+        {/* Stats Grid — Price + Market Cap */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="border-border bg-surface rounded border p-3">
-            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Total Supply</div>
-            {supplyLoading ? (
+            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Price</div>
+            {priceLoading ? (
               <div className="bg-border h-6 animate-pulse rounded" />
-            ) : (
+            ) : formattedPrice ? (
               <div className="text-foreground text-sm font-bold">
-                {parseFloat(formattedSupply).toLocaleString(undefined, {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                })} PLOT
+                {parseFloat(formattedPrice).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 6,
+                })}{" "}
+                <span className="text-muted text-xs font-normal">PLOT</span>
               </div>
+            ) : (
+              <div className="text-muted text-sm">—</div>
             )}
           </div>
           <div className="border-border bg-surface rounded border p-3">
             <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Market Cap</div>
-            <div className="text-muted text-sm">—</div>
+            {priceLoading || supplyLoading ? (
+              <div className="bg-border h-6 animate-pulse rounded" />
+            ) : marketCap !== null ? (
+              <div className="text-foreground text-sm font-bold">
+                {marketCap.toLocaleString(undefined, {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}{" "}
+                <span className="text-muted text-xs font-normal">PLOT</span>
+              </div>
+            ) : (
+              <div className="text-muted text-sm">—</div>
+            )}
           </div>
         </div>
 
