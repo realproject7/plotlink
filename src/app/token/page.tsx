@@ -5,10 +5,10 @@ import { formatUnits, erc20Abi } from "viem";
 import { useState } from "react";
 import Image from "next/image";
 import {
-  PLOT_TOKEN, EXPLORER_URL, MCV2_BOND,
+  PLOT_TOKEN, EXPLORER_URL,
 } from "../../../lib/contracts/constants";
-import { priceForNextMintFunction } from "../../../lib/contracts/abi";
 import { SwapInterface } from "../../components/token/SwapInterface";
+import { useTokenInfo, formatPrice, formatNumber } from "../../hooks/useTokenInfo";
 
 const BASESCAN_URL = `${EXPLORER_URL}/token/${PLOT_TOKEN}`;
 const MINT_CLUB_URL = "https://mint.club/token/base/PLOT";
@@ -26,26 +26,9 @@ export default function TokenPage() {
     query: { enabled: !!address },
   });
 
-  const { data: totalSupply, isLoading: supplyLoading } = useReadContract({
-    address: PLOT_TOKEN,
-    abi: erc20Abi,
-    functionName: "totalSupply",
-  });
-
-  const { data: priceRaw, isLoading: priceLoading } = useReadContract({
-    address: MCV2_BOND,
-    abi: [priceForNextMintFunction],
-    functionName: "priceForNextMint",
-    args: [PLOT_TOKEN],
-  });
+  const { data: tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo();
 
   const formattedBalance = balance ? formatUnits(balance, 18) : "0";
-  const formattedSupply = totalSupply ? formatUnits(totalSupply, 18) : "0";
-  const formattedPrice = priceRaw ? formatUnits(priceRaw, 18) : null;
-  const marketCap =
-    formattedPrice && totalSupply
-      ? parseFloat(formattedPrice) * parseFloat(formattedSupply)
-      : null;
 
   const handleCopyAddress = async () => {
     try {
@@ -157,15 +140,19 @@ export default function TokenPage() {
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="border-border bg-surface rounded border p-3">
             <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Price</div>
-            {priceLoading ? (
+            {tokenInfoLoading ? (
               <div className="bg-border h-6 animate-pulse rounded" />
-            ) : formattedPrice ? (
-              <div className="text-foreground text-sm font-bold">
-                {parseFloat(formattedPrice).toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 6,
-                })}{" "}
-                <span className="text-muted text-xs font-normal">PLOT</span>
+            ) : tokenInfo ? (
+              <div className="space-y-1">
+                <div className="text-foreground text-sm font-bold">
+                  {formatPrice(tokenInfo.price)}
+                </div>
+                {tokenInfo.priceChange24h !== null && (
+                  <div className={`text-xs ${tokenInfo.priceChange24h >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {tokenInfo.priceChange24h >= 0 ? "+" : ""}
+                    {tokenInfo.priceChange24h.toFixed(2)}%
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-muted text-sm">—</div>
@@ -173,15 +160,11 @@ export default function TokenPage() {
           </div>
           <div className="border-border bg-surface rounded border p-3">
             <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Market Cap</div>
-            {priceLoading || supplyLoading ? (
+            {tokenInfoLoading ? (
               <div className="bg-border h-6 animate-pulse rounded" />
-            ) : marketCap !== null ? (
+            ) : tokenInfo ? (
               <div className="text-foreground text-sm font-bold">
-                {marketCap.toLocaleString(undefined, {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                })}{" "}
-                <span className="text-muted text-xs font-normal">PLOT</span>
+                ${formatNumber(tokenInfo.marketCap)}
               </div>
             ) : (
               <div className="text-muted text-sm">—</div>
