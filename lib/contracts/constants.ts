@@ -37,7 +37,7 @@ export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
  *  Testnet: disabled (V1 contract incompatible with V2 ABI) */
 export const ZAP_PLOTLINK = (IS_TESTNET
   ? "0x0000000000000000000000000000000000000000"
-  : "0xEF6a8640c836b16Eb8cCD8016Ead4C8517aC3033") as `0x${string}`;
+  : "0x7bC192848003ab1Ba286C66AFD0dd8a1729c6b02") as `0x${string}`;
 
 /** $PLOT protocol token
  *  Testnet: PL_TEST ERC-20 on Base Sepolia
