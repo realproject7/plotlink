@@ -25,8 +25,12 @@
   --color-accent-dim: var(--accent-dim);
   --color-border: var(--border);
   --color-error: var(--error);
+  /* Two-font system: serif for content, sans-serif for UI */
+  /* REVERT POINT: To revert typography, restore all --font-* and --default-font-family
+     to use --font-lora instead of --font-inter for UI lines below */
   --font-heading: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
   --font-body: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+  --font-ui: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
   --default-font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
   --default-font-feature-settings: normal;
   --default-font-variation-settings: normal;
@@ -40,6 +44,12 @@ body {
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+}
+
+/* UI elements: sans-serif (Inter) for navigation, controls, labels */
+nav, footer, button, input, select, textarea, label,
+.font-ui {
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* Monospace elements: addresses, code blocks, contract data */
