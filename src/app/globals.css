@@ -25,13 +25,13 @@
   --color-accent-dim: var(--accent-dim);
   --color-border: var(--border);
   --color-error: var(--error);
-  /* Two-font system: serif for content, sans-serif for UI */
-  /* REVERT POINT: To revert typography, restore all --font-* and --default-font-family
-     to use --font-lora instead of --font-inter for UI lines below */
+  /* Two-font system: Inter (default), Lora for headlines + prose only
+     REVERT POINT: git revert to 71b4ed8 to restore Lora-default system */
   --font-heading: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
-  --font-body: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+  --font-body: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
   --font-ui: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
-  --default-font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+  --font-prose: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+  --default-font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
   --default-font-feature-settings: normal;
   --default-font-variation-settings: normal;
 }
@@ -39,17 +39,17 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
 }
 
+/* Headlines: Lora (serif) */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
 }
 
-/* UI elements: sans-serif (Inter) for navigation, controls, labels */
-nav, footer, button, input, select, textarea, label,
-.font-ui {
-  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
+/* Prose/story content: Lora (serif) — apply to story text areas */
+.font-serif, .prose {
+  font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
 }
 
 /* Monospace elements: addresses, code blocks, contract data */
@@ -63,7 +63,7 @@ code, pre, .font-mono {
   color: var(--bg-surface);
 }
 
-/* Ruled notebook paper */
+/* Ruled notebook paper — story content uses Lora */
 .ruled-paper {
   --line-height: 28px;
   background: var(--paper-bg);
@@ -71,6 +71,7 @@ code, pre, .font-mono {
   font-size: 1rem;
   line-height: var(--line-height);
   color: var(--text);
+  font-family: var(--font-lora), "Lora", Georgia, "Times New Roman", serif;
   background-image:
     linear-gradient(
       90deg,
