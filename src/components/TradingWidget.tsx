@@ -345,7 +345,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       <h2 className="text-foreground group relative text-sm font-medium">
         Trade to Support
         <span className="bg-background border-border text-muted pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-64 rounded border p-2 text-[10px] font-normal leading-snug shadow-md group-hover:block">
-          Every trade generates a 5% creator royalty — buying and selling these story tokens directly supports the writer to keep continuing this story.
+          Every trade generates a creator royalty — buying and selling these story tokens directly supports the writer to keep continuing this story.
         </span>
       </h2>
 
