@@ -87,7 +87,7 @@ export function StoryCard({
 
           {/* Center: title */}
           <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 text-center">
-            <h3 className="font-heading text-sm font-bold leading-tight tracking-tight text-[var(--accent)] sm:text-base">
+            <h3 className="font-heading text-lg font-bold leading-tight tracking-tight text-[var(--accent)] sm:text-xl">
               {storyline.title}
             </h3>
             {storyline.language && storyline.language !== "English" && (
