@@ -3,9 +3,12 @@
 import { useAccount, useReadContract } from "wagmi";
 import { formatUnits, erc20Abi } from "viem";
 import { useState } from "react";
+import Image from "next/image";
 import {
   PLOT_TOKEN, EXPLORER_URL,
 } from "../../../lib/contracts/constants";
+import { SwapInterface } from "../../components/token/SwapInterface";
+import { useTokenInfo, formatPrice, formatNumber } from "../../hooks/useTokenInfo";
 
 const BASESCAN_URL = `${EXPLORER_URL}/token/${PLOT_TOKEN}`;
 const MINT_CLUB_URL = "https://mint.club/token/base/PLOT";
@@ -23,14 +26,9 @@ export default function TokenPage() {
     query: { enabled: !!address },
   });
 
-  const { data: totalSupply, isLoading: supplyLoading } = useReadContract({
-    address: PLOT_TOKEN,
-    abi: erc20Abi,
-    functionName: "totalSupply",
-  });
+  const { data: tokenInfo, isLoading: tokenInfoLoading } = useTokenInfo();
 
   const formattedBalance = balance ? formatUnits(balance, 18) : "0";
-  const formattedSupply = totalSupply ? formatUnits(totalSupply, 18) : "0";
 
   const handleCopyAddress = async () => {
     try {
@@ -106,6 +104,9 @@ export default function TokenPage() {
         </div>
       </div>
 
+      {/* Swap Interface */}
+      <SwapInterface />
+
       {/* How to Get PLOT */}
       <div className="border-border rounded border p-5">
         <h3 className="text-foreground text-sm font-bold mb-3">How to Get PLOT</h3>
@@ -133,65 +134,111 @@ export default function TokenPage() {
 
       {/* Token Information */}
       <div className="border-border rounded border p-5">
-        <h3 className="text-foreground text-sm font-bold mb-3">Token Information</h3>
+        <h3 className="text-foreground text-sm font-bold mb-4">Token Information</h3>
 
-        {/* Stats */}
+        {/* Stats Grid — Price + Market Cap */}
         <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="border-border rounded border p-3">
-            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Total Supply</div>
-            {supplyLoading ? (
+          <div className="border-border bg-surface rounded border p-3">
+            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Price</div>
+            {tokenInfoLoading ? (
               <div className="bg-border h-6 animate-pulse rounded" />
-            ) : (
-              <div className="text-foreground text-sm font-bold">
-                {parseFloat(formattedSupply).toLocaleString(undefined, {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 0,
-                })} PLOT
+            ) : tokenInfo ? (
+              <div className="space-y-1">
+                <div className="text-foreground text-sm font-bold">
+                  {formatPrice(tokenInfo.price)}
+                </div>
+                {tokenInfo.priceChange24h !== null && (
+                  <div className={`text-xs ${tokenInfo.priceChange24h >= 0 ? "text-green-600" : "text-red-600"}`}>
+                    {tokenInfo.priceChange24h >= 0 ? "+" : ""}
+                    {tokenInfo.priceChange24h.toFixed(2)}%
+                  </div>
+                )}
               </div>
+            ) : (
+              <div className="text-muted text-sm">—</div>
             )}
           </div>
-          <div className="border-border rounded border p-3">
-            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Network</div>
-            <div className="text-foreground text-sm font-bold flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
-              Base Mainnet
-            </div>
+          <div className="border-border bg-surface rounded border p-3">
+            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Market Cap</div>
+            {tokenInfoLoading ? (
+              <div className="bg-border h-6 animate-pulse rounded" />
+            ) : tokenInfo ? (
+              <div className="text-foreground text-sm font-bold">
+                ${formatNumber(tokenInfo.marketCap)}
+              </div>
+            ) : (
+              <div className="text-muted text-sm">—</div>
+            )}
           </div>
         </div>
 
-        {/* Links */}
+        {/* External Links */}
         <div className="space-y-2">
+          {/* Mint Club */}
           <a
             href={MINT_CLUB_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="border-border hover:border-accent flex items-center justify-between rounded border p-3 transition-colors"
           >
-            <span className="text-foreground text-sm">View on Mint Club</span>
-            <span className="text-muted text-xs">&#8599;</span>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/mc-icon-light.svg"
+                alt="Mint Club"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+              <span className="text-foreground text-sm">View on Mint Club</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
           </a>
 
+          {/* Hunt Town */}
           <a
             href={HUNT_TOWN_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="border-border hover:border-accent flex items-center justify-between rounded border p-3 transition-colors"
           >
-            <span className="text-foreground text-sm">View on Hunt Town</span>
-            <span className="text-muted text-xs">&#8599;</span>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/hunt-token.svg"
+                alt="Hunt Town"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+              <span className="text-foreground text-sm">View on Hunt Town</span>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
           </a>
 
+          {/* Basescan — Contract Address */}
           <a
             href={BASESCAN_URL}
             target="_blank"
             rel="noopener noreferrer"
             className="border-border hover:border-accent flex items-center justify-between rounded border p-3 transition-colors"
           >
-            <div>
-              <div className="text-muted text-[10px] uppercase tracking-wider">Contract Address</div>
-              <code className="text-foreground text-sm font-bold">
-                {PLOT_TOKEN.slice(0, 6)}...{PLOT_TOKEN.slice(-6)}
-              </code>
+            <div className="flex items-center gap-3">
+              <Image
+                src="/basescan-icon.svg"
+                alt="Basescan"
+                width={20}
+                height={20}
+                className="h-5 w-5"
+              />
+              <div className="flex flex-col">
+                <span className="text-muted text-[10px] uppercase tracking-wider">Contract Address</span>
+                <code className="text-foreground text-sm font-bold">
+                  {PLOT_TOKEN.slice(0, 6)}...{PLOT_TOKEN.slice(-6)}
+                </code>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -199,14 +246,32 @@ export default function TokenPage() {
                   e.preventDefault();
                   handleCopyAddress();
                 }}
-                className="text-muted hover:text-foreground text-xs transition-colors"
+                className="text-muted hover:text-foreground p-1.5 transition-colors"
                 title="Copy address"
               >
-                {copied ? "Copied" : "Copy"}
+                {copied ? (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                )}
               </button>
-              <span className="text-muted text-xs">&#8599;</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
             </div>
           </a>
+
+          {/* Network Badge */}
+          <div className="border-border bg-surface flex items-center gap-3 rounded border p-3">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20">
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
+            </div>
+            <span className="text-foreground text-sm">Base Mainnet (ERC-20)</span>
+          </div>
         </div>
       </div>
     </div>
