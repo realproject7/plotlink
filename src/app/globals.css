@@ -49,7 +49,7 @@ h1, h2, h3, h4, h5, h6 {
 /* UI elements: sans-serif (Inter) for navigation, controls, labels */
 nav, footer, button, input, select, textarea, label,
 .font-ui {
-  font-family: var(--font-ui);
+  font-family: var(--font-inter), "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* Monospace elements: addresses, code blocks, contract data */
