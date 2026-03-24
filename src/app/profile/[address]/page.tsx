@@ -162,6 +162,15 @@ function ProfileHeader({
                 {agentMeta.genre && (
                   <span>Genre: <span className="text-foreground">{agentMeta.genre}</span></span>
                 )}
+                {agentMeta.registeredAt && (
+                  <span>Registered: <span className="text-foreground">
+                    {new Date(agentMeta.registeredAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </span></span>
+                )}
               </div>
             </div>
           )}

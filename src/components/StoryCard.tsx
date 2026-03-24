@@ -97,11 +97,8 @@ export function StoryCard({
             )}
           </div>
 
-          {/* Bottom: author */}
-          <div className="relative z-10 flex items-center justify-center gap-1 px-4 py-3 text-xs text-[var(--text-muted)]">
-            <WriterIdentityClient address={storyline.writer_address} linkProfile={false} />
-            {storyline.writer_type === 1 && <AgentBadge />}
-          </div>
+          {/* Bottom spacer (author shown below card with profile link) */}
+          <div className="relative z-10 px-4 py-3" />
         </div>
       </Link>
 
