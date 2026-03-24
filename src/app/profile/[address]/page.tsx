@@ -38,6 +38,20 @@ export default function ProfilePage() {
 
   const isAgent = !agentLoading && agentMeta !== null && agentMeta !== undefined;
 
+  // Cumulative claimed royalties (on-chain)
+  const { data: claimedRoyalties } = useQuery({
+    queryKey: ["profile-claimed-royalties", address],
+    queryFn: async () => {
+      const [, claimed] = await browserClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "getRoyaltyInfo",
+        args: [address as Address, PLOT_TOKEN],
+      });
+      return claimed;
+    },
+  });
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <ProfileHeader
@@ -47,6 +61,7 @@ export default function ProfilePage() {
         agentMeta={agentMeta ?? null}
         agentLoading={agentLoading}
         isAgent={isAgent}
+        claimedRoyalties={claimedRoyalties ?? null}
       />
 
       {/* Tab navigation */}
@@ -92,6 +107,7 @@ function ProfileHeader({
   agentMeta,
   agentLoading,
   isAgent,
+  claimedRoyalties,
 }: {
   address: string;
   fcProfile: FarcasterProfile | null;
@@ -99,6 +115,7 @@ function ProfileHeader({
   agentMeta: AgentMetadata | null;
   agentLoading: boolean;
   isAgent: boolean;
+  claimedRoyalties: bigint | null;
 }) {
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
 
@@ -193,6 +210,13 @@ function ProfileHeader({
           {/* Farcaster bio (only show when no agent description is present) */}
           {!agentMeta?.description && fcProfile?.bio && (
             <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
+          )}
+
+          {/* Cumulative claimed royalties */}
+          {claimedRoyalties && claimedRoyalties > BigInt(0) && (
+            <div className="text-muted mt-2 text-xs">
+              Royalties claimed: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+            </div>
           )}
         </div>
       </div>
@@ -989,54 +1013,9 @@ function ActivityTab({ address }: { address: string }) {
         });
       }
 
-      // Claimed royalties — derive from ERC-20 Transfer events on PLOT_TOKEN
-      // where from=MCV2_BOND and to=address (royalty payouts)
-      try {
-        const transferEventAbi = [{
-          type: "event",
-          name: "Transfer",
-          inputs: [
-            { name: "from", type: "address", indexed: true },
-            { name: "to", type: "address", indexed: true },
-            { name: "value", type: "uint256", indexed: false },
-          ],
-        }] as const;
-
-        const claimLogs = await browserClient.getLogs({
-          address: PLOT_TOKEN,
-          event: transferEventAbi[0],
-          args: { from: MCV2_BOND, to: address as Address },
-          fromBlock: BigInt(0),
-          toBlock: "latest",
-        });
-
-        // Fetch ALL trade tx hashes (unbounded) to filter sell refunds accurately
-        const { data: allTradeTxRows } = await supabase
-          .from("trade_history")
-          .select("tx_hash")
-          .eq("user_address", address)
-          .eq("contract_address", MCV2_BOND.toLowerCase());
-        const tradeTxHashes = new Set(
-          (allTradeTxRows ?? []).map((t: { tx_hash: string }) => t.tx_hash.toLowerCase()),
-        );
-
-        for (const log of claimLogs) {
-          const txHash = log.transactionHash?.toLowerCase();
-          if (txHash && tradeTxHashes.has(txHash)) continue; // sell refund, not a claim
-
-          const blockTimestamp = await browserClient.getBlock({ blockNumber: log.blockNumber! });
-          const ts = new Date(Number(blockTimestamp.timestamp) * 1000).toISOString();
-          entries.push({
-            type: "claimed_royalties",
-            timestamp: ts,
-            storylineId: 0,
-            detail: `${formatPrice(formatUnits(log.args.value ?? BigInt(0), 18))} ${RESERVE_LABEL}`,
-            txHash: log.transactionHash ?? undefined,
-          });
-        }
-      } catch {
-        // Claim log query unavailable — skip
-      }
+      // TODO: Claimed royalties feed entries require a dedicated claim event
+      // indexer. For now, cumulative claimed amount is shown in the profile header
+      // via on-chain getRoyaltyInfo.
 
       // Sort reverse-chronological
       entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
