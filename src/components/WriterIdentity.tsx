@@ -1,19 +1,31 @@
+import Link from "next/link";
 import { lookupByAddress } from "../../lib/farcaster";
 import { truncateAddress } from "../../lib/utils";
 
 /**
  * Server component that displays a Farcaster identity (avatar + username)
  * when available, falling back to a truncated Ethereum address.
+ * Links to the internal profile page at /profile/[address].
  */
 export async function WriterIdentity({ address }: { address: string }) {
   const profile = await lookupByAddress(address);
 
   if (!profile) {
-    return <span>{truncateAddress(address)}</span>;
+    return (
+      <Link
+        href={`/profile/${address}`}
+        className="text-foreground hover:text-accent transition-colors"
+      >
+        {truncateAddress(address)}
+      </Link>
+    );
   }
 
   return (
-    <span className="inline-flex items-center gap-1">
+    <Link
+      href={`/profile/${address}`}
+      className="inline-flex items-center gap-1 text-foreground hover:text-accent transition-colors"
+    >
       {profile.pfpUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -24,14 +36,7 @@ export async function WriterIdentity({ address }: { address: string }) {
           className="rounded-full"
         />
       )}
-      <a
-        href={`https://farcaster.xyz/${profile.username}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-foreground hover:text-accent transition-colors"
-      >
-        @{profile.username}
-      </a>
-    </span>
+      @{profile.username}
+    </Link>
   );
 }

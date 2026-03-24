@@ -233,9 +233,12 @@ function WriterDonationHistory({ storylineId }: { storylineId: number }) {
             className="text-muted flex items-center justify-between text-[10px]"
           >
             <div className="flex gap-2">
-              <span className="text-foreground">
+              <a
+                href={`/profile/${d.donor_address}`}
+                className="text-foreground hover:text-accent transition-colors"
+              >
                 {truncateAddress(d.donor_address)}
-              </span>
+              </a>
               {d.block_timestamp && (
                 <time dateTime={d.block_timestamp}>
                   {new Date(d.block_timestamp).toLocaleDateString("en-US", {
