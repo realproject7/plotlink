@@ -248,24 +248,24 @@ function StoriesTab({
     enabled: storylineIds.length > 0,
   });
 
-  // Total token holders across all writer's storylines
-  const { data: totalHolders } = useQuery({
-    queryKey: ["profile-total-holders", address, storylineIds],
+  // Total token supply across all writer's storylines (from latest trade per storyline)
+  const { data: totalSupplyAcross } = useQuery({
+    queryKey: ["profile-total-supply", address, storylineIds],
     queryFn: async () => {
       if (!supabase || storylineIds.length === 0) return 0;
-      const { data } = await supabase
-        .from("trade_history")
-        .select("user_address, event_type")
-        .in("storyline_id", storylineIds)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (!data) return 0;
-      const balances = new Map<string, number>();
-      for (const t of data as { user_address: string | null; event_type: string }[]) {
-        if (!t.user_address) continue;
-        const cur = balances.get(t.user_address) ?? 0;
-        balances.set(t.user_address, t.event_type === "mint" ? cur + 1 : cur - 1);
+      // Get the latest trade per storyline to read current total_supply
+      let total = 0;
+      for (const sid of storylineIds) {
+        const { data } = await supabase
+          .from("trade_history")
+          .select("total_supply")
+          .eq("storyline_id", sid)
+          .eq("contract_address", STORY_FACTORY.toLowerCase())
+          .order("block_number", { ascending: false })
+          .limit(1);
+        if (data && data.length > 0) total += data[0].total_supply;
       }
-      return Array.from(balances.values()).filter((b) => b > 0).length;
+      return total;
     },
     enabled: storylineIds.length > 0,
   });
@@ -324,8 +324,10 @@ function StoriesTab({
           <StatCell label="Storylines" value={String(storylines.length)} />
           <StatCell label="Total Plots" value={String(totalPlots)} />
           <StatCell
-            label="Holders"
-            value={totalHolders !== undefined ? String(totalHolders) : "—"}
+            label="Token Supply"
+            value={totalSupplyAcross !== undefined && totalSupplyAcross > 0
+              ? formatSupplyCompact(totalSupplyAcross)
+              : "—"}
           />
           <StatCell
             label="Donations"
@@ -402,25 +404,19 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
     staleTime: 60000,
   });
 
-  // Count unique holders from trade_history
-  const { data: holderCount } = useQuery({
-    queryKey: ["profile-story-holders", storyline.storyline_id],
+  // Token supply from latest trade entry
+  const { data: storySupply } = useQuery({
+    queryKey: ["profile-story-supply", storyline.storyline_id],
     queryFn: async () => {
       if (!supabase) return 0;
       const { data } = await supabase
         .from("trade_history")
-        .select("user_address, event_type")
+        .select("total_supply")
         .eq("storyline_id", storyline.storyline_id)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (!data) return 0;
-      // Count net positive holders
-      const balances = new Map<string, number>();
-      for (const t of data) {
-        if (!t.user_address) continue;
-        const cur = balances.get(t.user_address) ?? 0;
-        balances.set(t.user_address, t.event_type === "mint" ? cur + 1 : cur - 1);
-      }
-      return Array.from(balances.values()).filter((b) => b > 0).length;
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .order("block_number", { ascending: false })
+        .limit(1);
+      return data && data.length > 0 ? data[0].total_supply : 0;
     },
     staleTime: 60000,
   });
@@ -462,7 +458,9 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
             : "—"}
         </span>
         <span>
-          {holderCount !== undefined ? `${holderCount} holder${holderCount !== 1 ? "s" : ""}` : "—"}
+          {storySupply !== undefined && storySupply > 0
+            ? `${formatSupplyCompact(storySupply)} supply`
+            : "—"}
         </span>
         <span>
           {formatViewCount(storyline.view_count)} views
@@ -674,6 +672,14 @@ function ActivityTab({ address }: { address: string }) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+function formatSupplyCompact(n: number): string {
+  if (n === 0) return "0";
+  if (n < 1) return n.toFixed(4);
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
+  return n.toFixed(0);
+}
 
 function formatViewCount(n: number): string {
   if (n < 1000) return String(n);
