@@ -989,28 +989,50 @@ function ActivityTab({ address }: { address: string }) {
         });
       }
 
+      // Claimed royalties — derive from ERC-20 Transfer events on PLOT_TOKEN
+      // where from=MCV2_BOND and to=address (royalty payouts)
+      try {
+        const transferEventAbi = [{
+          type: "event",
+          name: "Transfer",
+          inputs: [
+            { name: "from", type: "address", indexed: true },
+            { name: "to", type: "address", indexed: true },
+            { name: "value", type: "uint256", indexed: false },
+          ],
+        }] as const;
+
+        const claimLogs = await browserClient.getLogs({
+          address: PLOT_TOKEN,
+          event: transferEventAbi[0],
+          args: { from: MCV2_BOND, to: address as Address },
+          fromBlock: BigInt(0),
+          toBlock: "latest",
+        });
+
+        for (const log of claimLogs) {
+          const blockTimestamp = await browserClient.getBlock({ blockNumber: log.blockNumber! });
+          const ts = new Date(Number(blockTimestamp.timestamp) * 1000).toISOString();
+          entries.push({
+            type: "claimed_royalties",
+            timestamp: ts,
+            storylineId: 0,
+            detail: `${formatPrice(formatUnits(log.args.value ?? BigInt(0), 18))} ${RESERVE_LABEL}`,
+            txHash: log.transactionHash ?? undefined,
+          });
+        }
+      } catch {
+        // Claim log query unavailable — skip
+      }
+
       // Sort reverse-chronological
       entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
       return entries;
     },
   });
 
-  // Claimed royalties (on-chain cumulative — shown as summary, not feed entry)
-  const { data: claimedRoyalties } = useQuery({
-    queryKey: ["profile-claimed-royalties", address],
-    queryFn: async () => {
-      const [, claimed] = await browserClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "getRoyaltyInfo",
-        args: [address as Address, PLOT_TOKEN],
-      });
-      return claimed;
-    },
-  });
-
   if (isLoading) return <p className="text-muted mt-8 text-sm">Loading...</p>;
-  if (feed.length === 0 && (!claimedRoyalties || claimedRoyalties === BigInt(0))) {
+  if (feed.length === 0) {
     return (
       <div className="py-12 text-center">
         <p className="text-muted text-sm">No activity yet.</p>
@@ -1026,17 +1048,6 @@ function ActivityTab({ address }: { address: string }) {
 
   return (
     <div className="mt-6">
-      {/* Claimed royalties summary (on-chain, no per-event history available) */}
-      {claimedRoyalties && claimedRoyalties > BigInt(0) && (
-        <div className="border-border bg-surface mb-4 rounded border px-4 py-3">
-          <p className="text-muted text-[10px] uppercase tracking-wider">Claimed Royalties</p>
-          <span className="text-green-700 text-sm font-medium">
-            {formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}
-          </span>
-          <span className="text-muted ml-2 text-xs">total claimed to date</span>
-        </div>
-      )}
-
       <div className="space-y-1.5">
         {visible.map((entry, i) => (
           <FeedRow key={`${entry.type}-${entry.timestamp}-${i}`} entry={entry} />
