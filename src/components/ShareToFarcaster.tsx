@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback } from "react";
+import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 /**
- * "Share to Farcaster" button — only renders inside a Farcaster Mini App context.
+ * "Share to Farcaster" button — only renders when platform === 'farcaster'.
  * Calls sdk.actions.composeCast() with pre-filled text and story URL as embed.
  */
 export function ShareToFarcaster({
@@ -13,27 +14,7 @@ export function ShareToFarcaster({
   storylineId: number;
   title: string;
 }) {
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    let cancelled = false;
-
-    import("@farcaster/miniapp-sdk")
-      .then(async ({ sdk }) => {
-        if (cancelled) return;
-        const ctx = await sdk.context;
-        if (ctx && !cancelled) setVisible(true);
-      })
-      .catch(() => {
-        // Not in a Farcaster context
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const { platform, isLoading } = usePlatformDetection();
 
   const handleShare = useCallback(async () => {
     const { sdk } = await import("@farcaster/miniapp-sdk");
@@ -48,7 +29,7 @@ export function ShareToFarcaster({
     });
   }, [storylineId, title]);
 
-  if (!visible) return null;
+  if (isLoading || platform !== "farcaster") return null;
 
   return (
     <button

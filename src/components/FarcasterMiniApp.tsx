@@ -1,26 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 /**
- * Detects whether the app is running inside a Farcaster client via sdk.context
- * and calls `sdk.actions.ready()` to dismiss the splash screen.
+ * Calls `sdk.actions.ready()` to dismiss the splash screen — only in Farcaster clients.
+ * After Base App migration (April 2026), Base App operates as standard web app.
  *
  * Renders nothing — mount once near the root of the component tree.
  */
 export function FarcasterMiniApp() {
+  const { platform, isLoading } = usePlatformDetection();
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (isLoading || platform !== "farcaster") return;
 
     let cancelled = false;
 
     import("@farcaster/miniapp-sdk").then(async ({ sdk }) => {
       if (cancelled) return;
-
-      // sdk.context is only available when running inside a Farcaster client
-      const context = await sdk.context;
-      if (!context || cancelled) return;
-
       sdk.actions.ready();
     }).catch(() => {
       // Not in a Farcaster context — silently ignore
@@ -29,7 +27,7 @@ export function FarcasterMiniApp() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [platform, isLoading]);
 
   return null;
 }
