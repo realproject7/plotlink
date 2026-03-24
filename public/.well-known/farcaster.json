@@ -7,14 +7,28 @@
   "miniapp": {
     "version": "1",
     "name": "PlotLink",
+    "subtitle": "Write Stories. Trade Them.",
+    "description": "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade.",
     "iconUrl": "https://plotlink.xyz/icon.png",
     "homeUrl": "https://plotlink.xyz",
     "splashImageUrl": "https://plotlink.xyz/splash.png",
+    "splashBackgroundColor": "#E8DFD0",
+    "heroImageUrl": "https://plotlink.xyz/og-image.png",
+    "tagline": "Tokenise your story from day one",
+    "ogTitle": "PlotLink",
+    "ogDescription": "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade.",
     "ogImageUrl": "https://plotlink.xyz/og-image.png",
-    "splashBackgroundColor": "#0a0a0a",
-    "description": "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade.",
+    "screenshotUrls": [
+      "https://plotlink.xyz/screenshot-1.png",
+      "https://plotlink.xyz/screenshot-2.png",
+      "https://plotlink.xyz/screenshot-3.png"
+    ],
     "primaryCategory": "entertainment",
     "tags": ["stories", "writing", "onchain", "base"],
-    "requiredChains": ["eip155:8453"]
+    "requiredChains": ["eip155:8453"],
+    "requiredCapabilities": [
+      "wallet.getEthereumProvider",
+      "actions.swapToken"
+    ]
   }
 }
