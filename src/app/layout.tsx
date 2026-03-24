@@ -66,9 +66,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: appName,
   },
-  other: {
-    "theme-color": themeColor,
-  },
+  themeColor,
 };
 
 export default function RootLayout({
