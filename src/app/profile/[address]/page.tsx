@@ -542,64 +542,314 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
 // Portfolio Tab
 // ---------------------------------------------------------------------------
 
+interface PortfolioHolding {
+  storyline: Storyline;
+  balance: bigint;
+  price: bigint;
+  value: bigint;
+  entryPrice: number | null;
+  lastTraded: string | null;
+}
+
 function PortfolioTab({ address }: { address: string }) {
-  const { data: trades = [], isLoading, error } = useQuery({
-    queryKey: ["profile-portfolio", address],
+  // Fetch on-chain token holdings
+  const { data: holdings, isLoading: holdingsLoading } = useQuery({
+    queryKey: ["profile-holdings", address],
+    queryFn: async (): Promise<PortfolioHolding[]> => {
+      if (!supabase) return [];
+
+      // Scan all storylines with tokens (matches ReaderPortfolio pattern)
+      // to catch holdings acquired via direct transfers, not just indexed trades
+      const { data: storylines } = await supabase
+        .from("storylines")
+        .select("*")
+        .eq("hidden", false)
+        .neq("token_address", "")
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .returns<Storyline[]>();
+      if (!storylines || storylines.length === 0) return [];
+
+      // Multicall balanceOf for all storyline tokens
+      const balanceResults = await browserClient.multicall({
+        contracts: storylines.map((sl) => ({
+          address: sl.token_address as Address,
+          abi: erc20Abi,
+          functionName: "balanceOf" as const,
+          args: [address as Address],
+        })),
+        allowFailure: true,
+      });
+
+      const held = storylines
+        .map((sl, i) => ({ sl, balance: balanceResults[i] }))
+        .filter((h) => h.balance.status === "success" && (h.balance.result as bigint) > BigInt(0));
+      if (held.length === 0) return [];
+
+      // Fetch prices for held tokens
+      const results = await Promise.all(
+        held.map(async ({ sl, balance: balResult }): Promise<PortfolioHolding | null> => {
+          const balance = balResult.result as bigint;
+          try {
+            const price = await browserClient.readContract({
+              address: MCV2_BOND,
+              abi: mcv2BondAbi,
+              functionName: "priceForNextMint",
+              args: [sl.token_address as Address],
+            });
+            const priceBI = BigInt(price);
+            const value = (balance * priceBI) / BigInt(10 ** 18);
+
+            // Derive entry price from first mint in trade_history
+            let entryPrice: number | null = null;
+            let lastTraded: string | null = null;
+            if (supabase) {
+              const { data: firstMint } = await supabase
+                .from("trade_history")
+                .select("price_per_token, block_timestamp")
+                .eq("user_address", address)
+                .eq("storyline_id", sl.storyline_id)
+                .eq("event_type", "mint")
+                .eq("contract_address", STORY_FACTORY.toLowerCase())
+                .order("block_timestamp", { ascending: true })
+                .limit(1);
+              if (firstMint && firstMint.length > 0) {
+                entryPrice = firstMint[0].price_per_token;
+              }
+              const { data: lastTrade } = await supabase
+                .from("trade_history")
+                .select("block_timestamp")
+                .eq("user_address", address)
+                .eq("storyline_id", sl.storyline_id)
+                .eq("contract_address", STORY_FACTORY.toLowerCase())
+                .order("block_timestamp", { ascending: false })
+                .limit(1);
+              if (lastTrade && lastTrade.length > 0) {
+                lastTraded = lastTrade[0].block_timestamp;
+              }
+            }
+
+            return { storyline: sl, balance, price: priceBI, value, entryPrice, lastTraded };
+          } catch {
+            return null;
+          }
+        }),
+      );
+
+      // Sort by most recently traded, then largest value
+      return results
+        .filter((h): h is PortfolioHolding => h !== null)
+        .sort((a, b) => {
+          if (a.lastTraded && b.lastTraded) return b.lastTraded.localeCompare(a.lastTraded);
+          if (a.lastTraded) return -1;
+          if (b.lastTraded) return 1;
+          return Number(b.value - a.value);
+        });
+    },
+    staleTime: 60000,
+  });
+
+  // Donation history (given as reader)
+  const { data: donationsGiven = [], isLoading: donGivenLoading } = useQuery({
+    queryKey: ["profile-donations-given", address],
     queryFn: async () => {
       if (!supabase) return [];
-      const { data, error } = await supabase
-        .from("trade_history")
+      const { data } = await supabase
+        .from("donations")
         .select("*")
-        .eq("user_address", address)
+        .eq("donor_address", address)
         .eq("contract_address", STORY_FACTORY.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .limit(50)
-        .returns<TradeHistory[]>();
-      if (error) throw error;
+        .limit(20)
+        .returns<Donation[]>();
       return data ?? [];
     },
   });
 
+  // Aggregate donations received as writer
+  const { data: donationsReceived, isLoading: donRecvLoading } = useQuery({
+    queryKey: ["profile-donations-received-portfolio", address],
+    queryFn: async () => {
+      if (!supabase) return { total: BigInt(0), count: 0 };
+      // Get storylines written by this address
+      const { data: writerStorylines } = await supabase
+        .from("storylines")
+        .select("storyline_id")
+        .eq("writer_address", address)
+        .eq("hidden", false)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!writerStorylines || writerStorylines.length === 0) {
+        return { total: BigInt(0), count: 0 };
+      }
+      const sids = writerStorylines.map((s) => s.storyline_id);
+      const { data: donations } = await supabase
+        .from("donations")
+        .select("amount")
+        .in("storyline_id", sids)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!donations || donations.length === 0) return { total: BigInt(0), count: 0 };
+      const total = donations.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
+      return { total, count: donations.length };
+    },
+  });
+
+  const isLoading = holdingsLoading || donGivenLoading || donRecvLoading;
+
   if (isLoading) return <p className="text-muted mt-8 text-sm">Loading...</p>;
-  if (error) return <p className="mt-8 text-sm text-error">Failed to load portfolio.</p>;
-  if (trades.length === 0) {
-    return <p className="text-muted py-8 text-center text-sm">No trading activity yet.</p>;
+
+  const hasHoldings = holdings && holdings.length > 0;
+  const hasDonationsGiven = donationsGiven.length > 0;
+  const hasDonationsReceived = donationsReceived && donationsReceived.count > 0;
+  const hasAny = hasHoldings || hasDonationsGiven || hasDonationsReceived;
+
+  if (!hasAny) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-muted text-sm">No holdings or donations yet.</p>
+        <p className="text-muted mt-1 text-xs">
+          This address hasn&apos;t purchased any storyline tokens or made donations.
+        </p>
+      </div>
+    );
   }
 
-  // Group trades by storyline to show net position
-  const positions = new Map<number, { storylineId: number; mints: number; burns: number; lastTrade: string }>();
-  for (const t of trades) {
-    const pos = positions.get(t.storyline_id) ?? { storylineId: t.storyline_id, mints: 0, burns: 0, lastTrade: t.block_timestamp };
-    if (t.event_type === "mint") pos.mints++;
-    else if (t.event_type === "burn") pos.burns++;
-    positions.set(t.storyline_id, pos);
-  }
+  const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
+  const totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
 
   return (
-    <div className="mt-6 space-y-3">
-      <p className="text-muted text-xs uppercase tracking-wider">Trading Activity</p>
-      {Array.from(positions.values()).map((pos) => (
-        <div key={pos.storylineId} className="border-border rounded border px-4 py-3">
-          <div className="flex items-center justify-between">
-            <Link
-              href={`/story/${pos.storylineId}`}
-              className="text-foreground hover:text-accent text-sm font-medium transition-colors"
-            >
-              Story #{pos.storylineId}
-            </Link>
-            <span className="text-muted text-xs">
-              {new Date(pos.lastTrade).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-              })}
+    <div className="mt-6 space-y-6">
+      {/* Portfolio summary */}
+      {hasHoldings && (
+        <>
+          <div className="border-border bg-surface rounded border px-4 py-3">
+            <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Portfolio Value</p>
+            <span className="text-accent text-lg font-bold">
+              {formatPrice(formatUnits(totalValue, 18))} {RESERVE_LABEL}
+            </span>
+            <span className="text-muted ml-2 text-xs">
+              across {holdings!.length} {holdings!.length === 1 ? "token" : "tokens"}
             </span>
           </div>
-          <div className="text-muted mt-1 flex gap-4 text-xs">
-            <span className="text-green-700">{pos.mints} mint{pos.mints !== 1 ? "s" : ""}</span>
-            <span className="text-red-700">{pos.burns} burn{pos.burns !== 1 ? "s" : ""}</span>
+
+          {/* Token holdings */}
+          <div className="space-y-2">
+            <p className="text-muted text-xs uppercase tracking-wider">Token Holdings</p>
+            {holdings!.map((h) => (
+              <div
+                key={h.storyline.id}
+                className="border-border rounded border px-4 py-3"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <Link
+                      href={`/story/${h.storyline.storyline_id}`}
+                      className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+                    >
+                      {h.storyline.title}
+                    </Link>
+                    {h.storyline.genre && (
+                      <span className="border-border ml-2 rounded border px-1.5 py-0.5 text-[10px] text-muted">
+                        {h.storyline.genre}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-accent shrink-0 text-sm font-medium">
+                    {formatPrice(formatUnits(h.value, 18))} {RESERVE_LABEL}
+                  </span>
+                </div>
+                <div className="text-muted mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
+                  <span>
+                    Balance: <span className="text-foreground">{formatPrice(formatUnits(h.balance, 18))} tokens</span>
+                  </span>
+                  <span>
+                    Price: <span className="text-foreground">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
+                  </span>
+                  {h.entryPrice !== null && h.entryPrice > 0 && (
+                    <span>
+                      Entry: <span className="text-foreground">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
+                    </span>
+                  )}
+                  {h.lastTraded && (
+                    <span>
+                      Last traded:{" "}
+                      <span className="text-foreground">
+                        {new Date(h.lastTraded).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Donations received as writer */}
+      {hasDonationsReceived && (
+        <div className="border-border bg-surface rounded border px-4 py-3">
+          <p className="text-muted mb-1 text-[10px] uppercase tracking-wider">Donations Received</p>
+          <span className="text-accent text-sm font-medium">
+            {formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}
+          </span>
+          <span className="text-muted ml-2 text-xs">
+            from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}
+          </span>
+        </div>
+      )}
+
+      {/* Donations given as reader */}
+      {hasDonationsGiven && (
+        <div>
+          <p className="text-muted text-xs uppercase tracking-wider">
+            Donations Given
+            {totalDonated > BigInt(0) && (
+              <span className="text-foreground ml-2 normal-case">
+                {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL} total
+              </span>
+            )}
+          </p>
+          <div className="mt-2 space-y-1">
+            {donationsGiven.map((d) => (
+              <div key={d.id} className="text-muted flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={`/story/${d.storyline_id}`}
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                    Story #{d.storyline_id}
+                  </Link>
+                  {d.block_timestamp && (
+                    <time dateTime={d.block_timestamp} className="text-[10px]">
+                      {new Date(d.block_timestamp).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </time>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-accent font-medium">
+                    {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
+                  </span>
+                  {d.tx_hash && (
+                    <a
+                      href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted hover:text-accent transition-colors"
+                      title="View on Basescan"
+                    >
+                      &#x2197;
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
+      )}
     </div>
   );
 }
