@@ -1010,9 +1010,14 @@ function ActivityTab({ address }: { address: string }) {
           toBlock: "latest",
         });
 
-        // Exclude Transfer events that are sell refunds (same tx as a trade)
+        // Fetch ALL trade tx hashes (unbounded) to filter sell refunds accurately
+        const { data: allTradeTxRows } = await supabase
+          .from("trade_history")
+          .select("tx_hash")
+          .eq("user_address", address)
+          .eq("contract_address", STORY_FACTORY.toLowerCase());
         const tradeTxHashes = new Set(
-          (tradesRes.data ?? []).map((t: { tx_hash: string }) => t.tx_hash.toLowerCase()),
+          (allTradeTxRows ?? []).map((t: { tx_hash: string }) => t.tx_hash.toLowerCase()),
         );
 
         for (const log of claimLogs) {
