@@ -258,7 +258,7 @@ function StoriesTab({
         .from("trade_history")
         .select("user_address, storyline_id")
         .in("storyline_id", storylineIds)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
+        .eq("contract_address", MCV2_BOND.toLowerCase());
       if (!trades || trades.length === 0) return 0;
 
       // Build map: token_address -> unique user addresses
@@ -452,7 +452,7 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
         .from("trade_history")
         .select("user_address")
         .eq("storyline_id", storyline.storyline_id)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
+        .eq("contract_address", MCV2_BOND.toLowerCase());
       if (!trades || trades.length === 0) return 0;
 
       const uniqueUsers = [...new Set(
@@ -609,7 +609,7 @@ function PortfolioTab({ address }: { address: string }) {
                 .eq("user_address", address)
                 .eq("storyline_id", sl.storyline_id)
                 .eq("event_type", "mint")
-                .eq("contract_address", STORY_FACTORY.toLowerCase())
+                .eq("contract_address", MCV2_BOND.toLowerCase())
                 .order("block_timestamp", { ascending: true })
                 .limit(1);
               if (firstMint && firstMint.length > 0) {
@@ -620,7 +620,7 @@ function PortfolioTab({ address }: { address: string }) {
                 .select("block_timestamp")
                 .eq("user_address", address)
                 .eq("storyline_id", sl.storyline_id)
-                .eq("contract_address", STORY_FACTORY.toLowerCase())
+                .eq("contract_address", MCV2_BOND.toLowerCase())
                 .order("block_timestamp", { ascending: false })
                 .limit(1);
               if (lastTrade && lastTrade.length > 0) {
@@ -899,12 +899,12 @@ function ActivityTab({ address }: { address: string }) {
           .eq("contract_address", STORY_FACTORY.toLowerCase())
           .order("block_timestamp", { ascending: false })
           .limit(PER_SOURCE_LIMIT),
-        // Trades by this address
+        // Trades by this address (trade_history uses MCV2_BOND as contract_address)
         supabase
           .from("trade_history")
           .select("storyline_id, event_type, reserve_amount, price_per_token, block_timestamp, tx_hash")
           .eq("user_address", address)
-          .eq("contract_address", STORY_FACTORY.toLowerCase())
+          .eq("contract_address", MCV2_BOND.toLowerCase())
           .order("block_timestamp", { ascending: false })
           .limit(PER_SOURCE_LIMIT),
         // Donations by this address
@@ -1015,7 +1015,7 @@ function ActivityTab({ address }: { address: string }) {
           .from("trade_history")
           .select("tx_hash")
           .eq("user_address", address)
-          .eq("contract_address", STORY_FACTORY.toLowerCase());
+          .eq("contract_address", MCV2_BOND.toLowerCase());
         const tradeTxHashes = new Set(
           (allTradeTxRows ?? []).map((t: { tx_hash: string }) => t.tx_hash.toLowerCase()),
         );
