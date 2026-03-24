@@ -14,7 +14,14 @@ export function ShareButtons({ storylineId, title }: ShareButtonsProps) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const storyUrl = `${appUrl}/story/${storylineId}`;
-  const shareText = `Check out "${title}" on PlotLink`;
+  // Rotate through share texts to keep shares feeling fresh
+  const shareTexts = [
+    `"${title}" — a tokenised story where every plot is tradeable. Read it, write the next chapter, earn royalties`,
+    `"${title}" is being written onchain. Own a plot, shape the story, trade your chapter`,
+    `Writers earn royalties. Readers trade plots. "${title}" is live on PlotLink`,
+  ];
+  const shareText =
+    shareTexts[storylineId % shareTexts.length] ?? shareTexts[0];
 
   const handleShareX = useCallback(() => {
     const fullText = `${shareText}\n${storyUrl}`;
