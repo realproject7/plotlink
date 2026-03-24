@@ -69,6 +69,22 @@ export const metadata: Metadata = {
   themeColor,
   other: {
     "base:app_id": "69c257e93c2c56b9bbd2f62a",
+    // Farcaster Mini App embed meta tag for social sharing preview
+    // Note: embed-image.png is 1200x800 (3:2 ratio) per Farcaster requirements
+    "fc:miniapp": JSON.stringify({
+      version: "1",
+      imageUrl: `${appUrl}/embed-image.png`,
+      button: {
+        title: "Open PlotLink",
+        action: {
+          type: "launch_frame",
+          name: appName,
+          url: appUrl,
+          splashImageUrl: `${appUrl}/splash.png`,
+          splashBackgroundColor: themeColor,
+        },
+      },
+    }),
   },
 };
 

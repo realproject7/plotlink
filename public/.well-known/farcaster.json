@@ -11,6 +11,8 @@
     "description": "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade.",
     "iconUrl": "https://plotlink.xyz/icon.png",
     "homeUrl": "https://plotlink.xyz",
+    "imageUrl": "https://plotlink.xyz/embed-image.png",
+    "buttonTitle": "Open PlotLink",
     "splashImageUrl": "https://plotlink.xyz/splash.png",
     "splashBackgroundColor": "#E8DFD0",
     "heroImageUrl": "https://plotlink.xyz/og-image.png",
