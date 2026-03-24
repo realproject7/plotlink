@@ -164,8 +164,8 @@ export default async function StoryPage({ params }: { params: Params }) {
             />
           )}
 
-          {/* Share — visible on mobile (sidebar hidden) */}
-          <div className="mt-6 lg:hidden">
+          {/* Share buttons — below chapters */}
+          <div className="mt-6">
             <ShareButtons storylineId={id} title={sl.title} />
           </div>
         </main>
@@ -185,7 +185,6 @@ export default async function StoryPage({ params }: { params: Params }) {
           {sl.token_address && (
             <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
           )}
-          <ShareButtons storylineId={id} title={sl.title} />
         </aside>
       </div>
 
