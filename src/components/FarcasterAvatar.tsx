@@ -54,7 +54,7 @@ export function FarcasterAvatar({
       )}
       {linkProfile ? (
         <a
-          href={`https://farcaster.com/${profile.username}`}
+          href={`https://farcaster.xyz/${profile.username}`}
           target="_blank"
           rel="noopener noreferrer"
           className="text-foreground hover:text-accent transition-colors"

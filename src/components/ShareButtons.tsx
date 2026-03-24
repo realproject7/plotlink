@@ -39,7 +39,7 @@ export function ShareButtons({ storylineId, title }: ShareButtonsProps) {
     }
     const fullText = `${shareText}\n${storyUrl}`;
     window.open(
-      `https://farcaster.com/~/compose?text=${encodeURIComponent(fullText)}`,
+      `https://farcaster.xyz/~/compose?text=${encodeURIComponent(fullText)}`,
       "_blank",
     );
   }, [platform, shareText, storyUrl]);
