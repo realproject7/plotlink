@@ -47,9 +47,9 @@ export function SwapInterface() {
     );
   }
 
-  // Farcaster / Base App — native swap
-  if (platform === "farcaster" || platform === "base") {
-    const platformName = platform === "base" ? "Base App" : "Farcaster";
+  // Farcaster only — native swap (Base App migrated to standard web app Apr 2026)
+  if (platform === "farcaster") {
+    const platformName = "Farcaster";
 
     return (
       <div className="border-border rounded border p-5 space-y-4">
