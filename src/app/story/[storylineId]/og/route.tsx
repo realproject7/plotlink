@@ -73,7 +73,7 @@ export async function GET(
     : truncateAddress(sl.writer_address);
   const plotLabel = sl.plot_count === 1 ? "plot" : "plots";
   const titleDisplay =
-    sl.title.length > 70 ? `${sl.title.slice(0, 67)}...` : sl.title;
+    sl.title.length > 60 ? `${sl.title.slice(0, 57)}...` : sl.title;
 
   const fonts = fontData
     ? [{ name: "Lora", data: fontData, weight: 700 as const }]
@@ -86,40 +86,45 @@ export async function GET(
           width: "100%",
           height: "100%",
           display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           backgroundColor: "#DDD3C2",
-          padding: "32px",
+          padding: "40px 60px",
           fontFamily: fontData ? "Lora" : "Georgia, serif",
         }}
       >
-        {/* Notebook page */}
+        {/* Left: Moleskine notebook cover */}
         <div
           style={{
-            width: "100%",
-            height: "100%",
+            width: "350px",
+            height: "525px",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#F5F0E8",
-            borderRadius: "8px",
-            padding: "0",
-            boxShadow: "4px 4px 16px rgba(44, 24, 16, 0.15)",
-            overflow: "hidden",
+            backgroundColor: "#F5EFE6",
+            borderRadius: "5px 15px 15px 5px",
+            border: "1px solid #D4C5B0",
+            boxShadow:
+              "4px 6px 20px rgba(44, 24, 16, 0.18), 1px 1px 4px rgba(44, 24, 16, 0.08)",
             position: "relative",
+            overflow: "hidden",
+            flexShrink: 0,
           }}
         >
-          {/* Red margin line */}
+          {/* Elastic band */}
           <div
             style={{
               position: "absolute",
-              left: "80px",
-              top: "0",
-              bottom: "0",
-              width: "2px",
-              backgroundColor: "hsl(350, 35%, 88%)",
+              top: "-1px",
+              bottom: "-1px",
+              right: "22px",
+              width: "8px",
+              borderRadius: "2px",
+              background: "rgba(139, 69, 19, 0.18)",
               display: "flex",
             }}
           />
 
-          {/* Ruled lines */}
+          {/* Ruled lines background */}
           <div
             style={{
               position: "absolute",
@@ -129,143 +134,167 @@ export async function GET(
               bottom: "0",
               display: "flex",
               flexDirection: "column",
-              justifyContent: "flex-start",
-              paddingTop: "56px",
-              gap: "0",
+              paddingTop: "28px",
             }}
           >
-            {Array.from({ length: 16 }).map((_, i) => (
+            {Array.from({ length: 18 }).map((_, i) => (
               <div
                 key={i}
                 style={{
                   width: "100%",
-                  height: "34px",
-                  borderBottom: "1px solid hsl(234, 25%, 93%)",
+                  height: "28px",
+                  borderBottom: "1px solid rgba(232, 223, 208, 0.6)",
                   display: "flex",
                 }}
               />
             ))}
           </div>
 
-          {/* Content overlay */}
+          {/* Content inside notebook: title + author */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
-              justifyContent: "space-between",
-              height: "100%",
-              padding: "48px 56px 40px 104px",
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+              padding: "40px 32px",
               position: "relative",
+              textAlign: "center",
             }}
           >
-            {/* Top: PlotLink branding */}
+            <div
+              style={{
+                fontSize: titleDisplay.length > 35 ? "32px" : "38px",
+                fontWeight: 700,
+                color: "#8B4513",
+                lineHeight: 1.25,
+                display: "flex",
+                textAlign: "center",
+                justifyContent: "center",
+                maxWidth: "290px",
+              }}
+            >
+              {titleDisplay}
+            </div>
+            <div
+              style={{
+                fontSize: "18px",
+                color: "#8B7355",
+                marginTop: "20px",
+                display: "flex",
+              }}
+            >
+              by {authorName}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Metadata on dark background */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            height: "525px",
+            marginLeft: "56px",
+            flex: 1,
+            maxWidth: "580px",
+          }}
+        >
+          {/* Top: PlotLink branding */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
             <div
               style={{
                 display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
+                fontSize: "28px",
+                fontWeight: 700,
+                color: "#8B4513",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
               }}
             >
+              PlotLink
+            </div>
+            <div
+              style={{
+                display: "flex",
+                fontSize: "16px",
+                color: "#8B7355",
+                letterSpacing: "0.03em",
+              }}
+            >
+              Tokenised collaborative fiction
+            </div>
+          </div>
+
+          {/* Middle: genre + stats */}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+            }}
+          >
+            {sl.genre ? (
               <div
                 style={{
                   display: "flex",
-                  alignItems: "center",
-                  gap: "10px",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  color: "#8B4513",
-                  letterSpacing: "0.05em",
+                  alignSelf: "flex-start",
+                  fontSize: "16px",
+                  color: "#8B7355",
+                  border: "1.5px solid #C4B59E",
+                  borderRadius: "4px",
+                  padding: "6px 16px",
                   textTransform: "uppercase",
+                  letterSpacing: "0.08em",
                 }}
               >
-                PlotLink
+                {sl.genre}
               </div>
-              {sl.genre && (
-                <div
+            ) : (
+              <div style={{ display: "flex" }} />
+            )}
+            <div
+              style={{
+                display: "flex",
+                gap: "28px",
+                fontSize: "22px",
+                color: "#6B5B47",
+              }}
+            >
+              <span style={{ display: "flex" }}>
+                {sl.plot_count} {plotLabel}
+              </span>
+              {priceDisplay && (
+                <span
                   style={{
-                    fontSize: "16px",
-                    color: "#8B7355",
-                    border: "1px solid #D4C5B0",
-                    borderRadius: "4px",
-                    padding: "4px 12px",
                     display: "flex",
+                    color: "#8B4513",
+                    fontWeight: 700,
                   }}
                 >
-                  {sl.genre}
-                </div>
+                  {priceDisplay}
+                </span>
               )}
             </div>
+          </div>
 
-            {/* Center: Story title */}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "20px",
-                flex: "1",
-                justifyContent: "center",
-                paddingRight: "24px",
-              }}
-            >
-              <div
-                style={{
-                  fontSize: titleDisplay.length > 40 ? "42px" : "52px",
-                  fontWeight: 700,
-                  color: "#2C1810",
-                  lineHeight: 1.2,
-                  display: "flex",
-                }}
-              >
-                {titleDisplay}
-              </div>
-              <div
-                style={{
-                  fontSize: "24px",
-                  color: "#8B7355",
-                  display: "flex",
-                }}
-              >
-                by {authorName}
-              </div>
-            </div>
-
-            {/* Bottom: metadata bar */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                borderTop: "2px solid #D4C5B0",
-                paddingTop: "20px",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  gap: "32px",
-                  fontSize: "20px",
-                  color: "#8B7355",
-                }}
-              >
-                <span style={{ display: "flex" }}>
-                  {sl.plot_count} {plotLabel}
-                </span>
-                {priceDisplay && (
-                  <span style={{ display: "flex", color: "#8B4513", fontWeight: 700 }}>
-                    {priceDisplay}
-                  </span>
-                )}
-              </div>
-              <div
-                style={{
-                  fontSize: "16px",
-                  color: "#D4C5B0",
-                  display: "flex",
-                }}
-              >
-                plotlink.xyz
-              </div>
-            </div>
+          {/* Bottom: domain */}
+          <div
+            style={{
+              display: "flex",
+              fontSize: "18px",
+              color: "#A89880",
+            }}
+          >
+            plotlink.xyz
           </div>
         </div>
       </div>
