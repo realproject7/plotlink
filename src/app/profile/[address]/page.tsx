@@ -675,14 +675,43 @@ function PortfolioTab({ address }: { address: string }) {
     },
   });
 
-  const isLoading = holdingsLoading || donGivenLoading;
+  // Aggregate donations received as writer
+  const { data: donationsReceived, isLoading: donRecvLoading } = useQuery({
+    queryKey: ["profile-donations-received-portfolio", address],
+    queryFn: async () => {
+      if (!supabase) return { total: BigInt(0), count: 0 };
+      // Get storylines written by this address
+      const { data: writerStorylines } = await supabase
+        .from("storylines")
+        .select("storyline_id")
+        .eq("writer_address", address)
+        .eq("hidden", false)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!writerStorylines || writerStorylines.length === 0) {
+        return { total: BigInt(0), count: 0 };
+      }
+      const sids = writerStorylines.map((s) => s.storyline_id);
+      const { data: donations } = await supabase
+        .from("donations")
+        .select("amount")
+        .in("storyline_id", sids)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!donations || donations.length === 0) return { total: BigInt(0), count: 0 };
+      const total = donations.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
+      return { total, count: donations.length };
+    },
+  });
+
+  const isLoading = holdingsLoading || donGivenLoading || donRecvLoading;
 
   if (isLoading) return <p className="text-muted mt-8 text-sm">Loading...</p>;
 
   const hasHoldings = holdings && holdings.length > 0;
-  const hasDonations = donationsGiven.length > 0;
+  const hasDonationsGiven = donationsGiven.length > 0;
+  const hasDonationsReceived = donationsReceived && donationsReceived.count > 0;
+  const hasAny = hasHoldings || hasDonationsGiven || hasDonationsReceived;
 
-  if (!hasHoldings && !hasDonations) {
+  if (!hasAny) {
     return (
       <div className="py-12 text-center">
         <p className="text-muted text-sm">No holdings or donations yet.</p>
@@ -767,8 +796,21 @@ function PortfolioTab({ address }: { address: string }) {
         </>
       )}
 
-      {/* Donations given */}
-      {hasDonations && (
+      {/* Donations received as writer */}
+      {hasDonationsReceived && (
+        <div className="border-border bg-surface rounded border px-4 py-3">
+          <p className="text-muted mb-1 text-[10px] uppercase tracking-wider">Donations Received</p>
+          <span className="text-accent text-sm font-medium">
+            {formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}
+          </span>
+          <span className="text-muted ml-2 text-xs">
+            from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}
+          </span>
+        </div>
+      )}
+
+      {/* Donations given as reader */}
+      {hasDonationsGiven && (
         <div>
           <p className="text-muted text-xs uppercase tracking-wider">
             Donations Given
