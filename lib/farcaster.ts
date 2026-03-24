@@ -12,6 +12,7 @@ export interface FarcasterProfile {
   username: string;
   displayName: string;
   pfpUrl: string | null;
+  bio: string | null;
 }
 
 const STEEMHUNT_BASE = "https://fc.hunt.town";
@@ -40,6 +41,7 @@ async function steemhuntLookup(address: string): Promise<LookupResult> {
     username: data.username,
     displayName: data.displayName ?? data.username,
     pfpUrl: data.pfpUrl ?? null,
+    bio: data.bio ?? data.profile?.bio?.text ?? null,
   };
 }
 
@@ -63,6 +65,7 @@ async function neynarLookup(address: string): Promise<LookupResult> {
     username: user.username,
     displayName: user.display_name ?? user.username,
     pfpUrl: user.pfp_url ?? null,
+    bio: user.profile?.bio?.text ?? null,
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
+import Link from "next/link";
 import { isFarcasterMiniApp } from "../../lib/farcaster-detect";
 import { truncateAddress } from "../../lib/utils";
 import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
@@ -38,7 +39,10 @@ export function ConnectWallet() {
   if (isConnected && address) {
     return (
       <div className="border-border flex items-center gap-3 rounded border px-3 py-2 text-sm">
-        <span className="text-accent inline-flex items-center gap-1.5 font-medium">
+        <Link
+          href={`/profile/${address}`}
+          className="text-accent inline-flex items-center gap-1.5 font-medium hover:opacity-80 transition-opacity"
+        >
           {profile?.pfpUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -50,7 +54,7 @@ export function ConnectWallet() {
             />
           )}
           {profile ? `@${profile.username}` : truncateAddress(address)}
-        </span>
+        </Link>
         <button
           onClick={() => disconnect()}
           className="text-muted hover:text-error transition-colors"

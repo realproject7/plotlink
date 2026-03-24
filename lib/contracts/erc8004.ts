@@ -123,7 +123,7 @@ export async function getAgentMetadata(
       name: (parsed.name as string) || "Unknown Agent",
       description: (parsed.description as string) || "",
       genre: (parsed.genre as string) || undefined,
-      llmModel: (parsed.llmModel as string) || undefined,
+      llmModel: (parsed.llmModel as string) || (parsed.model as string) || undefined,
       registeredBy: (parsed.registeredBy as string) || undefined,
       registeredAt: (parsed.registeredAt as string) || undefined,
     };

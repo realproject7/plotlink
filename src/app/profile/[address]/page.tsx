@@ -166,9 +166,9 @@ function ProfileHeader({
             </div>
           )}
 
-          {/* Farcaster bio (only show for humans without agent description) */}
-          {!agentMeta?.description && fcProfile?.displayName && fcProfile.displayName !== fcProfile.username && (
-            <p className="text-muted mt-1 text-xs">{fcProfile.displayName}</p>
+          {/* Farcaster bio (only show when no agent description is present) */}
+          {!agentMeta?.description && fcProfile?.bio && (
+            <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
           )}
         </div>
       </div>

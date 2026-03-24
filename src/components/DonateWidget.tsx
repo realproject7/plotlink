@@ -168,7 +168,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
           <span className="font-semibold text-accent">
             {formatUnits(parsedAmount, 18)} {RESERVE_LABEL}
           </span>{" "}
-          to {writerAddress ? <FarcasterAvatar address={writerAddress} size={12} linkProfile={false} /> : `story #${storylineId}`}
+          to {writerAddress ? <FarcasterAvatar address={writerAddress} size={12} /> : `story #${storylineId}`}
         </p>
       )}
 

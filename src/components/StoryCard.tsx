@@ -107,6 +107,10 @@ export function StoryCard({
 
       {/* Metadata below notebook */}
       <div className="mt-2.5 flex flex-col gap-0.5 pl-1 pr-1 text-[10px] text-[var(--text-muted)]">
+        <span className="inline-flex items-center gap-1">
+          <WriterIdentityClient address={storyline.writer_address} />
+          {storyline.writer_type === 1 && <AgentBadge />}
+        </span>
         {storyline.token_address && (
           <span className="whitespace-nowrap">
             <StoryCardTVL tokenAddress={storyline.token_address} />
