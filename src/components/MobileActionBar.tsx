@@ -52,7 +52,7 @@ export function MobileActionBar({
       )}
 
       {/* Fixed bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t border-[var(--border)] bg-[var(--bg)]/95 p-3 backdrop-blur-sm">
+      <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t border-[var(--border)] bg-[var(--bg)]/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-sm">
         {buttons.map(({ key, label }) => (
           <button
             key={key}
