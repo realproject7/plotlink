@@ -9,7 +9,8 @@ import { usePlatformDetection } from "../hooks/usePlatformDetection";
  * 1. Calls `sdk.actions.ready()` to dismiss the splash screen.
  * 2. If the user hasn't added the app yet, triggers `sdk.actions.addMiniApp()`
  *    which shows the native Farcaster modal for install + notification permission.
- *    The SDK/client handles "already added" state — no re-prompting.
+ * 3. Saves notification token via webhook (Farcaster sends events server-side).
+ *    Also saves client-side from addMiniApp() result as a belt-and-suspenders approach.
  *
  * Renders nothing — mount once near the root of the component tree.
  */
@@ -31,11 +32,24 @@ export function FarcasterMiniApp() {
       const context = await sdk.context;
       if (cancelled || !context?.client) return;
 
+      // Save existing notification token if user already added
+      if (context.client.added && context.client.notificationDetails) {
+        saveTokenClientSide(
+          context.user?.fid,
+          context.client.notificationDetails,
+        );
+      }
+
       if (!context.client.added) {
-        // Trigger native add/notification modal — SDK handles dismissal gracefully
-        sdk.actions.addMiniApp().catch(() => {
+        // Trigger native add/notification modal
+        try {
+          const result = await sdk.actions.addMiniApp();
+          if (result?.notificationDetails) {
+            saveTokenClientSide(context.user?.fid, result.notificationDetails);
+          }
+        } catch {
           // User dismissed or SDK error — no action needed
-        });
+        }
       }
     }).catch(() => {
       // Not in a Farcaster context — silently ignore
@@ -47,4 +61,27 @@ export function FarcasterMiniApp() {
   }, [platform, isLoading]);
 
   return null;
+}
+
+/**
+ * Client-side token save — belt-and-suspenders alongside the webhook.
+ * Calls a lightweight API endpoint that upserts the token.
+ */
+function saveTokenClientSide(
+  fid: number | undefined,
+  details: { token: string; url: string },
+) {
+  if (!fid || !details.token || !details.url) return;
+
+  fetch("/api/notifications/save-token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fid,
+      token: details.token,
+      url: details.url,
+    }),
+  }).catch(() => {
+    // Non-critical — webhook is the primary path
+  });
 }

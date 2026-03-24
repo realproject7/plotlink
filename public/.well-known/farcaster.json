@@ -31,7 +31,8 @@
     "requiredCapabilities": [
       "wallet.getEthereumProvider",
       "actions.swapToken"
-    ]
+    ],
+    "webhookUrl": "https://plotlink.xyz/api/webhook/notifications"
   }
 }
 
