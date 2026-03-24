@@ -57,12 +57,12 @@ export function MobileActionBar({
           <button
             key={key}
             onClick={() => setOpen(open === key ? null : key)}
-            className={`rounded border px-3 py-2 text-xs transition-colors ${
+            className={`rounded px-3 py-2 text-xs transition-colors ${
               open === key
-                ? "border-accent text-accent"
+                ? "border-2 border-accent text-accent font-semibold"
                 : key === "trade"
-                  ? "border-accent text-accent hover:opacity-80"
-                  : "border-[var(--border)] text-muted hover:text-foreground"
+                  ? "border-2 border-accent text-accent font-bold hover:opacity-80"
+                  : "border border-[var(--border)] text-muted hover:text-foreground"
             }`}
           >
             {label}
