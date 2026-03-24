@@ -67,6 +67,9 @@ export const metadata: Metadata = {
     title: appName,
   },
   themeColor,
+  other: {
+    "base:app_id": "69c257e93c2c56b9bbd2f62a",
+  },
 };
 
 export default function RootLayout({
