@@ -859,7 +859,7 @@ function PortfolioTab({ address }: { address: string }) {
 // ---------------------------------------------------------------------------
 
 interface FeedEntry {
-  type: "created_storyline" | "published_plot" | "bought" | "sold" | "donated" | "rated";
+  type: "created_storyline" | "published_plot" | "bought" | "sold" | "donated" | "rated" | "claimed_royalties";
   timestamp: string;
   storylineId: number;
   storyTitle?: string;
@@ -877,7 +877,9 @@ function ActivityTab({ address }: { address: string }) {
     queryFn: async (): Promise<FeedEntry[]> => {
       if (!supabase) return [];
 
-      // Fetch all event sources in parallel
+      const PER_SOURCE_LIMIT = 200;
+
+      // Fetch all event sources in parallel (bounded per source)
       const [storylinesRes, plotsRes, tradesRes, donationsRes, ratingsRes] = await Promise.all([
         // Storylines created by this address
         supabase
@@ -886,7 +888,8 @@ function ActivityTab({ address }: { address: string }) {
           .eq("writer_address", address)
           .eq("hidden", false)
           .eq("contract_address", STORY_FACTORY.toLowerCase())
-          .order("block_timestamp", { ascending: false }),
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
         // Plots published by this address
         supabase
           .from("plots")
@@ -894,28 +897,32 @@ function ActivityTab({ address }: { address: string }) {
           .eq("writer_address", address)
           .eq("hidden", false)
           .eq("contract_address", STORY_FACTORY.toLowerCase())
-          .order("block_timestamp", { ascending: false }),
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
         // Trades by this address
         supabase
           .from("trade_history")
           .select("storyline_id, event_type, reserve_amount, price_per_token, block_timestamp, tx_hash")
           .eq("user_address", address)
           .eq("contract_address", STORY_FACTORY.toLowerCase())
-          .order("block_timestamp", { ascending: false }),
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
         // Donations by this address
         supabase
           .from("donations")
           .select("storyline_id, amount, block_timestamp, tx_hash")
           .eq("donor_address", address)
           .eq("contract_address", STORY_FACTORY.toLowerCase())
-          .order("block_timestamp", { ascending: false }),
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
         // Ratings by this address
         supabase
           .from("ratings")
           .select("storyline_id, rating, created_at")
           .eq("rater_address", address)
           .eq("contract_address", STORY_FACTORY.toLowerCase())
-          .order("created_at", { ascending: false }),
+          .order("created_at", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
       ]);
 
       const entries: FeedEntry[] = [];
@@ -982,6 +989,26 @@ function ActivityTab({ address }: { address: string }) {
         });
       }
 
+      // Claimed royalties (on-chain — summary entry if claimed > 0)
+      try {
+        const [, claimed] = await browserClient.readContract({
+          address: MCV2_BOND,
+          abi: mcv2BondAbi,
+          functionName: "getRoyaltyInfo",
+          args: [address as Address, PLOT_TOKEN],
+        });
+        if (claimed > BigInt(0)) {
+          entries.push({
+            type: "claimed_royalties",
+            timestamp: new Date().toISOString(),
+            storylineId: 0,
+            detail: `${formatPrice(formatUnits(claimed, 18))} ${RESERVE_LABEL} total claimed`,
+          });
+        }
+      } catch {
+        // Royalty info unavailable — skip
+      }
+
       // Sort reverse-chronological
       entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
       return entries;
@@ -1029,6 +1056,7 @@ const EVENT_LABELS: Record<FeedEntry["type"], string> = {
   sold: "Sold",
   donated: "Donated",
   rated: "Rated",
+  claimed_royalties: "Claimed",
 };
 
 const EVENT_COLORS: Record<FeedEntry["type"], string> = {
@@ -1038,6 +1066,7 @@ const EVENT_COLORS: Record<FeedEntry["type"], string> = {
   sold: "text-red-700",
   donated: "text-accent",
   rated: "text-muted",
+  claimed_royalties: "text-green-700",
 };
 
 function FeedRow({ entry }: { entry: FeedEntry }) {
@@ -1047,12 +1076,16 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
         <span className={`font-medium shrink-0 w-16 ${EVENT_COLORS[entry.type]}`}>
           {EVENT_LABELS[entry.type]}
         </span>
-        <Link
-          href={`/story/${entry.storylineId}`}
-          className="text-foreground hover:text-accent truncate transition-colors"
-        >
-          {entry.storyTitle ?? `Story #${entry.storylineId}`}
-        </Link>
+        {entry.storylineId > 0 ? (
+          <Link
+            href={`/story/${entry.storylineId}`}
+            className="text-foreground hover:text-accent truncate transition-colors"
+          >
+            {entry.storyTitle ?? `Story #${entry.storylineId}`}
+          </Link>
+        ) : (
+          <span className="text-foreground truncate">Royalties</span>
+        )}
         {entry.detail && (
           <span className="text-muted shrink-0">{entry.detail}</span>
         )}
