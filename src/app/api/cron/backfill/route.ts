@@ -7,6 +7,7 @@ import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
+import { notifyNewPlot } from "../../../../../lib/notifications.server";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -162,6 +163,11 @@ export async function GET(req: Request) {
         );
         storylinesInserted++;
         if (result.genesisPlotFailed) failures++;
+        else {
+          // Notify users about the new story
+          const args = decoded.args as { storylineId: bigint; title: string };
+          notifyNewPlot(Number(args.storylineId), args.title, 0).catch(() => {});
+        }
       } else if (decoded.eventName === "PlotChained") {
         const failed = await processPlotChained(
           decoded,
@@ -172,7 +178,13 @@ export async function GET(req: Request) {
           getCachedBlockTimestamp
         );
         if (failed) failures++;
-        else plotsInserted++;
+        else {
+          plotsInserted++;
+          // Notify users about the new plot
+          const args = decoded.args as { storylineId: bigint; plotIndex: bigint; title: string };
+          const storyTitle = args.title || `Story #${Number(args.storylineId)}`;
+          notifyNewPlot(Number(args.storylineId), storyTitle, Number(args.plotIndex)).catch(() => {});
+        }
       } else if (decoded.eventName === "Donation") {
         await processDonation(
           decoded,
