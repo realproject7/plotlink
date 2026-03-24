@@ -1097,9 +1097,9 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
         )}
       </div>
       {/* Row 2 (mobile) / Right (desktop): detail + date + tx link */}
-      <div className="flex shrink-0 items-center gap-2 pl-18 sm:pl-0">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-18 sm:shrink-0 sm:pl-0">
         {entry.detail && (
-          <span className="text-muted whitespace-nowrap">{entry.detail}</span>
+          <span className="text-muted">{entry.detail}</span>
         )}
         <time dateTime={entry.timestamp} className="text-muted whitespace-nowrap text-[10px]">
           {new Date(entry.timestamp).toLocaleDateString("en-US", {
