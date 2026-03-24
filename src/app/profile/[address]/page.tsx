@@ -1079,7 +1079,8 @@ const EVENT_COLORS: Record<FeedEntry["type"], string> = {
 
 function FeedRow({ entry }: { entry: FeedEntry }) {
   return (
-    <div className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs">
+    <div className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+      {/* Row 1 (mobile) / Left (desktop): event type + story title */}
       <div className="flex items-center gap-2 min-w-0">
         <span className={`font-medium shrink-0 w-16 ${EVENT_COLORS[entry.type]}`}>
           {EVENT_LABELS[entry.type]}
@@ -1094,12 +1095,13 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
         ) : (
           <span className="text-foreground truncate">Royalties</span>
         )}
-        {entry.detail && (
-          <span className="text-muted shrink-0">{entry.detail}</span>
-        )}
       </div>
-      <div className="flex shrink-0 items-center gap-1.5 ml-2">
-        <time dateTime={entry.timestamp} className="text-muted text-[10px]">
+      {/* Row 2 (mobile) / Right (desktop): detail + date + tx link */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-18 sm:shrink-0 sm:pl-0">
+        {entry.detail && (
+          <span className="text-muted">{entry.detail}</span>
+        )}
+        <time dateTime={entry.timestamp} className="text-muted whitespace-nowrap text-[10px]">
           {new Date(entry.timestamp).toLocaleDateString("en-US", {
             month: "short",
             day: "numeric",
