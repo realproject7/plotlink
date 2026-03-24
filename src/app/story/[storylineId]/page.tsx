@@ -8,7 +8,7 @@ import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
-import { ShareToFarcaster } from "../../../components/ShareToFarcaster";
+import { ShareButtons } from "../../../components/ShareButtons";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { formatPrice, formatSupply } from "../../../../lib/format";
@@ -164,9 +164,9 @@ export default async function StoryPage({ params }: { params: Params }) {
             />
           )}
 
-          {/* Share — visible on mobile (sidebar hidden) */}
-          <div className="mt-6 lg:hidden">
-            <ShareToFarcaster storylineId={id} title={sl.title} />
+          {/* Share buttons — below chapters */}
+          <div className="mt-6">
+            <ShareButtons storylineId={id} title={sl.title} />
           </div>
         </main>
 
@@ -185,7 +185,6 @@ export default async function StoryPage({ params }: { params: Params }) {
           {sl.token_address && (
             <RatingWidget storylineId={id} tokenAddress={sl.token_address} />
           )}
-          <ShareToFarcaster storylineId={id} title={sl.title} />
         </aside>
       </div>
 
