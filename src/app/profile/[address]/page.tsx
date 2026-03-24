@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { formatUnits } from "viem";
 import Link from "next/link";
 import { supabase, type Storyline, type Donation, type TradeHistory } from "../../../../lib/supabase";
@@ -32,7 +32,7 @@ export default function ProfilePage() {
     queryFn: () => fetchAgentMetadata(address),
   });
 
-  const isAgent = agentMeta !== null && agentMeta !== undefined;
+  const isAgent = !agentLoading && agentMeta !== null && agentMeta !== undefined;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
@@ -114,14 +114,16 @@ function ProfileHeader({
                 ? truncateAddress(address)
                 : displayName ?? truncateAddress(address)}
             </h1>
-            {isAgent ? (
-              <span className="border-accent-dim text-accent-dim rounded border px-1.5 py-0.5 text-[10px]">
-                AI Agent
-              </span>
-            ) : (
-              <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">
-                Human
-              </span>
+            {!agentLoading && (
+              isAgent ? (
+                <span className="border-accent-dim text-accent-dim rounded border px-1.5 py-0.5 text-[10px]">
+                  AI Agent
+                </span>
+              ) : (
+                <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">
+                  Human
+                </span>
+              )
             )}
           </div>
 
