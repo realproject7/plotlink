@@ -11,7 +11,7 @@ import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } fro
 import { getFarcasterProfile, fetchAgentMetadata } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice } from "../../../../lib/format";
-import { getTokenPrice, mcv2BondAbi, type TokenPriceInfo } from "../../../../lib/price";
+import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
@@ -248,26 +248,67 @@ function StoriesTab({
     enabled: storylineIds.length > 0,
   });
 
-  // Total token supply across all writer's storylines (from latest trade per storyline)
-  const { data: totalSupplyAcross } = useQuery({
-    queryKey: ["profile-total-supply", address, storylineIds],
+  // Total token holders across all writer's storylines (on-chain balanceOf)
+  const { data: totalHolders } = useQuery({
+    queryKey: ["profile-total-holders", address, storylineIds],
     queryFn: async () => {
       if (!supabase || storylineIds.length === 0) return 0;
-      // Get the latest trade per storyline to read current total_supply
-      let total = 0;
-      for (const sid of storylineIds) {
-        const { data } = await supabase
-          .from("trade_history")
-          .select("total_supply")
-          .eq("storyline_id", sid)
-          .eq("contract_address", STORY_FACTORY.toLowerCase())
-          .order("block_number", { ascending: false })
-          .limit(1);
-        if (data && data.length > 0) total += data[0].total_supply;
+      // Get unique trader addresses across all storylines
+      const { data: trades } = await supabase
+        .from("trade_history")
+        .select("user_address, storyline_id")
+        .in("storyline_id", storylineIds)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!trades || trades.length === 0) return 0;
+
+      // Build map: token_address -> unique user addresses
+      const tokenByStoryline = new Map<number, string>();
+      for (const s of storylines) {
+        if (s.token_address) tokenByStoryline.set(s.storyline_id, s.token_address);
       }
-      return total;
+
+      // Deduplicate: (user, token) pairs
+      const pairs = new Set<string>();
+      const pairList: { user: string; token: string }[] = [];
+      for (const t of trades as { user_address: string | null; storyline_id: number }[]) {
+        if (!t.user_address) continue;
+        const token = tokenByStoryline.get(t.storyline_id);
+        if (!token) continue;
+        const key = `${t.user_address}:${token}`;
+        if (!pairs.has(key)) {
+          pairs.add(key);
+          pairList.push({ user: t.user_address, token });
+        }
+      }
+      if (pairList.length === 0) return 0;
+
+      // Multicall balanceOf for each (user, token) pair
+      const results = await browserClient.multicall({
+        contracts: pairList.map((p) => ({
+          address: p.token as Address,
+          abi: erc20Abi,
+          functionName: "balanceOf" as const,
+          args: [p.user as Address],
+        })),
+        allowFailure: true,
+      });
+
+      let holders = 0;
+      const counted = new Set<string>();
+      for (let i = 0; i < results.length; i++) {
+        const r = results[i];
+        if (r.status === "success" && (r.result as bigint) > BigInt(0)) {
+          const userKey = pairList[i].user.toLowerCase();
+          if (!counted.has(userKey)) {
+            counted.add(userKey);
+            holders++;
+          }
+        }
+      }
+      return holders;
     },
     enabled: storylineIds.length > 0,
+    staleTime: 60000,
   });
 
   // Claimable royalties (own profile only)
@@ -324,10 +365,8 @@ function StoriesTab({
           <StatCell label="Storylines" value={String(storylines.length)} />
           <StatCell label="Total Plots" value={String(totalPlots)} />
           <StatCell
-            label="Token Supply"
-            value={totalSupplyAcross !== undefined && totalSupplyAcross > 0
-              ? formatSupplyCompact(totalSupplyAcross)
-              : "—"}
+            label="Holders"
+            value={totalHolders !== undefined ? String(totalHolders) : "—"}
           />
           <StatCell
             label="Donations"
@@ -404,21 +443,41 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
     staleTime: 60000,
   });
 
-  // Token supply from latest trade entry
-  const { data: storySupply } = useQuery({
-    queryKey: ["profile-story-supply", storyline.storyline_id],
+  // On-chain holder count via balanceOf multicall
+  const { data: holderCount } = useQuery({
+    queryKey: ["profile-story-holders", storyline.storyline_id, storyline.token_address],
     queryFn: async () => {
-      if (!supabase) return 0;
-      const { data } = await supabase
+      if (!supabase || !storyline.token_address) return 0;
+      const { data: trades } = await supabase
         .from("trade_history")
-        .select("total_supply")
+        .select("user_address")
         .eq("storyline_id", storyline.storyline_id)
-        .eq("contract_address", STORY_FACTORY.toLowerCase())
-        .order("block_number", { ascending: false })
-        .limit(1);
-      return data && data.length > 0 ? data[0].total_supply : 0;
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!trades || trades.length === 0) return 0;
+
+      const uniqueUsers = [...new Set(
+        (trades as { user_address: string | null }[])
+          .map((t) => t.user_address)
+          .filter(Boolean) as string[]
+      )];
+      if (uniqueUsers.length === 0) return 0;
+
+      const results = await browserClient.multicall({
+        contracts: uniqueUsers.map((u) => ({
+          address: tokenAddr,
+          abi: erc20Abi,
+          functionName: "balanceOf" as const,
+          args: [u as Address],
+        })),
+        allowFailure: true,
+      });
+
+      return results.filter(
+        (r) => r.status === "success" && (r.result as bigint) > BigInt(0),
+      ).length;
     },
     staleTime: 60000,
+    enabled: !!storyline.token_address,
   });
 
   return (
@@ -458,9 +517,7 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
             : "—"}
         </span>
         <span>
-          {storySupply !== undefined && storySupply > 0
-            ? `${formatSupplyCompact(storySupply)} supply`
-            : "—"}
+          {holderCount !== undefined ? `${holderCount} holder${holderCount !== 1 ? "s" : ""}` : "—"}
         </span>
         <span>
           {formatViewCount(storyline.view_count)} views
@@ -672,14 +729,6 @@ function ActivityTab({ address }: { address: string }) {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function formatSupplyCompact(n: number): string {
-  if (n === 0) return "0";
-  if (n < 1) return n.toFixed(4);
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
 
 function formatViewCount(n: number): string {
   if (n < 1000) return String(n);
