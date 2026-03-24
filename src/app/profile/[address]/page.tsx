@@ -989,34 +989,28 @@ function ActivityTab({ address }: { address: string }) {
         });
       }
 
-      // Claimed royalties (on-chain — summary entry if claimed > 0)
-      try {
-        const [, claimed] = await browserClient.readContract({
-          address: MCV2_BOND,
-          abi: mcv2BondAbi,
-          functionName: "getRoyaltyInfo",
-          args: [address as Address, PLOT_TOKEN],
-        });
-        if (claimed > BigInt(0)) {
-          entries.push({
-            type: "claimed_royalties",
-            timestamp: new Date().toISOString(),
-            storylineId: 0,
-            detail: `${formatPrice(formatUnits(claimed, 18))} ${RESERVE_LABEL} total claimed`,
-          });
-        }
-      } catch {
-        // Royalty info unavailable — skip
-      }
-
       // Sort reverse-chronological
       entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
       return entries;
     },
   });
 
+  // Claimed royalties (on-chain cumulative — shown as summary, not feed entry)
+  const { data: claimedRoyalties } = useQuery({
+    queryKey: ["profile-claimed-royalties", address],
+    queryFn: async () => {
+      const [, claimed] = await browserClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "getRoyaltyInfo",
+        args: [address as Address, PLOT_TOKEN],
+      });
+      return claimed;
+    },
+  });
+
   if (isLoading) return <p className="text-muted mt-8 text-sm">Loading...</p>;
-  if (feed.length === 0) {
+  if (feed.length === 0 && (!claimedRoyalties || claimedRoyalties === BigInt(0))) {
     return (
       <div className="py-12 text-center">
         <p className="text-muted text-sm">No activity yet.</p>
@@ -1032,6 +1026,17 @@ function ActivityTab({ address }: { address: string }) {
 
   return (
     <div className="mt-6">
+      {/* Claimed royalties summary (on-chain, no per-event history available) */}
+      {claimedRoyalties && claimedRoyalties > BigInt(0) && (
+        <div className="border-border bg-surface mb-4 rounded border px-4 py-3">
+          <p className="text-muted text-[10px] uppercase tracking-wider">Claimed Royalties</p>
+          <span className="text-green-700 text-sm font-medium">
+            {formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}
+          </span>
+          <span className="text-muted ml-2 text-xs">total claimed to date</span>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         {visible.map((entry, i) => (
           <FeedRow key={`${entry.type}-${entry.timestamp}-${i}`} entry={entry} />
