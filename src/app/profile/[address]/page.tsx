@@ -38,6 +38,20 @@ export default function ProfilePage() {
 
   const isAgent = !agentLoading && agentMeta !== null && agentMeta !== undefined;
 
+  // Cumulative claimed royalties (on-chain)
+  const { data: claimedRoyalties } = useQuery({
+    queryKey: ["profile-claimed-royalties", address],
+    queryFn: async () => {
+      const [, claimed] = await browserClient.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "getRoyaltyInfo",
+        args: [address as Address, PLOT_TOKEN],
+      });
+      return claimed;
+    },
+  });
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <ProfileHeader
@@ -47,6 +61,7 @@ export default function ProfilePage() {
         agentMeta={agentMeta ?? null}
         agentLoading={agentLoading}
         isAgent={isAgent}
+        claimedRoyalties={claimedRoyalties ?? null}
       />
 
       {/* Tab navigation */}
@@ -92,6 +107,7 @@ function ProfileHeader({
   agentMeta,
   agentLoading,
   isAgent,
+  claimedRoyalties,
 }: {
   address: string;
   fcProfile: FarcasterProfile | null;
@@ -99,6 +115,7 @@ function ProfileHeader({
   agentMeta: AgentMetadata | null;
   agentLoading: boolean;
   isAgent: boolean;
+  claimedRoyalties: bigint | null;
 }) {
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
 
@@ -194,6 +211,13 @@ function ProfileHeader({
           {!agentMeta?.description && fcProfile?.bio && (
             <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
           )}
+
+          {/* Cumulative claimed royalties */}
+          {claimedRoyalties && claimedRoyalties > BigInt(0) && (
+            <div className="text-muted mt-2 text-xs">
+              Royalties claimed: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+            </div>
+          )}
         </div>
       </div>
     </header>
@@ -258,7 +282,7 @@ function StoriesTab({
         .from("trade_history")
         .select("user_address, storyline_id")
         .in("storyline_id", storylineIds)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
+        .eq("contract_address", MCV2_BOND.toLowerCase());
       if (!trades || trades.length === 0) return 0;
 
       // Build map: token_address -> unique user addresses
@@ -452,7 +476,7 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
         .from("trade_history")
         .select("user_address")
         .eq("storyline_id", storyline.storyline_id)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
+        .eq("contract_address", MCV2_BOND.toLowerCase());
       if (!trades || trades.length === 0) return 0;
 
       const uniqueUsers = [...new Set(
@@ -609,7 +633,7 @@ function PortfolioTab({ address }: { address: string }) {
                 .eq("user_address", address)
                 .eq("storyline_id", sl.storyline_id)
                 .eq("event_type", "mint")
-                .eq("contract_address", STORY_FACTORY.toLowerCase())
+                .eq("contract_address", MCV2_BOND.toLowerCase())
                 .order("block_timestamp", { ascending: true })
                 .limit(1);
               if (firstMint && firstMint.length > 0) {
@@ -620,7 +644,7 @@ function PortfolioTab({ address }: { address: string }) {
                 .select("block_timestamp")
                 .eq("user_address", address)
                 .eq("storyline_id", sl.storyline_id)
-                .eq("contract_address", STORY_FACTORY.toLowerCase())
+                .eq("contract_address", MCV2_BOND.toLowerCase())
                 .order("block_timestamp", { ascending: false })
                 .limit(1);
               if (lastTrade && lastTrade.length > 0) {
@@ -855,123 +879,244 @@ function PortfolioTab({ address }: { address: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Activity Tab
+// Activity Tab — unified reverse-chronological feed
 // ---------------------------------------------------------------------------
 
-const ACTIVITY_PAGE_SIZE = 20;
+interface FeedEntry {
+  type: "created_storyline" | "published_plot" | "bought" | "sold" | "donated" | "rated" | "claimed_royalties";
+  timestamp: string;
+  storylineId: number;
+  storyTitle?: string;
+  txHash?: string;
+  detail?: string;
+}
+
+const FEED_PAGE_SIZE = 30;
 
 function ActivityTab({ address }: { address: string }) {
-  const { data: donations = [], isLoading: donLoading } = useQuery({
-    queryKey: ["profile-donations", address],
-    queryFn: async () => {
+  const [visibleCount, setVisibleCount] = useState(FEED_PAGE_SIZE);
+
+  const { data: feed = [], isLoading } = useQuery({
+    queryKey: ["profile-activity-feed", address],
+    queryFn: async (): Promise<FeedEntry[]> => {
       if (!supabase) return [];
-      const { data } = await supabase
-        .from("donations")
-        .select("*")
-        .eq("donor_address", address)
-        .eq("contract_address", STORY_FACTORY.toLowerCase())
-        .order("block_timestamp", { ascending: false })
-        .limit(ACTIVITY_PAGE_SIZE)
-        .returns<Donation[]>();
-      return data ?? [];
+
+      const PER_SOURCE_LIMIT = 200;
+
+      // Fetch all event sources in parallel (bounded per source)
+      const [storylinesRes, plotsRes, tradesRes, donationsRes, ratingsRes] = await Promise.all([
+        // Storylines created by this address
+        supabase
+          .from("storylines")
+          .select("storyline_id, title, block_timestamp, tx_hash")
+          .eq("writer_address", address)
+          .eq("hidden", false)
+          .eq("contract_address", STORY_FACTORY.toLowerCase())
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
+        // Plots published by this address
+        supabase
+          .from("plots")
+          .select("storyline_id, plot_index, title, block_timestamp, tx_hash")
+          .eq("writer_address", address)
+          .eq("hidden", false)
+          .eq("contract_address", STORY_FACTORY.toLowerCase())
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
+        // Trades by this address (trade_history uses MCV2_BOND as contract_address)
+        supabase
+          .from("trade_history")
+          .select("storyline_id, event_type, reserve_amount, price_per_token, block_timestamp, tx_hash")
+          .eq("user_address", address)
+          .eq("contract_address", MCV2_BOND.toLowerCase())
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
+        // Donations by this address
+        supabase
+          .from("donations")
+          .select("storyline_id, amount, block_timestamp, tx_hash")
+          .eq("donor_address", address)
+          .eq("contract_address", STORY_FACTORY.toLowerCase())
+          .order("block_timestamp", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
+        // Ratings by this address
+        supabase
+          .from("ratings")
+          .select("storyline_id, rating, created_at")
+          .eq("rater_address", address)
+          .eq("contract_address", STORY_FACTORY.toLowerCase())
+          .order("created_at", { ascending: false })
+          .limit(PER_SOURCE_LIMIT),
+      ]);
+
+      const entries: FeedEntry[] = [];
+
+      // Created storylines
+      for (const s of (storylinesRes.data ?? []) as { storyline_id: number; title: string; block_timestamp: string | null; tx_hash: string }[]) {
+        if (!s.block_timestamp) continue;
+        entries.push({
+          type: "created_storyline",
+          timestamp: s.block_timestamp,
+          storylineId: s.storyline_id,
+          storyTitle: s.title,
+          txHash: s.tx_hash,
+        });
+      }
+
+      // Published plots (skip genesis plot_index=0, already covered by created_storyline)
+      for (const p of (plotsRes.data ?? []) as { storyline_id: number; plot_index: number; title: string; block_timestamp: string | null; tx_hash: string }[]) {
+        if (!p.block_timestamp || p.plot_index === 0) continue;
+        entries.push({
+          type: "published_plot",
+          timestamp: p.block_timestamp,
+          storylineId: p.storyline_id,
+          detail: p.title || `Chapter ${p.plot_index}`,
+          txHash: p.tx_hash,
+        });
+      }
+
+      // Trades
+      for (const t of (tradesRes.data ?? []) as { storyline_id: number; event_type: string; reserve_amount: number; price_per_token: number; block_timestamp: string; tx_hash: string }[]) {
+        const tokenAmount = t.price_per_token > 0
+          ? formatPrice(t.reserve_amount / t.price_per_token)
+          : null;
+        entries.push({
+          type: t.event_type === "mint" ? "bought" : "sold",
+          timestamp: t.block_timestamp,
+          storylineId: t.storyline_id,
+          detail: tokenAmount
+            ? `${tokenAmount} tokens for ${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`
+            : `${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`,
+          txHash: t.tx_hash,
+        });
+      }
+
+      // Donations
+      for (const d of (donationsRes.data ?? []) as { storyline_id: number; amount: string; block_timestamp: string | null; tx_hash: string }[]) {
+        if (!d.block_timestamp) continue;
+        entries.push({
+          type: "donated",
+          timestamp: d.block_timestamp,
+          storylineId: d.storyline_id,
+          detail: `${formatPrice(formatUnits(BigInt(d.amount), 18))} ${RESERVE_LABEL}`,
+          txHash: d.tx_hash,
+        });
+      }
+
+      // Ratings
+      for (const r of (ratingsRes.data ?? []) as { storyline_id: number; rating: number; created_at: string }[]) {
+        entries.push({
+          type: "rated",
+          timestamp: r.created_at,
+          storylineId: r.storyline_id,
+          detail: `${"★".repeat(r.rating)}${"☆".repeat(5 - r.rating)}`,
+        });
+      }
+
+      // TODO: Claimed royalties feed entries require a dedicated claim event
+      // indexer. For now, cumulative claimed amount is shown in the profile header
+      // via on-chain getRoyaltyInfo.
+
+      // Sort reverse-chronological
+      entries.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+      return entries;
     },
   });
-
-  const { data: ratings = [], isLoading: ratLoading } = useQuery({
-    queryKey: ["profile-ratings", address],
-    queryFn: async () => {
-      if (!supabase) return [];
-      const { data } = await supabase
-        .from("ratings")
-        .select("*")
-        .eq("rater_address", address)
-        .eq("contract_address", STORY_FACTORY.toLowerCase())
-        .order("created_at", { ascending: false })
-        .limit(ACTIVITY_PAGE_SIZE);
-      return data ?? [];
-    },
-  });
-
-  const isLoading = donLoading || ratLoading;
-  const hasActivity = donations.length > 0 || ratings.length > 0;
 
   if (isLoading) return <p className="text-muted mt-8 text-sm">Loading...</p>;
-  if (!hasActivity) {
-    return <p className="text-muted py-8 text-center text-sm">No activity yet.</p>;
+  if (feed.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-muted text-sm">No activity yet.</p>
+        <p className="text-muted mt-1 text-xs">
+          This address has no on-chain activity on PlotLink.
+        </p>
+      </div>
+    );
   }
 
-  return (
-    <div className="mt-6 space-y-6">
-      {donations.length > 0 && (
-        <div>
-          <p className="text-muted text-xs uppercase tracking-wider">Donations</p>
-          <div className="mt-2 space-y-1">
-            {donations.map((d) => (
-              <div key={d.id} className="text-muted flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/story/${d.storyline_id}`}
-                    className="text-foreground hover:text-accent transition-colors"
-                  >
-                    Story #{d.storyline_id}
-                  </Link>
-                  {d.block_timestamp && (
-                    <time dateTime={d.block_timestamp} className="text-[10px]">
-                      {new Date(d.block_timestamp).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </time>
-                  )}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-accent font-medium">
-                    {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
-                  </span>
-                  {d.tx_hash && (
-                    <a
-                      href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-muted hover:text-accent transition-colors"
-                      title="View on Basescan"
-                    >
-                      &#x2197;
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+  const visible = feed.slice(0, visibleCount);
+  const hasMore = visibleCount < feed.length;
 
-      {ratings.length > 0 && (
-        <div>
-          <p className="text-muted text-xs uppercase tracking-wider">Ratings</p>
-          <div className="mt-2 space-y-1">
-            {ratings.map((r: { id: number; storyline_id: number; rating: number; comment: string | null; created_at: string }) => (
-              <div key={r.id} className="text-muted flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/story/${r.storyline_id}`}
-                    className="text-foreground hover:text-accent transition-colors"
-                  >
-                    Story #{r.storyline_id}
-                  </Link>
-                  <span className="text-accent">{"★".repeat(r.rating)}{"☆".repeat(5 - r.rating)}</span>
-                </div>
-                <time dateTime={r.created_at} className="text-[10px]">
-                  {new Date(r.created_at).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </time>
-              </div>
-            ))}
-          </div>
-        </div>
+  return (
+    <div className="mt-6">
+      <div className="space-y-1.5">
+        {visible.map((entry, i) => (
+          <FeedRow key={`${entry.type}-${entry.timestamp}-${i}`} entry={entry} />
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => setVisibleCount((c) => c + FEED_PAGE_SIZE)}
+          className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors"
+        >
+          Load more ({feed.length - visibleCount} remaining)
+        </button>
       )}
+    </div>
+  );
+}
+
+const EVENT_LABELS: Record<FeedEntry["type"], string> = {
+  created_storyline: "Created",
+  published_plot: "Published",
+  bought: "Bought",
+  sold: "Sold",
+  donated: "Donated",
+  rated: "Rated",
+  claimed_royalties: "Claimed",
+};
+
+const EVENT_COLORS: Record<FeedEntry["type"], string> = {
+  created_storyline: "text-accent",
+  published_plot: "text-accent",
+  bought: "text-green-700",
+  sold: "text-red-700",
+  donated: "text-accent",
+  rated: "text-muted",
+  claimed_royalties: "text-green-700",
+};
+
+function FeedRow({ entry }: { entry: FeedEntry }) {
+  return (
+    <div className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={`font-medium shrink-0 w-16 ${EVENT_COLORS[entry.type]}`}>
+          {EVENT_LABELS[entry.type]}
+        </span>
+        {entry.storylineId > 0 ? (
+          <Link
+            href={`/story/${entry.storylineId}`}
+            className="text-foreground hover:text-accent truncate transition-colors"
+          >
+            {entry.storyTitle ?? `Story #${entry.storylineId}`}
+          </Link>
+        ) : (
+          <span className="text-foreground truncate">Royalties</span>
+        )}
+        {entry.detail && (
+          <span className="text-muted shrink-0">{entry.detail}</span>
+        )}
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5 ml-2">
+        <time dateTime={entry.timestamp} className="text-muted text-[10px]">
+          {new Date(entry.timestamp).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })}
+        </time>
+        {entry.txHash && (
+          <a
+            href={`${EXPLORER_URL}/tx/${entry.txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted hover:text-accent transition-colors"
+            title="View on Basescan"
+          >
+            &#x2197;
+          </a>
+        )}
+      </div>
     </div>
   );
 }
