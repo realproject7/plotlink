@@ -161,6 +161,32 @@ export async function sendNotification(params: {
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://plotlink.xyz";
 
 /**
+ * Notify all users with enabled notifications about a new storyline.
+ * Called from the backfill cron when a new storyline is first indexed.
+ */
+export async function notifyNewStoryline(
+  storylineId: number,
+  title: string,
+  author: string,
+): Promise<void> {
+  const tokens = await getEnabledTokens();
+  if (tokens.length === 0) return;
+
+  const displayAuthor =
+    author.length > 10
+      ? `${author.slice(0, 6)}…${author.slice(-4)}`
+      : author;
+
+  await sendNotification({
+    notificationId: `pl-new-storyline-${storylineId}`,
+    title: "New story published",
+    body: `"${title.slice(0, 40)}" by ${displayAuthor} is now on PlotLink`,
+    targetUrl: `${appUrl}/story/${storylineId}`,
+    tokens,
+  });
+}
+
+/**
  * Notify all users with enabled notifications about a new plot.
  * Called from the backfill cron when a new plot is indexed.
  */

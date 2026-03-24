@@ -7,7 +7,7 @@ import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
-import { notifyNewPlot } from "../../../../../lib/notifications.server";
+import { notifyNewPlot, notifyNewStoryline } from "../../../../../lib/notifications.server";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -164,9 +164,9 @@ export async function GET(req: Request) {
         storylinesInserted++;
         if (result.genesisPlotFailed) failures++;
         else {
-          // Notify users about the new story
-          const args = decoded.args as { storylineId: bigint; title: string };
-          notifyNewPlot(Number(args.storylineId), args.title, 0).catch(() => {});
+          // Notify users about the new storyline
+          const args = decoded.args as { storylineId: bigint; title: string; writer: `0x${string}` };
+          notifyNewStoryline(Number(args.storylineId), args.title, args.writer).catch(() => {});
         }
       } else if (decoded.eventName === "PlotChained") {
         const failed = await processPlotChained(
