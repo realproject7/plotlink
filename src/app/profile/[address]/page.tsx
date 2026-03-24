@@ -1010,7 +1010,15 @@ function ActivityTab({ address }: { address: string }) {
           toBlock: "latest",
         });
 
+        // Exclude Transfer events that are sell refunds (same tx as a trade)
+        const tradeTxHashes = new Set(
+          (tradesRes.data ?? []).map((t: { tx_hash: string }) => t.tx_hash.toLowerCase()),
+        );
+
         for (const log of claimLogs) {
+          const txHash = log.transactionHash?.toLowerCase();
+          if (txHash && tradeTxHashes.has(txHash)) continue; // sell refund, not a claim
+
           const blockTimestamp = await browserClient.getBlock({ blockNumber: log.blockNumber! });
           const ts = new Date(Number(blockTimestamp.timestamp) * 1000).toISOString();
           entries.push({
