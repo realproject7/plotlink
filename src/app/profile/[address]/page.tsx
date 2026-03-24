@@ -558,28 +558,18 @@ function PortfolioTab({ address }: { address: string }) {
     queryFn: async (): Promise<PortfolioHolding[]> => {
       if (!supabase) return [];
 
-      // Get storyline IDs the user has actually traded (bounded)
-      const { data: tradedRows } = await supabase
-        .from("trade_history")
-        .select("storyline_id")
-        .eq("user_address", address)
-        .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (!tradedRows || tradedRows.length === 0) return [];
-
-      const tradedIds = [...new Set(tradedRows.map((r) => r.storyline_id))];
-
-      // Fetch only storylines the user has traded
+      // Scan all storylines with tokens (matches ReaderPortfolio pattern)
+      // to catch holdings acquired via direct transfers, not just indexed trades
       const { data: storylines } = await supabase
         .from("storylines")
         .select("*")
-        .in("storyline_id", tradedIds)
         .eq("hidden", false)
         .neq("token_address", "")
         .eq("contract_address", STORY_FACTORY.toLowerCase())
         .returns<Storyline[]>();
       if (!storylines || storylines.length === 0) return [];
 
-      // Multicall balanceOf only for traded tokens (bounded)
+      // Multicall balanceOf for all storyline tokens
       const balanceResults = await browserClient.multicall({
         contracts: storylines.map((sl) => ({
           address: sl.token_address as Address,
