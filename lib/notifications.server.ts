@@ -172,15 +172,10 @@ export async function notifyNewStoryline(
   const tokens = await getEnabledTokens();
   if (tokens.length === 0) return;
 
-  const displayAuthor =
-    author.length > 10
-      ? `${author.slice(0, 6)}…${author.slice(-4)}`
-      : author;
-
   await sendNotification({
     notificationId: `pl-new-storyline-${storylineId}`,
     title: "New story published",
-    body: `"${title.slice(0, 40)}" by ${displayAuthor} is now on PlotLink`,
+    body: `"${title}" by ${author} is now on PlotLink`,
     targetUrl: `${appUrl}/story/${storylineId}`,
     tokens,
   });
