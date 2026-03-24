@@ -14,7 +14,7 @@ async function loadFont(): Promise<ArrayBuffer | null> {
     // Fetch with no User-Agent → Google returns TTF (truetype) format
     // ImageResponse supports ttf/otf/woff but NOT woff2
     const res = await fetch(
-      "https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap",
+      "https://fonts.googleapis.com/css2?family=Lora:wght@700&display=swap",
     );
     const css = await res.text();
     const match =
