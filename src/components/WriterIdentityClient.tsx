@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getFarcasterProfile } from "../../lib/actions";
 import { truncateAddress } from "../../lib/utils";
 import type { FarcasterProfile } from "../../lib/farcaster";
@@ -8,6 +9,7 @@ import type { FarcasterProfile } from "../../lib/farcaster";
 /**
  * Client component that resolves a Farcaster identity via server action.
  * Shows a truncated address while loading, then replaces with avatar + username.
+ * Links to the internal profile page at /profile/[address].
  */
 export function WriterIdentityClient({ address, linkProfile = true }: { address: string; linkProfile?: boolean }) {
   const [profile, setProfile] = useState<FarcasterProfile | null>(null);
@@ -26,11 +28,23 @@ export function WriterIdentityClient({ address, linkProfile = true }: { address:
     };
   }, [address]);
 
+  const label = !loaded || !profile
+    ? truncateAddress(address)
+    : null;
+
   if (!loaded || !profile) {
-    return <span>{truncateAddress(address)}</span>;
+    if (!linkProfile) return <span>{label}</span>;
+    return (
+      <Link
+        href={`/profile/${address}`}
+        className="text-foreground hover:text-accent transition-colors"
+      >
+        {label}
+      </Link>
+    );
   }
 
-  return (
+  const inner = (
     <span className="inline-flex items-center gap-1">
       {profile.pfpUrl && (
         // eslint-disable-next-line @next/next/no-img-element
@@ -42,18 +56,18 @@ export function WriterIdentityClient({ address, linkProfile = true }: { address:
           className="rounded-full"
         />
       )}
-      {linkProfile ? (
-        <a
-          href={`https://farcaster.xyz/${profile.username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-foreground hover:text-accent transition-colors"
-        >
-          @{profile.username}
-        </a>
-      ) : (
-        <span>@{profile.username}</span>
-      )}
+      <span>@{profile.username}</span>
     </span>
+  );
+
+  if (!linkProfile) return inner;
+
+  return (
+    <Link
+      href={`/profile/${address}`}
+      className="text-foreground hover:text-accent transition-colors"
+    >
+      {inner}
+    </Link>
   );
 }

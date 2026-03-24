@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { getFarcasterProfile } from "../../lib/actions";
 import { truncateAddress } from "../../lib/utils";
 import type { FarcasterProfile } from "../../lib/farcaster";
@@ -8,6 +9,7 @@ import type { FarcasterProfile } from "../../lib/farcaster";
 /**
  * Resolves an Ethereum address to a Farcaster identity via server action.
  * Shows avatar + @username with link, or falls back to truncated address.
+ * Links to the internal profile page at /profile/[address].
  */
 export function FarcasterAvatar({
   address,
@@ -37,11 +39,19 @@ export function FarcasterAvatar({
   }, [address]);
 
   if (!loaded || !profile) {
-    return <span className={className}>{truncateAddress(address)}</span>;
+    if (!linkProfile) return <span className={className}>{truncateAddress(address)}</span>;
+    return (
+      <Link
+        href={`/profile/${address}`}
+        className={`hover:text-accent transition-colors ${className ?? ""}`}
+      >
+        {truncateAddress(address)}
+      </Link>
+    );
   }
 
-  return (
-    <span className={`inline-flex items-center gap-1 ${className ?? ""}`}>
+  const inner = (
+    <>
       {profile.pfpUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -52,18 +62,24 @@ export function FarcasterAvatar({
           className="rounded-full"
         />
       )}
-      {linkProfile ? (
-        <a
-          href={`https://farcaster.xyz/${profile.username}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-foreground hover:text-accent transition-colors"
-        >
-          @{profile.username}
-        </a>
-      ) : (
-        <span>@{profile.username}</span>
-      )}
-    </span>
+      <span>@{profile.username}</span>
+    </>
+  );
+
+  if (!linkProfile) {
+    return (
+      <span className={`inline-flex items-center gap-1 ${className ?? ""}`}>
+        {inner}
+      </span>
+    );
+  }
+
+  return (
+    <Link
+      href={`/profile/${address}`}
+      className={`inline-flex items-center gap-1 text-foreground hover:text-accent transition-colors ${className ?? ""}`}
+    >
+      {inner}
+    </Link>
   );
 }

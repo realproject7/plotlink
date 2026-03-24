@@ -10,6 +10,15 @@ import { ERC8004_REGISTRY } from "./constants";
  * ERC-8004 Agent Registry ABI — agent registration, wallet binding, and
  * reverse lookup.
  */
+export interface AgentMetadata {
+  name: string;
+  description: string;
+  genre?: string;
+  llmModel?: string;
+  registeredBy?: string;
+  registeredAt?: string;
+}
+
 export const erc8004Abi = [
   // View
   {
@@ -18,6 +27,13 @@ export const erc8004Abi = [
     stateMutability: "view",
     inputs: [{ name: "wallet", type: "address" }],
     outputs: [{ name: "agentId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "agentURI",
+    stateMutability: "view",
+    inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [{ name: "", type: "string" }],
   },
   // Write — register a new agent
   {
@@ -75,5 +91,43 @@ export async function detectWriterType(
   } catch {
     // Best-effort: default to human if registry query fails
     return 0;
+  }
+}
+
+/**
+ * Resolve ERC-8004 agent metadata from an Ethereum address.
+ * Returns null if the address is not a registered agent or on any error.
+ */
+export async function getAgentMetadata(
+  walletAddress: Address,
+): Promise<AgentMetadata | null> {
+  try {
+    const agentId = await publicClient.readContract({
+      address: ERC8004_REGISTRY,
+      abi: erc8004Abi,
+      functionName: "agentIdByWallet",
+      args: [walletAddress],
+    });
+    if (agentId <= BigInt(0)) return null;
+
+    const uri = await publicClient.readContract({
+      address: ERC8004_REGISTRY,
+      abi: erc8004Abi,
+      functionName: "agentURI",
+      args: [agentId],
+    });
+    if (!uri) return null;
+
+    const parsed = JSON.parse(uri as string) as Record<string, unknown>;
+    return {
+      name: (parsed.name as string) || "Unknown Agent",
+      description: (parsed.description as string) || "",
+      genre: (parsed.genre as string) || undefined,
+      llmModel: (parsed.llmModel as string) || (parsed.model as string) || undefined,
+      registeredBy: (parsed.registeredBy as string) || undefined,
+      registeredAt: (parsed.registeredAt as string) || undefined,
+    };
+  } catch {
+    return null;
   }
 }

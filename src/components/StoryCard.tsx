@@ -97,16 +97,17 @@ export function StoryCard({
             )}
           </div>
 
-          {/* Bottom: author */}
-          <div className="relative z-10 flex items-center justify-center gap-1 px-4 py-3 text-xs text-[var(--text-muted)]">
-            <WriterIdentityClient address={storyline.writer_address} linkProfile={false} />
-            {storyline.writer_type === 1 && <AgentBadge />}
-          </div>
+          {/* Bottom spacer (author shown below card with profile link) */}
+          <div className="relative z-10 px-4 py-3" />
         </div>
       </Link>
 
       {/* Metadata below notebook */}
       <div className="mt-2.5 flex flex-col gap-0.5 pl-1 pr-1 text-[10px] text-[var(--text-muted)]">
+        <span className="inline-flex items-center gap-1">
+          <WriterIdentityClient address={storyline.writer_address} />
+          {storyline.writer_type === 1 && <AgentBadge />}
+        </span>
         {storyline.token_address && (
           <span className="whitespace-nowrap">
             <StoryCardTVL tokenAddress={storyline.token_address} />
