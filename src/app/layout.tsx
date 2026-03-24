@@ -23,17 +23,51 @@ const geistMono = Geist_Mono({
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
+const appName = "PlotLink";
+const appDescription =
+  "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade — powered by the market, not a platform.";
+const themeColor = "#E8DFD0";
+
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
-  title: "PlotLink",
-  description: "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade — powered by the market, not a platform.",
-  icons: { icon: "/favicon.png" },
+  title: appName,
+  description: appDescription,
+  icons: {
+    icon: [
+      { url: "/favicon.png" },
+      { url: "/plotlink-logo-symbol.svg", type: "image/svg+xml" },
+    ],
+    apple: { url: "/icon.png", sizes: "180x180" },
+  },
+  manifest: "/manifest.json",
   openGraph: {
-    images: ["/og-image.png"],
+    title: appName,
+    description: appDescription,
+    url: appUrl,
+    siteName: appName,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: appName,
+      },
+    ],
+    type: "website",
   },
   twitter: {
     card: "summary_large_image",
+    title: appName,
+    description: appDescription,
     images: ["/og-image.png"],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: appName,
+  },
+  other: {
+    "theme-color": themeColor,
   },
 };
 
