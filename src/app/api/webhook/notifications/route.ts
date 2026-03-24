@@ -17,19 +17,14 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    if (!process.env.NEYNAR_API_KEY) {
+      console.error("[WEBHOOK] NEYNAR_API_KEY not set — rejecting unverified webhook");
+      return NextResponse.json({ error: "Server misconfigured" }, { status: 503 });
+    }
+
     let data;
     try {
-      if (process.env.NEYNAR_API_KEY) {
-        data = await parseWebhookEvent(body, verifyAppKeyWithNeynar);
-      } else {
-        console.warn(
-          "Processing webhook without signature verification (NEYNAR_API_KEY not set)",
-        );
-        data = await parseWebhookEvent(body, async () => ({
-          valid: true,
-          appFid: 0,
-        }));
-      }
+      data = await parseWebhookEvent(body, verifyAppKeyWithNeynar);
     } catch (e: unknown) {
       const error = e as ParseWebhookEvent.ErrorType;
 
