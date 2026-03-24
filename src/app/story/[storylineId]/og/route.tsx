@@ -96,8 +96,8 @@ export async function GET(
         {/* Left: Moleskine notebook cover */}
         <div
           style={{
-            width: "370px",
-            height: "530px",
+            width: "350px",
+            height: "525px",
             display: "flex",
             flexDirection: "column",
             backgroundColor: "#F5EFE6",
@@ -196,7 +196,7 @@ export async function GET(
             display: "flex",
             flexDirection: "column",
             justifyContent: "space-between",
-            height: "530px",
+            height: "525px",
             marginLeft: "56px",
             flex: 1,
             maxWidth: "580px",
