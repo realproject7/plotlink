@@ -10,7 +10,7 @@ import { supabase, type Storyline, type Donation, type TradeHistory } from "../.
 import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } from "../../../../lib/contracts/constants";
 import { getFarcasterProfile, fetchAgentMetadata } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
-import { formatPrice, formatSupply } from "../../../../lib/format";
+import { formatPrice } from "../../../../lib/format";
 import { getTokenPrice, mcv2BondAbi, type TokenPriceInfo } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
@@ -248,6 +248,28 @@ function StoriesTab({
     enabled: storylineIds.length > 0,
   });
 
+  // Total token holders across all writer's storylines
+  const { data: totalHolders } = useQuery({
+    queryKey: ["profile-total-holders", address, storylineIds],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return 0;
+      const { data } = await supabase
+        .from("trade_history")
+        .select("user_address, event_type")
+        .in("storyline_id", storylineIds)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!data) return 0;
+      const balances = new Map<string, number>();
+      for (const t of data as { user_address: string | null; event_type: string }[]) {
+        if (!t.user_address) continue;
+        const cur = balances.get(t.user_address) ?? 0;
+        balances.set(t.user_address, t.event_type === "mint" ? cur + 1 : cur - 1);
+      }
+      return Array.from(balances.values()).filter((b) => b > 0).length;
+    },
+    enabled: storylineIds.length > 0,
+  });
+
   // Claimable royalties (own profile only)
   const { data: royaltyInfo } = useQuery({
     queryKey: ["profile-royalties", address],
@@ -298,24 +320,26 @@ function StoriesTab({
       {/* Writer Stats */}
       <div className="border-border bg-surface rounded border px-4 py-3">
         <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Writer Stats</p>
-        <div className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+        <div className={`grid grid-cols-2 gap-3 text-xs ${isOwnProfile && royaltyInfo ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
           <StatCell label="Storylines" value={String(storylines.length)} />
           <StatCell label="Total Plots" value={String(totalPlots)} />
+          <StatCell
+            label="Holders"
+            value={totalHolders !== undefined ? String(totalHolders) : "—"}
+          />
           <StatCell
             label="Donations"
             value={totalDonations > BigInt(0)
               ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}`
               : "—"}
           />
-          {isOwnProfile && royaltyInfo ? (
+          {isOwnProfile && royaltyInfo && (
             <StatCell
               label="Claimable"
               value={royaltyInfo.unclaimed > BigInt(0)
                 ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}`
                 : "—"}
             />
-          ) : (
-            <StatCell label="Holders" value="—" />
           )}
         </div>
       </div>
