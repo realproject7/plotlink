@@ -15,8 +15,11 @@ import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../..
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
+import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
+import { formatUsdValue } from "../../../../lib/usd-price";
 
 type Tab = "stories" | "portfolio" | "activity";
+
 
 export default function ProfilePage() {
   const params = useParams<{ address: string }>();
@@ -576,6 +579,8 @@ interface PortfolioHolding {
 }
 
 function PortfolioTab({ address }: { address: string }) {
+  const { data: plotUsd } = usePlotUsdPrice();
+
   // Fetch on-chain token holdings
   const { data: holdings, isLoading: holdingsLoading } = useQuery({
     queryKey: ["profile-holdings", address],
@@ -749,6 +754,11 @@ function PortfolioTab({ address }: { address: string }) {
             <span className="text-accent text-lg font-bold">
               {formatPrice(formatUnits(totalValue, 18))} {RESERVE_LABEL}
             </span>
+            {plotUsd && (
+              <span className="text-muted ml-2 text-sm">
+                ≈ {formatUsdValue(Number(formatUnits(totalValue, 18)) * plotUsd)}
+              </span>
+            )}
             <span className="text-muted ml-2 text-xs">
               across {holdings!.length} {holdings!.length === 1 ? "token" : "tokens"}
             </span>
@@ -776,9 +786,16 @@ function PortfolioTab({ address }: { address: string }) {
                       </span>
                     )}
                   </div>
-                  <span className="text-accent shrink-0 text-sm font-medium">
-                    {formatPrice(formatUnits(h.value, 18))} {RESERVE_LABEL}
-                  </span>
+                  <div className="shrink-0 text-right">
+                    <span className="text-accent text-sm font-medium">
+                      {formatPrice(formatUnits(h.value, 18))} {RESERVE_LABEL}
+                    </span>
+                    {plotUsd && (
+                      <span className="text-muted ml-1 text-xs">
+                        ({formatUsdValue(Number(formatUnits(h.value, 18)) * plotUsd)})
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-muted mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-xs">
                   <span>
