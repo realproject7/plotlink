@@ -39,15 +39,13 @@ export const ZAP_PLOTLINK = (IS_TESTNET
   ? "0x0000000000000000000000000000000000000000"
   : "0xAe50C9444DA2Ac80B209dC8B416d1B4A7D3939B0") as `0x${string}`;
 
-/** $PLOT protocol token
- *  Testnet: PL_TEST ERC-20 on Base Sepolia
- *  Mainnet: $PLOT ERC-20 (backed by $HUNT via Mint Club V2) */
+/** $PLOT protocol token (backed by $HUNT via Mint Club V2) */
 export const PLOT_TOKEN = (IS_TESTNET
   ? "0x6Ef4A3f654F2AfcEa8A8704D61Be5271536c13Fa"
-  : "0xF8A2C39111FCEB9C950aAf28A9E34EBaD99b85C1") as `0x${string}`;
+  : "0x4F567DACBF9D15A6acBe4A47FC2Ade0719Fb63C4") as `0x${string}`;
 
 /** Human-readable label for the reserve token */
-export const RESERVE_LABEL = IS_TESTNET ? "PL_TEST" : "PLOT";
+export const RESERVE_LABEL = "PLOT";
 
 // ---------------------------------------------------------------------------
 // Supported Zap input tokens (Base)
