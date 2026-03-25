@@ -39,7 +39,7 @@ export function Footer() {
         <div className="text-muted text-xs text-center">
           v{version} &middot; Base Mainnet &middot; Made by{" "}
           <a
-            href="https://farcaster.xyz/project7"
+            href="https://farcaster.com/project7"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:text-foreground transition-colors"
