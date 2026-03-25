@@ -16,16 +16,10 @@ import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
 import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
+import { formatUsdValue } from "../../../../lib/usd-price";
 
 type Tab = "stories" | "portfolio" | "activity";
 
-function formatPortfolioUsd(value: number): string {
-  if (value < 0.01) return "< $0.01";
-  if (value < 1) return `$${value.toFixed(3)}`;
-  if (value < 1000) return `$${value.toFixed(2)}`;
-  if (value < 1_000_000) return `$${(value / 1000).toFixed(2)}K`;
-  return `$${(value / 1_000_000).toFixed(2)}M`;
-}
 
 export default function ProfilePage() {
   const params = useParams<{ address: string }>();
@@ -762,7 +756,7 @@ function PortfolioTab({ address }: { address: string }) {
             </span>
             {plotUsd && (
               <span className="text-muted ml-2 text-sm">
-                ≈ {formatPortfolioUsd(Number(formatUnits(totalValue, 18)) * plotUsd)}
+                ≈ {formatUsdValue(Number(formatUnits(totalValue, 18)) * plotUsd)}
               </span>
             )}
             <span className="text-muted ml-2 text-xs">
@@ -798,7 +792,7 @@ function PortfolioTab({ address }: { address: string }) {
                     </span>
                     {plotUsd && (
                       <span className="text-muted ml-1 text-xs">
-                        ({formatPortfolioUsd(Number(formatUnits(h.value, 18)) * plotUsd)})
+                        ({formatUsdValue(Number(formatUnits(h.value, 18)) * plotUsd)})
                       </span>
                     )}
                   </div>
