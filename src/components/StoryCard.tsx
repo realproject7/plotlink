@@ -24,14 +24,10 @@ export function StoryCard({
 
   return (
     <div className="flex flex-col">
-      <div className="moleskine-notebook group relative block">
-        {/* Stretched link — makes the whole card clickable */}
-        <Link
-          href={`/story/${storyline.storyline_id}`}
-          className="absolute inset-0 z-30"
-          aria-label={storyline.title}
-        />
-
+      <Link
+        href={`/story/${storyline.storyline_id}`}
+        className="moleskine-notebook group relative block"
+      >
         {/* Page underneath — revealed when cover opens */}
         <div
           className="notebook-page absolute inset-0 z-0 overflow-hidden"
@@ -75,20 +71,12 @@ export function StoryCard({
             }}
           />
 
-          {/* Top area: genre + plot count badges */}
+          {/* Top: genre badge */}
           <div className="relative z-10 px-4 pt-4">
             <div className="flex flex-wrap items-start gap-1.5">
               <span className="rounded-sm bg-[var(--accent)]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent)]">
                 {displayGenre || "Uncategorized"}
               </span>
-              <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
-                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-              </span>
-              {isNew && (
-                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-bold text-[var(--accent)]">
-                  NEW
-                </span>
-              )}
               {storyline.sunset && (
                 <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                   complete
@@ -109,18 +97,28 @@ export function StoryCard({
             )}
           </div>
 
-          {/* Bottom: author name inside cover — z-40 so profile link sits above card link */}
-          <div className="relative z-40 px-4 py-3 text-[10px] text-[var(--text-muted)]">
-            <span className="inline-flex items-center gap-1">
-              <WriterIdentityClient address={storyline.writer_address} />
-              {storyline.writer_type === 1 && <AgentBadge />}
-            </span>
+          {/* Bottom: plot count + NEW badges */}
+          <div className="relative z-10 px-4 py-3">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
+                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+              </span>
+              {isNew && (
+                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-bold text-[var(--accent)]">
+                  NEW
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </Link>
 
-      {/* Metadata below notebook */}
+      {/* Metadata below notebook: author → TVL → rating */}
       <div className="mt-2.5 flex flex-col gap-0.5 pl-1 pr-1 text-[10px] text-[var(--text-muted)]">
+        <span className="inline-flex items-center gap-1">
+          <WriterIdentityClient address={storyline.writer_address} />
+          {storyline.writer_type === 1 && <AgentBadge />}
+        </span>
         {storyline.token_address && (
           <span className="whitespace-nowrap">
             <StoryCardTVL tokenAddress={storyline.token_address} />
