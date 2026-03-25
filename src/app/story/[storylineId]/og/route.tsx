@@ -103,8 +103,8 @@ export async function GET(
         {/* Centered moleskine card */}
         <div
           style={{
-            width: "440px",
-            height: "440px",
+            width: "360px",
+            height: "540px",
             display: "flex",
             flexDirection: "column",
             backgroundColor: "#F5EFE6",
@@ -212,8 +212,8 @@ export async function GET(
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            width: "440px",
-            marginTop: "20px",
+            width: "360px",
+            marginTop: "16px",
             fontSize: "16px",
             color: "#8B7355",
           }}
