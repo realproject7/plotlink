@@ -1,4 +1,4 @@
-# Assignment Queue — PlotLink (2026-03-18)
+# Assignment Queue — PlotLink (2026-03-25)
 
 > T1: Work through this queue top-to-bottom. Assign ONE ticket at a time to @t3.
 > After each PR is merged, assign the next ticket immediately.
@@ -8,49 +8,72 @@
 
 ## Completed
 
-- Phase 0–4: All done
-- Phase 5: All done (except #30 Zap — blocked on $PLOT)
-- Bug fixes: #52, #55, #67, #68, #88–#95, #112–#117, #132–#137, #144: All done
-- UI polish #104–#107: All done
-- Phase 6 Agent Layer #33, #32, #35, #34: All done
-- Phase 7 Farcaster #36, #37, #38, #39: All done
-- P8-1 Content Moderation #40: All done
-- P7/P8 review fixes (PR #151): All done
-- QA-1 through QA-4: #127–#130: All done
-- QA bug fixes batches 1–3: All done
-- Batch 4 UX Polish: #192–#198: All done
-- Batch 5 Bug Fixes + Home Page: #206–#211: All done
-- Batch 6a Contract: #184: All done
-- Batch 6b Phase 9 + Cleanup: #185–#190, #218–#220: All done
-- Batch 7 Infra + Tech Debt: #233, #230, #231, #232: All done
-- Batch 8 Bug Fixes: #238, #239, #240, #248, #250, #251, #252, #255, #257, #259: All done
-- Batch 9 Bug Fixes + Genre/Language: #261, #262, #265, #269, #271, #272, #275: All done
-- Batch 10 Design Overhaul: #277: Reverted (PR #281)
-- Batch 11 Bug Fixes: #267, #268: All done
+- Phase 0–8: All done
+- Bug fix batches 1–12: All done
+- UX Polish batches: All done
+- Contract: StoryFactory + ZapPlotLinkV2 deployed on mainnet
+- Font system, Token page, Agent page, Branding, NavBar: All done
+- Vercel production deploy + CI/CD: All done
+- Farcaster manifest + account association + embed preview: All done
+- Base.dev registration + Builder Code: All done
+- Operator gate (#480), Launch master (#475): All done
+- Batch 13 Farcaster + Mobile Polish: #487–#492 — All done
+- Batch 14 Notifications + Profile Page: #499, #501–#504 — All done
+- Batch 15 Share Polish + Mobile Fix: #510–#512 — All done
+- Batch 16 UX + Infrastructure: #516–#521 — All done
+- Batch 17 Story Card + Share Fixes: #529–#531 — All done
+- Hotfixes: #500, #528
 
 ---
 
-## Tonight's Queue — Bug Fixes (Batch 12)
+## Tonight's Queue — PLOT Token Launch + Contract Redeploy (Batch 18)
 
-### 1. plotlink#284 — Brittle wallet rejection detection leaves false recovery intents
-**Priority: HIGH**
-- `isUserRejection()` only matches a few patterns — non-standard wallets leave false intents in localStorage
-- Expand rejection patterns or defer intent persistence until after wallet confirmation
-- Branch: `task/284-wallet-rejection-detection`
+### 1. plotlink#536 — Redeploy StoryFactory with J-curve + real PLOT (T3)
+**Priority: CRITICAL**
+- Update `DeployBase.s.sol` to use exact prices from `story-token-curve.txt` (J-curve)
+- Deploy to Base mainnet with real PLOT token address (provided by T1)
+- `DEPLOYER_PRIVATE_KEY` and `BASESCAN_API_KEY` in `plotlink-contracts/.env`
+- Set `initialStorylineCount` to skip past existing symbols
+- Record new StoryFactory address
+- Branch: `task/536-storyfactory-jcurve`
 
-### 2. plotlink#285 — Recovery retry fails permanently on IPFS upload errors
+### 2. plotlink#537 — Call setPlotToken() on ZapPlotLinkV2 (T3)
+**Priority: CRITICAL**
+- Call `setPlotToken(newPlotAddress)` on Zap at `0xAe50C9444DA2Ac80B209dC8B416d1B4A7D3939B0`
+- Use `DEPLOYER_PRIVATE_KEY` from `plotlink-contracts/.env`
+- Use `cast send` or Foundry script
+- Branch: `task/537-set-plot-token`
+
+### 3. plotlink#538 — Update all PL_TEST → PLOT references in plotlink codebase (T3)
 **Priority: HIGH**
-- If IPFS upload fails, recovery banner appears but retry only re-hits indexer, not IPFS
-- Either defer intent save until after IPFS success, or include IPFS re-upload in retry flow
-- Branch: `task/285-ipfs-retry-recovery`
+- Replace PL_TEST address with real PLOT in `lib/contracts/constants.ts` and all references
+- Update `RESERVE_LABEL` from `PL_TEST` to `PLOT`
+- Update `lib/usd-price.ts` to point to new token
+- Branch: `task/538-plot-token-refs`
+
+### 4. plotlink#539 — Update all StoryFactory references to new contract (T3)
+**Priority: HIGH**
+- Replace old factory address in `lib/contracts/constants.ts`, SDK, env
+- Update `DEPLOYMENT_BLOCK` to new deploy block
+- Branch: `task/539-factory-address-update`
+
+### 5. plotlink#540 — Verify contracts on Basescan (T3)
+**Priority: HIGH**
+- Run `forge verify-contract` for new StoryFactory and ZapPlotLinkV2
+- `BASESCAN_API_KEY` in `plotlink-contracts/.env`
+- Branch: `task/540-basescan-verify`
+
+### --- OPERATOR GATE (after all PRs merged) ---
+**T1: Post-deploy verification:**
+- Initialize `backfill_cursor` in Supabase with new StoryFactory deployment block
+- Create a test storyline on the new contract and verify full flow
+- Verify Basescan shows verified source for both contracts
 
 ---
 
 ## Blocked (not in queue)
 
-- **#30** Zap Frontend — blocked on $PLOT token creation (#31)
-- **#31** P5-OP Operator Tasks — needs $PLOT token on Mint Club
-- **#41** Mainnet Deployment — future
+- **#340** — Production infrastructure checklist (long-term)
 
 ---
 
@@ -59,23 +82,24 @@
 1. Assign ONE ticket at a time to @t3
 2. Wait for @t2a AND @t2b to both approve before merging
 3. After merge, immediately assign the next ticket
-4. Use correct original issue numbers in PR titles (e.g., `[#240]`)
+4. Use correct original issue numbers in PR titles (e.g., `[#536]`)
 5. **NEVER store keys/secrets in plain text without .gitignore protection**
 6. **NEVER hardcode addresses, keys, or sensitive values**
 7. **Communicate via AgentChattr MCP chat by tagging agents. Your terminal is NOT visible.**
 8. If T3 gets stuck after 2 review rounds, skip that ticket and note it for morning review
 9. Do NOT push to main — only merge approved PRs
+10. **Versioning**: T3 bumps patch (3rd digit) in package.json per PR. Minor/major bumps require T1 permission.
+11. **Contract keys**: `DEPLOYER_PRIVATE_KEY` and `BASESCAN_API_KEY` are in `plotlink-contracts/.env`
 
 ## Reference
 
 - Dev server: `npm run dev` (localhost:3000)
-- Design tokens: `src/app/globals.css`
 - Contract constants: `lib/contracts/constants.ts`
-- Contract ABI: `lib/contracts/abi.ts`
-- Supabase types: `lib/supabase.ts`
-- Migrations: `supabase/migrations/`
-- Admin auth: `src/app/api/admin/auth.ts`
-- CLI status: `packages/cli/src/commands/status.ts`
-- Home page: `src/app/page.tsx`
-- Current contract: `0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229`
-- Old contracts: `0x6B8d38af1773dd162Ebc6f4A8eb923F3c669605d`, `0x05C4d59529807316D6fA09cdaA509adDfe85b474`
+- Current StoryFactory: `0x337c5b96f03fB335b433291695A4171fd5dED8B0` (to be replaced)
+- ZapPlotLinkV2: `0xAe50C9444DA2Ac80B209dC8B416d1B4A7D3939B0` (no redeploy)
+- Current PL_TEST: `0xF8A2C39111FCEB9C950aAf28A9E34EBaD99b85C1` (to be replaced by PLOT)
+- New PLOT: `0x4F567DACBF9D15A6acBe4A47FC2Ade0719Fb63C4`
+- Uniswap V4 PLOT/ETH Pool: `0xd9088610ecda3503edafbfe1dce6807c0736abbe4661032096e116d4985f6538` (1% fee, tick spacing 200)
+- Curve data: `~/Library/CloudStorage/Dropbox/Mac/Downloads/plotlink/story-token-curve.txt`
+- Contract repo: `~/Projects/plotlink-contracts`
+- Domain: `plotlink.xyz`
