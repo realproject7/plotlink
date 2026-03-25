@@ -18,13 +18,13 @@ test.describe("Navigation", () => {
     await expect(page).toHaveURL("/create");
   });
 
-  test("Footer renders with PlotLink branding", async ({ page }) => {
+  test("Footer renders with version and credits", async ({ page }) => {
     await page.goto("/");
-    // Footer contains "PlotLink" copyright text
     const footer = page.locator("footer");
     await expect(footer).toBeVisible({ timeout: 10000 });
-    // Verify footer has expected content
-    await expect(footer.getByText(/PlotLink/)).toBeVisible();
+    // Verify footer has version and credits content
+    await expect(footer.getByText(/Base Mainnet/)).toBeVisible();
+    await expect(footer.getByText(/@project7/)).toBeVisible();
   });
 
   test("no console errors on navigation", async ({ page }) => {
