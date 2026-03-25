@@ -41,7 +41,7 @@ export async function GET(req: Request) {
   }
 
   let checked = 0;
-  const alerts = 0;
+  let alerts = 0;
 
   for (const sl of storylines) {
     try {
@@ -51,13 +51,14 @@ export async function GET(req: Request) {
       const price = parseFloat(priceInfo.pricePerToken);
       if (price <= 0) continue;
 
-      await checkPriceChangeAlert(
+      const alerted = await checkPriceChangeAlert(
         sl.token_address,
         price,
         sl.storyline_id,
         sl.title,
       );
       checked++;
+      if (alerted) alerts++;
     } catch {
       // Skip individual token errors
     }

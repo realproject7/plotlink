@@ -301,7 +301,7 @@ export async function checkPriceChangeAlert(
   currentPrice: number,
   storylineId: number,
   storyTitle: string,
-): Promise<void> {
+): Promise<boolean> {
   const supabase = getSupabase();
 
   // Get previous snapshot
@@ -319,18 +319,18 @@ export async function checkPriceChangeAlert(
     price: currentPrice,
   });
 
-  if (!prev || !prev.price) return;
+  if (!prev || !prev.price) return false;
 
   const previousPrice = Number(prev.price);
-  if (previousPrice === 0) return;
+  if (previousPrice === 0) return false;
 
   const changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
 
-  if (Math.abs(changePercent) < PRICE_CHANGE_THRESHOLD) return;
+  if (Math.abs(changePercent) < PRICE_CHANGE_THRESHOLD) return false;
 
   // Alert holders
   const tokens = await getTokenHolderTokens(tokenAddress);
-  if (tokens.length === 0) return;
+  if (tokens.length === 0) return false;
 
   const direction = changePercent > 0 ? "up" : "down";
   const absChange = Math.abs(changePercent).toFixed(1);
@@ -342,4 +342,6 @@ export async function checkPriceChangeAlert(
     targetUrl: `${appUrl}/story/${storylineId}`,
     tokens,
   });
+
+  return true;
 }

@@ -13,7 +13,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    await saveUserNotificationToken(fid, token, url, undefined, walletAddress);
+    // Validate wallet address format if provided
+    const validatedWallet = walletAddress && /^0x[0-9a-fA-F]{40}$/.test(walletAddress)
+      ? walletAddress
+      : undefined;
+
+    await saveUserNotificationToken(fid, token, url, undefined, validatedWallet);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to save notification token:", error);
