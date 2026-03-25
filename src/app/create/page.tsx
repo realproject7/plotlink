@@ -109,7 +109,8 @@ function CreatePage() {
     attemptRetry: newAttemptRetry,
   } = usePublishIntent();
   const { valid: newValid, charCount: newCharCount } = validateContentLength(newContent);
-  const newTitleValid = newTitle.trim().length > 0;
+  const MAX_TITLE_LENGTH = 60;
+  const newTitleValid = newTitle.trim().length > 0 && newTitle.length <= MAX_TITLE_LENGTH;
   const newGenreValid = genre.length > 0;
   const newCanSubmit =
     newState === "idle" || newState === "error"
@@ -307,11 +308,20 @@ function CreatePage() {
               <input
                 type="text"
                 value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
+                onChange={(e) => setNewTitle(e.target.value.slice(0, MAX_TITLE_LENGTH))}
                 disabled={newBusy}
                 placeholder="Enter storyline title"
+                maxLength={MAX_TITLE_LENGTH}
                 className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
               />
+              <div className="mt-1 flex justify-between text-xs">
+                {newTitle.length > 0 && !newTitleValid ? (
+                  <span className="text-error">Title is required</span>
+                ) : (
+                  <span />
+                )}
+                <span className="text-muted">{newTitle.length} / {MAX_TITLE_LENGTH}</span>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
