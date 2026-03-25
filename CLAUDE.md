@@ -41,6 +41,18 @@ Terminal aesthetic: dark background (`#0a0a0a`), monospace font (Geist Mono), gr
 
 The full project proposal will be added at `docs/PROPOSAL-plotlink.md` in a future ticket.
 
+## Versioning
+
+Version is tracked in `package.json` and displayed in the footer. All agents must follow these rules:
+
+| Digit | Meaning | Who can bump |
+|-------|---------|-------------|
+| **3rd** (patch) | Bug fixes, minor updates | T3 autonomously |
+| **2nd** (minor) | Feature additions, major updates | **Operator (T1) permission required** |
+| **1st** (major) | Pivot-level changes | **Operator (T1) permission required** |
+
+When making a PR, bump the patch version in `package.json` for bug fixes. For feature work, note in the PR that a minor version bump may be needed and let T1 decide.
+
 ## Environment Variables
 
 See [`.env.example`](.env.example) for all required environment variables.
