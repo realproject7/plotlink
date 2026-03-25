@@ -24,14 +24,14 @@ export const EXPLORER_URL = IS_TESTNET
 // PlotLink contracts
 // ---------------------------------------------------------------------------
 
-/** Deployment block for the v3 StoryFactory on Base mainnet */
-export const DEPLOYMENT_BLOCK = BigInt(43_609_150);
+/** Deployment block for the v4 StoryFactory (J-curve + real PLOT) on Base mainnet */
+export const DEPLOYMENT_BLOCK = BigInt(43_824_790);
 
 /** StoryFactory — storyline + plot management */
 export const STORY_FACTORY = (process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ??
   (IS_TESTNET
     ? "0xfa5489b6710Ba2f8406b37fA8f8c3018e51FA229"
-    : "0x337c5b96f03fB335b433291695A4171fd5dED8B0")) as `0x${string}`;
+    : "0x92c3bd44fda84e632c3c3cb31387d0c0c1de618d")) as `0x${string}`;
 
 /** ZapPlotLinkV2 — one-click buy (ETH/USDC/HUNT -> PLOT -> storyline token via Uniswap V4 + MCV2)
  *  Testnet: disabled (V1 contract incompatible with V2 ABI) */

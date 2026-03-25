@@ -3,7 +3,7 @@ import { decodeEventLog, type Log } from "viem";
 import { publicClient } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
 import { storyFactoryAbi } from "../../../../../lib/contracts/abi";
-import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
+import { STORY_FACTORY, DEPLOYMENT_BLOCK } from "../../../../../lib/contracts/constants";
 import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
@@ -106,8 +106,8 @@ export async function GET(req: Request) {
     .single();
   const lastBlock = cursor?.last_block ? BigInt(cursor.last_block) : BigInt(0);
 
-  // Start from block after last processed; cap toBlock to limit scan per run
-  const fromBlock = lastBlock > BigInt(0) ? lastBlock + BigInt(1) : BigInt(0);
+  // Start from block after last processed; fall back to DEPLOYMENT_BLOCK for new contracts
+  const fromBlock = lastBlock > BigInt(0) ? lastBlock + BigInt(1) : DEPLOYMENT_BLOCK;
 
   if (fromBlock > currentBlock) {
     return NextResponse.json({ skipped: true, reason: "Already up to date" });

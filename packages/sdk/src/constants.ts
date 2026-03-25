@@ -26,7 +26,7 @@ export const DEPLOYMENT_BLOCK = BigInt(20_000_000);
  * Deployment block for PlotLink contracts on Base mainnet.
  * Used as the default fromBlock for mainnet event log queries.
  */
-export const DEPLOYMENT_BLOCK_MAINNET = BigInt(43_609_150);
+export const DEPLOYMENT_BLOCK_MAINNET = BigInt(43_824_790);
 
 /** Supported chain IDs for the PlotLink SDK. */
 export const SUPPORTED_CHAIN_IDS = new Set([BASE_SEPOLIA_CHAIN_ID, BASE_MAINNET_CHAIN_ID]);
@@ -41,7 +41,7 @@ export const STORY_FACTORY_ADDRESS =
 
 /** StoryFactory — storyline + plot management (Base mainnet). */
 export const STORY_FACTORY_MAINNET_ADDRESS =
-  "0x337c5b96f03fB335b433291695A4171fd5dED8B0" as const;
+  "0x92c3bd44fda84e632c3c3cb31387d0c0c1de618d" as const;
 
 /** MCV2_Bond — bonding curve trading (Base Sepolia). */
 export const MCV2_BOND_ADDRESS =
