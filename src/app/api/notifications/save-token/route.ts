@@ -7,13 +7,13 @@ import { saveUserNotificationToken } from "../../../../../lib/notifications.serv
  */
 export async function POST(request: NextRequest) {
   try {
-    const { fid, token, url } = await request.json();
+    const { fid, token, url, walletAddress } = await request.json();
 
     if (!fid || !token || !url) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    await saveUserNotificationToken(fid, token, url);
+    await saveUserNotificationToken(fid, token, url, undefined, walletAddress);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to save notification token:", error);

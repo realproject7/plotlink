@@ -1,11 +1,17 @@
 /**
- * [#489] Farcaster notification system for PlotLink.
+ * [#489, #521] Farcaster notification system for PlotLink.
  *
  * Handles notification token storage (Supabase) and sending push
  * notifications to Farcaster clients via the miniapp notification API.
+ *
+ * [#521] Targeted notifications: new plot notifications go only to
+ * storyline token holders. Price change alerts (>10%) sent to holders.
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { createPublicClient, http, erc20Abi, type Address } from "viem";
+import { base } from "viem/chains";
+import { STORY_FACTORY } from "./contracts/constants";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -13,6 +19,13 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+function getRpcClient() {
+  return createPublicClient({
+    chain: base,
+    transport: http(process.env.NEXT_PUBLIC_RPC_URL),
   });
 }
 
@@ -29,20 +42,25 @@ export async function saveUserNotificationToken(
   token: string,
   url: string,
   clientAppFid?: number,
+  walletAddress?: string,
 ): Promise<void> {
   const supabase = getSupabase();
 
-  const { error } = await supabase.from("notification_tokens").upsert(
-    {
-      fid,
-      notification_token: token,
-      notification_url: url,
-      client_app_fid: clientAppFid || null,
-      enabled: true,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "fid" },
-  );
+  const row: Record<string, unknown> = {
+    fid,
+    notification_token: token,
+    notification_url: url,
+    client_app_fid: clientAppFid || null,
+    enabled: true,
+    updated_at: new Date().toISOString(),
+  };
+  if (walletAddress) {
+    row.wallet_address = walletAddress.toLowerCase();
+  }
+
+  const { error } = await supabase
+    .from("notification_tokens")
+    .upsert(row, { onConflict: "fid" });
 
   if (error) {
     console.error("Failed to save notification token:", error);
@@ -81,6 +99,51 @@ export async function getEnabledTokens(): Promise<NotificationToken[]> {
     notificationToken: row.notification_token,
     notificationUrl: row.notification_url,
   }));
+}
+
+// ---- [#521] Token Holder Targeting ----
+
+/**
+ * Get notification tokens for users who hold a specific storyline token.
+ * Queries enabled tokens with wallet_address, then checks on-chain balanceOf.
+ */
+async function getTokenHolderTokens(
+  tokenAddress: string,
+): Promise<NotificationToken[]> {
+  const supabase = getSupabase();
+  const rpc = getRpcClient();
+
+  // Get all enabled tokens that have a wallet_address
+  const { data, error } = await supabase
+    .from("notification_tokens")
+    .select("*")
+    .eq("enabled", true)
+    .not("wallet_address", "is", null);
+
+  if (error || !data || data.length === 0) return [];
+
+  // Check on-chain balances via multicall
+  const balanceResults = await rpc.multicall({
+    contracts: data.map((row) => ({
+      address: tokenAddress as Address,
+      abi: erc20Abi,
+      functionName: "balanceOf" as const,
+      args: [row.wallet_address as Address],
+    })),
+    allowFailure: true,
+  });
+
+  // Filter to holders (balance > 0)
+  return data
+    .filter((_, i) => {
+      const result = balanceResults[i];
+      return result.status === "success" && (result.result as bigint) > BigInt(0);
+    })
+    .map((row) => ({
+      fid: row.fid,
+      notificationToken: row.notification_token,
+      notificationUrl: row.notification_url,
+    }));
 }
 
 // ---- Notification Sending ----
@@ -182,23 +245,100 @@ export async function notifyNewStoryline(
 }
 
 /**
- * Notify all users with enabled notifications about a new plot.
- * Called from the backfill cron when a new plot is indexed.
+ * [#521] Notify token holders about a new plot in a storyline they hold.
+ * Falls back to all users if no token address or no holders found.
  */
 export async function notifyNewPlot(
   storylineId: number,
   storyTitle: string,
   plotIndex: number,
 ): Promise<void> {
-  const tokens = await getEnabledTokens();
-  if (tokens.length === 0) return;
-
+  const supabase = getSupabase();
   const label = plotIndex === 0 ? "Genesis" : `Chapter ${plotIndex}`;
+
+  // Look up storyline token address
+  const { data: storyline } = await supabase
+    .from("storylines")
+    .select("token_address")
+    .eq("storyline_id", storylineId)
+    .eq("contract_address", STORY_FACTORY.toLowerCase())
+    .single();
+
+  let tokens: NotificationToken[];
+
+  if (storyline?.token_address) {
+    // Target only token holders
+    tokens = await getTokenHolderTokens(storyline.token_address);
+    if (tokens.length === 0) {
+      // Fallback: send to all if no holders have notification tokens
+      tokens = await getEnabledTokens();
+    }
+  } else {
+    tokens = await getEnabledTokens();
+  }
+
+  if (tokens.length === 0) return;
 
   await sendNotification({
     notificationId: `pl-new-plot-${storylineId}-${plotIndex}`,
     title: `New ${label} published`,
     body: `"${storyTitle.slice(0, 40)}" has a new plot on PlotLink`,
+    targetUrl: `${appUrl}/story/${storylineId}`,
+    tokens,
+  });
+}
+
+// ---- [#521] Price Change Alerts ----
+
+const PRICE_CHANGE_THRESHOLD = 10; // percent
+
+/**
+ * Snapshot current price for a token and check for >10% change.
+ * If threshold exceeded, sends alert to all holders of that token.
+ */
+export async function checkPriceChangeAlert(
+  tokenAddress: string,
+  currentPrice: number,
+  storylineId: number,
+  storyTitle: string,
+): Promise<void> {
+  const supabase = getSupabase();
+
+  // Get previous snapshot
+  const { data: prev } = await supabase
+    .from("token_price_snapshots")
+    .select("price")
+    .eq("token_address", tokenAddress.toLowerCase())
+    .order("snapshot_time", { ascending: false })
+    .limit(1)
+    .single();
+
+  // Save current snapshot
+  await supabase.from("token_price_snapshots").insert({
+    token_address: tokenAddress.toLowerCase(),
+    price: currentPrice,
+  });
+
+  if (!prev || !prev.price) return;
+
+  const previousPrice = Number(prev.price);
+  if (previousPrice === 0) return;
+
+  const changePercent = ((currentPrice - previousPrice) / previousPrice) * 100;
+
+  if (Math.abs(changePercent) < PRICE_CHANGE_THRESHOLD) return;
+
+  // Alert holders
+  const tokens = await getTokenHolderTokens(tokenAddress);
+  if (tokens.length === 0) return;
+
+  const direction = changePercent > 0 ? "up" : "down";
+  const absChange = Math.abs(changePercent).toFixed(1);
+
+  await sendNotification({
+    notificationId: `pl-price-alert-${tokenAddress}-${Date.now()}`,
+    title: `Price ${direction} ${absChange}%`,
+    body: `"${storyTitle.slice(0, 30)}" token moved ${direction} ${absChange}%`,
     targetUrl: `${appUrl}/story/${storylineId}`,
     tokens,
   });
