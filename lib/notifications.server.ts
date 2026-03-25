@@ -13,6 +13,8 @@ import { createPublicClient, http, erc20Abi, type Address } from "viem";
 import { base } from "viem/chains";
 import { STORY_FACTORY } from "./contracts/constants";
 
+const NEYNAR_BASE = "https://api.neynar.com/v2/farcaster";
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
@@ -42,9 +44,11 @@ export async function saveUserNotificationToken(
   token: string,
   url: string,
   clientAppFid?: number,
-  walletAddress?: string,
 ): Promise<void> {
   const supabase = getSupabase();
+
+  // Resolve wallet from FID via trusted Neynar API
+  const walletAddress = await resolveWalletForFid(fid);
 
   const row: Record<string, unknown> = {
     fid,
@@ -55,7 +59,7 @@ export async function saveUserNotificationToken(
     updated_at: new Date().toISOString(),
   };
   if (walletAddress) {
-    row.wallet_address = walletAddress.toLowerCase();
+    row.wallet_address = walletAddress;
   }
 
   const { error } = await supabase
@@ -99,6 +103,34 @@ export async function getEnabledTokens(): Promise<NotificationToken[]> {
     notificationToken: row.notification_token,
     notificationUrl: row.notification_url,
   }));
+}
+
+// ---- [#521] FID → Wallet Resolution (trusted) ----
+
+/**
+ * Resolve a Farcaster FID to its verified Ethereum address via Neynar API.
+ * Returns the first verified address, or null if unavailable.
+ */
+async function resolveWalletForFid(fid: number): Promise<string | null> {
+  const apiKey = process.env.NEYNAR_API_KEY;
+  if (!apiKey) return null;
+
+  try {
+    const res = await fetch(`${NEYNAR_BASE}/user/bulk?fids=${fid}`, {
+      headers: { accept: "application/json", "x-api-key": apiKey },
+      signal: AbortSignal.timeout(3000),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const user = json.users?.[0];
+    if (!user) return null;
+
+    // Use first verified Ethereum address
+    const verifiedAddress = user.verified_addresses?.eth_addresses?.[0];
+    return verifiedAddress?.toLowerCase() ?? null;
+  } catch {
+    return null;
+  }
 }
 
 // ---- [#521] Token Holder Targeting ----
@@ -264,19 +296,10 @@ export async function notifyNewPlot(
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .single();
 
-  let tokens: NotificationToken[];
+  // Only notify token holders — no broadcast fallback
+  if (!storyline?.token_address) return;
 
-  if (storyline?.token_address) {
-    // Target only token holders
-    tokens = await getTokenHolderTokens(storyline.token_address);
-    if (tokens.length === 0) {
-      // Fallback: send to all if no holders have notification tokens
-      tokens = await getEnabledTokens();
-    }
-  } else {
-    tokens = await getEnabledTokens();
-  }
-
+  const tokens = await getTokenHolderTokens(storyline.token_address);
   if (tokens.length === 0) return;
 
   await sendNotification({
