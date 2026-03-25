@@ -36,8 +36,16 @@ export function Footer() {
             built on <span className="text-accent-dim">Base</span>
           </span>
         </div>
-        <div className="text-muted text-xs">
-          PlotLink &copy; {new Date().getFullYear()} &middot; v{version}
+        <div className="text-muted text-xs text-center">
+          v{version} &middot; Base Mainnet &middot; Made by{" "}
+          <a
+            href="https://farcaster.xyz/project7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+          >
+            @project7
+          </a>
         </div>
       </div>
     </footer>
