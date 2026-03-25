@@ -9,7 +9,7 @@
  * Reference: ~/Projects/dropcast/lib/usd-price.ts
  */
 
-import { PLOT_TOKEN } from "./contracts/constants";
+import { PLOT_TOKEN, IS_TESTNET } from "./contracts/constants";
 
 // In-memory cache
 let cachedPrice: number | null = null;
@@ -27,6 +27,9 @@ const PLOT_ADDRESS = PLOT_TOKEN.toLowerCase();
 export async function getPlotUsdPrice(
   forceRefresh = false,
 ): Promise<number | null> {
+  // Testnet tokens (PL_TEST) have no real USD value — skip upstream calls
+  if (IS_TESTNET) return null;
+
   // Return cached price if fresh
   if (!forceRefresh && cachedPrice !== null && Date.now() - cacheTimestamp < CACHE_TTL) {
     return cachedPrice;
