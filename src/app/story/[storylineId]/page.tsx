@@ -20,6 +20,7 @@ import { WriterIdentity } from "../../../components/WriterIdentity";
 import { ViewCount, ViewTracker } from "../../../components/ViewCount";
 import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
+import { UsdPriceTag } from "../../../components/UsdPriceTag";
 
 type Params = Promise<{ storylineId: string }>;
 
@@ -263,6 +264,7 @@ function StoryHeader({
             </span>
             <span className="font-semibold text-accent">
               {formatPrice(priceInfo.pricePerToken)} {reserveLabel}
+              <UsdPriceTag plotAmount={parseFloat(priceInfo.pricePerToken)} />
             </span>
           </div>
           <div>

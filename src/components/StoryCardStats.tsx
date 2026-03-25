@@ -6,6 +6,7 @@ import { getTokenTVL, getTokenPrice } from "../../lib/price";
 import { browserClient } from "../../lib/rpc";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
 import { useBatchTokenData } from "./BatchTokenDataProvider";
+import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 
 function formatCompact(value: string): string {
   const num = parseFloat(value);
@@ -16,9 +17,18 @@ function formatCompact(value: string): string {
   return num.toFixed(2);
 }
 
+function formatUsd(value: number): string {
+  if (value < 0.01) return "< $0.01";
+  if (value < 1) return `$${value.toFixed(3)}`;
+  if (value < 1000) return `$${value.toFixed(2)}`;
+  if (value < 1_000_000) return `$${(value / 1000).toFixed(2)}K`;
+  return `$${(value / 1_000_000).toFixed(2)}M`;
+}
+
 /** Full stats row with price + TVL (used on detail pages) */
 export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
   const addr = tokenAddress as Address;
+  const { data: plotUsd } = usePlotUsdPrice();
 
   const { data: priceInfo } = useQuery({
     queryKey: ["card-price", tokenAddress],
@@ -39,10 +49,17 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
     ? formatCompact(tvlData.tvl)
     : "—";
 
+  const priceUsd = priceInfo && plotUsd
+    ? formatUsd(parseFloat(priceInfo.pricePerToken) * plotUsd)
+    : null;
+  const tvlUsd = tvlData && plotUsd
+    ? formatUsd(parseFloat(tvlData.tvl) * plotUsd)
+    : null;
+
   return (
     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-[var(--text-muted)]">
-      <span>Price: <span className="font-semibold text-[var(--accent)]">{price} {RESERVE_LABEL}</span></span>
-      <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span></span>
+      <span>Price: <span className="font-semibold text-[var(--accent)]">{price} {RESERVE_LABEL}</span>{priceUsd && <span className="ml-1 opacity-60">({priceUsd})</span>}</span>
+      <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span>{tvlUsd && <span className="ml-1 opacity-60">({tvlUsd})</span>}</span>
     </div>
   );
 }
@@ -52,6 +69,7 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
 export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
   const { entry: batchEntry, isReady } = useBatchTokenData(tokenAddress);
   const addr = tokenAddress as Address;
+  const { data: plotUsd } = usePlotUsdPrice();
 
   // Only fall back to individual fetch AFTER batch has settled
   const { data: individualTvl } = useQuery({
@@ -63,8 +81,11 @@ export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
 
   const tvlData = batchEntry?.tvl ?? individualTvl;
   const tvl = tvlData ? formatCompact(tvlData.tvl) : "—";
+  const tvlUsd = tvlData && plotUsd
+    ? formatUsd(parseFloat(tvlData.tvl) * plotUsd)
+    : null;
 
   return (
-    <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span></span>
+    <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span>{tvlUsd && <span className="ml-1 opacity-60">({tvlUsd})</span>}</span>
   );
 }
