@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { STORY_FACTORY, EXPLORER_URL } from "../../lib/contracts/constants";
+import { version } from "../../package.json";
 
 const CONTRACT_URL = `${EXPLORER_URL}/address/${STORY_FACTORY}`;
 const GITHUB_URL = "https://github.com/realproject7/plotlink-contracts";
@@ -36,7 +37,7 @@ export function Footer() {
           </span>
         </div>
         <div className="text-muted text-xs">
-          PlotLink &copy; {new Date().getFullYear()}
+          PlotLink &copy; {new Date().getFullYear()} &middot; v{version}
         </div>
       </div>
     </footer>
