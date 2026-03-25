@@ -69,14 +69,14 @@ describe("StoryCard", () => {
 
   it("links to correct story page", () => {
     render(<StoryCard storyline={makeStoryline({ storyline_id: 42 })} />);
-    const link = screen.getByRole("link", { name: "Test Story Title" });
+    const link = screen.getAllByText("Test Story Title")[0].closest("a");
     expect(link).toHaveAttribute("href", "/story/42");
   });
 
   it("applies moleskine-notebook class for hover animation", () => {
     render(<StoryCard storyline={makeStoryline()} />);
-    const container = screen.getAllByText("Test Story Title")[0].closest(".moleskine-notebook");
-    expect(container).toBeTruthy();
+    const link = screen.getAllByText("Test Story Title")[0].closest("a");
+    expect(link).toHaveClass("moleskine-notebook");
   });
 
   it("shows plot count", () => {
