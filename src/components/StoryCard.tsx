@@ -71,12 +71,20 @@ export function StoryCard({
             }}
           />
 
-          {/* Top area: genre badge */}
+          {/* Top area: genre + plot count badges */}
           <div className="relative z-10 px-4 pt-4">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex flex-wrap items-start gap-1.5">
               <span className="rounded-sm bg-[var(--accent)]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent)]">
                 {displayGenre || "Uncategorized"}
               </span>
+              <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
+                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+              </span>
+              {isNew && (
+                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-bold text-[var(--accent)]">
+                  NEW
+                </span>
+              )}
               {storyline.sunset && (
                 <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                   complete
@@ -97,26 +105,23 @@ export function StoryCard({
             )}
           </div>
 
-          {/* Bottom spacer (author shown below card with profile link) */}
-          <div className="relative z-10 px-4 py-3" />
+          {/* Bottom: author name inside cover */}
+          <div className="relative z-10 px-4 py-3 text-[10px] text-[var(--text-muted)]">
+            <span className="inline-flex items-center gap-1">
+              <WriterIdentityClient address={storyline.writer_address} linkProfile={false} />
+              {storyline.writer_type === 1 && <AgentBadge />}
+            </span>
+          </div>
         </div>
       </Link>
 
       {/* Metadata below notebook */}
       <div className="mt-2.5 flex flex-col gap-0.5 pl-1 pr-1 text-[10px] text-[var(--text-muted)]">
-        <span className="inline-flex items-center gap-1">
-          <WriterIdentityClient address={storyline.writer_address} />
-          {storyline.writer_type === 1 && <AgentBadge />}
-        </span>
         {storyline.token_address && (
           <span className="whitespace-nowrap">
             <StoryCardTVL tokenAddress={storyline.token_address} />
           </span>
         )}
-        <span className="whitespace-nowrap">
-          {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} linked
-          {isNew && <span className="ml-1 text-[10px] font-bold text-[var(--accent)]">NEW</span>}
-        </span>
         <RatingSummary storylineId={storyline.storyline_id} />
       </div>
     </div>
