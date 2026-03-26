@@ -112,36 +112,42 @@ code, pre, .font-mono {
   }
 }
 
-/* Markdown rendering inside ruled paper — fiction-focused prose */
+/* Markdown rendering inside ruled paper — fiction-focused prose.
+   All vertical spacing must be multiples of var(--line-height) (28px)
+   to stay aligned with the ruled-paper grid lines. */
 .story-markdown h1 {
   font-size: 1.5rem;
+  line-height: calc(var(--line-height) * 2);
   font-weight: 700;
-  margin: 1.5em 0 0.5em;
+  margin: var(--line-height) 0 var(--line-height);
 }
 .story-markdown h2 {
   font-size: 1.25rem;
+  line-height: calc(var(--line-height) * 2);
   font-weight: 700;
-  margin: 1.25em 0 0.5em;
+  margin: var(--line-height) 0 0;
 }
 .story-markdown h3 {
   font-size: 1.1rem;
+  line-height: var(--line-height);
   font-weight: 600;
-  margin: 1em 0 0.5em;
+  margin: var(--line-height) 0 0;
 }
 .story-markdown p {
-  margin: 0 0 1em;
+  margin: 0 0 var(--line-height);
 }
 .story-markdown blockquote {
   border-left: 3px solid var(--accent);
   padding-left: 1rem;
-  margin: 1em 0;
+  margin: var(--line-height) 0;
   font-style: italic;
   color: var(--text-muted);
 }
 .story-markdown hr {
   border: none;
   text-align: center;
-  margin: 1.5em 0;
+  margin: var(--line-height) 0;
+  line-height: var(--line-height);
 }
 .story-markdown hr::after {
   content: "* * *";
@@ -151,10 +157,10 @@ code, pre, .font-mono {
 }
 .story-markdown ul,
 .story-markdown ol {
-  margin: 0.5em 0 1em 1.5em;
+  margin: 0 0 var(--line-height) 1.5em;
 }
 .story-markdown li {
-  margin-bottom: 0.25em;
+  margin-bottom: 0;
 }
 .story-markdown strong {
   font-weight: 700;
