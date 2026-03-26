@@ -110,14 +110,14 @@ export async function POST(request: NextRequest) {
       quotientData,
     });
 
-    // Upsert — use fid or primary_address as key
+    // Upsert — update by existing row identity
     if (existingUser) {
-      const updateQuery = supabase.from("users").update(userData);
-      const conditioned =
-        userData.fid != null
-          ? updateQuery.eq("fid", userData.fid)
-          : updateQuery.eq("primary_address", normalizedAddress);
-      const { data, error } = await conditioned.select().single();
+      const { data, error } = await supabase
+        .from("users")
+        .update(userData)
+        .eq("id", existingUser.id)
+        .select()
+        .single();
 
       if (error) {
         console.error("[onboard] Update error:", error);

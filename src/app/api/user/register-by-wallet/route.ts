@@ -111,12 +111,11 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       if (insertError.code === "23505") {
-        // Unique violation — update existing by fid or primary_address
+        // Unique violation — update by existing row identity
         const updateQuery = supabase.from("users").update(userData);
-        const conditioned =
-          userData.fid != null
-            ? updateQuery.eq("fid", userData.fid)
-            : updateQuery.eq("primary_address", normalizedAddress);
+        const conditioned = existingUser
+          ? updateQuery.eq("id", existingUser.id)
+          : updateQuery.eq("primary_address", normalizedAddress);
 
         const { data: updateData, error: updateError } = await conditioned
           .select()
