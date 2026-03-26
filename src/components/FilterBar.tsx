@@ -55,7 +55,8 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
 
   // Restore saved language preference on first visit (no lang param in URL)
   useEffect(() => {
-    if (lang !== "all") return;
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("lang")) return; // explicit param — don't override
     try {
       const saved = localStorage.getItem("plotlink_lang");
       if (saved && saved !== "all" && (LANGUAGES as readonly string[]).includes(saved)) {
