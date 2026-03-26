@@ -345,7 +345,7 @@ function ProfileHeader({
                 {refreshing
                   ? "Refreshing..."
                   : onCooldown
-                    ? `Refresh (${Math.ceil(cooldownRemaining / 60000)}m ${Math.ceil((cooldownRemaining % 60000) / 1000)}s)`
+                    ? `Refresh (${Math.floor(cooldownRemaining / 60000)}m ${Math.ceil((cooldownRemaining % 60000) / 1000)}s)`
                     : "Refresh Profile"}
               </button>
               {refreshError && (
