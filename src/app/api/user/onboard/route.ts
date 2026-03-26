@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient, type Database } from "../../../../../lib/supabase";
+import { createServiceRoleClient } from "../../../../../lib/supabase";
 import { getUserByWallet } from "../../../../../lib/farcaster-indexer";
 import { lookupByAddress } from "../../../../../lib/farcaster";
 import { fetchQuotientScore, isQuotientStale } from "../../../../../lib/quotient";
+import { buildUserData } from "../../../../../lib/user-data";
 
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
  * POST /api/user/onboard
- * Manual profile refresh. Enforces 5-min cooldown unless forceRefresh=true
- * is within cooldown (returns remaining time).
+ * Manual profile refresh. Enforces 5-min cooldown on ALL refreshes.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { walletAddress, forceRefresh } = body;
+    const { walletAddress } = body;
 
     if (!walletAddress || typeof walletAddress !== "string") {
       return NextResponse.json(
@@ -39,7 +39,8 @@ export async function POST(request: NextRequest) {
       .contains("verified_addresses", [normalizedAddress])
       .single();
 
-    if (existingUser?.steemhunt_fetched_at && forceRefresh) {
+    // Enforce 5-min cooldown on ALL refreshes
+    if (existingUser?.steemhunt_fetched_at) {
       const age =
         Date.now() -
         new Date(existingUser.steemhunt_fetched_at).getTime();
@@ -98,46 +99,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build update data
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userData: Record<string, any> = steemhuntUser
-      ? {
-          fid: steemhuntUser.fid,
-          username: steemhuntUser.username,
-          display_name: steemhuntUser.displayName,
-          pfp_url: steemhuntUser.pfpUrl,
-          verified_addresses: verifiedAddresses,
-          primary_address:
-            steemhuntUser.primaryAddress?.toLowerCase() || null,
-          bio: steemhuntUser.bio,
-          url: steemhuntUser.url,
-          location: steemhuntUser.location,
-          twitter: steemhuntUser.twitter,
-          github: steemhuntUser.github,
-          follower_count: steemhuntUser.followersCount || 0,
-          following_count: steemhuntUser.followingCount || 0,
-          is_pro_subscriber: steemhuntUser.proSubscribed ?? false,
-          spam_label: steemhuntUser.spamLabel,
-          fc_created_at: steemhuntUser.createdAt || null,
-          steemhunt_fetched_at: new Date().toISOString(),
-        }
-      : {
-          fid: neynarProfile!.fid,
-          username: neynarProfile!.username,
-          display_name: neynarProfile!.displayName,
-          pfp_url: neynarProfile!.pfpUrl,
-          verified_addresses: verifiedAddresses,
-          bio: neynarProfile!.bio,
-          steemhunt_fetched_at: new Date().toISOString(),
-        };
-
-    // Add Quotient data if refreshed
-    if (quotientData) {
-      userData.quotient_score = quotientData.quotientScore;
-      userData.quotient_rank = quotientData.quotientRank;
-      userData.quotient_labels = quotientData.contextLabels;
-      userData.quotient_updated_at = new Date().toISOString();
-    }
+    const userData = buildUserData({
+      steemhuntUser,
+      neynarProfile,
+      verifiedAddresses,
+      quotientData,
+    });
 
     // Upsert
     if (existingUser) {
@@ -159,7 +126,7 @@ export async function POST(request: NextRequest) {
     } else {
       const { data, error } = await supabase
         .from("users")
-        .insert(userData as Database["public"]["Tables"]["users"]["Insert"])
+        .insert(userData)
         .select()
         .single();
 

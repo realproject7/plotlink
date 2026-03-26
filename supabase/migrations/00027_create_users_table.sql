@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS users (
   x_stats_fetched_at TIMESTAMPTZ,
 
   -- Quotient score
-  quotient_score DECIMAL(5,4),
+  quotient_score DECIMAL(10,4),
   quotient_rank INTEGER,
   quotient_labels JSONB,
   quotient_updated_at TIMESTAMPTZ,

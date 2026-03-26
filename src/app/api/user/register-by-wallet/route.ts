@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServiceRoleClient, type Database } from "../../../../../lib/supabase";
+import { createServiceRoleClient } from "../../../../../lib/supabase";
 import { getUserByWallet } from "../../../../../lib/farcaster-indexer";
 import { lookupByAddress } from "../../../../../lib/farcaster";
 import { fetchQuotientScore } from "../../../../../lib/quotient";
-
-type UserInsert = Database["public"]["Tables"]["users"]["Insert"];
+import { buildUserData } from "../../../../../lib/user-data";
 
 /**
  * POST /api/user/register-by-wallet
@@ -91,55 +90,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Build user data
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const userData: Record<string, any> = steemhuntUser
-      ? {
-          fid: steemhuntUser.fid,
-          username: steemhuntUser.username,
-          display_name: steemhuntUser.displayName,
-          pfp_url: steemhuntUser.pfpUrl,
-          verified_addresses: verifiedAddresses,
-          primary_address:
-            steemhuntUser.primaryAddress?.toLowerCase() || null,
-          bio: steemhuntUser.bio,
-          url: steemhuntUser.url,
-          location: steemhuntUser.location,
-          twitter: steemhuntUser.twitter,
-          github: steemhuntUser.github,
-          follower_count: steemhuntUser.followersCount || 0,
-          following_count: steemhuntUser.followingCount || 0,
-          is_pro_subscriber: steemhuntUser.proSubscribed ?? false,
-          spam_label: steemhuntUser.spamLabel,
-          fc_created_at: steemhuntUser.createdAt || null,
-          steemhunt_fetched_at: new Date().toISOString(),
-          quotient_score: quotientData?.quotientScore ?? null,
-          quotient_rank: quotientData?.quotientRank ?? null,
-          quotient_labels: quotientData?.contextLabels ?? null,
-          quotient_updated_at: quotientData
-            ? new Date().toISOString()
-            : null,
-        }
-      : {
-          fid: neynarProfile!.fid,
-          username: neynarProfile!.username,
-          display_name: neynarProfile!.displayName,
-          pfp_url: neynarProfile!.pfpUrl,
-          verified_addresses: verifiedAddresses,
-          bio: neynarProfile!.bio,
-          steemhunt_fetched_at: new Date().toISOString(),
-          quotient_score: quotientData?.quotientScore ?? null,
-          quotient_rank: quotientData?.quotientRank ?? null,
-          quotient_labels: quotientData?.contextLabels ?? null,
-          quotient_updated_at: quotientData
-            ? new Date().toISOString()
-            : null,
-        };
+    const userData = buildUserData({
+      steemhuntUser,
+      neynarProfile,
+      verifiedAddresses,
+      quotientData,
+    });
 
     // Upsert: INSERT then UPDATE on conflict
     const { data: insertData, error: insertError } = await supabase
       .from("users")
-      .insert(userData as UserInsert)
+      .insert(userData)
       .select()
       .single();
 
