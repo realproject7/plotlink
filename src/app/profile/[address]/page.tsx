@@ -342,11 +342,14 @@ function ProfileHeader({
                 disabled={refreshing || onCooldown}
                 className="border-border text-muted hover:text-accent hover:border-accent rounded border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
               >
-                {refreshing
-                  ? "Refreshing..."
-                  : onCooldown
-                    ? `Refresh (${Math.floor(cooldownRemaining / 60000)}m ${Math.ceil((cooldownRemaining % 60000) / 1000)}s)`
-                    : "Refresh Profile"}
+                {(() => {
+                  if (refreshing) return "Refreshing...";
+                  if (!onCooldown) return "Refresh Profile";
+                  const totalSec = Math.ceil(cooldownRemaining / 1000);
+                  const m = Math.floor(totalSec / 60);
+                  const s = totalSec % 60;
+                  return `Refresh (${m}m ${s}s)`;
+                })()}
               </button>
               {refreshError && (
                 <span className="text-[11px] text-red-500">{refreshError}</span>
