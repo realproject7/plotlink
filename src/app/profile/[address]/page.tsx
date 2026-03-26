@@ -291,7 +291,7 @@ function ProfileHeader({
               </div>
             </div>
             <a
-              href={`https://farcaster.xyz/${fcProfile!.username}`}
+              href={`https://farcaster.com/${fcProfile!.username}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground hover:text-accent text-sm font-medium transition-colors"
