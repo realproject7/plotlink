@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { StoryContent } from "./StoryContent";
 
 interface Chapter {
@@ -26,30 +26,35 @@ export function ReadingMode({
 }: ReadingModeProps) {
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const chapter = chapters[currentIdx];
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < chapters.length - 1;
 
+  const scrollToTop = useCallback(() => {
+    contentRef.current?.scrollTo(0, 0);
+  }, []);
+
   const goPrev = useCallback(() => {
     if (hasPrev) {
       setCurrentIdx((i) => i - 1);
-      window.scrollTo(0, 0);
+      scrollToTop();
     }
-  }, [hasPrev]);
+  }, [hasPrev, scrollToTop]);
 
   const goNext = useCallback(() => {
     if (hasNext) {
       setCurrentIdx((i) => i + 1);
-      window.scrollTo(0, 0);
+      scrollToTop();
     }
-  }, [hasNext]);
+  }, [hasNext, scrollToTop]);
 
   const goToChapter = useCallback((idx: number) => {
     setCurrentIdx(idx);
     setShowToc(false);
-    window.scrollTo(0, 0);
-  }, []);
+    scrollToTop();
+  }, [scrollToTop]);
 
   // Esc to close, arrow keys for navigation
   useEffect(() => {
@@ -98,7 +103,7 @@ export function ReadingMode({
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto">
+      <div ref={contentRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
           {chapter?.content ? (
             <StoryContent content={chapter.content} />
