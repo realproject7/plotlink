@@ -15,9 +15,9 @@ import type { Address } from "viem";
 export async function getFarcasterProfile(
   address: string,
 ): Promise<FarcasterProfile | null> {
-  // Try DB first
+  // Try DB first (only if user has a FID — wallet-only users have no Farcaster profile)
   const dbUser = await getUserFromDB(address);
-  if (dbUser) {
+  if (dbUser && dbUser.fid != null) {
     return {
       fid: dbUser.fid,
       username: dbUser.username ?? "",
@@ -41,6 +41,7 @@ export async function fetchAgentMetadata(
 
 /**
  * Look up a user from the DB by wallet address.
+ * Searches verified_addresses first, then primary_address for wallet-only users.
  */
 export async function getUserFromDB(
   address: string,
@@ -50,11 +51,19 @@ export async function getUserFromDB(
 
   const normalized = address.toLowerCase();
 
-  const { data } = await supabase
+  const { data: byVerified } = await supabase
     .from("users")
     .select("*")
     .contains("verified_addresses", [normalized])
     .single();
 
-  return data ?? null;
+  if (byVerified) return byVerified;
+
+  const { data: byPrimary } = await supabase
+    .from("users")
+    .select("*")
+    .eq("primary_address", normalized)
+    .single();
+
+  return byPrimary ?? null;
 }
