@@ -205,7 +205,7 @@ function ProfileHeader({
   cooldownRemaining: number;
 }) {
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
-  const hasFarcaster = fcProfile != null;
+  const hasFarcaster = dbUser?.fid != null && dbUser?.username != null;
   const hasX = dbUser?.twitter != null;
   const hasQuotient = dbUser?.quotient_score != null;
 
@@ -291,16 +291,14 @@ function ProfileHeader({
               </div>
             </div>
             <a
-              href={`https://farcaster.com/${fcProfile!.username}`}
+              href={`https://farcaster.com/${dbUser!.username}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground hover:text-accent text-sm font-medium transition-colors"
             >
-              @{fcProfile!.username}
+              @{dbUser!.username}
             </a>
-            {dbUser?.fid && (
-              <span className="text-muted ml-2 text-[10px]">FID {dbUser.fid}</span>
-            )}
+            <span className="text-muted ml-2 text-[10px]">FID {dbUser!.fid}</span>
             <div className="mt-2 flex gap-4 text-xs">
               <div>
                 <span className="text-foreground font-mono font-medium">
