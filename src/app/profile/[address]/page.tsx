@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import Link from "next/link";
-import { supabase, type Storyline, type Donation, type TradeHistory } from "../../../../lib/supabase";
+import { supabase, type Storyline, type Donation, type TradeHistory, type User } from "../../../../lib/supabase";
 import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } from "../../../../lib/contracts/constants";
-import { getFarcasterProfile, fetchAgentMetadata } from "../../../../lib/actions";
+import { getFarcasterProfile, fetchAgentMetadata, getUserFromDB } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice } from "../../../../lib/format";
 import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
@@ -26,8 +26,15 @@ export default function ProfilePage() {
   const address = params.address.toLowerCase();
   const { address: connectedAddress } = useAccount();
   const isOwnProfile = connectedAddress?.toLowerCase() === address;
+  const queryClient = useQueryClient();
 
   const [tab, setTab] = useState<Tab>("stories");
+
+  // DB user data (cached profiles)
+  const { data: dbUser } = useQuery({
+    queryKey: ["db-user", address],
+    queryFn: () => getUserFromDB(address),
+  });
 
   const { data: fcProfile, isLoading: fcLoading } = useQuery({
     queryKey: ["fc-profile", address],
@@ -55,6 +62,62 @@ export default function ProfilePage() {
     },
   });
 
+  // Refresh profile handler (5-min cooldown enforced server-side)
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setRefreshError(null);
+    try {
+      const res = await fetch("/api/user/onboard", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: address, forceRefresh: true }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 429 && data.cooldownRemainingSeconds) {
+          setRefreshError(`Cooldown: ${Math.ceil(data.cooldownRemainingSeconds / 60)}m remaining`);
+        } else {
+          setRefreshError(data.error || "Refresh failed");
+        }
+      } else {
+        // Invalidate queries to show fresh data
+        queryClient.invalidateQueries({ queryKey: ["db-user", address] });
+        queryClient.invalidateQueries({ queryKey: ["fc-profile", address] });
+      }
+    } catch {
+      setRefreshError("Network error");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [address, queryClient]);
+
+  // Proactive cooldown timer based on DB steemhunt_fetched_at
+  const COOLDOWN_MS = 5 * 60 * 1000;
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    if (!dbUser?.steemhunt_fetched_at) {
+      setCooldownRemaining(0);
+      return;
+    }
+    const computeRemaining = () => {
+      const age = Date.now() - new Date(dbUser.steemhunt_fetched_at!).getTime();
+      return Math.max(0, COOLDOWN_MS - age);
+    };
+    setCooldownRemaining(computeRemaining());
+    const interval = setInterval(() => {
+      const r = computeRemaining();
+      setCooldownRemaining(r);
+      if (r <= 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dbUser?.steemhunt_fetched_at]);
+
+  const onCooldown = cooldownRemaining > 0;
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <ProfileHeader
@@ -65,6 +128,13 @@ export default function ProfilePage() {
         agentLoading={agentLoading}
         isAgent={isAgent}
         claimedRoyalties={claimedRoyalties ?? null}
+        dbUser={dbUser ?? null}
+        isOwnProfile={isOwnProfile}
+        onRefresh={handleRefresh}
+        refreshing={refreshing}
+        refreshError={refreshError}
+        onCooldown={onCooldown}
+        cooldownRemaining={cooldownRemaining}
       />
 
       {/* Tab navigation */}
@@ -111,6 +181,13 @@ function ProfileHeader({
   agentLoading,
   isAgent,
   claimedRoyalties,
+  dbUser,
+  isOwnProfile,
+  onRefresh,
+  refreshing,
+  refreshError,
+  onCooldown,
+  cooldownRemaining,
 }: {
   address: string;
   fcProfile: FarcasterProfile | null;
@@ -119,6 +196,13 @@ function ProfileHeader({
   agentLoading: boolean;
   isAgent: boolean;
   claimedRoyalties: bigint | null;
+  dbUser: User | null;
+  isOwnProfile: boolean;
+  onRefresh: () => void;
+  refreshing: boolean;
+  refreshError: string | null;
+  onCooldown: boolean;
+  cooldownRemaining: number;
 }) {
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
 
@@ -174,6 +258,16 @@ function ProfileHeader({
                 @{fcProfile.username}
               </a>
             )}
+            {dbUser?.twitter && (
+              <a
+                href={`https://x.com/${dbUser.twitter}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-foreground hover:text-accent transition-colors"
+              >
+                @{dbUser.twitter}
+              </a>
+            )}
             <a
               href={`${EXPLORER_URL}/address/${address}`}
               target="_blank"
@@ -215,10 +309,51 @@ function ProfileHeader({
             <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
           )}
 
+          {/* Social stats from DB */}
+          {dbUser && (
+            <div className="text-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              {dbUser.follower_count > 0 && (
+                <span><span className="text-foreground font-medium">{dbUser.follower_count.toLocaleString()}</span> followers</span>
+              )}
+              {dbUser.following_count > 0 && (
+                <span><span className="text-foreground font-medium">{dbUser.following_count.toLocaleString()}</span> following</span>
+              )}
+              {dbUser.quotient_score !== null && (
+                <span>QS: <span className="text-foreground font-medium">{dbUser.quotient_score}</span></span>
+              )}
+              {dbUser.x_followers_count !== null && (
+                <span>X: <span className="text-foreground font-medium">{dbUser.x_followers_count.toLocaleString()}</span> followers</span>
+              )}
+            </div>
+          )}
+
           {/* Cumulative claimed royalties */}
           {claimedRoyalties && claimedRoyalties > BigInt(0) && (
             <div className="text-muted mt-2 text-xs">
               Royalties claimed: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+            </div>
+          )}
+
+          {/* Refresh button (own profile only) */}
+          {isOwnProfile && (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                onClick={onRefresh}
+                disabled={refreshing || onCooldown}
+                className="border-border text-muted hover:text-accent hover:border-accent rounded border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
+              >
+                {(() => {
+                  if (refreshing) return "Refreshing...";
+                  if (!onCooldown) return "Refresh Profile";
+                  const totalSec = Math.ceil(cooldownRemaining / 1000);
+                  const m = Math.floor(totalSec / 60);
+                  const s = totalSec % 60;
+                  return `Refresh (${m}m ${s}s)`;
+                })()}
+              </button>
+              {refreshError && (
+                <span className="text-[11px] text-red-500">{refreshError}</span>
+              )}
             </div>
           )}
         </div>

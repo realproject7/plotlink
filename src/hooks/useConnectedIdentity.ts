@@ -8,6 +8,7 @@ import type { FarcasterProfile } from "../../lib/farcaster";
 /**
  * Resolves the connected wallet's Farcaster identity.
  * Caches result for the session (re-fetches only on address change).
+ * Also triggers register-by-wallet to upsert user data in DB.
  */
 export function useConnectedIdentity() {
   const { address } = useAccount();
@@ -16,12 +17,26 @@ export function useConnectedIdentity() {
     resolvedFor: string | undefined;
   }>({ profile: null, resolvedFor: undefined });
   const fetchingRef = useRef(false);
+  const registeredRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     if (!address) return;
 
     let cancelled = false;
     fetchingRef.current = true;
+
+    // Register user in DB (fire-and-forget)
+    if (registeredRef.current !== address) {
+      registeredRef.current = address;
+      fetch("/api/user/register-by-wallet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ walletAddress: address }),
+      }).catch(() => {
+        // Non-fatal — profile will still work from live API
+      });
+    }
+
     getFarcasterProfile(address).then((p) => {
       if (!cancelled) {
         setResult({ profile: p, resolvedFor: address });
