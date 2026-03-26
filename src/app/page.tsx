@@ -6,8 +6,6 @@ import { FilterBar, type WriterFilterValue } from "../components/FilterBar";
 import { GENRES, LANGUAGES } from "../../lib/genres";
 import Link from "next/link";
 
-export const revalidate = 120;
-
 const TABS = ["new", "trending"] as const;
 type Tab = (typeof TABS)[number];
 
