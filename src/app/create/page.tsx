@@ -352,7 +352,6 @@ function CreatePage() {
             <div>
               <label className="text-foreground mb-2 block text-sm">Opening Chapter</label>
               <WritePreviewToggle
-                content={newContent}
                 activeTab={newPreviewTab}
                 onTabChange={setNewPreviewTab}
               />
@@ -478,7 +477,6 @@ function CreatePage() {
             <div>
               <label className="text-foreground mb-2 block text-sm">Next Chapter</label>
               <WritePreviewToggle
-                content={chainContent}
                 activeTab={chainPreviewTab}
                 onTabChange={setChainPreviewTab}
               />

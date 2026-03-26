@@ -46,11 +46,9 @@ export function StoryContent({ content }: { content: string }) {
  * Write/Preview toggle for story editing forms.
  */
 export function WritePreviewToggle({
-  content,
   activeTab,
   onTabChange,
 }: {
-  content: string;
   activeTab: "write" | "preview";
   onTabChange: (tab: "write" | "preview") => void;
 }) {
