@@ -16,12 +16,22 @@ export function useDraft<T extends Record<string, unknown>>(
   const [restored, setRestored] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasContent = useRef(false);
+  const prevKeyRef = useRef(key);
 
-  // Restore on mount
+  // Restore on mount or key change; reset fields if no draft for new key
   useEffect(() => {
     try {
       const raw = localStorage.getItem(key);
-      if (!raw) return;
+      if (!raw) {
+        // Key changed and no draft exists — reset fields to prevent stale saves
+        if (prevKeyRef.current !== key) {
+          for (const k of Object.keys(setters) as (keyof T)[]) {
+            (setters[k] as (val: unknown) => void)("");
+          }
+        }
+        prevKeyRef.current = key;
+        return;
+      }
       const saved = JSON.parse(raw) as Partial<T>;
       let didRestore = false;
       for (const k of Object.keys(saved) as (keyof T)[]) {
@@ -34,7 +44,7 @@ export function useDraft<T extends Record<string, unknown>>(
     } catch {
       // Corrupt data — ignore
     }
-    // Only run on mount
+    prevKeyRef.current = key;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 
