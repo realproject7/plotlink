@@ -10,6 +10,7 @@ import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { StoryContent } from "../../../components/StoryContent";
+import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { formatPrice, formatSupply } from "../../../../lib/format";
@@ -150,6 +151,18 @@ export default async function StoryPage({ params }: { params: Params }) {
         <main>
           {genesis ? (
             <>
+              <div className="mb-4 flex justify-end">
+                <ReadingModeWrapper
+                  storylineId={id}
+                  storylineTitle={sl.title}
+                  chapters={plots.map((p) => ({
+                    plotIndex: p.plot_index,
+                    title: p.title || (p.plot_index === 0 ? "Genesis" : `Chapter ${p.plot_index}`),
+                    content: p.content,
+                  }))}
+                  initialPlotIndex={0}
+                />
+              </div>
               <GenesisSection plot={genesis} />
               {chapters.length > 0 && (
                 <a

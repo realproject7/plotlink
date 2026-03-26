@@ -8,6 +8,7 @@ import { WriterIdentity } from "../../../../components/WriterIdentity";
 import { ViewTracker } from "../../../../components/ViewCount";
 import { CommentSection } from "../../../../components/CommentSection";
 import { StoryContent } from "../../../../components/StoryContent";
+import { ReadingModeWrapper } from "../../../../components/ReadingModeWrapper";
 import Link from "next/link";
 
 type Params = Promise<{ storylineId: string; plotIndex: string }>;
@@ -73,7 +74,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
   const [{ data: storyline }, { data: plot }, { data: plotRows }] = await Promise.all([
     supabase.from("storylines").select("*").eq("storyline_id", sid).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).single(),
     supabase.from("plots").select("*").eq("storyline_id", sid).eq("plot_index", pidx).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).single(),
-    supabase.from("plots").select("plot_index").eq("storyline_id", sid).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).order("plot_index", { ascending: true }),
+    supabase.from("plots").select("plot_index, title, content").eq("storyline_id", sid).eq("hidden", false).eq("contract_address", STORY_FACTORY.toLowerCase()).order("plot_index", { ascending: true }),
   ]);
 
   if (!storyline) return <NotFound message="Storyline not found" />;
@@ -81,7 +82,8 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
 
   const sl = storyline as Storyline;
   const p = plot as Plot;
-  const allIndexes = (plotRows ?? []).map((r: { plot_index: number }) => r.plot_index);
+  const allPlots = (plotRows ?? []) as { plot_index: number; title: string; content: string | null }[];
+  const allIndexes = allPlots.map((r) => r.plot_index);
   const currentPos = allIndexes.indexOf(pidx);
   const prevIndex = currentPos > 0 ? allIndexes[currentPos - 1] : null;
   const nextIndex = currentPos < allIndexes.length - 1 ? allIndexes[currentPos + 1] : null;
@@ -101,7 +103,19 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
         <span className="text-foreground">{chapterTitle}</span>
       </nav>
 
-      {/* Chapter header */}
+      {/* Reading mode + Chapter header */}
+      <div className="mb-4 flex justify-end">
+        <ReadingModeWrapper
+          storylineId={sid}
+          storylineTitle={sl.title}
+          chapters={allPlots.map((ap) => ({
+            plotIndex: ap.plot_index,
+            title: ap.title || (ap.plot_index === 0 ? "Genesis" : `Chapter ${ap.plot_index}`),
+            content: ap.content,
+          }))}
+          initialPlotIndex={pidx}
+        />
+      </div>
       <header className="border-border mb-8 border-b pb-4">
         <h1 className="text-accent text-xl font-bold tracking-tight">
           {chapterTitle}
