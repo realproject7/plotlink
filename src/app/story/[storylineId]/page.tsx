@@ -251,7 +251,7 @@ function StoryHeader({
       <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
         {storyline.title}
       </h1>
-      <div className="text-muted mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+      <div className="text-muted mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
         <span>
           by{" "}
           <Suspense fallback={<span className="text-foreground">{truncateAddress(storyline.writer_address)}</span>}>
