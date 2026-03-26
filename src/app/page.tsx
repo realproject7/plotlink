@@ -21,7 +21,7 @@ export default async function Home({
   searchParams: SearchParams;
 }) {
   const { tab: rawTab, writer: rawWriter, page: rawPage, genre: rawGenre, lang: rawLang } = await searchParams;
-  const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "new";
+  const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "trending";
   const writer: WriterFilterValue = WRITER_VALUES.includes(
     rawWriter as WriterFilterValue,
   )
