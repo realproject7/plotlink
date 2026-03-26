@@ -2,6 +2,8 @@
 
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 
 /**
  * Sanitization schema — fiction-focused Markdown only.
@@ -35,7 +37,10 @@ const sanitizeSchema = {
 export function StoryContent({ content }: { content: string }) {
   return (
     <div className="ruled-paper story-markdown">
-      <ReactMarkdown rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm, remarkBreaks]}
+        rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+      >
         {content}
       </ReactMarkdown>
     </div>
