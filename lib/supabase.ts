@@ -25,9 +25,6 @@ export function createServiceRoleClient(): SupabaseClient<Database> | null {
       autoRefreshToken: false,
       persistSession: false,
     },
-    global: {
-      fetch: (url, options) => fetch(url, { ...options, cache: "no-store" }),
-    },
   });
 }
 
