@@ -11,36 +11,44 @@ interface RankedStoryline extends Storyline {
 /**
  * Compute trending score for a storyline.
  *
- * Composite of 4 signals (each normalized to ~0-1 range):
- * - avgRating: average reader rating (0-5 → 0-1)
+ * Composite of 5 signals (each normalized to ~0-1 range):
+ * - weightedRating: Bayesian rating accounting for rating count (0-5 → 0-1)
  * - priceChange24h: 24h price change % (clamped, mapped to 0-1)
  * - tvl: reserve balance (log-scaled, using actual token decimals)
  * - continuationRate: plots per day since creation
+ * - recency: boost for recently updated stories based on last_plot_time
  */
 function computeTrendScore(
   avgRating: number,
+  ratingCount: number,
   priceChange: number | null,
   tvlRaw: bigint | null,
   tvlDecimals: number,
   plotCount: number,
   createdAt: string | null,
+  lastPlotTime: string | null,
 ): number {
-  // Rating signal (0-1), weight: 0.3
-  const ratingSignal = avgRating / 5;
+  // Bayesian weighted rating signal (0-1), weight: 0.25
+  const priorCount = 5;
+  const priorMean = 3.0;
+  const weightedRating =
+    (ratingCount * avgRating + priorCount * priorMean) /
+    (ratingCount + priorCount);
+  const ratingSignal = weightedRating / 5;
 
-  // Price change signal (0-1), weight: 0.25
+  // Price change signal (0-1), weight: 0.20
   const pc = priceChange ?? 0;
   const clampedPc = Math.max(-100, Math.min(200, pc));
   const priceSignal = (clampedPc + 100) / 300;
 
-  // TVL signal (0-1), weight: 0.25
+  // TVL signal (0-1), weight: 0.20
   let tvlSignal = 0;
   if (tvlRaw !== null && tvlRaw > BigInt(0)) {
     const tvlFloat = Number(formatUnits(tvlRaw, tvlDecimals));
     tvlSignal = Math.min(1, Math.log10(1 + tvlFloat) / 3);
   }
 
-  // Continuation rate signal (0-1), weight: 0.2
+  // Continuation rate signal (0-1), weight: 0.15
   let contSignal = 0;
   if (createdAt && plotCount > 1) {
     const ageMs = Date.now() - new Date(createdAt).getTime();
@@ -48,11 +56,22 @@ function computeTrendScore(
     contSignal = Math.min(1, (plotCount / ageDays) / 5);
   }
 
+  // Recency signal (0-1), weight: 0.20
+  // Uses last_plot_time (falls back to createdAt) with inverse-time decay
+  const recencyRef = lastPlotTime ?? createdAt;
+  let recencySignal = 0;
+  if (recencyRef) {
+    const daysSince =
+      (Date.now() - new Date(recencyRef).getTime()) / (1000 * 60 * 60 * 24);
+    recencySignal = 1 / (1 + Math.max(0, daysSince));
+  }
+
   return (
-    ratingSignal * 0.3 +
-    priceSignal * 0.25 +
-    tvlSignal * 0.25 +
-    contSignal * 0.2
+    ratingSignal * 0.25 +
+    priceSignal * 0.2 +
+    tvlSignal * 0.2 +
+    contSignal * 0.15 +
+    recencySignal * 0.2
   );
 }
 
@@ -77,7 +96,7 @@ async function fetchCandidatesAndRatings(
     .limit(50);
 
   const storylines = (data ?? []) as Storyline[];
-  if (storylines.length === 0) return { storylines, ratingMap: new Map<number, number>() };
+  if (storylines.length === 0) return { storylines, ratingMap: new Map<number, { avg: number; count: number }>() };
 
   // Batch: fetch all ratings for candidate storyline IDs in one query
   const storylineIds = storylines.map((sl) => sl.storyline_id);
@@ -86,7 +105,7 @@ async function fetchCandidatesAndRatings(
     .in("storyline_id", storylineIds)
     .eq("contract_address", STORY_FACTORY.toLowerCase());
 
-  const ratingMap = new Map<number, number>();
+  const ratingMap = new Map<number, { avg: number; count: number }>();
   if (allRatings) {
     const grouped = new Map<number, number[]>();
     for (const r of allRatings) {
@@ -95,7 +114,10 @@ async function fetchCandidatesAndRatings(
       grouped.set(r.storyline_id, arr);
     }
     for (const [id, ratings] of grouped) {
-      ratingMap.set(id, ratings.reduce((s, v) => s + v, 0) / ratings.length);
+      ratingMap.set(id, {
+        avg: ratings.reduce((s, v) => s + v, 0) / ratings.length,
+        count: ratings.length,
+      });
     }
   }
 
@@ -135,16 +157,18 @@ export async function getTrendingStorylines(
 
   const enriched = await Promise.all(
     storylines.map(async (sl): Promise<RankedStoryline> => {
-      const avgRating = ratingMap.get(sl.storyline_id) ?? 0;
+      const rating = ratingMap.get(sl.storyline_id) ?? { avg: 0, count: 0 };
       const { priceChange, tvlRaw, tvlDecimals } = await enrichWithOnChain(sl);
 
       const trendScore = computeTrendScore(
-        avgRating,
+        rating.avg,
+        rating.count,
         priceChange,
         tvlRaw,
         tvlDecimals,
         sl.plot_count,
         sl.block_timestamp,
+        sl.last_plot_time,
       );
 
       return { ...sl, trendScore };
