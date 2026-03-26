@@ -377,7 +377,7 @@ function ProfileHeader({
         {/* Wallet identity card — always shown */}
         <div className="border-border rounded border p-3">
           <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Wallet</span>
-          <div className="mt-1.5">
+          <div className="mt-1.5 flex items-center gap-1.5">
             <a
               href={`${EXPLORER_URL}/address/${address}`}
               target="_blank"
@@ -386,6 +386,7 @@ function ProfileHeader({
             >
               {truncateAddress(address)}
             </a>
+            <CopyButton text={address} />
           </div>
           {claimedRoyalties && claimedRoyalties > BigInt(0) && (
             <div className="text-muted mt-1.5 text-[11px]">
@@ -418,6 +419,28 @@ function ProfileHeader({
         </div>
       )}
     </header>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Copy to clipboard button
+// ---------------------------------------------------------------------------
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="text-muted hover:text-accent text-[10px] transition-colors"
+      title="Copy address"
+    >
+      {copied ? "copied" : "copy"}
+    </button>
   );
 }
 
