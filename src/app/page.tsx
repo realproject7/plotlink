@@ -4,7 +4,6 @@ import { getTrendingStorylines } from "../../lib/ranking";
 import { StoryGrid } from "../components/StoryGrid";
 import { FilterBar, type WriterFilterValue } from "../components/FilterBar";
 import { GENRES, LANGUAGES } from "../../lib/genres";
-import { connection } from "next/server";
 import Link from "next/link";
 
 const TABS = ["new", "trending"] as const;
@@ -21,9 +20,6 @@ export default async function Home({
 }: {
   searchParams: SearchParams;
 }) {
-  // Opt out of Next.js Data Cache so filtered queries always hit the DB
-  await connection();
-
   const { tab: rawTab, writer: rawWriter, page: rawPage, genre: rawGenre, lang: rawLang } = await searchParams;
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "new";
   const writer: WriterFilterValue = WRITER_VALUES.includes(
