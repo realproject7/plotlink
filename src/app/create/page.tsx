@@ -200,6 +200,12 @@ function CreatePage() {
     discardDraft: discardChainDraft,
   } = useDraft(chainDraftKey, chainDraftValues, chainDraftSetters);
 
+  // Clear drafts on successful publish (must be above early returns — Rules of Hooks)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (newState === "published") clearNewDraft(); }, [newState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (chainState === "published") clearChainDraft(); }, [chainState]);
+
   if (!isConnected) {
     return (
       <div className="flex min-h-[calc(100vh-2.75rem)] flex-col items-center justify-center gap-4 px-6">
@@ -277,12 +283,6 @@ function CreatePage() {
       </div>
     );
   }
-
-  // Clear drafts on successful publish
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (newState === "published") clearNewDraft(); }, [newState]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { if (chainState === "published") clearChainDraft(); }, [chainState]);
 
   const noStoryline = chainStorylineId === null;
 
