@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const userData = buildUserData({
+    const userData = await buildUserData({
       steemhuntUser,
       neynarProfile,
       verifiedAddresses,

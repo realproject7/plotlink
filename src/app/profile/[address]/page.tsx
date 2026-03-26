@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { useAccount } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -94,6 +94,30 @@ export default function ProfilePage() {
     }
   }, [address, queryClient]);
 
+  // Proactive cooldown timer based on DB steemhunt_fetched_at
+  const COOLDOWN_MS = 5 * 60 * 1000;
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+
+  useEffect(() => {
+    if (!dbUser?.steemhunt_fetched_at) {
+      setCooldownRemaining(0);
+      return;
+    }
+    const computeRemaining = () => {
+      const age = Date.now() - new Date(dbUser.steemhunt_fetched_at!).getTime();
+      return Math.max(0, COOLDOWN_MS - age);
+    };
+    setCooldownRemaining(computeRemaining());
+    const interval = setInterval(() => {
+      const r = computeRemaining();
+      setCooldownRemaining(r);
+      if (r <= 0) clearInterval(interval);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [dbUser?.steemhunt_fetched_at]);
+
+  const onCooldown = cooldownRemaining > 0;
+
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
       <ProfileHeader
@@ -109,6 +133,8 @@ export default function ProfilePage() {
         onRefresh={handleRefresh}
         refreshing={refreshing}
         refreshError={refreshError}
+        onCooldown={onCooldown}
+        cooldownRemaining={cooldownRemaining}
       />
 
       {/* Tab navigation */}
@@ -160,6 +186,8 @@ function ProfileHeader({
   onRefresh,
   refreshing,
   refreshError,
+  onCooldown,
+  cooldownRemaining,
 }: {
   address: string;
   fcProfile: FarcasterProfile | null;
@@ -173,6 +201,8 @@ function ProfileHeader({
   onRefresh: () => void;
   refreshing: boolean;
   refreshError: string | null;
+  onCooldown: boolean;
+  cooldownRemaining: number;
 }) {
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
 
@@ -309,10 +339,14 @@ function ProfileHeader({
             <div className="mt-3 flex items-center gap-2">
               <button
                 onClick={onRefresh}
-                disabled={refreshing}
+                disabled={refreshing || onCooldown}
                 className="border-border text-muted hover:text-accent hover:border-accent rounded border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
               >
-                {refreshing ? "Refreshing..." : "Refresh Profile"}
+                {refreshing
+                  ? "Refreshing..."
+                  : onCooldown
+                    ? `Refresh (${Math.ceil(cooldownRemaining / 60000)}m ${Math.ceil((cooldownRemaining % 60000) / 1000)}s)`
+                    : "Refresh Profile"}
               </button>
               {refreshError && (
                 <span className="text-[11px] text-red-500">{refreshError}</span>
