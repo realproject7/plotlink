@@ -82,20 +82,40 @@ async function fetchCandidatesAndRatings(
   genre?: string,
   lang?: string,
 ) {
-  let q = supabase.from("storylines")
-    .select("*")
-    .eq("hidden", false)
-    .eq("sunset", false)
-    .neq("token_address", "")
-    .eq("contract_address", STORY_FACTORY.toLowerCase());
-  if (writerType !== undefined) q = q.eq("writer_type", writerType);
-  if (genre) q = q.eq("genre", genre);
-  if (lang) q = q.eq("language", lang);
-  const { data } = await q
-    .order("block_timestamp", { ascending: false })
-    .limit(50);
+  function applyBase(q: ReturnType<typeof supabase.from>) {
+    let filtered = q
+      .eq("hidden", false)
+      .eq("sunset", false)
+      .neq("token_address", "")
+      .eq("contract_address", STORY_FACTORY.toLowerCase());
+    if (writerType !== undefined) filtered = filtered.eq("writer_type", writerType);
+    if (genre) filtered = filtered.eq("genre", genre);
+    if (lang) filtered = filtered.eq("language", lang);
+    return filtered;
+  }
 
-  const storylines = (data ?? []) as Storyline[];
+  // Two pools: newest by creation + recently updated by last_plot_time
+  const [byCreated, byActivity] = await Promise.all([
+    applyBase(supabase.from("storylines").select("*"))
+      .order("block_timestamp", { ascending: false })
+      .limit(50),
+    applyBase(supabase.from("storylines").select("*"))
+      .not("last_plot_time", "is", null)
+      .order("last_plot_time", { ascending: false })
+      .limit(50),
+  ]);
+
+  // Merge and deduplicate by storyline_id
+  const seen = new Set<number>();
+  const merged: Storyline[] = [];
+  for (const sl of [...(byCreated.data ?? []), ...(byActivity.data ?? [])] as Storyline[]) {
+    if (!seen.has(sl.storyline_id)) {
+      seen.add(sl.storyline_id);
+      merged.push(sl);
+    }
+  }
+
+  const storylines = merged;
   if (storylines.length === 0) return { storylines, ratingMap: new Map<number, { avg: number; count: number }>() };
 
   // Batch: fetch all ratings for candidate storyline IDs in one query
