@@ -7,6 +7,7 @@ import { truncateAddress } from "../../../../../lib/utils";
 import { WriterIdentity } from "../../../../components/WriterIdentity";
 import { ViewTracker } from "../../../../components/ViewCount";
 import { CommentSection } from "../../../../components/CommentSection";
+import { StoryContent } from "../../../../components/StoryContent";
 import Link from "next/link";
 
 type Params = Promise<{ storylineId: string; plotIndex: string }>;
@@ -126,9 +127,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
 
       {/* Plot content */}
       {p.content ? (
-        <div className="ruled-paper whitespace-pre-wrap">
-          {p.content}
-        </div>
+        <StoryContent content={p.content} />
       ) : (
         <p className="text-muted text-sm italic">
           Content unavailable (CID: {p.content_cid})

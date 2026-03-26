@@ -25,6 +25,8 @@
     "ox": "^0.14.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
     "viem": "^2.47.2",
     "wagmi": "^3.5.0"
   },

@@ -9,6 +9,7 @@ import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareButtons } from "../../../components/ShareButtons";
+import { StoryContent } from "../../../components/StoryContent";
 import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { formatPrice, formatSupply } from "../../../../lib/format";
@@ -317,9 +318,7 @@ function GenesisSection({ plot }: { plot: Plot }) {
         )}
       </div>
       {plot.content ? (
-        <div className="ruled-paper whitespace-pre-wrap">
-          {plot.content}
-        </div>
+        <StoryContent content={plot.content} />
       ) : (
         <p className="text-muted text-sm italic">
           Content unavailable (CID: {plot.content_cid})

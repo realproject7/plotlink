@@ -112,6 +112,67 @@ code, pre, .font-mono {
   }
 }
 
+/* Markdown rendering inside ruled paper — fiction-focused prose */
+.story-markdown h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 1.5em 0 0.5em;
+}
+.story-markdown h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1.25em 0 0.5em;
+}
+.story-markdown h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 1em 0 0.5em;
+}
+.story-markdown p {
+  margin: 0 0 1em;
+}
+.story-markdown blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  margin: 1em 0;
+  font-style: italic;
+  color: var(--text-muted);
+}
+.story-markdown hr {
+  border: none;
+  text-align: center;
+  margin: 1.5em 0;
+}
+.story-markdown hr::after {
+  content: "* * *";
+  color: var(--text-muted);
+  letter-spacing: 0.5em;
+  font-size: 0.875rem;
+}
+.story-markdown ul,
+.story-markdown ol {
+  margin: 0.5em 0 1em 1.5em;
+}
+.story-markdown li {
+  margin-bottom: 0.25em;
+}
+.story-markdown strong {
+  font-weight: 700;
+}
+.story-markdown em {
+  font-style: italic;
+}
+.story-markdown del {
+  text-decoration: line-through;
+}
+.story-markdown code {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.9em;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 0.1em 0.3em;
+  border-radius: 2px;
+}
+
 /* Moleskine notebook cards */
 .moleskine-notebook {
   position: relative;
