@@ -394,7 +394,7 @@ export interface Database {
       users: {
       Row: {
         id: string;
-        fid: number;
+        fid: number | null;
         username: string | null;
         display_name: string | null;
         pfp_url: string | null;
@@ -429,7 +429,7 @@ export interface Database {
       };
       Insert: {
         id?: never;
-        fid: number;
+        fid?: number | null;
         username?: string | null;
         display_name?: string | null;
         pfp_url?: string | null;
@@ -464,7 +464,7 @@ export interface Database {
       };
       Update: {
         id?: never;
-        fid?: number;
+        fid?: number | null;
         username?: string | null;
         display_name?: string | null;
         pfp_url?: string | null;

@@ -7,8 +7,8 @@ import { buildUserData } from "../../../../../lib/user-data";
 
 /**
  * POST /api/user/register-by-wallet
- * Called on wallet connect — upserts all Farcaster profile fields.
- * SteemHunt primary (free), Neynar fallback (paid).
+ * Called on wallet connect — upserts user profile fields.
+ * Works for both Farcaster and non-Farcaster wallet users.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -31,13 +31,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user exists and data is fresh (< 5 min)
-    const { data: existingUser } = await supabase
+    // Check if user exists (by verified_addresses or primary_address)
+    let existingUser = null;
+    const { data: byVerified } = await supabase
       .from("users")
       .select("*")
       .contains("verified_addresses", [normalizedAddress])
       .single();
 
+    if (byVerified) {
+      existingUser = byVerified;
+    } else {
+      const { data: byPrimary } = await supabase
+        .from("users")
+        .select("*")
+        .eq("primary_address", normalizedAddress)
+        .single();
+      existingUser = byPrimary;
+    }
+
+    // If user exists and data is fresh (< 5 min), return cached
     if (existingUser?.steemhunt_fetched_at) {
       const age =
         Date.now() - new Date(existingUser.steemhunt_fetched_at).getTime();
@@ -49,20 +62,10 @@ export async function POST(request: NextRequest) {
     // SteemHunt lookup (primary, free)
     const steemhuntUser = await getUserByWallet(normalizedAddress);
 
-    // Neynar fallback
+    // Neynar fallback (only if SteemHunt found nothing)
     let neynarProfile = null;
     if (!steemhuntUser) {
       neynarProfile = await lookupByAddress(normalizedAddress);
-    }
-
-    if (!steemhuntUser && !neynarProfile) {
-      return NextResponse.json(
-        {
-          error:
-            "No Farcaster account found for this wallet. Please use a wallet linked to your Farcaster account.",
-        },
-        { status: 404 },
-      );
     }
 
     // Build verified addresses
@@ -78,9 +81,9 @@ export async function POST(request: NextRequest) {
       verifiedAddresses.push(normalizedAddress);
     }
 
-    const fid = steemhuntUser?.fid ?? neynarProfile?.fid;
+    const fid = steemhuntUser?.fid ?? neynarProfile?.fid ?? null;
 
-    // Fetch Quotient Score (non-blocking, don't fail if unavailable)
+    // Fetch Quotient Score (non-blocking, only when FID available)
     let quotientData = null;
     if (fid) {
       try {
@@ -108,11 +111,15 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       if (insertError.code === "23505") {
-        // Unique violation — update existing
-        const { data: updateData, error: updateError } = await supabase
-          .from("users")
-          .update(userData)
-          .eq("fid", userData.fid)
+        // Unique violation — update by the conflicting identity
+        const updateQuery = supabase.from("users").update(userData);
+        const conditioned = existingUser
+          ? updateQuery.eq("id", existingUser.id)
+          : userData.fid != null
+            ? updateQuery.eq("fid", userData.fid)
+            : updateQuery.eq("primary_address", normalizedAddress);
+
+        const { data: updateData, error: updateError } = await conditioned
           .select()
           .single();
 

@@ -69,12 +69,21 @@ export async function buildUserData(opts: {
     } as UserInsert;
   }
 
+  if (neynarProfile) {
+    return {
+      ...base,
+      fid: neynarProfile.fid,
+      username: neynarProfile.username,
+      display_name: neynarProfile.displayName,
+      pfp_url: neynarProfile.pfpUrl,
+      bio: neynarProfile.bio,
+    } as UserInsert;
+  }
+
+  // Wallet-only user (no Farcaster account)
   return {
     ...base,
-    fid: neynarProfile!.fid,
-    username: neynarProfile!.username,
-    display_name: neynarProfile!.displayName,
-    pfp_url: neynarProfile!.pfpUrl,
-    bio: neynarProfile!.bio,
+    fid: null,
+    primary_address: verifiedAddresses[0] || null,
   } as UserInsert;
 }
