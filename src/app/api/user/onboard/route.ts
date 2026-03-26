@@ -128,20 +128,41 @@ export async function POST(request: NextRequest) {
       }
       return NextResponse.json({ success: true, user: data });
     } else {
-      const { data, error } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from("users")
         .insert(userData)
         .select()
         .single();
 
-      if (error) {
-        console.error("[onboard] Insert error:", error);
+      if (insertError) {
+        if (insertError.code === "23505") {
+          // Unique violation — update by conflicting identity
+          const updateQuery = supabase.from("users").update(userData);
+          const conditioned =
+            userData.fid != null
+              ? updateQuery.eq("fid", userData.fid)
+              : updateQuery.eq("primary_address", normalizedAddress);
+
+          const { data: updateData, error: updateError } = await conditioned
+            .select()
+            .single();
+
+          if (updateError) {
+            console.error("[onboard] Update error:", updateError);
+            return NextResponse.json(
+              { error: "Failed to save user data" },
+              { status: 500 },
+            );
+          }
+          return NextResponse.json({ success: true, user: updateData });
+        }
+        console.error("[onboard] Insert error:", insertError);
         return NextResponse.json(
           { error: "Failed to save user data" },
           { status: 500 },
         );
       }
-      return NextResponse.json({ success: true, user: data });
+      return NextResponse.json({ success: true, user: insertData });
     }
   } catch (error) {
     console.error("[onboard] Error:", error);
