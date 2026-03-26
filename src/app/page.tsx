@@ -31,7 +31,7 @@ export default async function Home({
     : "all";
   const page = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
   const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : "all";
-  const lang = rawLang === "all" ? "all" : rawLang && (LANGUAGES as readonly string[]).includes(rawLang) ? rawLang : "English";
+  const lang = rawLang && (LANGUAGES as readonly string[]).includes(rawLang) ? rawLang : "all";
 
   const supabase = createServerClient();
 
