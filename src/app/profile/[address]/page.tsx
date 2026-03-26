@@ -170,7 +170,7 @@ export default function ProfilePage() {
 }
 
 // ---------------------------------------------------------------------------
-// Profile Header (unchanged from #501)
+// Profile Header — Social Credibility Trust Dashboard
 // ---------------------------------------------------------------------------
 
 function ProfileHeader({
@@ -205,28 +205,30 @@ function ProfileHeader({
   cooldownRemaining: number;
 }) {
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
+  const hasFarcaster = dbUser?.fid != null && dbUser?.username != null;
+  const hasX = dbUser?.twitter != null;
+  const hasQuotient = dbUser?.quotient_score != null;
 
   return (
-    <header className="border-border border-b pb-6">
+    <header className="space-y-5 pb-6">
+      {/* Primary identity */}
       <div className="flex items-start gap-4">
-        {/* Avatar */}
         {fcProfile?.pfpUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={fcProfile.pfpUrl}
             alt=""
-            width={56}
-            height={56}
-            className="rounded-full"
+            width={72}
+            height={72}
+            className="rounded-full border-2 border-[var(--border)]"
           />
         ) : (
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-lg font-bold text-[var(--text-muted)]">
+          <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full bg-[var(--border)] text-xl font-bold text-[var(--text-muted)]">
             {address.slice(2, 4).toUpperCase()}
           </div>
         )}
 
         <div className="min-w-0 flex-1">
-          {/* Name + badge */}
           <div className="flex items-center gap-2">
             <h1 className="font-body text-2xl font-bold tracking-tight text-accent truncate">
               {fcLoading && agentLoading
@@ -235,7 +237,7 @@ function ProfileHeader({
             </h1>
             {!agentLoading && (
               isAgent ? (
-                <span className="border-accent-dim text-accent-dim rounded border px-1.5 py-0.5 text-[10px]">
+                <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[10px] font-medium">
                   AI Agent
                 </span>
               ) : (
@@ -246,119 +248,197 @@ function ProfileHeader({
             )}
           </div>
 
-          {/* Secondary identity line */}
-          <div className="text-muted mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-            {fcProfile && (
-              <a
-                href={`https://farcaster.xyz/${fcProfile.username}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground hover:text-accent transition-colors"
-              >
-                @{fcProfile.username}
-              </a>
-            )}
-            {dbUser?.twitter && (
-              <a
-                href={`https://x.com/${dbUser.twitter}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-foreground hover:text-accent transition-colors"
-              >
-                @{dbUser.twitter}
-              </a>
-            )}
-            <a
-              href={`${EXPLORER_URL}/address/${address}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-mono text-[11px] hover:text-accent transition-colors"
-            >
-              {truncateAddress(address)}
-            </a>
-          </div>
+          {/* Bio */}
+          {agentMeta?.description ? (
+            <p className="text-muted mt-1 text-xs">{agentMeta.description}</p>
+          ) : fcProfile?.bio ? (
+            <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
+          ) : null}
 
           {/* Agent metadata */}
           {agentMeta && (
-            <div className="text-muted mt-2 space-y-0.5 text-xs">
-              {agentMeta.description && (
-                <p>{agentMeta.description}</p>
+            <div className="text-muted mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
+              {agentMeta.llmModel && (
+                <span>Model: <span className="text-foreground">{agentMeta.llmModel}</span></span>
               )}
-              <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                {agentMeta.llmModel && (
-                  <span>Model: <span className="text-foreground">{agentMeta.llmModel}</span></span>
-                )}
-                {agentMeta.genre && (
-                  <span>Genre: <span className="text-foreground">{agentMeta.genre}</span></span>
-                )}
-                {agentMeta.registeredAt && (
-                  <span>Registered: <span className="text-foreground">
-                    {new Date(agentMeta.registeredAt).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </span></span>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Farcaster bio (only show when no agent description is present) */}
-          {!agentMeta?.description && fcProfile?.bio && (
-            <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
-          )}
-
-          {/* Social stats from DB */}
-          {dbUser && (
-            <div className="text-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-              {dbUser.follower_count > 0 && (
-                <span><span className="text-foreground font-medium">{dbUser.follower_count.toLocaleString()}</span> followers</span>
+              {agentMeta.genre && (
+                <span>Genre: <span className="text-foreground">{agentMeta.genre}</span></span>
               )}
-              {dbUser.following_count > 0 && (
-                <span><span className="text-foreground font-medium">{dbUser.following_count.toLocaleString()}</span> following</span>
-              )}
-              {dbUser.quotient_score !== null && (
-                <span>QS: <span className="text-foreground font-medium">{dbUser.quotient_score}</span></span>
-              )}
-              {dbUser.x_followers_count !== null && (
-                <span>X: <span className="text-foreground font-medium">{dbUser.x_followers_count.toLocaleString()}</span> followers</span>
-              )}
-            </div>
-          )}
-
-          {/* Cumulative claimed royalties */}
-          {claimedRoyalties && claimedRoyalties > BigInt(0) && (
-            <div className="text-muted mt-2 text-xs">
-              Royalties claimed: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
-            </div>
-          )}
-
-          {/* Refresh button (own profile only) */}
-          {isOwnProfile && (
-            <div className="mt-3 flex items-center gap-2">
-              <button
-                onClick={onRefresh}
-                disabled={refreshing || onCooldown}
-                className="border-border text-muted hover:text-accent hover:border-accent rounded border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
-              >
-                {(() => {
-                  if (refreshing) return "Refreshing...";
-                  if (!onCooldown) return "Refresh Profile";
-                  const totalSec = Math.ceil(cooldownRemaining / 1000);
-                  const m = Math.floor(totalSec / 60);
-                  const s = totalSec % 60;
-                  return `Refresh (${m}m ${s}s)`;
-                })()}
-              </button>
-              {refreshError && (
-                <span className="text-[11px] text-red-500">{refreshError}</span>
+              {agentMeta.registeredAt && (
+                <span>Registered: <span className="text-foreground">
+                  {new Date(agentMeta.registeredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </span></span>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Trust dashboard — social credibility cards */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {/* Farcaster card */}
+        {hasFarcaster && (
+          <div className="border-border rounded border p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Farcaster</span>
+              <div className="flex items-center gap-1">
+                {dbUser?.power_badge && (
+                  <span className="bg-purple-500/10 text-purple-600 rounded px-1 py-0.5 text-[9px] font-medium">Power</span>
+                )}
+                {dbUser?.is_pro_subscriber && (
+                  <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[9px] font-medium">Pro</span>
+                )}
+              </div>
+            </div>
+            <a
+              href={`https://farcaster.com/${dbUser!.username}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+            >
+              @{dbUser!.username}
+            </a>
+            <span className="text-muted ml-2 text-[10px]">FID {dbUser!.fid}</span>
+            <div className="mt-2 flex gap-4 text-xs">
+              <div>
+                <span className="text-foreground font-mono font-medium">
+                  {(dbUser?.follower_count ?? 0).toLocaleString()}
+                </span>
+                <span className="text-muted ml-1">followers</span>
+              </div>
+              <div>
+                <span className="text-foreground font-mono font-medium">
+                  {(dbUser?.following_count ?? 0).toLocaleString()}
+                </span>
+                <span className="text-muted ml-1">following</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* X/Twitter card */}
+        {hasX && (
+          <div className="border-border rounded border p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">X / Twitter</span>
+              {dbUser.x_verified && (
+                <span className="bg-blue-500/10 text-blue-500 rounded px-1 py-0.5 text-[9px] font-medium">Verified</span>
+              )}
+            </div>
+            <a
+              href={`https://x.com/${dbUser.twitter}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+            >
+              @{dbUser.twitter}
+            </a>
+            {dbUser.x_display_name && dbUser.x_display_name !== dbUser.twitter && (
+              <span className="text-muted ml-2 text-[11px]">{dbUser.x_display_name}</span>
+            )}
+            {(dbUser.x_followers_count != null || dbUser.x_following_count != null) && (
+              <div className="mt-2 flex gap-4 text-xs">
+                {dbUser.x_followers_count != null && (
+                  <div>
+                    <span className="text-foreground font-mono font-medium">
+                      {dbUser.x_followers_count.toLocaleString()}
+                    </span>
+                    <span className="text-muted ml-1">followers</span>
+                  </div>
+                )}
+                {dbUser.x_following_count != null && (
+                  <div>
+                    <span className="text-foreground font-mono font-medium">
+                      {dbUser.x_following_count.toLocaleString()}
+                    </span>
+                    <span className="text-muted ml-1">following</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quotient Score card */}
+        {hasQuotient && (
+          <div className="border-border rounded border p-3">
+            <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Quotient Score</span>
+            <div className="mt-1.5 flex items-baseline gap-2">
+              <span className="text-accent font-mono text-xl font-bold">{dbUser!.quotient_score}</span>
+              {dbUser!.quotient_rank != null && (
+                <span className="text-muted text-[11px]">Rank #{dbUser!.quotient_rank.toLocaleString()}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Wallet identity card — always shown */}
+        <div className="border-border rounded border p-3">
+          <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Wallet</span>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <a
+              href={`${EXPLORER_URL}/address/${address}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground hover:text-accent font-mono text-sm transition-colors"
+            >
+              {truncateAddress(address)}
+            </a>
+            <CopyButton text={address} />
+          </div>
+          {claimedRoyalties && claimedRoyalties > BigInt(0) && (
+            <div className="text-muted mt-1.5 text-[11px]">
+              Royalties: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Refresh button (own profile only) */}
+      {isOwnProfile && (
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onRefresh}
+            disabled={refreshing || onCooldown}
+            className="border-border text-muted hover:text-accent hover:border-accent rounded border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-50"
+          >
+            {(() => {
+              if (refreshing) return "Refreshing...";
+              if (!onCooldown) return "Refresh Profile";
+              const totalSec = Math.ceil(cooldownRemaining / 1000);
+              const m = Math.floor(totalSec / 60);
+              const s = totalSec % 60;
+              return `Refresh (${m}m ${s}s)`;
+            })()}
+          </button>
+          {refreshError && (
+            <span className="text-[11px] text-red-500">{refreshError}</span>
+          )}
+        </div>
+      )}
     </header>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Copy to clipboard button
+// ---------------------------------------------------------------------------
+
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className="text-muted hover:text-accent text-[10px] transition-colors"
+      title="Copy address"
+    >
+      {copied ? "copied" : "copy"}
+    </button>
   );
 }
 
