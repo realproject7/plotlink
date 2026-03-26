@@ -4,6 +4,7 @@ import { Providers } from "./providers";
 import { NavBar } from "../components/NavBar";
 import { Footer } from "../components/Footer";
 import { FarcasterMiniApp } from "../components/FarcasterMiniApp";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const lora = Lora({
@@ -102,6 +103,7 @@ export default function RootLayout({
           <div className="pt-11 min-h-screen">{children}</div>
           <Footer />
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
