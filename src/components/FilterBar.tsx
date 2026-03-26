@@ -53,12 +53,25 @@ export function FilterBar({ writer, genre, lang, tab }: FilterBarProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Restore saved language preference on first visit (no lang param in URL)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has("lang")) return; // explicit param — don't override
+    try {
+      const saved = localStorage.getItem("plotlink_lang");
+      if (saved && saved !== "all" && (LANGUAGES as readonly string[]).includes(saved)) {
+        router.replace(buildHref({ tab, writer, genre, lang: saved }));
+      }
+    } catch {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   function toggle(key: FilterKey) {
     setOpen(open === key ? null : key);
   }
 
   function navigate(params: { tab: string; writer: string; genre: string; lang: string }) {
     setOpen(null);
+    try { localStorage.setItem("plotlink_lang", params.lang); } catch {}
     router.push(buildHref(params));
   }
 
