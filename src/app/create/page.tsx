@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useMemo, useEffect } from "react";
 import { useAccount } from "wagmi";
 import { useSearchParams } from "next/navigation";
+import { useDraft } from "../../hooks/useDraft";
 import { useQuery } from "@tanstack/react-query";
 import {
   validateContentLength,
@@ -120,6 +121,26 @@ function CreatePage() {
       : false;
   const newBusy = newState !== "idle" && newState !== "error";
 
+  // ---- New Storyline draft auto-save ----
+  const newDraftValues = useMemo(
+    () => ({ title: newTitle, content: newContent, genre, language }),
+    [newTitle, newContent, genre, language],
+  );
+  const newDraftSetters = useMemo(
+    () => ({
+      title: setNewTitle,
+      content: setNewContent,
+      genre: setGenre,
+      language: setLanguage,
+    }),
+    [],
+  );
+  const {
+    restored: newDraftRestored,
+    clearDraft: clearNewDraft,
+    discardDraft: discardNewDraft,
+  } = useDraft("plotlink_draft_create", newDraftValues, newDraftSetters);
+
   // ---- Chain Plot state ----
   const prefillStoryline = searchParams.get("storyline");
   const [chainStorylineId, setChainStorylineId] = useState<number | null>(
@@ -160,6 +181,30 @@ function CreatePage() {
     chainTitleValid &&
     chainValid;
   const chainBusy = chainState !== "idle" && chainState !== "error";
+
+  // ---- Chain Plot draft auto-save ----
+  const chainDraftKey = chainStorylineId
+    ? `plotlink_draft_plot_${chainStorylineId}`
+    : "plotlink_draft_plot";
+  const chainDraftValues = useMemo(
+    () => ({ title: chainTitle, content: chainContent }),
+    [chainTitle, chainContent],
+  );
+  const chainDraftSetters = useMemo(
+    () => ({ title: setChainTitle, content: setChainContent }),
+    [],
+  );
+  const {
+    restored: chainDraftRestored,
+    clearDraft: clearChainDraft,
+    discardDraft: discardChainDraft,
+  } = useDraft(chainDraftKey, chainDraftValues, chainDraftSetters);
+
+  // Clear drafts on successful publish (must be above early returns — Rules of Hooks)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (newState === "published") clearNewDraft(); }, [newState]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (chainState === "published") clearChainDraft(); }, [chainState]);
 
   if (!isConnected) {
     return (
@@ -306,6 +351,21 @@ function CreatePage() {
             }}
             className="mt-6 space-y-6"
           >
+            {newDraftRestored && (
+              <div className="border-accent/30 bg-accent/5 text-accent flex items-center justify-between rounded border px-3 py-2 text-xs">
+                <span>Draft restored</span>
+                <button type="button" onClick={discardNewDraft} className="text-muted hover:text-error ml-2 transition-colors">
+                  Discard draft
+                </button>
+              </div>
+            )}
+            {!newDraftRestored && (newTitle || newContent) && (
+              <div className="flex justify-end">
+                <button type="button" onClick={discardNewDraft} className="text-muted hover:text-error text-[11px] transition-colors">
+                  Discard draft
+                </button>
+              </div>
+            )}
             <div>
               <label className="text-foreground mb-2 block text-sm">Title</label>
               <input
@@ -424,6 +484,21 @@ function CreatePage() {
             }}
             className="mt-6 space-y-6"
           >
+            {chainDraftRestored && (
+              <div className="border-accent/30 bg-accent/5 text-accent flex items-center justify-between rounded border px-3 py-2 text-xs">
+                <span>Draft restored</span>
+                <button type="button" onClick={discardChainDraft} className="text-muted hover:text-error ml-2 transition-colors">
+                  Discard draft
+                </button>
+              </div>
+            )}
+            {!chainDraftRestored && (chainTitle || chainContent) && (
+              <div className="flex justify-end">
+                <button type="button" onClick={discardChainDraft} className="text-muted hover:text-error text-[11px] transition-colors">
+                  Discard draft
+                </button>
+              </div>
+            )}
             <div>
               <label className="text-foreground mb-2 block text-sm">Storyline</label>
               {loadingStorylines ? (
