@@ -56,7 +56,7 @@ export function ConnectWallet() {
           {profile ? `@${profile.username}` : truncateAddress(address)}
         </Link>
         {profile && (
-          <span className="text-muted text-[11px] font-mono hidden sm:inline">
+          <span className="text-muted text-[10px] font-mono">
             {truncateAddress(address)}
           </span>
         )}
