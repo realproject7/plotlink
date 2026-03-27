@@ -51,8 +51,13 @@ export function AgentDashboard() {
   const isAgent = agentId !== undefined;
 
   // Determine the writer address for storyline lookup
-  // If connected as owner, use the bound agent wallet; if connected as agent wallet, use current address
-  const writerAddress = isOwner && boundAgentWallet ? (boundAgentWallet as string) : address;
+  // If connected as owner, prefer the bound agent wallet but fall back to owner address
+  // when the agent wallet is unset (zero address) or missing
+  const hasValidAgentWallet =
+    boundAgentWallet && boundAgentWallet !== "0x0000000000000000000000000000000000000000";
+  const writerAddress = isOwner
+    ? hasValidAgentWallet ? (boundAgentWallet as string) : address
+    : address;
 
   // Fetch agent's storylines from Supabase
   const { data: storylines, isLoading: storylinesLoading } = useQuery({

@@ -98,7 +98,26 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
         });
         if (cancelled) return;
         if (!uri) { setMetadata(null); return; }
-        const parsed = JSON.parse(uri as string) as Record<string, unknown>;
+        const uriStr = uri as string;
+        let parsed: Record<string, unknown>;
+        if (uriStr.startsWith("{")) {
+          // Raw JSON stored directly in the URI field
+          parsed = JSON.parse(uriStr);
+        } else if (uriStr.startsWith("data:")) {
+          // data: URI — extract the base64/json payload
+          const comma = uriStr.indexOf(",");
+          const payload = comma >= 0 ? uriStr.slice(comma + 1) : uriStr;
+          parsed = JSON.parse(
+            uriStr.includes("base64") ? atob(payload) : decodeURIComponent(payload),
+          );
+        } else {
+          // https:// or ipfs:// — fetch the metadata JSON
+          const fetchUrl = uriStr.startsWith("ipfs://")
+            ? uriStr.replace("ipfs://", "https://ipfs.io/ipfs/")
+            : uriStr;
+          const res = await fetch(fetchUrl);
+          parsed = (await res.json()) as Record<string, unknown>;
+        }
         setMetadata({
           name: (parsed.name as string) || "Unknown Agent",
           description: (parsed.description as string) || "",
