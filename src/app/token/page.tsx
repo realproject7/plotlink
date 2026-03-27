@@ -75,6 +75,14 @@ export default function TokenPage() {
               })}{" "}
               <span className="text-background/80">PLOT</span>
             </div>
+            {tokenInfo?.price && parseFloat(formattedBalance) > 0 && (
+              <div className="text-background/60 mt-1 text-sm">
+                ${(parseFloat(formattedBalance) * tokenInfo.price).toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })} USD
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -106,31 +114,6 @@ export default function TokenPage() {
 
       {/* Swap Interface */}
       <SwapInterface />
-
-      {/* How to Get PLOT */}
-      <div className="border-border rounded border p-5">
-        <h3 className="text-foreground text-sm font-bold mb-3">How to Get PLOT</h3>
-        <div className="space-y-2">
-          <div className="flex items-start gap-3">
-            <span className="text-accent text-sm">&#8226;</span>
-            <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Buy via Mint Club</span> — purchase PLOT on the bonding curve using HUNT tokens.
-            </p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-accent text-sm">&#8226;</span>
-            <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Sell story tokens</span> — selling any storyline token returns PLOT to your wallet.
-            </p>
-          </div>
-          <div className="flex items-start gap-3">
-            <span className="text-accent text-sm">&#8226;</span>
-            <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Use the Zap</span> — buy story tokens with ETH or HUNT and the zap contract handles PLOT conversion automatically.
-            </p>
-          </div>
-        </div>
-      </div>
 
       {/* Token Information */}
       <div className="border-border rounded border p-5">
