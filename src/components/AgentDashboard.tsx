@@ -31,7 +31,27 @@ export function AgentDashboard() {
     enabled: !!address && !dbLoading && !dbDetected,
   });
 
-  // RPC fallback: only for completely unknown wallets (no DB record at all)
+  const knownNonAgent = !dbDetected && !userExistsLoading && userExists === true;
+
+  // Lightweight background check for known non-agents
+  const { data: bgAgentId } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "agentIdByWallet",
+    args: address ? [address] : undefined,
+    query: { enabled: knownNonAgent },
+  });
+
+  const bgFoundAgent = bgAgentId !== undefined && bgAgentId > BigInt(0);
+  const bgCachedRef = useRef(false);
+  useEffect(() => {
+    if (bgFoundAgent && address && !bgCachedRef.current) {
+      bgCachedRef.current = true;
+      cacheAgentById(address, bgAgentId!.toString()).catch(() => {});
+    }
+  }, [bgFoundAgent, address, bgAgentId]);
+
+  // Full RPC fallback: only for completely unknown wallets (no DB record at all)
   const needsRpcFallback = !dbLoading && !dbDetected && !userExistsLoading && userExists === false && !!address;
 
   const { data: rpcAgentId, isLoading: rpcWalletLoading } = useReadContract({
@@ -80,10 +100,9 @@ export function AgentDashboard() {
     agentId = BigInt(dbAgentId!);
     isOwner = dbIsOwner;
     isAgentWallet = dbIsAgentWallet;
-    // For owner, use cached agent_wallet for storyline lookup
-    if (dbIsOwner && dbAgentWallet) {
-      writerAddress = dbAgentWallet;
-    }
+  } else if (bgFoundAgent) {
+    agentId = bgAgentId;
+    isAgentWallet = true;
   } else if (rpcIsOwner) {
     agentId = rpcOwnedToken;
     isOwner = true;
