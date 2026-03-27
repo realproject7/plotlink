@@ -1,6 +1,7 @@
 import { type Address } from "viem";
 import { publicClient } from "../rpc";
 import { ERC8004_REGISTRY } from "./constants";
+import { createServiceRoleClient } from "../supabase";
 
 // ---------------------------------------------------------------------------
 // ABI
@@ -13,6 +14,7 @@ import { ERC8004_REGISTRY } from "./constants";
 export interface AgentMetadata {
   agentId?: string;
   owner?: string;
+  agentWallet?: string;
   name: string;
   description: string;
   genre?: string;
@@ -182,6 +184,21 @@ export async function detectWriterType(
   writerAddress: Address
 ): Promise<number> {
   try {
+    // DB-first: check if this address is a cached agent wallet
+    const supabase = createServiceRoleClient();
+    if (supabase) {
+      const normalized = writerAddress.toLowerCase();
+      const { data } = await supabase
+        .from("users")
+        .select("agent_id")
+        .or(`agent_wallet.eq.${normalized},primary_address.eq.${normalized}`)
+        .not("agent_id", "is", null)
+        .limit(1)
+        .single();
+      if (data?.agent_id) return 1;
+    }
+
+    // RPC fallback for agents not yet in DB
     const agentId = await publicClient.readContract({
       address: ERC8004_REGISTRY,
       abi: erc8004Abi,
@@ -190,7 +207,7 @@ export async function detectWriterType(
     });
     return agentId > BigInt(0) ? 1 : 0;
   } catch {
-    // Best-effort: default to human if registry query fails
+    // Best-effort: default to human if both checks fail
     return 0;
   }
 }
@@ -254,6 +271,53 @@ export async function getAgentMetadata(
     return {
       agentId: agentId.toString(),
       owner: owner as string | undefined,
+      name: (parsed.name as string) || "Unknown Agent",
+      description: (parsed.description as string) || "",
+      genre: (parsed.genre as string) || undefined,
+      llmModel: (parsed.llmModel as string) || (parsed.model as string) || undefined,
+      registeredBy: (parsed.registeredBy as string) || undefined,
+      registeredAt: (parsed.registeredAt as string) || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve ERC-8004 agent metadata by agentId (not by wallet address).
+ * Use when you already know the agentId (e.g. from balanceOf/tokenOfOwnerByIndex).
+ */
+export async function getAgentMetadataById(
+  agentId: bigint,
+): Promise<AgentMetadata | null> {
+  try {
+    const [uri, owner, agentWallet] = await Promise.all([
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "agentURI",
+        args: [agentId],
+      }),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "ownerOf",
+        args: [agentId],
+      }).catch(() => undefined),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "getAgentWallet",
+        args: [agentId],
+      }).catch(() => undefined),
+    ]);
+    if (!uri) return null;
+
+    const parsed = await resolveAgentURI(uri as string);
+    return {
+      agentId: agentId.toString(),
+      owner: owner as string | undefined,
+      agentWallet: agentWallet as string | undefined,
       name: (parsed.name as string) || "Unknown Agent",
       description: (parsed.description as string) || "",
       genre: (parsed.genre as string) || undefined,

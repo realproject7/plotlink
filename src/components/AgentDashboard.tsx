@@ -1,63 +1,103 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
+import { getAgentUserFromDB, cacheAgentById } from "../../lib/actions";
 
 export function AgentDashboard() {
   const { address } = useAccount();
 
-  // Check if wallet is registered as an agent wallet
-  const { data: agentIdByWallet, isLoading: walletLoading } = useReadContract({
+  // DB-first: check cached agent data
+  const { data: dbUser, isLoading: dbLoading } = useQuery({
+    queryKey: ["db-user-dashboard", address],
+    queryFn: () => getAgentUserFromDB(address!),
+    enabled: !!address,
+  });
+
+  const dbAgentId = dbUser?.agent_id;
+  const dbDetected = dbAgentId != null;
+  const dbIsOwner = dbDetected && dbUser?.agent_owner?.toLowerCase() === address?.toLowerCase();
+  const dbIsAgentWallet = dbDetected && dbUser?.agent_wallet?.toLowerCase() === address?.toLowerCase();
+  const dbAgentWallet = dbUser?.agent_wallet;
+
+  // RPC fallback: only if DB has no agent data
+  const needsRpcFallback = !dbLoading && !dbDetected && !!address;
+
+  const { data: rpcAgentId, isLoading: rpcWalletLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "agentIdByWallet",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: needsRpcFallback },
   });
 
-  // Check if wallet owns agent NFTs (owner role)
-  const { data: nftBalance, isLoading: balanceLoading } = useReadContract({
+  const { data: rpcBalance, isLoading: rpcBalanceLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: needsRpcFallback },
   });
 
-  const hasNft = nftBalance !== undefined && nftBalance > BigInt(0);
-  const { data: ownedTokenId, isLoading: tokenLoading } = useReadContract({
+  const rpcHasNft = rpcBalance !== undefined && rpcBalance > BigInt(0);
+  const { data: rpcOwnedToken, isLoading: rpcTokenLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "tokenOfOwnerByIndex",
     args: address ? [address, BigInt(0)] : undefined,
-    query: { enabled: !!address && hasNft },
+    query: { enabled: needsRpcFallback && rpcHasNft },
   });
 
-  // Get the agent wallet for the owned token (to query storylines by that address)
-  const isOwner = hasNft && ownedTokenId !== undefined;
-  const { data: boundAgentWallet } = useReadContract({
+  const rpcIsOwner = rpcHasNft && rpcOwnedToken !== undefined;
+  const { data: rpcBoundWallet } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "getAgentWallet",
-    args: ownedTokenId !== undefined ? [ownedTokenId] : undefined,
-    query: { enabled: isOwner },
+    args: rpcOwnedToken !== undefined ? [rpcOwnedToken] : undefined,
+    query: { enabled: needsRpcFallback && rpcIsOwner },
   });
 
-  const isAgentWallet = agentIdByWallet !== undefined && agentIdByWallet > BigInt(0);
-  const agentId = isOwner ? ownedTokenId : isAgentWallet ? agentIdByWallet : undefined;
-  const isAgent = agentId !== undefined;
+  const rpcIsAgentWallet = rpcAgentId !== undefined && rpcAgentId > BigInt(0);
 
-  // Determine the writer address for storyline lookup
-  // If connected as owner, prefer the bound agent wallet but fall back to owner address
-  // when the agent wallet is unset (zero address) or missing
-  const hasValidAgentWallet =
-    boundAgentWallet && boundAgentWallet !== "0x0000000000000000000000000000000000000000";
-  const writerAddress = isOwner
-    ? hasValidAgentWallet ? (boundAgentWallet as string) : address
-    : address;
+  // Combine DB + RPC
+  let agentId: bigint | undefined;
+  let isOwner = false;
+  let isAgentWallet = false;
+  let writerAddress: string | undefined = address;
+
+  if (dbDetected) {
+    agentId = BigInt(dbAgentId!);
+    isOwner = dbIsOwner;
+    isAgentWallet = dbIsAgentWallet;
+    // For owner, use cached agent_wallet for storyline lookup
+    if (dbIsOwner && dbAgentWallet) {
+      writerAddress = dbAgentWallet;
+    }
+  } else if (rpcIsOwner) {
+    agentId = rpcOwnedToken;
+    isOwner = true;
+    const hasValidRpcWallet = rpcBoundWallet && rpcBoundWallet !== "0x0000000000000000000000000000000000000000";
+    if (hasValidRpcWallet) writerAddress = rpcBoundWallet as string;
+  } else if (rpcIsAgentWallet) {
+    agentId = rpcAgentId;
+    isAgentWallet = true;
+  }
+
+  const isAgent = agentId !== undefined;
+  const detectLoading = dbLoading || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
+
+  // Auto-cache: when RPC fallback detects an agent not in DB, persist it
+  const cachedRef = useRef(false);
+  useEffect(() => {
+    if (!dbDetected && isAgent && address && agentId && !cachedRef.current) {
+      cachedRef.current = true;
+      cacheAgentById(address, agentId.toString()).catch(() => {});
+    }
+  }, [dbDetected, isAgent, address, agentId]);
 
   // Fetch agent's storylines from Supabase
   const { data: storylines, isLoading: storylinesLoading } = useQuery({
@@ -71,7 +111,7 @@ export function AgentDashboard() {
     enabled: !!writerAddress && isAgent,
   });
 
-  if (walletLoading || balanceLoading || (hasNft && tokenLoading)) {
+  if (detectLoading) {
     return (
       <div className="mt-6 py-8 text-center">
         <p className="text-muted text-sm">Loading agent status...</p>
