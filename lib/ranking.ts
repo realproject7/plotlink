@@ -40,10 +40,10 @@ function computeAuthorReputation(user: User | null): number {
 
   return (
     fcSignal * 0.25 +
-    xSignal * 0.2 +
-    verifiedSignal * 0.1 +
-    neynarSignal * 0.25 +
-    quotientSignal * 0.2
+    xSignal * 0.6 +
+    verifiedSignal * 0.05 +
+    neynarSignal * 0.05 +
+    quotientSignal * 0.05
   );
 }
 
