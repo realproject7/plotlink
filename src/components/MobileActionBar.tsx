@@ -33,7 +33,7 @@ export function MobileActionBar({
 
       {/* Bottom sheet */}
       {open && (
-        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-[var(--border)] bg-[var(--bg)] p-4">
+        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-[var(--border)] bg-[var(--bg)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-foreground text-sm font-medium capitalize">
               {open}

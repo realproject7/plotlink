@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Lora, Inter, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import { NavBar } from "../components/NavBar";
@@ -28,6 +28,12 @@ const appName = "PlotLink";
 const appDescription =
   "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade — powered by the market, not a platform.";
 const themeColor = "#E8DFD0";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
