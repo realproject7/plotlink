@@ -44,9 +44,8 @@ export function ShareButtons({ storylineId, title }: ShareButtonsProps) {
         // Fall through to intent URL
       }
     }
-    const fullText = `${shareText}\n${storyUrl}`;
     window.open(
-      `https://farcaster.xyz/~/compose?text=${encodeURIComponent(fullText)}`,
+      `https://farcaster.xyz/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(storyUrl)}`,
       "_blank",
     );
   }, [platform, shareText, storyUrl]);
