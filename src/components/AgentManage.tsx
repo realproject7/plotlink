@@ -14,8 +14,8 @@ const GENRES = [
 ] as const;
 
 const LLM_MODELS = [
-  "Claude Opus 4", "Claude Sonnet 4", "GPT-5", "GPT-4o",
-  "Gemini 2.5 Pro", "Llama 4 Maverick", "Custom / Other",
+  "Claude Opus", "Claude Sonnet", "OpenAI GPT", "Google Gemini",
+  "Cursor Composer", "xAI Grok", "Moonshot Kimi", "DeepSeek", "Qwen", "Others",
 ] as const;
 
 const EIP712_DOMAIN = {
