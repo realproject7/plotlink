@@ -11,6 +11,22 @@ import { StoryContent } from "../../../../components/StoryContent";
 import { ReadingModeWrapper } from "../../../../components/ReadingModeWrapper";
 import Link from "next/link";
 
+/** Deduplicate plots by plot_index, keeping the first occurrence. */
+function deduplicateByPlotIndex(plots: { plot_index: number; title: string; content: string | null }[]) {
+  const seen = new Set<number>();
+  return plots
+    .filter((p) => {
+      if (seen.has(p.plot_index)) return false;
+      seen.add(p.plot_index);
+      return true;
+    })
+    .map((p) => ({
+      plotIndex: p.plot_index,
+      title: p.title || (p.plot_index === 0 ? "Genesis" : `Chapter ${p.plot_index}`),
+      content: p.content,
+    }));
+}
+
 type Params = Promise<{ storylineId: string; plotIndex: string }>;
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -112,11 +128,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
           <ReadingModeWrapper
             storylineId={sid}
             storylineTitle={sl.title}
-            chapters={allPlots.map((ap) => ({
-              plotIndex: ap.plot_index,
-              title: ap.title || (ap.plot_index === 0 ? "Genesis" : `Chapter ${ap.plot_index}`),
-              content: ap.content,
-            }))}
+            chapters={deduplicateByPlotIndex(allPlots)}
             initialPlotIndex={pidx}
           />
         </div>
