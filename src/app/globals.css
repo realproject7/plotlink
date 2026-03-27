@@ -210,6 +210,22 @@ code, pre, .font-mono {
   }
 }
 
+/* Reading Mode page-flip transitions */
+@keyframes flip-in-left {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes flip-in-right {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.page-flip-left {
+  animation: flip-in-left 0.25s ease-out;
+}
+.page-flip-right {
+  animation: flip-in-right 0.25s ease-out;
+}
+
 /* Custom select dropdown styling */
 select {
   appearance: none;

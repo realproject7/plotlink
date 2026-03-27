@@ -27,6 +27,7 @@ export function ReadingMode({
 }: ReadingModeProps) {
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
+  const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const { isMiniApp } = usePlatformDetection();
 
@@ -38,25 +39,29 @@ export function ReadingMode({
     contentRef.current?.scrollTo(0, 0);
   }, []);
 
-  const goPrev = useCallback(() => {
-    if (hasPrev) {
-      setCurrentIdx((i) => i - 1);
+  const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
+    setFlipDir(dir);
+    // Brief delay to trigger the CSS animation before content swap
+    requestAnimationFrame(() => {
+      setCurrentIdx(idx);
       scrollToTop();
-    }
-  }, [hasPrev, scrollToTop]);
+      // Clear the animation class after transition completes
+      setTimeout(() => setFlipDir(null), 250);
+    });
+  }, [scrollToTop]);
+
+  const goPrev = useCallback(() => {
+    if (hasPrev) navigate(currentIdx - 1, "right");
+  }, [hasPrev, currentIdx, navigate]);
 
   const goNext = useCallback(() => {
-    if (hasNext) {
-      setCurrentIdx((i) => i + 1);
-      scrollToTop();
-    }
-  }, [hasNext, scrollToTop]);
+    if (hasNext) navigate(currentIdx + 1, "left");
+  }, [hasNext, currentIdx, navigate]);
 
   const goToChapter = useCallback((idx: number) => {
-    setCurrentIdx(idx);
     setShowToc(false);
-    scrollToTop();
-  }, [scrollToTop]);
+    navigate(idx, idx > currentIdx ? "left" : "right");
+  }, [currentIdx, navigate]);
 
   // Esc to close, arrow keys for navigation
   useEffect(() => {
@@ -105,8 +110,10 @@ export function ReadingMode({
       </div>
 
       {/* Content area */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
+      <div ref={contentRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className={`mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12 ${
+          flipDir === "left" ? "page-flip-left" : flipDir === "right" ? "page-flip-right" : ""
+        }`}>
           {chapter?.content ? (
             <StoryContent content={chapter.content} />
           ) : (
