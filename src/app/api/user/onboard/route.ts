@@ -4,7 +4,9 @@ import { getUserByWallet } from "../../../../../lib/farcaster-indexer";
 import { lookupByAddress } from "../../../../../lib/farcaster";
 import { fetchQuotientScore, isQuotientStale } from "../../../../../lib/quotient";
 import { buildUserData } from "../../../../../lib/user-data";
-import { getAgentMetadata } from "../../../../../lib/contracts/erc8004";
+import { getAgentMetadata, getAgentMetadataById, erc8004Abi } from "../../../../../lib/contracts/erc8004";
+import { ERC8004_REGISTRY } from "../../../../../lib/contracts/constants";
+import { publicClient } from "../../../../../lib/rpc";
 import type { Address } from "viem";
 
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
@@ -115,7 +117,32 @@ export async function POST(request: NextRequest) {
     // Check ERC-8004 agent status if not already cached
     if (!existingUser?.agent_id) {
       try {
-        const agentMeta = await getAgentMetadata(normalizedAddress as Address);
+        // Check 1: is this wallet a bound agent wallet?
+        let agentMeta = await getAgentMetadata(normalizedAddress as Address);
+
+        // Check 2: does this wallet own an agent NFT? (owner with separate bound wallet)
+        if (!agentMeta) {
+          const balance = await publicClient.readContract({
+            address: ERC8004_REGISTRY,
+            abi: erc8004Abi,
+            functionName: "balanceOf",
+            args: [normalizedAddress as Address],
+          }).catch(() => BigInt(0));
+
+          if (balance > BigInt(0)) {
+            const ownedTokenId = await publicClient.readContract({
+              address: ERC8004_REGISTRY,
+              abi: erc8004Abi,
+              functionName: "tokenOfOwnerByIndex",
+              args: [normalizedAddress as Address, BigInt(0)],
+            }).catch(() => undefined);
+
+            if (ownedTokenId !== undefined) {
+              agentMeta = await getAgentMetadataById(ownedTokenId);
+            }
+          }
+        }
+
         if (agentMeta?.agentId) {
           Object.assign(userData, {
             agent_id: Number(agentMeta.agentId),
