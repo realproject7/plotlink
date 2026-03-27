@@ -110,7 +110,7 @@ export function NavBar() {
             })}
           </div>
           <div className="mt-2 border-t border-[var(--border)] pt-2">
-            <ConnectWallet />
+            <ConnectWallet onNavigate={() => setMobileOpen(false)} />
           </div>
         </div>
       )}

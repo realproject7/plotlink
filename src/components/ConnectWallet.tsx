@@ -7,7 +7,7 @@ import { isFarcasterMiniApp } from "../../lib/farcaster-detect";
 import { truncateAddress } from "../../lib/utils";
 import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
 
-export function ConnectWallet() {
+export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { address, isConnected } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
@@ -41,6 +41,7 @@ export function ConnectWallet() {
       <div className="border-border flex items-center gap-3 rounded border px-3 py-2 text-sm">
         <Link
           href={`/profile/${address}`}
+          onClick={onNavigate}
           className="text-accent inline-flex items-center gap-1.5 font-medium hover:opacity-80 transition-opacity"
         >
           {profile?.pfpUrl && (
