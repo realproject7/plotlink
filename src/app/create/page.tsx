@@ -412,7 +412,7 @@ function CreatePage() {
             <div>
               <label className="text-foreground mb-1 block text-sm">Opening Chapter</label>
               <p className="text-muted mb-2 text-[11px]">
-                The genesis plot sets the tone for your story. Write between 500 and 10,000 characters. Markdown is supported.
+                The opening of your storyline — write a synopsis or introduction, or jump straight into the story. Markdown supported.
               </p>
               <WritePreviewToggle
                 activeTab={newPreviewTab}
