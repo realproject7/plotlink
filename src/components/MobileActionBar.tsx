@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
+import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 type Panel = "trade" | "donate" | "rate" | null;
 
@@ -14,6 +15,7 @@ export function MobileActionBar({
   rateContent?: ReactNode;
 }) {
   const [open, setOpen] = useState<Panel>(null);
+  const { isMiniApp } = usePlatformDetection();
 
   const buttons: { key: Panel; label: string; content?: ReactNode }[] = [
     { key: "trade", label: "Trade", content: tradeContent },
@@ -33,7 +35,7 @@ export function MobileActionBar({
 
       {/* Bottom sheet */}
       {open && (
-        <div className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-[var(--border)] bg-[var(--bg)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div className={`fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-lg border-t border-[var(--border)] bg-[var(--bg)] p-4 ${isMiniApp ? "pb-10" : "pb-[calc(1rem+env(safe-area-inset-bottom))]"}`}>
           <div className="mb-3 flex items-center justify-between">
             <span className="text-foreground text-sm font-medium capitalize">
               {open}
@@ -52,7 +54,7 @@ export function MobileActionBar({
       )}
 
       {/* Fixed bottom bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t border-[var(--border)] bg-[var(--bg)]/95 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur-sm">
+      <div className={`fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 gap-2 border-t border-[var(--border)] bg-[var(--bg)]/95 px-3 pt-3 ${isMiniApp ? "pb-8" : "pb-[calc(0.75rem+env(safe-area-inset-bottom))]"} backdrop-blur-sm`}>
         {buttons.map(({ key, label }) => (
           <button
             key={key}

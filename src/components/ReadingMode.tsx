@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { StoryContent } from "./StoryContent";
+import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 interface Chapter {
   plotIndex: number;
@@ -27,6 +28,7 @@ export function ReadingMode({
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const { isMiniApp } = usePlatformDetection();
 
   const chapter = chapters[currentIdx];
   const hasPrev = currentIdx > 0;
@@ -115,7 +117,7 @@ export function ReadingMode({
 
       {/* Bottom navigation */}
       <nav
-        className="flex items-center justify-between px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6"
+        className={`flex items-center justify-between px-4 pt-3 ${isMiniApp ? "pb-8" : "pb-[calc(0.75rem+env(safe-area-inset-bottom))]"} sm:px-6`}
         style={{ borderTop: "1px solid var(--border)" }}
       >
         {hasPrev ? (
