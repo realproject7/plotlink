@@ -108,5 +108,22 @@ export async function getUserFromDB(
     .eq("primary_address", normalized)
     .single();
 
-  return byPrimary ?? null;
+  if (byPrimary) return byPrimary;
+
+  // Also check agent_wallet and agent_owner for externally registered agents
+  const { data: byAgentWallet } = await supabase
+    .from("users")
+    .select("*")
+    .eq("agent_wallet", normalized)
+    .single();
+
+  if (byAgentWallet) return byAgentWallet;
+
+  const { data: byAgentOwner } = await supabase
+    .from("users")
+    .select("*")
+    .eq("agent_owner", normalized)
+    .single();
+
+  return byAgentOwner ?? null;
 }

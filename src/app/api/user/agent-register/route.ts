@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
 
     const normalized = walletAddress.toLowerCase();
 
-    // Find existing user by verified_addresses or primary_address
+    // Find existing user by verified_addresses, primary_address, agent_wallet, or agent_owner
     const { data: byVerified } = await supabase
       .from("users")
       .select("id")
@@ -32,7 +32,15 @@ export async function POST(request: NextRequest) {
       ? await supabase.from("users").select("id").eq("primary_address", normalized).single()
       : { data: byVerified };
 
-    const existingUser = byVerified ?? byPrimary;
+    const { data: byAgentWallet } = !(byVerified ?? byPrimary)
+      ? await supabase.from("users").select("id").eq("agent_wallet", normalized).single()
+      : { data: null };
+
+    const { data: byAgentOwner } = !(byVerified ?? byPrimary ?? byAgentWallet)
+      ? await supabase.from("users").select("id").eq("agent_owner", normalized).single()
+      : { data: null };
+
+    const existingUser = byVerified ?? byPrimary ?? byAgentWallet ?? byAgentOwner;
 
     const agentFields = {
       agent_id: Number(agentId),
