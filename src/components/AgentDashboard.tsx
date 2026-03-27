@@ -9,8 +9,8 @@ import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
 export function AgentDashboard() {
   const { address } = useAccount();
 
-  // Check if wallet is registered as an agent
-  const { data: agentId, isLoading: agentIdLoading } = useReadContract({
+  // Check if wallet is registered as an agent wallet
+  const { data: agentIdByWallet, isLoading: walletLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "agentIdByWallet",
@@ -18,21 +18,60 @@ export function AgentDashboard() {
     query: { enabled: !!address },
   });
 
-  const isAgent = agentId !== undefined && agentId > BigInt(0);
+  // Check if wallet owns agent NFTs (owner role)
+  const { data: nftBalance, isLoading: balanceLoading } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  const hasNft = nftBalance !== undefined && nftBalance > BigInt(0);
+  const { data: ownedTokenId, isLoading: tokenLoading } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "tokenOfOwnerByIndex",
+    args: address ? [address, BigInt(0)] : undefined,
+    query: { enabled: !!address && hasNft },
+  });
+
+  // Get the agent wallet for the owned token (to query storylines by that address)
+  const isOwner = hasNft && ownedTokenId !== undefined;
+  const { data: boundAgentWallet } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "getAgentWallet",
+    args: ownedTokenId !== undefined ? [ownedTokenId] : undefined,
+    query: { enabled: isOwner },
+  });
+
+  const isAgentWallet = agentIdByWallet !== undefined && agentIdByWallet > BigInt(0);
+  const agentId = isOwner ? ownedTokenId : isAgentWallet ? agentIdByWallet : undefined;
+  const isAgent = agentId !== undefined;
+
+  // Determine the writer address for storyline lookup
+  // If connected as owner, prefer the bound agent wallet but fall back to owner address
+  // when the agent wallet is unset (zero address) or missing
+  const hasValidAgentWallet =
+    boundAgentWallet && boundAgentWallet !== "0x0000000000000000000000000000000000000000";
+  const writerAddress = isOwner
+    ? hasValidAgentWallet ? (boundAgentWallet as string) : address
+    : address;
 
   // Fetch agent's storylines from Supabase
   const { data: storylines, isLoading: storylinesLoading } = useQuery({
-    queryKey: ["agent-storylines", address],
+    queryKey: ["agent-storylines", writerAddress],
     queryFn: async () => {
-      if (!address) return [];
-      const res = await fetch(`/api/storyline/by-writer?writer=${address}&type=agent`);
+      if (!writerAddress) return [];
+      const res = await fetch(`/api/storyline/by-writer?writer=${writerAddress}&type=agent`);
       if (!res.ok) return [];
       return res.json() as Promise<Array<{ storyline_id: number; title: string; token_address: string; plot_count: number }>>;
     },
-    enabled: !!address && isAgent,
+    enabled: !!writerAddress && isAgent,
   });
 
-  if (agentIdLoading) {
+  if (walletLoading || balanceLoading || (hasNft && tokenLoading)) {
     return (
       <div className="mt-6 py-8 text-center">
         <p className="text-muted text-sm">Loading agent status...</p>
@@ -54,8 +93,15 @@ export function AgentDashboard() {
   return (
     <div className="mt-6">
       <div className="border-accent/30 bg-accent/5 rounded border px-4 py-3 mb-6">
-        <p className="text-accent text-sm font-medium">Agent #{agentId.toString()}</p>
-        <p className="text-muted mt-1 text-xs font-mono">
+        <p className="text-accent text-sm font-medium">Agent #{agentId!.toString()}</p>
+        <p className="text-muted mt-1 text-xs">
+          {isOwner && isAgentWallet
+            ? "Connected as owner + agent wallet"
+            : isOwner
+              ? "Connected as owner"
+              : "Connected as agent wallet"}
+        </p>
+        <p className="text-muted text-xs font-mono">
           {address?.slice(0, 6)}...{address?.slice(-4)}
         </p>
       </div>

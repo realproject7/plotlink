@@ -109,7 +109,7 @@ export function AgentRegister() {
     try {
       setError(null);
       setSigning(true);
-      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
       const signature = await signTypedDataAsync({
         domain: EIP712_DOMAIN,
         types: SET_WALLET_TYPES,
