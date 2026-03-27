@@ -3,7 +3,7 @@ import { decodeEventLog, formatUnits, type Log } from "viem";
 import { publicClient } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
 import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
-import { MCV2_BOND } from "../../../../../lib/contracts/constants";
+import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
 import type { Database } from "../../../../../lib/supabase";
 
@@ -172,11 +172,15 @@ async function processTradeEvent(
   const args = decoded.args as {
     token: `0x${string}`;
     user: `0x${string}`;
+    receiver: `0x${string}`;
     amountMinted?: bigint;
     amountBurned?: bigint;
     reserveAmount?: bigint;
     refundAmount?: bigint;
   };
+
+  // Skip intermediate Zap self-mints (HUNT→PLOT conversion where receiver is the Zap contract)
+  if (args.receiver.toLowerCase() === ZAP_PLOTLINK.toLowerCase()) return;
 
   const isMint = decoded.eventName === "Mint";
   const reserveAmount = isMint ? args.reserveAmount! : args.refundAmount!;
@@ -215,7 +219,7 @@ async function processTradeEvent(
     tx_hash: log.transactionHash!.toLowerCase(),
     log_index: log.logIndex!,
     contract_address: MCV2_BOND.toLowerCase(),
-    user_address: args.user.toLowerCase(),
+    user_address: args.receiver.toLowerCase(),
   };
 
   const { error } = await supabase

@@ -3,7 +3,7 @@ import { decodeEventLog } from "viem";
 import { publicClient } from "../../../../lib/rpc";
 import { createServerClient } from "../../../../lib/supabase";
 import { mcv2BondEventAbi } from "../../../../lib/contracts/abi";
-import { MCV2_BOND } from "../../../../lib/contracts/constants";
+import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../lib/contracts/constants";
 
 /** Fail closed in production when CRON_SECRET is unset */
 function verifyCron(req: Request): boolean {
@@ -25,11 +25,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
   }
 
-  // Fetch all trade_history rows missing user_address
+  // Fetch trade_history rows missing user_address OR attributed to the Zap contract
   const { data: rows, error: fetchError } = await supabase
     .from("trade_history")
     .select("id, tx_hash, log_index")
-    .is("user_address", null)
+    .or(`user_address.is.null,user_address.eq.${ZAP_PLOTLINK.toLowerCase()}`)
     .order("id", { ascending: true })
     .limit(500);
 
@@ -79,8 +79,23 @@ export async function POST(req: Request) {
             topics: log.topics,
           });
 
-          const args = decoded.args as { user: `0x${string}` };
-          const userAddress = args.user.toLowerCase();
+          const args = decoded.args as { user: `0x${string}`; receiver: `0x${string}` };
+          const userAddress = args.receiver.toLowerCase();
+
+          // Delete intermediate Zap self-mints (receiver is the Zap contract)
+          if (userAddress === ZAP_PLOTLINK.toLowerCase()) {
+            const { error: deleteError } = await supabase
+              .from("trade_history")
+              .delete()
+              .eq("id", row.id);
+            if (deleteError) {
+              errorDetails.push({ id: row.id, tx_hash: txHash, reason: deleteError.message });
+              errors++;
+            } else {
+              updated++;
+            }
+            continue;
+          }
 
           const { error: updateError } = await supabase
             .from("trade_history")
