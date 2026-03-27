@@ -24,6 +24,22 @@ import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
 import { UsdPriceTag } from "../../../components/UsdPriceTag";
 
+/** Deduplicate plots by plot_index, keeping the first occurrence. */
+function deduplicateByPlotIndex(plots: Plot[]) {
+  const seen = new Set<number>();
+  return plots
+    .filter((p) => {
+      if (seen.has(p.plot_index)) return false;
+      seen.add(p.plot_index);
+      return true;
+    })
+    .map((p) => ({
+      plotIndex: p.plot_index,
+      title: p.title || (p.plot_index === 0 ? "Genesis" : `Chapter ${p.plot_index}`),
+      content: p.content,
+    }));
+}
+
 type Params = Promise<{ storylineId: string }>;
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -157,11 +173,7 @@ export default async function StoryPage({ params }: { params: Params }) {
                   <ReadingModeWrapper
                     storylineId={id}
                     storylineTitle={sl.title}
-                    chapters={plots.map((p) => ({
-                      plotIndex: p.plot_index,
-                      title: p.title || (p.plot_index === 0 ? "Genesis" : `Chapter ${p.plot_index}`),
-                      content: p.content,
-                    }))}
+                    chapters={deduplicateByPlotIndex(plots)}
                     initialPlotIndex={0}
                   />
                 }
