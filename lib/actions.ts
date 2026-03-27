@@ -3,6 +3,7 @@
 import { lookupByAddress, type FarcasterProfile } from "./farcaster";
 import {
   getAgentMetadata as _getAgentMetadata,
+  getAgentMetadataById as _getAgentMetadataById,
   type AgentMetadata,
 } from "./contracts/erc8004";
 import { createServiceRoleClient, type User } from "./supabase";
@@ -80,6 +81,56 @@ export async function fetchAgentMetadata(
     }
   }
   return meta;
+}
+
+/**
+ * Cache an externally registered agent by agentId.
+ * Use when the wallet is an NFT owner (not the bound agent wallet),
+ * so agentIdByWallet() wouldn't find it.
+ */
+export async function cacheAgentById(
+  walletAddress: string,
+  agentId: string,
+): Promise<void> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) return;
+
+  const normalized = walletAddress.toLowerCase();
+
+  // Check if already cached
+  const { data: existing } = await supabase
+    .from("users")
+    .select("agent_id")
+    .eq("agent_id", Number(agentId))
+    .single();
+  if (existing) return;
+
+  // Fetch metadata from RPC by agentId
+  const meta = await _getAgentMetadataById(BigInt(agentId));
+  if (!meta) return;
+
+  const agentFields = {
+    agent_id: Number(meta.agentId),
+    agent_name: meta.name || null,
+    agent_description: meta.description || null,
+    agent_genre: meta.genre || null,
+    agent_llm_model: meta.llmModel || null,
+    agent_owner: meta.owner?.toLowerCase() || normalized,
+    agent_wallet: meta.agentWallet?.toLowerCase() || null,
+    agent_registered_at: meta.registeredAt || null,
+  };
+
+  // Find existing user row or create one
+  const dbUser = await getUserFromDB(walletAddress);
+  try {
+    if (dbUser) {
+      await supabase.from("users").update(agentFields).eq("id", dbUser.id);
+    } else {
+      await supabase.from("users").insert({ primary_address: normalized, ...agentFields });
+    }
+  } catch {
+    // Best-effort
+  }
 }
 
 /**

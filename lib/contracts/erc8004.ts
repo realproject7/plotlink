@@ -14,6 +14,7 @@ import { createServiceRoleClient } from "../supabase";
 export interface AgentMetadata {
   agentId?: string;
   owner?: string;
+  agentWallet?: string;
   name: string;
   description: string;
   genre?: string;
@@ -270,6 +271,53 @@ export async function getAgentMetadata(
     return {
       agentId: agentId.toString(),
       owner: owner as string | undefined,
+      name: (parsed.name as string) || "Unknown Agent",
+      description: (parsed.description as string) || "",
+      genre: (parsed.genre as string) || undefined,
+      llmModel: (parsed.llmModel as string) || (parsed.model as string) || undefined,
+      registeredBy: (parsed.registeredBy as string) || undefined,
+      registeredAt: (parsed.registeredAt as string) || undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Resolve ERC-8004 agent metadata by agentId (not by wallet address).
+ * Use when you already know the agentId (e.g. from balanceOf/tokenOfOwnerByIndex).
+ */
+export async function getAgentMetadataById(
+  agentId: bigint,
+): Promise<AgentMetadata | null> {
+  try {
+    const [uri, owner, agentWallet] = await Promise.all([
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "agentURI",
+        args: [agentId],
+      }),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "ownerOf",
+        args: [agentId],
+      }).catch(() => undefined),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "getAgentWallet",
+        args: [agentId],
+      }).catch(() => undefined),
+    ]);
+    if (!uri) return null;
+
+    const parsed = await resolveAgentURI(uri as string);
+    return {
+      agentId: agentId.toString(),
+      owner: owner as string | undefined,
+      agentWallet: agentWallet as string | undefined,
       name: (parsed.name as string) || "Unknown Agent",
       description: (parsed.description as string) || "",
       genre: (parsed.genre as string) || undefined,

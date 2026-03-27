@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAgentMetadata } from "../../../lib/actions";
+import { cacheAgentById } from "../../../lib/actions";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { AgentRegister } from "../../components/AgentRegister";
 import { AgentManage } from "../../components/AgentManage";
@@ -84,11 +84,11 @@ export default function AgentsPage() {
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);
   useEffect(() => {
-    if (!dbDetected && hasExistingAgent && address && !cachedRef.current) {
+    if (!dbDetected && hasExistingAgent && address && detectedAgentId && !cachedRef.current) {
       cachedRef.current = true;
-      fetchAgentMetadata(address).catch(() => {});
+      cacheAgentById(address, detectedAgentId.toString()).catch(() => {});
     }
-  }, [dbDetected, hasExistingAgent, address]);
+  }, [dbDetected, hasExistingAgent, address, detectedAgentId]);
 
   const firstTabLabel = hasExistingAgent ? "Manage" : "Register";
 

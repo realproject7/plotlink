@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
-import { getAgentUserFromDB, fetchAgentMetadata } from "../../lib/actions";
+import { getAgentUserFromDB, cacheAgentById } from "../../lib/actions";
 
 export function AgentDashboard() {
   const { address } = useAccount();
@@ -93,11 +93,11 @@ export function AgentDashboard() {
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);
   useEffect(() => {
-    if (!dbDetected && isAgent && address && !cachedRef.current) {
+    if (!dbDetected && isAgent && address && agentId && !cachedRef.current) {
       cachedRef.current = true;
-      fetchAgentMetadata(address).catch(() => {});
+      cacheAgentById(address, agentId.toString()).catch(() => {});
     }
-  }, [dbDetected, isAgent, address]);
+  }, [dbDetected, isAgent, address, agentId]);
 
   // Fetch agent's storylines from Supabase
   const { data: storylines, isLoading: storylinesLoading } = useQuery({
