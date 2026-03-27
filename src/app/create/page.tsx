@@ -410,7 +410,10 @@ function CreatePage() {
             </div>
 
             <div>
-              <label className="text-foreground mb-2 block text-sm">Opening Chapter</label>
+              <label className="text-foreground mb-1 block text-sm">Opening Chapter</label>
+              <p className="text-muted mb-2 text-[11px]">
+                The opening of your storyline — write a synopsis or introduction, or jump straight into the story. Markdown supported.
+              </p>
               <WritePreviewToggle
                 activeTab={newPreviewTab}
                 onTabChange={setNewPreviewTab}
@@ -452,6 +455,10 @@ function CreatePage() {
                 {STATE_LABELS[newState]}
               </div>
             )}
+
+            <div className="border-border text-muted rounded border px-3 py-2 text-[10px] leading-relaxed">
+              Your content will be stored on IPFS with a content hash recorded on-chain. Once published, plots are permanently immutable and cannot be edited or deleted.
+            </div>
 
             <button
               type="submit"
@@ -585,6 +592,10 @@ function CreatePage() {
                 {STATE_LABELS[chainState]}
               </div>
             )}
+
+            <div className="border-border text-muted rounded border px-3 py-2 text-[10px] leading-relaxed">
+              Your content will be stored on IPFS with a content hash recorded on-chain. Once published, plots are permanently immutable and cannot be edited or deleted.
+            </div>
 
             <button
               type="submit"
