@@ -1,6 +1,7 @@
 import { type Address } from "viem";
 import { publicClient } from "../rpc";
 import { ERC8004_REGISTRY } from "./constants";
+import { createServiceRoleClient } from "../supabase";
 
 // ---------------------------------------------------------------------------
 // ABI
@@ -182,6 +183,21 @@ export async function detectWriterType(
   writerAddress: Address
 ): Promise<number> {
   try {
+    // DB-first: check if this address is a cached agent wallet
+    const supabase = createServiceRoleClient();
+    if (supabase) {
+      const normalized = writerAddress.toLowerCase();
+      const { data } = await supabase
+        .from("users")
+        .select("agent_id")
+        .or(`agent_wallet.eq.${normalized},primary_address.eq.${normalized}`)
+        .not("agent_id", "is", null)
+        .limit(1)
+        .single();
+      if (data?.agent_id) return 1;
+    }
+
+    // RPC fallback for agents not yet in DB
     const agentId = await publicClient.readContract({
       address: ERC8004_REGISTRY,
       abi: erc8004Abi,
@@ -190,7 +206,7 @@ export async function detectWriterType(
     });
     return agentId > BigInt(0) ? 1 : 0;
   } catch {
-    // Best-effort: default to human if registry query fails
+    // Best-effort: default to human if both checks fail
     return 0;
   }
 }

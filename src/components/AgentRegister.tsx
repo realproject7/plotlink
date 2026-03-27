@@ -91,11 +91,30 @@ export function AgentRegister() {
           return decoded.eventName === "Registered";
         } catch { return false; }
       });
+      let newAgentId: bigint | undefined;
       if (registeredLog) {
         const decoded = decodeEventLog({ abi: erc8004Abi, data: registeredLog.data, topics: registeredLog.topics });
-        if (decoded.eventName === "Registered") setAgentId(decoded.args.agentId);
+        if (decoded.eventName === "Registered") {
+          newAgentId = decoded.args.agentId;
+          setAgentId(newAgentId);
+        }
       }
       setOwnerAddress(address);
+      // Persist agent data to DB
+      const meta = JSON.parse(agentURI);
+      fetch("/api/user/agent-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          agentId: newAgentId?.toString(),
+          name: meta.name,
+          description: meta.description,
+          genre: meta.genre,
+          llmModel: meta.llmModel,
+          agentOwner: address,
+        }),
+      }).catch(() => {});
       setStep("3a");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -139,6 +158,15 @@ export function AgentRegister() {
       });
       setBindTxHash(hash);
       await publicClient.waitForTransactionReceipt({ hash });
+      // Persist wallet binding to DB
+      fetch("/api/user/agent-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: ownerAddress,
+          fields: { agent_wallet: agentWallet.toLowerCase() },
+        }),
+      }).catch(() => {});
       setStep("done");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Wallet binding failed");

@@ -32,11 +32,54 @@ export async function getFarcasterProfile(
 
 /**
  * Server action that resolves ERC-8004 agent metadata from a wallet address.
+ * Checks DB cache first, falls back to RPC. Caches externally registered agents.
  */
 export async function fetchAgentMetadata(
   address: string,
 ): Promise<AgentMetadata | null> {
-  return _getAgentMetadata(address as Address);
+  // DB-first: check cached agent data
+  const dbUser = await getUserFromDB(address);
+  if (dbUser?.agent_id != null) {
+    return {
+      agentId: String(dbUser.agent_id),
+      owner: dbUser.agent_owner ?? undefined,
+      name: dbUser.agent_name ?? "Unknown Agent",
+      description: dbUser.agent_description ?? "",
+      genre: dbUser.agent_genre ?? undefined,
+      llmModel: dbUser.agent_llm_model ?? undefined,
+      registeredAt: dbUser.agent_registered_at ?? undefined,
+    };
+  }
+
+  // RPC fallback — also cache the result for next time
+  const meta = await _getAgentMetadata(address as Address);
+  if (meta && meta.agentId) {
+    const supabase = createServiceRoleClient();
+    if (supabase) {
+      const normalized = address.toLowerCase();
+      const userId = dbUser?.id;
+      const agentFields = {
+        agent_id: Number(meta.agentId),
+        agent_name: meta.name || null,
+        agent_description: meta.description || null,
+        agent_genre: meta.genre || null,
+        agent_llm_model: meta.llmModel || null,
+        agent_owner: meta.owner?.toLowerCase() || null,
+        agent_registered_at: meta.registeredAt || null,
+        agent_wallet: normalized,
+      };
+      try {
+        if (userId) {
+          await supabase.from("users").update(agentFields).eq("id", userId);
+        } else {
+          await supabase.from("users").insert({ primary_address: normalized, ...agentFields });
+        }
+      } catch {
+        // Best-effort cache — don't fail the metadata lookup
+      }
+    }
+  }
+  return meta;
 }
 
 /**

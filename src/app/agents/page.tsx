@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
-import { zeroAddress } from "viem";
+import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { AgentRegister } from "../../components/AgentRegister";
 import { AgentManage } from "../../components/AgentManage";
@@ -10,6 +10,8 @@ import { AgentBuild } from "../../components/AgentBuild";
 import { AgentDashboard } from "../../components/AgentDashboard";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../../lib/contracts/constants";
+import type { User } from "../../../lib/supabase";
+import { getUserFromDB } from "../../../lib/actions";
 
 type Tab = "register" | "build" | "dashboard";
 
@@ -17,52 +19,67 @@ export default function AgentsPage() {
   const { isConnected, address } = useAccount();
   const [tab, setTab] = useState<Tab>("register");
 
-  // Check if wallet is bound as an agent wallet
-  const { data: agentIdByWallet, isLoading: walletLoading } = useReadContract({
+  // DB-first: check if user has cached agent data
+  const { data: dbUser, isLoading: dbLoading } = useQuery({
+    queryKey: ["db-user-agent", address],
+    queryFn: () => getUserFromDB(address!),
+    enabled: !!address,
+  });
+
+  const dbAgentId = dbUser?.agent_id;
+  const dbIsOwner = dbAgentId != null && dbUser?.agent_owner?.toLowerCase() === address?.toLowerCase();
+  const dbIsAgentWallet = dbAgentId != null && dbUser?.agent_wallet?.toLowerCase() === address?.toLowerCase();
+  const dbDetected = dbAgentId != null;
+
+  // RPC fallback: only if DB has no agent data
+  const needsRpcFallback = !dbLoading && !dbDetected && !!address;
+
+  const { data: rpcAgentId, isLoading: rpcWalletLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "agentIdByWallet",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: needsRpcFallback },
   });
 
-  // Check if wallet owns any agent NFTs (ERC-721 balanceOf)
-  const { data: nftBalance, isLoading: balanceLoading } = useReadContract({
+  const { data: rpcBalance, isLoading: rpcBalanceLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: needsRpcFallback },
   });
 
-  // If owner, get the first owned token ID
-  const hasNft = nftBalance !== undefined && nftBalance > BigInt(0);
-  const { data: ownedTokenId, isLoading: tokenLoading } = useReadContract({
+  const rpcHasNft = rpcBalance !== undefined && rpcBalance > BigInt(0);
+  const { data: rpcOwnedToken, isLoading: rpcTokenLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "tokenOfOwnerByIndex",
     args: address ? [address, BigInt(0)] : undefined,
-    query: { enabled: !!address && hasNft },
+    query: { enabled: needsRpcFallback && rpcHasNft },
   });
 
-  const isAgentWallet = agentIdByWallet !== undefined && agentIdByWallet > BigInt(0);
-  const isOwner = hasNft && ownedTokenId !== undefined;
-  const detectLoading = walletLoading || balanceLoading || (hasNft && tokenLoading);
+  const rpcIsAgentWallet = rpcAgentId !== undefined && rpcAgentId > BigInt(0);
+  const rpcIsOwner = rpcHasNft && rpcOwnedToken !== undefined;
 
-  // Determine which agentId and role to use
+  // Combine DB + RPC results
   let detectedAgentId: bigint | undefined;
   let detectedRole: "owner" | "agentWallet" | undefined;
-  if (isOwner) {
-    detectedAgentId = ownedTokenId;
+
+  if (dbDetected) {
+    detectedAgentId = BigInt(dbAgentId!);
+    detectedRole = dbIsOwner ? "owner" : dbIsAgentWallet ? "agentWallet" : "owner";
+  } else if (rpcIsOwner) {
+    detectedAgentId = rpcOwnedToken;
     detectedRole = "owner";
-  } else if (isAgentWallet) {
-    detectedAgentId = agentIdByWallet;
+  } else if (rpcIsAgentWallet) {
+    detectedAgentId = rpcAgentId;
     detectedRole = "agentWallet";
   }
 
   const hasExistingAgent = detectedAgentId !== undefined && detectedRole !== undefined;
+  const detectLoading = dbLoading || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
 
-  // Determine the label for the first tab
   const firstTabLabel = hasExistingAgent ? "Manage" : "Register";
 
   return (
