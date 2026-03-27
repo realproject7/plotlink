@@ -103,23 +103,23 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
         <span className="text-foreground">{chapterTitle}</span>
       </nav>
 
-      {/* Reading mode + Chapter header */}
-      <div className="mb-4 flex justify-end">
-        <ReadingModeWrapper
-          storylineId={sid}
-          storylineTitle={sl.title}
-          chapters={allPlots.map((ap) => ({
-            plotIndex: ap.plot_index,
-            title: ap.title || (ap.plot_index === 0 ? "Genesis" : `Chapter ${ap.plot_index}`),
-            content: ap.content,
-          }))}
-          initialPlotIndex={pidx}
-        />
-      </div>
+      {/* Chapter header with inline reading mode */}
       <header className="border-border mb-8 border-b pb-4">
-        <h1 className="text-accent text-xl font-bold tracking-tight">
-          {chapterTitle}
-        </h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-accent flex-1 text-xl font-bold tracking-tight">
+            {chapterTitle}
+          </h1>
+          <ReadingModeWrapper
+            storylineId={sid}
+            storylineTitle={sl.title}
+            chapters={allPlots.map((ap) => ({
+              plotIndex: ap.plot_index,
+              title: ap.title || (ap.plot_index === 0 ? "Genesis" : `Chapter ${ap.plot_index}`),
+              content: ap.content,
+            }))}
+            initialPlotIndex={pidx}
+          />
+        </div>
         <div className="text-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
           <span>
             by{" "}

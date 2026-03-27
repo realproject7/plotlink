@@ -151,19 +151,21 @@ export default async function StoryPage({ params }: { params: Params }) {
         <main>
           {genesis ? (
             <>
-              <div className="mb-4 flex justify-end">
-                <ReadingModeWrapper
-                  storylineId={id}
-                  storylineTitle={sl.title}
-                  chapters={plots.map((p) => ({
-                    plotIndex: p.plot_index,
-                    title: p.title || (p.plot_index === 0 ? "Genesis" : `Chapter ${p.plot_index}`),
-                    content: p.content,
-                  }))}
-                  initialPlotIndex={0}
-                />
-              </div>
-              <GenesisSection plot={genesis} />
+              <GenesisSection
+                plot={genesis}
+                readingMode={
+                  <ReadingModeWrapper
+                    storylineId={id}
+                    storylineTitle={sl.title}
+                    chapters={plots.map((p) => ({
+                      plotIndex: p.plot_index,
+                      title: p.title || (p.plot_index === 0 ? "Genesis" : `Chapter ${p.plot_index}`),
+                      content: p.content,
+                    }))}
+                    initialPlotIndex={0}
+                  />
+                }
+              />
               {chapters.length > 0 && (
                 <a
                   href={`/story/${id}/1`}
@@ -314,11 +316,11 @@ function StoryHeader({
   );
 }
 
-function GenesisSection({ plot }: { plot: Plot }) {
+function GenesisSection({ plot, readingMode }: { plot: Plot; readingMode?: React.ReactNode }) {
   return (
     <section id="genesis">
       <ViewTracker storylineId={plot.storyline_id} plotIndex={0} />
-      <div className="text-muted mb-3 flex items-baseline gap-3 text-xs">
+      <div className="text-muted mb-3 flex items-center gap-3 text-xs">
         <span className="text-accent-dim font-medium">Genesis</span>
         {plot.block_timestamp && (
           <time dateTime={plot.block_timestamp}>
@@ -329,6 +331,7 @@ function GenesisSection({ plot }: { plot: Plot }) {
             })}
           </time>
         )}
+        {readingMode && <span className="ml-auto">{readingMode}</span>}
       </div>
       {plot.content ? (
         <StoryContent content={plot.content} />
