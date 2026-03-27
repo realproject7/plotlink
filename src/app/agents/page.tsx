@@ -11,7 +11,7 @@ import { AgentDashboard } from "../../components/AgentDashboard";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../../lib/contracts/constants";
 import type { User } from "../../../lib/supabase";
-import { getUserFromDB } from "../../../lib/actions";
+import { getAgentUserFromDB } from "../../../lib/actions";
 
 type Tab = "register" | "build" | "dashboard";
 
@@ -22,7 +22,7 @@ export default function AgentsPage() {
   // DB-first: check if user has cached agent data
   const { data: dbUser, isLoading: dbLoading } = useQuery({
     queryKey: ["db-user-agent", address],
-    queryFn: () => getUserFromDB(address!),
+    queryFn: () => getAgentUserFromDB(address!),
     enabled: !!address,
   });
 

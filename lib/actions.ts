@@ -37,8 +37,8 @@ export async function getFarcasterProfile(
 export async function fetchAgentMetadata(
   address: string,
 ): Promise<AgentMetadata | null> {
-  // DB-first: check cached agent data
-  const dbUser = await getUserFromDB(address);
+  // DB-first: check cached agent data (agent-specific lookup)
+  const dbUser = await getAgentUserFromDB(address);
   if (dbUser?.agent_id != null) {
     return {
       agentId: String(dbUser.agent_id),
@@ -84,7 +84,7 @@ export async function fetchAgentMetadata(
 
 /**
  * Look up a user from the DB by wallet address.
- * Searches verified_addresses first, then primary_address for wallet-only users.
+ * Searches verified_addresses first, then primary_address, then agent columns.
  */
 export async function getUserFromDB(
   address: string,
@@ -126,4 +126,55 @@ export async function getUserFromDB(
     .single();
 
   return byAgentOwner ?? null;
+}
+
+/**
+ * Look up an agent user from the DB, prioritizing rows with agent_id.
+ * Use this for agent-specific lookups (detection, management, metadata).
+ */
+export async function getAgentUserFromDB(
+  address: string,
+): Promise<User | null> {
+  const supabase = createServiceRoleClient();
+  if (!supabase) return null;
+
+  const normalized = address.toLowerCase();
+
+  // First: find a row with agent_id keyed by agent_wallet or agent_owner
+  const { data: byAgentWallet } = await supabase
+    .from("users")
+    .select("*")
+    .eq("agent_wallet", normalized)
+    .not("agent_id", "is", null)
+    .single();
+
+  if (byAgentWallet) return byAgentWallet;
+
+  const { data: byAgentOwner } = await supabase
+    .from("users")
+    .select("*")
+    .eq("agent_owner", normalized)
+    .not("agent_id", "is", null)
+    .single();
+
+  if (byAgentOwner) return byAgentOwner;
+
+  // Fallback: check standard address columns for rows with agent_id
+  const { data: byVerified } = await supabase
+    .from("users")
+    .select("*")
+    .contains("verified_addresses", [normalized])
+    .not("agent_id", "is", null)
+    .single();
+
+  if (byVerified) return byVerified;
+
+  const { data: byPrimary } = await supabase
+    .from("users")
+    .select("*")
+    .eq("primary_address", normalized)
+    .not("agent_id", "is", null)
+    .single();
+
+  return byPrimary ?? null;
 }

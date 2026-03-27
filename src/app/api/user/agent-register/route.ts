@@ -21,26 +21,33 @@ export async function POST(request: NextRequest) {
 
     const normalized = walletAddress.toLowerCase();
 
-    // Find existing user by verified_addresses, primary_address, agent_wallet, or agent_owner
-    const { data: byVerified } = await supabase
+    // Find existing user — prefer rows with agent_id, then standard address columns
+    const { data: byAgentWallet } = await supabase
       .from("users")
       .select("id")
-      .contains("verified_addresses", [normalized])
+      .eq("agent_wallet", normalized)
+      .not("agent_id", "is", null)
       .single();
 
-    const { data: byPrimary } = !byVerified
-      ? await supabase.from("users").select("id").eq("primary_address", normalized).single()
-      : { data: byVerified };
+    const { data: byAgentOwner } = !byAgentWallet
+      ? await supabase.from("users").select("id").eq("agent_owner", normalized).not("agent_id", "is", null).single()
+      : { data: byAgentWallet };
 
-    const { data: byAgentWallet } = !(byVerified ?? byPrimary)
-      ? await supabase.from("users").select("id").eq("agent_wallet", normalized).single()
-      : { data: null };
+    // Fallback: standard address columns (any row, even without agent_id — we'll update it)
+    let existingUser = byAgentWallet ?? byAgentOwner;
+    if (!existingUser) {
+      const { data: byVerified } = await supabase
+        .from("users")
+        .select("id")
+        .contains("verified_addresses", [normalized])
+        .single();
 
-    const { data: byAgentOwner } = !(byVerified ?? byPrimary ?? byAgentWallet)
-      ? await supabase.from("users").select("id").eq("agent_owner", normalized).single()
-      : { data: null };
+      const { data: byPrimary } = !byVerified
+        ? await supabase.from("users").select("id").eq("primary_address", normalized).single()
+        : { data: byVerified };
 
-    const existingUser = byVerified ?? byPrimary ?? byAgentWallet ?? byAgentOwner;
+      existingUser = byVerified ?? byPrimary;
+    }
 
     const agentFields = {
       agent_id: Number(agentId),

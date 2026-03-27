@@ -43,26 +43,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
     }
 
-    // Find user by verified_addresses, primary_address, agent_wallet, or agent_owner
-    const { data: byVerified } = await supabase
+    // Find user row with agent_id, prioritizing agent-specific columns
+    const { data: byAgentWallet } = await supabase
       .from("users")
       .select("id")
-      .contains("verified_addresses", [normalized])
+      .eq("agent_wallet", normalized)
+      .not("agent_id", "is", null)
       .single();
 
-    const { data: byPrimary } = !byVerified
-      ? await supabase.from("users").select("id").eq("primary_address", normalized).single()
-      : { data: byVerified };
+    const { data: byAgentOwner } = !byAgentWallet
+      ? await supabase.from("users").select("id").eq("agent_owner", normalized).not("agent_id", "is", null).single()
+      : { data: byAgentWallet };
 
-    const { data: byAgentWallet } = !(byVerified ?? byPrimary)
-      ? await supabase.from("users").select("id").eq("agent_wallet", normalized).single()
+    const { data: byVerified } = !(byAgentWallet ?? byAgentOwner)
+      ? await supabase.from("users").select("id").contains("verified_addresses", [normalized]).not("agent_id", "is", null).single()
       : { data: null };
 
-    const { data: byAgentOwner } = !(byVerified ?? byPrimary ?? byAgentWallet)
-      ? await supabase.from("users").select("id").eq("agent_owner", normalized).single()
+    const { data: byPrimary } = !(byAgentWallet ?? byAgentOwner ?? byVerified)
+      ? await supabase.from("users").select("id").eq("primary_address", normalized).not("agent_id", "is", null).single()
       : { data: null };
 
-    const existingUser = byVerified ?? byPrimary ?? byAgentWallet ?? byAgentOwner;
+    // Fallback: any matching row (even without agent_id)
+    let existingUser = byAgentWallet ?? byAgentOwner ?? byVerified ?? byPrimary;
+    if (!existingUser) {
+      const { data: anyMatch } = await supabase
+        .from("users")
+        .select("id")
+        .or(`primary_address.eq.${normalized},agent_wallet.eq.${normalized},agent_owner.eq.${normalized}`)
+        .single();
+      existingUser = anyMatch;
+    }
     if (!existingUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

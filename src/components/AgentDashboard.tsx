@@ -5,8 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
-import { getUserFromDB } from "../../lib/actions";
-import type { User } from "../../lib/supabase";
+import { getAgentUserFromDB } from "../../lib/actions";
 
 export function AgentDashboard() {
   const { address } = useAccount();
@@ -14,7 +13,7 @@ export function AgentDashboard() {
   // DB-first: check cached agent data
   const { data: dbUser, isLoading: dbLoading } = useQuery({
     queryKey: ["db-user-dashboard", address],
-    queryFn: () => getUserFromDB(address!),
+    queryFn: () => getAgentUserFromDB(address!),
     enabled: !!address,
   });
 
