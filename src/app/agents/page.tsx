@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { cacheAgentById } from "../../../lib/actions";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { AgentRegister } from "../../components/AgentRegister";
 import { AgentManage } from "../../components/AgentManage";
@@ -11,8 +10,7 @@ import { AgentBuild } from "../../components/AgentBuild";
 import { AgentDashboard } from "../../components/AgentDashboard";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../../lib/contracts/constants";
-import type { User } from "../../../lib/supabase";
-import { getAgentUserFromDB } from "../../../lib/actions";
+import { getAgentUserFromDB, checkUserExists, cacheAgentById } from "../../../lib/actions";
 
 type Tab = "register" | "build" | "dashboard";
 
@@ -32,8 +30,17 @@ export default function AgentsPage() {
   const dbIsAgentWallet = dbAgentId != null && dbUser?.agent_wallet?.toLowerCase() === address?.toLowerCase();
   const dbDetected = dbAgentId != null;
 
-  // RPC fallback: only if DB has no agent data
-  const needsRpcFallback = !dbLoading && !dbDetected && !!address;
+  // Check if user exists in DB at all (even without agent_id)
+  const { data: userExists, isLoading: userExistsLoading } = useQuery({
+    queryKey: ["user-exists", address],
+    queryFn: () => checkUserExists(address!),
+    enabled: !!address && !dbLoading && !dbDetected,
+  });
+
+  // RPC fallback: only for completely unknown wallets (no DB record at all)
+  // Known users with agent_id=NULL are definitively non-agents — zero RPC calls
+  // External registrations are detected via profile refresh (/api/user/onboard)
+  const needsRpcFallback = !dbLoading && !dbDetected && !userExistsLoading && userExists === false && !!address;
 
   const { data: rpcAgentId, isLoading: rpcWalletLoading } = useReadContract({
     address: ERC8004_REGISTRY,
@@ -79,7 +86,7 @@ export default function AgentsPage() {
   }
 
   const hasExistingAgent = detectedAgentId !== undefined && detectedRole !== undefined;
-  const detectLoading = dbLoading || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
+  const detectLoading = dbLoading || (!dbDetected && userExistsLoading) || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
 
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);

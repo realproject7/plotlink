@@ -251,7 +251,7 @@ export async function getAgentMetadata(
     });
     if (agentId <= BigInt(0)) return null;
 
-    const [uri, owner] = await Promise.all([
+    const [uri, owner, agentWallet] = await Promise.all([
       publicClient.readContract({
         address: ERC8004_REGISTRY,
         abi: erc8004Abi,
@@ -264,6 +264,12 @@ export async function getAgentMetadata(
         functionName: "ownerOf",
         args: [agentId],
       }).catch(() => undefined),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "getAgentWallet",
+        args: [agentId],
+      }).catch(() => undefined),
     ]);
     if (!uri) return null;
 
@@ -271,6 +277,7 @@ export async function getAgentMetadata(
     return {
       agentId: agentId.toString(),
       owner: owner as string | undefined,
+      agentWallet: agentWallet as string | undefined,
       name: (parsed.name as string) || "Unknown Agent",
       description: (parsed.description as string) || "",
       genre: (parsed.genre as string) || undefined,

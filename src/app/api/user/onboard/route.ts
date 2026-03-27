@@ -4,6 +4,10 @@ import { getUserByWallet } from "../../../../../lib/farcaster-indexer";
 import { lookupByAddress } from "../../../../../lib/farcaster";
 import { fetchQuotientScore, isQuotientStale } from "../../../../../lib/quotient";
 import { buildUserData } from "../../../../../lib/user-data";
+import { getAgentMetadata, getAgentMetadataById, erc8004Abi } from "../../../../../lib/contracts/erc8004";
+import { ERC8004_REGISTRY } from "../../../../../lib/contracts/constants";
+import { publicClient } from "../../../../../lib/rpc";
+import type { Address } from "viem";
 
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -109,6 +113,53 @@ export async function POST(request: NextRequest) {
       verifiedAddresses,
       quotientData,
     });
+
+    // Check ERC-8004 agent status if not already cached
+    if (!existingUser?.agent_id) {
+      try {
+        // Check 1: is this wallet a bound agent wallet?
+        let agentMeta = await getAgentMetadata(normalizedAddress as Address);
+
+        // Check 2: does this wallet own an agent NFT? (owner with separate bound wallet)
+        if (!agentMeta) {
+          const balance = await publicClient.readContract({
+            address: ERC8004_REGISTRY,
+            abi: erc8004Abi,
+            functionName: "balanceOf",
+            args: [normalizedAddress as Address],
+          }).catch(() => BigInt(0));
+
+          if (balance > BigInt(0)) {
+            const ownedTokenId = await publicClient.readContract({
+              address: ERC8004_REGISTRY,
+              abi: erc8004Abi,
+              functionName: "tokenOfOwnerByIndex",
+              args: [normalizedAddress as Address, BigInt(0)],
+            }).catch(() => undefined);
+
+            if (ownedTokenId !== undefined) {
+              agentMeta = await getAgentMetadataById(ownedTokenId);
+            }
+          }
+        }
+
+        if (agentMeta?.agentId) {
+          Object.assign(userData, {
+            agent_id: Number(agentMeta.agentId),
+            agent_name: agentMeta.name || null,
+            agent_description: agentMeta.description || null,
+            agent_genre: agentMeta.genre || null,
+            agent_llm_model: agentMeta.llmModel || null,
+            agent_owner: agentMeta.owner?.toLowerCase() || null,
+            agent_wallet: agentMeta.agentWallet && agentMeta.agentWallet !== "0x0000000000000000000000000000000000000000"
+              ? agentMeta.agentWallet.toLowerCase() : null,
+            agent_registered_at: agentMeta.registeredAt || null,
+          });
+        }
+      } catch {
+        // Non-fatal — agent check is best-effort
+      }
+    }
 
     // Upsert — update by existing row identity
     if (existingUser) {
