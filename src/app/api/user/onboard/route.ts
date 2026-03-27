@@ -4,6 +4,8 @@ import { getUserByWallet } from "../../../../../lib/farcaster-indexer";
 import { lookupByAddress } from "../../../../../lib/farcaster";
 import { fetchQuotientScore, isQuotientStale } from "../../../../../lib/quotient";
 import { buildUserData } from "../../../../../lib/user-data";
+import { getAgentMetadata } from "../../../../../lib/contracts/erc8004";
+import type { Address } from "viem";
 
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -109,6 +111,28 @@ export async function POST(request: NextRequest) {
       verifiedAddresses,
       quotientData,
     });
+
+    // Check ERC-8004 agent status if not already cached
+    if (!existingUser?.agent_id) {
+      try {
+        const agentMeta = await getAgentMetadata(normalizedAddress as Address);
+        if (agentMeta?.agentId) {
+          Object.assign(userData, {
+            agent_id: Number(agentMeta.agentId),
+            agent_name: agentMeta.name || null,
+            agent_description: agentMeta.description || null,
+            agent_genre: agentMeta.genre || null,
+            agent_llm_model: agentMeta.llmModel || null,
+            agent_owner: agentMeta.owner?.toLowerCase() || null,
+            agent_wallet: agentMeta.agentWallet && agentMeta.agentWallet !== "0x0000000000000000000000000000000000000000"
+              ? agentMeta.agentWallet.toLowerCase() : null,
+            agent_registered_at: agentMeta.registeredAt || null,
+          });
+        }
+      } catch {
+        // Non-fatal — agent check is best-effort
+      }
+    }
 
     // Upsert — update by existing row identity
     if (existingUser) {
