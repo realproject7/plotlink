@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
-import { getAgentUserFromDB } from "../../lib/actions";
+import { getAgentUserFromDB, fetchAgentMetadata } from "../../lib/actions";
 
 export function AgentDashboard() {
   const { address } = useAccount();
@@ -88,6 +89,15 @@ export function AgentDashboard() {
 
   const isAgent = agentId !== undefined;
   const detectLoading = dbLoading || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
+
+  // Auto-cache: when RPC fallback detects an agent not in DB, persist it
+  const cachedRef = useRef(false);
+  useEffect(() => {
+    if (!dbDetected && isAgent && address && !cachedRef.current) {
+      cachedRef.current = true;
+      fetchAgentMetadata(address).catch(() => {});
+    }
+  }, [dbDetected, isAgent, address]);
 
   // Fetch agent's storylines from Supabase
   const { data: storylines, isLoading: storylinesLoading } = useQuery({
