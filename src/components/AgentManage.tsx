@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAccount, useWriteContract, useReadContract, useSignTypedData } from "wagmi";
 import { type Hex, type Address, zeroAddress } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
-import { erc8004Abi, type AgentMetadata } from "../../lib/contracts/erc8004";
+import { erc8004Abi, resolveAgentURI, type AgentMetadata } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY, BASE_CHAIN_ID, EXPLORER_URL } from "../../lib/contracts/constants";
 import { Select } from "./Select";
 
@@ -98,26 +98,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
         });
         if (cancelled) return;
         if (!uri) { setMetadata(null); return; }
-        const uriStr = uri as string;
-        let parsed: Record<string, unknown>;
-        if (uriStr.startsWith("{")) {
-          // Raw JSON stored directly in the URI field
-          parsed = JSON.parse(uriStr);
-        } else if (uriStr.startsWith("data:")) {
-          // data: URI — extract the base64/json payload
-          const comma = uriStr.indexOf(",");
-          const payload = comma >= 0 ? uriStr.slice(comma + 1) : uriStr;
-          parsed = JSON.parse(
-            uriStr.includes("base64") ? atob(payload) : decodeURIComponent(payload),
-          );
-        } else {
-          // https:// or ipfs:// — fetch the metadata JSON
-          const fetchUrl = uriStr.startsWith("ipfs://")
-            ? uriStr.replace("ipfs://", "https://ipfs.io/ipfs/")
-            : uriStr;
-          const res = await fetch(fetchUrl);
-          parsed = (await res.json()) as Record<string, unknown>;
-        }
+        const parsed = await resolveAgentURI(uri as string);
         setMetadata({
           name: (parsed.name as string) || "Unknown Agent",
           description: (parsed.description as string) || "",
