@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
-import { getAgentUserFromDB, cacheAgentById } from "../../lib/actions";
+import { getAgentUserFromDB, checkUserExists, cacheAgentById } from "../../lib/actions";
 
 export function AgentDashboard() {
   const { address } = useAccount();
@@ -24,8 +24,15 @@ export function AgentDashboard() {
   const dbIsAgentWallet = dbDetected && dbUser?.agent_wallet?.toLowerCase() === address?.toLowerCase();
   const dbAgentWallet = dbUser?.agent_wallet;
 
-  // RPC fallback: only if DB has no agent data
-  const needsRpcFallback = !dbLoading && !dbDetected && !!address;
+  // Check if user exists in DB at all (even without agent_id)
+  const { data: userExists, isLoading: userExistsLoading } = useQuery({
+    queryKey: ["user-exists-dashboard", address],
+    queryFn: () => checkUserExists(address!),
+    enabled: !!address && !dbLoading && !dbDetected,
+  });
+
+  // RPC fallback: only for completely unknown wallets (no DB record at all)
+  const needsRpcFallback = !dbLoading && !dbDetected && !userExistsLoading && userExists === false && !!address;
 
   const { data: rpcAgentId, isLoading: rpcWalletLoading } = useReadContract({
     address: ERC8004_REGISTRY,
@@ -88,7 +95,7 @@ export function AgentDashboard() {
   }
 
   const isAgent = agentId !== undefined;
-  const detectLoading = dbLoading || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
+  const detectLoading = dbLoading || (!dbDetected && userExistsLoading) || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
 
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);

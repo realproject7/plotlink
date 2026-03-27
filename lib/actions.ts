@@ -84,6 +84,17 @@ export async function fetchAgentMetadata(
 }
 
 /**
+ * Check if a user exists in the DB (any row, with or without agent_id).
+ * Returns true if a known user, false if completely unknown wallet.
+ */
+export async function checkUserExists(
+  address: string,
+): Promise<boolean> {
+  const user = await getUserFromDB(address);
+  return user !== null;
+}
+
+/**
  * Cache an externally registered agent by agentId.
  * Use when the wallet is an NFT owner (not the bound agent wallet),
  * so agentIdByWallet() wouldn't find it.
