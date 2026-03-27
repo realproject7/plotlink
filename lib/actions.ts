@@ -116,7 +116,7 @@ export async function cacheAgentById(
     agent_genre: meta.genre || null,
     agent_llm_model: meta.llmModel || null,
     agent_owner: meta.owner?.toLowerCase() || normalized,
-    agent_wallet: meta.agentWallet?.toLowerCase() || null,
+    agent_wallet: meta.agentWallet && meta.agentWallet !== "0x0000000000000000000000000000000000000000" ? meta.agentWallet.toLowerCase() : null,
     agent_registered_at: meta.registeredAt || null,
   };
 
