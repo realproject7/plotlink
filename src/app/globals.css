@@ -203,6 +203,13 @@ code, pre, .font-mono {
   }
 }
 
+/* Prevent iOS Safari auto-zoom on input focus (triggers at font-size < 16px) */
+@supports (-webkit-touch-callout: none) {
+  input, textarea, select {
+    font-size: max(16px, 1em);
+  }
+}
+
 /* Custom select dropdown styling */
 select {
   appearance: none;
