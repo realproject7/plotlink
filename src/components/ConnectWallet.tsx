@@ -55,6 +55,11 @@ export function ConnectWallet() {
           )}
           {profile ? `@${profile.username}` : truncateAddress(address)}
         </Link>
+        {profile && (
+          <span className="text-muted text-[10px] font-mono">
+            {truncateAddress(address)}
+          </span>
+        )}
         <button
           onClick={() => disconnect()}
           className="text-muted hover:text-error transition-colors"
