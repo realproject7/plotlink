@@ -20,7 +20,7 @@ export interface AgentMetadata {
 }
 
 export const erc8004Abi = [
-  // View
+  // View — reverse lookup wallet → agentId
   {
     type: "function",
     name: "agentIdByWallet",
@@ -28,12 +28,59 @@ export const erc8004Abi = [
     inputs: [{ name: "wallet", type: "address" }],
     outputs: [{ name: "agentId", type: "uint256" }],
   },
+  // View — fetch metadata URI for an agent
   {
     type: "function",
     name: "agentURI",
     stateMutability: "view",
     inputs: [{ name: "agentId", type: "uint256" }],
     outputs: [{ name: "", type: "string" }],
+  },
+  // View — get the bound agent wallet for an agentId
+  {
+    type: "function",
+    name: "getAgentWallet",
+    stateMutability: "view",
+    inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [{ name: "", type: "address" }],
+  },
+  // View — get arbitrary metadata by key
+  {
+    type: "function",
+    name: "getMetadata",
+    stateMutability: "view",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "metadataKey", type: "string" },
+    ],
+    outputs: [{ name: "", type: "bytes" }],
+  },
+  // View — ERC-721: owner of a token (agentId)
+  {
+    type: "function",
+    name: "ownerOf",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "owner", type: "address" }],
+  },
+  // View — ERC-721: number of tokens owned by an address
+  {
+    type: "function",
+    name: "balanceOf",
+    stateMutability: "view",
+    inputs: [{ name: "owner", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  // View — ERC-721 Enumerable: token at index for owner
+  {
+    type: "function",
+    name: "tokenOfOwnerByIndex",
+    stateMutability: "view",
+    inputs: [
+      { name: "owner", type: "address" },
+      { name: "index", type: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256" }],
   },
   // Write — register a new agent
   {
@@ -56,6 +103,37 @@ export const erc8004Abi = [
     ],
     outputs: [],
   },
+  // Write — remove agent wallet binding
+  {
+    type: "function",
+    name: "unsetAgentWallet",
+    stateMutability: "nonpayable",
+    inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [],
+  },
+  // Write — update agent URI (owner/approved only)
+  {
+    type: "function",
+    name: "setAgentURI",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "newURI", type: "string" },
+    ],
+    outputs: [],
+  },
+  // Write — set arbitrary metadata key/value
+  {
+    type: "function",
+    name: "setMetadata",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agentId", type: "uint256" },
+      { name: "metadataKey", type: "string" },
+      { name: "metadataValue", type: "bytes" },
+    ],
+    outputs: [],
+  },
   // Event — emitted on successful registration
   {
     type: "event",
@@ -64,6 +142,27 @@ export const erc8004Abi = [
       { name: "agentId", type: "uint256", indexed: true },
       { name: "agentURI", type: "string", indexed: false },
       { name: "owner", type: "address", indexed: true },
+    ],
+  },
+  // Event — emitted when URI is updated
+  {
+    type: "event",
+    name: "URIUpdated",
+    inputs: [
+      { name: "agentId", type: "uint256", indexed: true },
+      { name: "newURI", type: "string", indexed: false },
+      { name: "updatedBy", type: "address", indexed: true },
+    ],
+  },
+  // Event — emitted when metadata is set
+  {
+    type: "event",
+    name: "MetadataSet",
+    inputs: [
+      { name: "agentId", type: "uint256", indexed: true },
+      { name: "indexedMetadataKey", type: "string", indexed: true },
+      { name: "metadataKey", type: "string", indexed: false },
+      { name: "metadataValue", type: "bytes", indexed: false },
     ],
   },
 ] as const;
