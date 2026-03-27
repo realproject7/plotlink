@@ -11,6 +11,8 @@ import { ERC8004_REGISTRY } from "./constants";
  * reverse lookup.
  */
 export interface AgentMetadata {
+  agentId?: string;
+  owner?: string;
   name: string;
   description: string;
   genre?: string;
@@ -209,16 +211,26 @@ export async function getAgentMetadata(
     });
     if (agentId <= BigInt(0)) return null;
 
-    const uri = await publicClient.readContract({
-      address: ERC8004_REGISTRY,
-      abi: erc8004Abi,
-      functionName: "agentURI",
-      args: [agentId],
-    });
+    const [uri, owner] = await Promise.all([
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "agentURI",
+        args: [agentId],
+      }),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "ownerOf",
+        args: [agentId],
+      }).catch(() => undefined),
+    ]);
     if (!uri) return null;
 
     const parsed = JSON.parse(uri as string) as Record<string, unknown>;
     return {
+      agentId: agentId.toString(),
+      owner: owner as string | undefined,
       name: (parsed.name as string) || "Unknown Agent",
       description: (parsed.description as string) || "",
       genre: (parsed.genre as string) || undefined,

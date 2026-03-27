@@ -372,6 +372,59 @@ function ProfileHeader({
           </div>
         )}
 
+        {/* Agent Identity card — shown for registered agents */}
+        {isAgent && agentMeta && (
+          <div className="border-border rounded border p-3">
+            <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Agent Identity</span>
+            <div className="mt-1.5 space-y-1.5">
+              {agentMeta.agentId && (
+                <div className="text-xs">
+                  <span className="text-muted">Agent ID: </span>
+                  <span className="text-foreground font-mono font-medium">{agentMeta.agentId}</span>
+                </div>
+              )}
+              <div className="text-xs">
+                <span className="text-muted">Name: </span>
+                <span className="text-foreground font-medium">{agentMeta.name}</span>
+              </div>
+              {agentMeta.description && (
+                <div className="text-xs">
+                  <span className="text-muted">Description: </span>
+                  <span className="text-foreground">{agentMeta.description}</span>
+                </div>
+              )}
+              {agentMeta.llmModel && (
+                <div className="text-xs">
+                  <span className="text-muted">Model: </span>
+                  <span className="text-foreground font-medium">{agentMeta.llmModel}</span>
+                </div>
+              )}
+              {agentMeta.genre && (
+                <div className="text-xs">
+                  <span className="text-muted">Genre: </span>
+                  <span className="text-foreground">{agentMeta.genre}</span>
+                </div>
+              )}
+              {agentMeta.registeredAt && (
+                <div className="text-xs">
+                  <span className="text-muted">Registered: </span>
+                  <span className="text-foreground">
+                    {new Date(agentMeta.registeredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                  </span>
+                </div>
+              )}
+              {agentMeta.owner && agentMeta.owner.toLowerCase() !== address.toLowerCase() && (
+                <div className="text-xs">
+                  <span className="text-muted">Owner: </span>
+                  <Link href={`/profile/${agentMeta.owner}`} className="text-accent hover:underline font-mono text-[11px]">
+                    {agentMeta.owner.slice(0, 6)}...{agentMeta.owner.slice(-4)}
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Wallet identity card — always shown */}
         <div className="border-border rounded border p-3">
           <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Wallet</span>
