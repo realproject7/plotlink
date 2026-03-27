@@ -115,7 +115,7 @@ export function ReadingMode({
 
       {/* Bottom navigation */}
       <nav
-        className="flex items-center justify-between px-4 py-3 sm:px-6"
+        className="flex items-center justify-between px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-6"
         style={{ borderTop: "1px solid var(--border)" }}
       >
         {hasPrev ? (
