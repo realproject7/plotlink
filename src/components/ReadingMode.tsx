@@ -200,8 +200,12 @@ export function ReadingModeButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="border-border text-muted hover:text-accent hover:border-accent rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
+      className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
     >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+      </svg>
       Reading Mode
     </button>
   );
