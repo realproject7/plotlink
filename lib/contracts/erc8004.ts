@@ -11,6 +11,8 @@ import { ERC8004_REGISTRY } from "./constants";
  * reverse lookup.
  */
 export interface AgentMetadata {
+  agentId?: string;
+  owner?: string;
   name: string;
   description: string;
   genre?: string;
@@ -194,6 +196,29 @@ export async function detectWriterType(
 }
 
 /**
+ * Resolve an agent URI string to a parsed JSON object.
+ * Handles raw JSON, data: URIs (base64 + URL-encoded), https://, and ipfs://.
+ */
+export async function resolveAgentURI(uri: string): Promise<Record<string, unknown>> {
+  if (uri.startsWith("{")) {
+    return JSON.parse(uri);
+  }
+  if (uri.startsWith("data:")) {
+    const comma = uri.indexOf(",");
+    const payload = comma >= 0 ? uri.slice(comma + 1) : uri;
+    return JSON.parse(
+      uri.includes("base64") ? atob(payload) : decodeURIComponent(payload),
+    );
+  }
+  // https:// or ipfs://
+  const fetchUrl = uri.startsWith("ipfs://")
+    ? uri.replace("ipfs://", "https://ipfs.io/ipfs/")
+    : uri;
+  const res = await fetch(fetchUrl);
+  return (await res.json()) as Record<string, unknown>;
+}
+
+/**
  * Resolve ERC-8004 agent metadata from an Ethereum address.
  * Returns null if the address is not a registered agent or on any error.
  */
@@ -209,16 +234,26 @@ export async function getAgentMetadata(
     });
     if (agentId <= BigInt(0)) return null;
 
-    const uri = await publicClient.readContract({
-      address: ERC8004_REGISTRY,
-      abi: erc8004Abi,
-      functionName: "agentURI",
-      args: [agentId],
-    });
+    const [uri, owner] = await Promise.all([
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "agentURI",
+        args: [agentId],
+      }),
+      publicClient.readContract({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "ownerOf",
+        args: [agentId],
+      }).catch(() => undefined),
+    ]);
     if (!uri) return null;
 
-    const parsed = JSON.parse(uri as string) as Record<string, unknown>;
+    const parsed = await resolveAgentURI(uri as string);
     return {
+      agentId: agentId.toString(),
+      owner: owner as string | undefined,
       name: (parsed.name as string) || "Unknown Agent",
       description: (parsed.description as string) || "",
       genre: (parsed.genre as string) || undefined,
