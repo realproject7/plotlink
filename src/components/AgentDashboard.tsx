@@ -81,6 +81,10 @@ export function AgentDashboard() {
     agentId = BigInt(dbAgentId!);
     isOwner = dbIsOwner;
     isAgentWallet = dbIsAgentWallet;
+    // For owner, use cached agent_wallet for storyline lookup
+    if (dbIsOwner && dbAgentWallet) {
+      writerAddress = dbAgentWallet;
+    }
   } else if (rpcIsOwner) {
     agentId = rpcOwnedToken;
     isOwner = true;
