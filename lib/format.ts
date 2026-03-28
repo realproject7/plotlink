@@ -9,7 +9,7 @@
 export function formatPrice(value: string | number): string {
   const v = typeof value === "string" ? parseFloat(value) : value;
   if (v === 0 || isNaN(v)) return "0";
-  if (v < 0.001) return v.toExponential(0);
+  if (v < 0.001) return "< 0.001";
   if (v < 1) return v.toFixed(4);
   return v.toFixed(2);
 }
