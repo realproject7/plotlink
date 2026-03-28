@@ -28,7 +28,11 @@ export function ReadingMode({
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
+  const [flipPhase, setFlipPhase] = useState<"out" | "in" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const flipping = useRef(false);
   const { isMiniApp } = usePlatformDetection();
 
   const chapter = chapters[currentIdx];
@@ -40,14 +44,22 @@ export function ReadingMode({
   }, []);
 
   const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
+    if (flipping.current) return;
+    flipping.current = true;
+    // Phase 1: flip out the current page
     setFlipDir(dir);
-    // Brief delay to trigger the CSS animation before content swap
-    requestAnimationFrame(() => {
+    setFlipPhase("out");
+    setTimeout(() => {
+      // Phase 2: swap content and flip in the new page
       setCurrentIdx(idx);
       scrollToTop();
-      // Clear the animation class after transition completes
-      setTimeout(() => setFlipDir(null), 250);
-    });
+      setFlipPhase("in");
+      setTimeout(() => {
+        setFlipDir(null);
+        setFlipPhase(null);
+        flipping.current = false;
+      }, 200);
+    }, 200);
   }, [scrollToTop]);
 
   const goPrev = useCallback(() => {
@@ -110,9 +122,29 @@ export function ReadingMode({
       </div>
 
       {/* Content area */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div
+        ref={contentRef}
+        className="page-flip-container flex-1 overflow-y-auto overflow-x-hidden"
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          const dx = e.changedTouches[0].clientX - touchStartX.current;
+          const dy = e.changedTouches[0].clientY - touchStartY.current;
+          // Only trigger if horizontal swipe exceeds threshold and is more horizontal than vertical
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (dx < 0) goNext();
+            else goPrev();
+          }
+        }}
+      >
         <div className={`mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12 ${
-          flipDir === "left" ? "page-flip-left" : flipDir === "right" ? "page-flip-right" : ""
+          flipPhase === "out" && flipDir === "left" ? "page-flip-out-left"
+          : flipPhase === "out" && flipDir === "right" ? "page-flip-out-right"
+          : flipPhase === "in" && flipDir === "left" ? "page-flip-in-left"
+          : flipPhase === "in" && flipDir === "right" ? "page-flip-in-right"
+          : ""
         }`}>
           {chapter?.content ? (
             <StoryContent content={chapter.content} />
