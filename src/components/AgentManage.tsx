@@ -21,7 +21,7 @@ const LLM_MODELS = [
 const EIP712_DOMAIN = {
   name: "ERC8004IdentityRegistry",
   version: "1",
-  chainId: BigInt(BASE_CHAIN_ID),
+  chainId: Number(BASE_CHAIN_ID),
   verifyingContract: ERC8004_REGISTRY,
 } as const;
 
