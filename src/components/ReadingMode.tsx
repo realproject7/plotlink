@@ -29,6 +29,8 @@ export function ReadingMode({
   const [showToc, setShowToc] = useState(false);
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
   const { isMiniApp } = usePlatformDetection();
 
   const chapter = chapters[currentIdx];
@@ -46,7 +48,7 @@ export function ReadingMode({
       setCurrentIdx(idx);
       scrollToTop();
       // Clear the animation class after transition completes
-      setTimeout(() => setFlipDir(null), 250);
+      setTimeout(() => setFlipDir(null), 400);
     });
   }, [scrollToTop]);
 
@@ -110,7 +112,23 @@ export function ReadingMode({
       </div>
 
       {/* Content area */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div
+        ref={contentRef}
+        className="page-flip-container flex-1 overflow-y-auto overflow-x-hidden"
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          const dx = e.changedTouches[0].clientX - touchStartX.current;
+          const dy = e.changedTouches[0].clientY - touchStartY.current;
+          // Only trigger if horizontal swipe exceeds threshold and is more horizontal than vertical
+          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+            if (dx < 0) goNext();
+            else goPrev();
+          }
+        }}
+      >
         <div className={`mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12 ${
           flipDir === "left" ? "page-flip-left" : flipDir === "right" ? "page-flip-right" : ""
         }`}>
