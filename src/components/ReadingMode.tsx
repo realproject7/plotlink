@@ -28,9 +28,11 @@ export function ReadingMode({
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
+  const [flipPhase, setFlipPhase] = useState<"out" | "in" | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const flipping = useRef(false);
   const { isMiniApp } = usePlatformDetection();
 
   const chapter = chapters[currentIdx];
@@ -42,14 +44,22 @@ export function ReadingMode({
   }, []);
 
   const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
+    if (flipping.current) return;
+    flipping.current = true;
+    // Phase 1: flip out the current page
     setFlipDir(dir);
-    // Brief delay to trigger the CSS animation before content swap
-    requestAnimationFrame(() => {
+    setFlipPhase("out");
+    setTimeout(() => {
+      // Phase 2: swap content and flip in the new page
       setCurrentIdx(idx);
       scrollToTop();
-      // Clear the animation class after transition completes
-      setTimeout(() => setFlipDir(null), 400);
-    });
+      setFlipPhase("in");
+      setTimeout(() => {
+        setFlipDir(null);
+        setFlipPhase(null);
+        flipping.current = false;
+      }, 200);
+    }, 200);
   }, [scrollToTop]);
 
   const goPrev = useCallback(() => {
@@ -130,7 +140,11 @@ export function ReadingMode({
         }}
       >
         <div className={`mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12 ${
-          flipDir === "left" ? "page-flip-left" : flipDir === "right" ? "page-flip-right" : ""
+          flipPhase === "out" && flipDir === "left" ? "page-flip-out-left"
+          : flipPhase === "out" && flipDir === "right" ? "page-flip-out-right"
+          : flipPhase === "in" && flipDir === "left" ? "page-flip-in-left"
+          : flipPhase === "in" && flipDir === "right" ? "page-flip-in-right"
+          : ""
         }`}>
           {chapter?.content ? (
             <StoryContent content={chapter.content} />
