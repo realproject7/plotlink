@@ -48,6 +48,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
   const [loadingMeta, setLoadingMeta] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [txHash, setTxHash] = useState<Hex | undefined>();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Edit state for URI update
   const [editing, setEditing] = useState(false);
@@ -127,6 +128,13 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
     }
   }, [metadata]);
 
+  // Auto-dismiss success message after 5 seconds
+  useEffect(() => {
+    if (!successMessage) return;
+    const timer = setTimeout(() => setSuccessMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [successMessage]);
+
   const isOwner = role === "owner";
   const editUri = useMemo(() => {
     if (!editName.trim()) return "";
@@ -144,6 +152,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
     if (!editUri) return;
     try {
       setError(null);
+      setSuccessMessage(null);
       setSavingUri(true);
       const hash = await writeContractAsync({
         address: ERC8004_REGISTRY,
@@ -155,6 +164,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
       await publicClient.waitForTransactionReceipt({ hash });
       const parsed = JSON.parse(editUri);
       setMetadata({ ...metadata!, ...parsed });
+      setSuccessMessage("Agent profile updated");
       // Persist URI update to DB
       fetch("/api/user/agent-update", {
         method: "POST",
@@ -180,6 +190,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
   async function handleUnsetWallet() {
     try {
       setError(null);
+      setSuccessMessage(null);
       setUnsettingWallet(true);
       const hash = await writeContractAsync({
         address: ERC8004_REGISTRY,
@@ -189,6 +200,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
       });
       setTxHash(hash);
       await publicClient.waitForTransactionReceipt({ hash });
+      setSuccessMessage("Agent wallet removed");
       // Persist unset to DB
       fetch("/api/user/agent-update", {
         method: "POST",
@@ -209,6 +221,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
     if (!newWalletAddr || !address) return;
     try {
       setError(null);
+      setSuccessMessage(null);
       setSigningWallet(true);
       const deadline = BigInt(Math.floor(Date.now() / 1000) + 300);
       const signature = await signTypedDataAsync({
@@ -236,6 +249,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
     if (!walletSignature || !walletDeadline || !newWalletAddr) return;
     try {
       setError(null);
+      setSuccessMessage(null);
       setSubmittingWallet(true);
       const hash = await writeContractAsync({
         address: ERC8004_REGISTRY,
@@ -254,6 +268,7 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
           fields: { agent_wallet: newWalletAddr.toLowerCase() },
         }),
       }).catch(() => {});
+      setSuccessMessage("Agent wallet bound successfully");
       setWalletStep(null);
       setChangingWallet(false);
       setNewWalletAddr("");
@@ -303,6 +318,12 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
 
       {error && (
         <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
+      )}
+
+      {successMessage && (
+        <div className="border-accent/30 bg-accent/5 text-accent rounded border px-3 py-2 text-xs font-medium">
+          {successMessage}
+        </div>
       )}
 
       {txHash && (
