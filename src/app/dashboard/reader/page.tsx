@@ -3,7 +3,7 @@
 import { useAccount } from "wagmi";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase, type Donation, type TradeHistory } from "../../../../lib/supabase";
-import { formatPrice } from "../../../../lib/format";
+import { formatPrice, formatSupply } from "../../../../lib/format";
 import { ReaderPortfolio } from "../../../components/ReaderPortfolio";
 import Link from "next/link";
 import { WriterIdentityClient } from "../../../components/WriterIdentityClient";
@@ -219,6 +219,23 @@ function TradingHistory({ address }: { address: string }) {
   const trades = data?.pages.flatMap((p) => p.rows) ?? [];
   const totalCount = data?.pages[0]?.totalCount ?? 0;
 
+  // Fetch storyline titles for displayed trades
+  const storylineIds = [...new Set(trades.map((t) => t.storyline_id))];
+  const { data: storylineTitles } = useQuery({
+    queryKey: ["storyline-titles", storylineIds.join(",")],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return {} as Record<number, string>;
+      const { data: rows } = await supabase
+        .from("storylines")
+        .select("storyline_id, title")
+        .in("storyline_id", storylineIds);
+      const map: Record<number, string> = {};
+      for (const r of rows ?? []) map[r.storyline_id] = r.title;
+      return map;
+    },
+    enabled: storylineIds.length > 0,
+  });
+
   return (
     <section className="mt-8">
       <h2 className="text-foreground text-sm font-medium">Trading History</h2>
@@ -229,53 +246,64 @@ function TradingHistory({ address }: { address: string }) {
       {isLoading && <p className="text-muted mt-4 text-sm">Loading...</p>}
 
       <div className="mt-4 space-y-2">
-        {trades.map((t) => (
-          <div
-            key={`${t.tx_hash}-${t.log_index}`}
-            className="border-border flex items-center justify-between rounded border px-3 py-2 text-xs"
-          >
-            <div className="text-muted flex gap-3">
-              <span className={t.event_type === "mint" ? "text-accent font-medium" : "text-error font-medium"}>
-                {t.event_type === "mint" ? "Buy" : "Sell"}
-              </span>
-              <Link
-                href={`/story/${t.storyline_id}`}
-                className="text-foreground hover:text-accent transition-colors"
-              >
-                Story #{t.storyline_id}
-              </Link>
-              {t.block_timestamp && (
-                <time dateTime={t.block_timestamp}>
-                  {new Date(t.block_timestamp).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </time>
-              )}
+        {trades.map((t) => {
+          const isBuy = t.event_type === "mint";
+          const title = storylineTitles?.[t.storyline_id];
+          const tokenCount = t.price_per_token > 0 ? t.reserve_amount / t.price_per_token : 0;
+          return (
+            <div
+              key={`${t.tx_hash}-${t.log_index}`}
+              className="border-border rounded border px-3 py-2 text-xs"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
+                      {isBuy ? "Buy" : "Sell"}
+                    </span>
+                    <Link
+                      href={`/story/${t.storyline_id}`}
+                      className="text-foreground hover:text-accent truncate transition-colors"
+                      title={title || `Story #${t.storyline_id}`}
+                    >
+                      {title || `Story #${t.storyline_id}`}
+                    </Link>
+                  </div>
+                  <div className="text-muted mt-1 flex items-center gap-2">
+                    {tokenCount > 0 && (
+                      <span>{formatSupply(tokenCount)} tokens</span>
+                    )}
+                    {t.block_timestamp && (
+                      <time dateTime={t.block_timestamp}>
+                        {new Date(t.block_timestamp).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </time>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-foreground font-medium">
+                    {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+                  </span>
+                  {t.tx_hash && (
+                    <a
+                      href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted hover:text-accent transition-colors"
+                      title="View on Basescan"
+                    >
+                      &#x2197;
+                    </a>
+                  )}
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              {t.price_per_token > 0 && (
-                <span className="text-muted">
-                  {formatPrice(t.reserve_amount / t.price_per_token)} tokens
-                </span>
-              )}
-              <span className="text-foreground">
-                {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
-              </span>
-              {t.tx_hash && (
-                <a
-                  href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted hover:text-accent transition-colors"
-                  title="View on Basescan"
-                >
-                  &#x2197;
-                </a>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {!isLoading && trades.length === 0 && (
           <p className="text-muted py-6 text-center text-sm">
             No trades yet.
