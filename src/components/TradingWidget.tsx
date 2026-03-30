@@ -183,10 +183,12 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         // PLOT mode: find max storyline tokens mintable within PLOT balance.
         // Uses batched multicall probes to minimize RPC round-trips (2-4 calls total).
 
-        // Step 1: Exponential search to find upper bound (tokens can be very cheap early on the curve)
+        // Step 1: Exponential search to find upper bound.
+        // Start from 1e12 (0.000001 tokens) to handle fractional balances,
+        // up to 1e37 (1e19 whole tokens) for cheap early-curve positions.
         const expProbes: bigint[] = [];
-        for (let exp = BigInt(0); exp < BigInt(20); exp++) {
-          expProbes.push(BigInt(10) ** exp * BigInt(10) ** BigInt(18)); // 1, 10, 100, ... × 1e18
+        for (let exp = 12; exp <= 37; exp++) {
+          expProbes.push(BigInt(10) ** BigInt(exp));
         }
 
         const expResults = await publicClient.multicall({
