@@ -245,8 +245,28 @@ export async function resolveAgentURI(uri: string): Promise<Record<string, unkno
       const res = await fetch(fetchUrl, { signal: controller.signal });
       if (!res.ok) return {};
 
-      const text = await res.text();
-      if (text.length > MAX_URI_BYTES) return {};
+      // Reject early if Content-Length exceeds limit
+      const contentLength = res.headers.get("content-length");
+      if (contentLength && parseInt(contentLength, 10) > MAX_URI_BYTES) return {};
+
+      // Stream body with size cap to avoid buffering oversized responses
+      const reader = res.body?.getReader();
+      if (!reader) return {};
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        totalBytes += value.byteLength;
+        if (totalBytes > MAX_URI_BYTES) {
+          reader.cancel();
+          return {};
+        }
+        chunks.push(value);
+      }
+      const text = new TextDecoder().decode(
+        chunks.length === 1 ? chunks[0] : Buffer.concat(chunks),
+      );
       return JSON.parse(text);
     } finally {
       clearTimeout(timeout);
