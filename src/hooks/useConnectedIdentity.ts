@@ -25,24 +25,33 @@ export function useConnectedIdentity() {
     let cancelled = false;
     fetchingRef.current = true;
 
-    // Register user in DB (fire-and-forget)
-    if (registeredRef.current !== address) {
-      registeredRef.current = address;
-      fetch("/api/user/register-by-wallet", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ walletAddress: address }),
-      }).catch(() => {
-        // Non-fatal — profile will still work from live API
-      });
+    const addr = address; // capture for closure type narrowing
+    async function init() {
+      // Step 1: Register (populates DB with SteemHunt/Neynar data)
+      if (registeredRef.current !== addr) {
+        registeredRef.current = addr;
+        try {
+          await fetch("/api/user/register-by-wallet", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ walletAddress: addr }),
+          });
+        } catch {
+          // Non-fatal — profile will still work from live API
+        }
+      }
+
+      // Step 2: Now fetch profile (DB is populated, no external API needed)
+      if (!cancelled) {
+        const p = await getFarcasterProfile(addr);
+        if (!cancelled) {
+          setResult({ profile: p, resolvedFor: addr });
+          fetchingRef.current = false;
+        }
+      }
     }
 
-    getFarcasterProfile(address).then((p) => {
-      if (!cancelled) {
-        setResult({ profile: p, resolvedFor: address });
-        fetchingRef.current = false;
-      }
-    });
+    init();
     return () => {
       cancelled = true;
     };
