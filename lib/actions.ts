@@ -12,19 +12,21 @@ import type { Address } from "viem";
 /**
  * Server action that resolves an Ethereum address to a Farcaster profile.
  * Prefers cached DB data, falls back to live API.
+ * Accepts an optional pre-fetched dbUser to avoid redundant DB lookups.
  */
 export async function getFarcasterProfile(
   address: string,
+  dbUser?: User | null,
 ): Promise<FarcasterProfile | null> {
   // Try DB first (only if user has a FID — wallet-only users have no Farcaster profile)
-  const dbUser = await getUserFromDB(address);
-  if (dbUser && dbUser.fid != null) {
+  const user = dbUser !== undefined ? dbUser : await getUserFromDB(address);
+  if (user && user.fid != null) {
     return {
-      fid: dbUser.fid,
-      username: dbUser.username ?? "",
-      displayName: dbUser.display_name ?? dbUser.username ?? "",
-      pfpUrl: dbUser.pfp_url ?? null,
-      bio: dbUser.bio ?? null,
+      fid: user.fid,
+      username: user.username ?? "",
+      displayName: user.display_name ?? user.username ?? "",
+      pfpUrl: user.pfp_url ?? null,
+      bio: user.bio ?? null,
     };
   }
   // Fallback to live API
@@ -34,12 +36,17 @@ export async function getFarcasterProfile(
 /**
  * Server action that resolves ERC-8004 agent metadata from a wallet address.
  * Checks DB cache first, falls back to RPC. Caches externally registered agents.
+ * Accepts an optional pre-fetched dbUser to avoid redundant DB lookups.
  */
 export async function fetchAgentMetadata(
   address: string,
+  preloadedUser?: User | null,
 ): Promise<AgentMetadata | null> {
-  // DB-first: check cached agent data (agent-specific lookup)
-  const dbUser = await getAgentUserFromDB(address);
+  // DB-first: check cached agent data.
+  // Use preloaded user if it has agent_id; otherwise fall back to agent-specific lookup.
+  const dbUser = preloadedUser?.agent_id != null
+    ? preloadedUser
+    : await getAgentUserFromDB(address);
   if (dbUser?.agent_id != null) {
     return {
       agentId: String(dbUser.agent_id),
@@ -81,6 +88,26 @@ export async function fetchAgentMetadata(
     }
   }
   return meta;
+}
+
+/**
+ * Fetch the full user profile in a single DB lookup.
+ * Returns dbUser, fcProfile, and agentMeta derived from one shared row.
+ * External API fallbacks still fire when DB data is missing.
+ */
+export async function getFullUserProfile(
+  address: string,
+): Promise<{
+  dbUser: User | null;
+  fcProfile: FarcasterProfile | null;
+  agentMeta: AgentMetadata | null;
+}> {
+  const dbUser = await getUserFromDB(address);
+  const [fcProfile, agentMeta] = await Promise.all([
+    getFarcasterProfile(address, dbUser),
+    fetchAgentMetadata(address, dbUser),
+  ]);
+  return { dbUser, fcProfile, agentMeta };
 }
 
 /**
