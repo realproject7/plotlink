@@ -179,15 +179,108 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
       if (maxBalance <= BigInt(0)) return;
 
-      const fromToken = getTokenAddress(payToken);
-      const quote = await getZapQuote(fromToken, tokenAddress, maxBalance, "exact-input");
-      if (quote.tokensOut && quote.tokensOut > BigInt(0)) {
-        setAmount(formatUnits(quote.tokensOut, 18));
+      if (isPlotMode) {
+        // PLOT mode: find max storyline tokens mintable within PLOT balance.
+        // Uses batched multicall probes to minimize RPC round-trips (2-4 calls total).
+
+        // Step 1: Exponential search to find upper bound.
+        // Start from 1e12 (0.000001 tokens) to handle fractional balances,
+        // up to 1e37 (1e19 whole tokens) for cheap early-curve positions.
+        const expProbes: bigint[] = [];
+        for (let exp = 12; exp <= 37; exp++) {
+          expProbes.push(BigInt(10) ** BigInt(exp));
+        }
+
+        const expResults = await publicClient.multicall({
+          contracts: expProbes.map((probe) => ({
+            address: MCV2_BOND,
+            abi: mcv2BondAbi,
+            functionName: "getReserveForToken" as const,
+            args: [tokenAddress, probe],
+          })),
+          allowFailure: true,
+        });
+
+        // Find the highest probe that fits within maxBalance
+        let lo = BigInt(0);
+        let hi = BigInt(0);
+        for (let i = 0; i < expResults.length; i++) {
+          const r = expResults[i];
+          if (r.status === "success") {
+            const [reserveNeeded] = r.result as unknown as [bigint, bigint];
+            if (reserveNeeded <= maxBalance) {
+              lo = expProbes[i];
+              hi = i + 1 < expProbes.length ? expProbes[i + 1] : expProbes[i] * BigInt(10);
+            } else {
+              hi = expProbes[i];
+              break;
+            }
+          } else {
+            hi = i > 0 ? expProbes[i] : expProbes[0];
+            break;
+          }
+        }
+
+        if (lo <= BigInt(0)) {
+          // Even 1 token exceeds balance — nothing to do
+        } else {
+          // Step 2-3: Two rounds of 16-point linear probes to narrow down (~2 multicalls)
+          let best = lo;
+          for (let round = 0; round < 2; round++) {
+            const step = (hi - lo) / BigInt(17);
+            if (step <= BigInt(0)) break;
+
+            const probes: bigint[] = [];
+            for (let i = 1; i <= 16; i++) {
+              probes.push(lo + step * BigInt(i));
+            }
+
+            const results = await publicClient.multicall({
+              contracts: probes.map((probe) => ({
+                address: MCV2_BOND,
+                abi: mcv2BondAbi,
+                functionName: "getReserveForToken" as const,
+                args: [tokenAddress, probe],
+              })),
+              allowFailure: true,
+            });
+
+            let narrowedHi = hi;
+            for (let i = 0; i < results.length; i++) {
+              const r = results[i];
+              if (r.status === "success") {
+                const [reserveNeeded] = r.result as unknown as [bigint, bigint];
+                if (reserveNeeded <= maxBalance) {
+                  best = probes[i];
+                  lo = probes[i];
+                } else {
+                  narrowedHi = probes[i];
+                  break;
+                }
+              } else {
+                narrowedHi = i > 0 ? probes[i] : lo;
+                break;
+              }
+            }
+            hi = narrowedHi;
+          }
+
+          if (best > BigInt(0)) {
+            setAmount(formatUnits(best, 18));
+          }
+        }
+      } else {
+        // Zap mode (ETH/USDC/HUNT): get quote from zap contract
+        const fromToken = getTokenAddress(payToken);
+        const quote = await getZapQuote(fromToken, tokenAddress, maxBalance, "exact-input");
+        if (quote.tokensOut && quote.tokensOut > BigInt(0)) {
+          setAmount(formatUnits(quote.tokensOut, 18));
+        }
       }
     } catch {
       // Silently fail — user can enter amount manually
     }
-  }, [address, isConnected, isEthMode, isErc20ZapMode, erc20BalanceToken, payToken, tokenAddress, ethBalanceData]);
+  }, [address, isConnected, isEthMode, isErc20ZapMode, isPlotMode, erc20BalanceToken, payToken, tokenAddress, ethBalanceData]);
 
   const executeTrade = useCallback(async () => {
     if (!address || parsedAmount === BigInt(0)) return;
