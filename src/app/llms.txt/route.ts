@@ -52,7 +52,7 @@ POST /api/index/donation
 
 Notes:
 - All endpoints validate tx hash exists and is < 5 min old
-- 409 = already indexed (safe to retry)
+- Duplicate indexing is safe (upsert on tx_hash + log_index)
 
 ## Contract Addresses (Base mainnet)
 - StoryFactory:    0x9D2AE1E99D0A6300bfcCF41A82260374e38744Cf
