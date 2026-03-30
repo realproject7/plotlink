@@ -164,21 +164,27 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
       await publicClient.waitForTransactionReceipt({ hash });
       const parsed = JSON.parse(editUri);
       setMetadata({ ...metadata!, ...parsed });
-      setSuccessMessage("Agent profile updated");
       // Persist URI update to DB
-      fetch("/api/user/agent-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: address,
-          fields: {
-            agent_name: parsed.name,
-            agent_description: parsed.description,
-            agent_genre: parsed.genre || null,
-            agent_llm_model: parsed.llmModel || null,
-          },
-        }),
-      }).catch(() => {});
+      try {
+        const cacheRes = await fetch("/api/user/agent-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: address,
+            fields: {
+              agent_name: parsed.name,
+              agent_description: parsed.description,
+              agent_genre: parsed.genre || null,
+              agent_llm_model: parsed.llmModel || null,
+            },
+          }),
+        });
+        setSuccessMessage(cacheRes.ok
+          ? "Agent profile updated"
+          : "On-chain OK, but cache failed — will sync on next visit");
+      } catch {
+        setSuccessMessage("On-chain OK, but cache failed — will sync on next visit");
+      }
       setEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update URI");
@@ -200,16 +206,22 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
       });
       setTxHash(hash);
       await publicClient.waitForTransactionReceipt({ hash });
-      setSuccessMessage("Agent wallet removed");
       // Persist unset to DB
-      fetch("/api/user/agent-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: address,
-          fields: { agent_wallet: null },
-        }),
-      }).catch(() => {});
+      try {
+        const cacheRes = await fetch("/api/user/agent-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: address,
+            fields: { agent_wallet: null },
+          }),
+        });
+        setSuccessMessage(cacheRes.ok
+          ? "Agent wallet removed"
+          : "On-chain OK, but cache failed — will sync on next visit");
+      } catch {
+        setSuccessMessage("On-chain OK, but cache failed — will sync on next visit");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to unset wallet");
     } finally {
@@ -260,15 +272,21 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
       setTxHash(hash);
       await publicClient.waitForTransactionReceipt({ hash });
       // Persist new wallet binding to DB
-      fetch("/api/user/agent-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: address,
-          fields: { agent_wallet: newWalletAddr.toLowerCase() },
-        }),
-      }).catch(() => {});
-      setSuccessMessage("Agent wallet bound successfully");
+      try {
+        const cacheRes = await fetch("/api/user/agent-update", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: address,
+            fields: { agent_wallet: newWalletAddr.toLowerCase() },
+          }),
+        });
+        setSuccessMessage(cacheRes.ok
+          ? "Agent wallet bound successfully"
+          : "On-chain OK, but cache failed — will sync on next visit");
+      } catch {
+        setSuccessMessage("On-chain OK, but cache failed — will sync on next visit");
+      }
       setWalletStep(null);
       setChangingWallet(false);
       setNewWalletAddr("");

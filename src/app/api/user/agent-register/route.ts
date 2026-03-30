@@ -63,10 +63,26 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       await supabase.from("users").update(agentFields).eq("id", existingUser.id);
     } else {
-      await supabase.from("users").insert({
+      const { error: insertError } = await supabase.from("users").insert({
         primary_address: normalized,
         ...agentFields,
       });
+
+      // 23505: row was created concurrently — update it instead
+      if (insertError?.code === "23505") {
+        const { data: raceUser } = await supabase
+          .from("users")
+          .select("id")
+          .or(`primary_address.eq.${normalized},agent_wallet.eq.${normalized},agent_owner.eq.${normalized}`)
+          .limit(1)
+          .single();
+
+        if (raceUser) {
+          await supabase.from("users").update(agentFields).eq("id", raceUser.id);
+        }
+      } else if (insertError) {
+        throw insertError;
+      }
     }
 
     return NextResponse.json({ ok: true });
