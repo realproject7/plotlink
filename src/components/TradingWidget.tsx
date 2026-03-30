@@ -11,6 +11,7 @@ import {
   ZAP_PLOTLINK, SUPPORTED_ZAP_TOKENS, ETH_ADDRESS,
 } from "../../lib/contracts/constants";
 import { getZapQuote, buildZapMintTx } from "../../lib/zap";
+import { indexFetch } from "../../lib/index-fetch";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
@@ -399,11 +400,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
       // Index the trade for price history (fire-and-forget)
       if (tradeHash) {
-        fetch("/api/index/trade", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: tradeHash, tokenAddress }),
-        }).catch(() => {});
+        indexFetch("/api/index/trade", { txHash: tradeHash, tokenAddress }).catch(() => {});
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Transaction failed");

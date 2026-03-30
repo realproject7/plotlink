@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import { useWriteContract } from "wagmi";
 import { hashContent } from "../../lib/content";
 import { browserClient as publicClient } from "../../lib/rpc";
+import { indexFetch } from "../../lib/index-fetch";
 import type { Hex, Abi, TransactionReceipt } from "viem";
 
 export type PublishState =
@@ -113,11 +114,7 @@ export function usePublish() {
 
         // 4. Trigger indexer
         setState("indexing");
-        const indexerRes = await fetch(opts.indexerRoute, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash, content: opts.content, ...opts.metadata }),
-        });
+        const indexerRes = await indexFetch(opts.indexerRoute, { txHash: hash, content: opts.content, ...opts.metadata });
 
         // Only clear intent on success (2xx) or 409 (already indexed)
         if (indexerRes.ok || indexerRes.status === 409) {

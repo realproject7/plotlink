@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { type Hex, decodeEventLog, encodeEventTopics } from "viem";
 import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
+import { validateRecentTx } from "../../../../../lib/index-auth";
 import {
   storyFactoryAbi,
   storylineCreatedEvent,
@@ -38,16 +39,10 @@ export async function POST(req: Request) {
     return error("Missing or invalid txHash");
   }
 
-  // 1. Fetch receipt (with retry for load-balanced RPC nodes)
-  let receipt;
-  try {
-    receipt = await getReceiptWithRetry(txHash);
-  } catch {
-    return error("Failed to fetch transaction receipt", 502);
-  }
-
-  if (receipt.status !== "success") {
-    return error("Transaction failed");
+  // 1. Validate tx exists and is recent (< 5 min) — prevents spam
+  const receipt = await validateRecentTx(txHash);
+  if (!receipt) {
+    return error("Transaction not found, failed, or too old");
   }
 
   // 2. Find StorylineCreated event log by event signature (topic0)

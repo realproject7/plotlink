@@ -8,6 +8,7 @@ import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
 import { STORY_FACTORY, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
+import { indexFetch } from "../../lib/index-fetch";
 import { FarcasterAvatar } from "./FarcasterAvatar";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
@@ -90,11 +91,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
       await publicClient.waitForTransactionReceipt({ hash });
 
       setTxState("indexing");
-      const indexRes = await fetch("/api/index/donation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ txHash: hash }),
-      });
+      const indexRes = await indexFetch("/api/index/donation", { txHash: hash });
       if (!indexRes.ok) {
         throw new Error("Donation sent on-chain but indexing failed. It will appear after the next backfill.");
       }
