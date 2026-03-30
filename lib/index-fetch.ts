@@ -1,20 +1,28 @@
+"use server";
+
 /**
- * Fetch wrapper for real-time indexer endpoints.
- * Automatically includes the x-index-key header.
- *
- * NEXT_PUBLIC_INDEX_KEY is a speed bump against casual bot spam,
- * not a secret — it is embedded in the client bundle by design.
+ * Server action proxy for real-time indexer endpoints.
+ * Injects the server-only INDEX_SECRET so the client never sees it.
  */
 
-const INDEX_KEY = process.env.NEXT_PUBLIC_INDEX_KEY;
+const INDEX_SECRET = process.env.INDEX_SECRET;
 
-export function indexFetch(route: string, body: Record<string, unknown>): Promise<Response> {
-  return fetch(route, {
+export async function indexFetch(
+  route: string,
+  body: Record<string, unknown>,
+): Promise<{ ok: boolean; status: number }> {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
+    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+    || "http://localhost:3000";
+
+  const res = await fetch(`${baseUrl}${route}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(INDEX_KEY ? { "x-index-key": INDEX_KEY } : {}),
+      ...(INDEX_SECRET ? { "x-index-key": INDEX_SECRET } : {}),
     },
     body: JSON.stringify(body),
   });
+
+  return { ok: res.ok, status: res.status };
 }
