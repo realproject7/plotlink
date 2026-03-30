@@ -264,9 +264,18 @@ export async function resolveAgentURI(uri: string): Promise<Record<string, unkno
         }
         chunks.push(value);
       }
-      const text = new TextDecoder().decode(
-        chunks.length === 1 ? chunks[0] : Buffer.concat(chunks),
-      );
+      let bytes: Uint8Array;
+      if (chunks.length === 1) {
+        bytes = chunks[0];
+      } else {
+        bytes = new Uint8Array(totalBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+          bytes.set(chunk, offset);
+          offset += chunk.byteLength;
+        }
+      }
+      const text = new TextDecoder().decode(bytes);
       return JSON.parse(text);
     } finally {
       clearTimeout(timeout);
