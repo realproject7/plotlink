@@ -79,12 +79,14 @@ function scoreUser(row, headers) {
   if (bool("is_blacklisted")) return { score: 0, tag: "None" };
 
   const spamRaw = get("spam_label").trim();
-  const spamLabel = spamRaw.length > 0 && spamRaw !== "0" ? 1 : 0; // any non-empty/non-zero = spam
+  const isSpam = spamRaw.length > 0 && spamRaw !== "0";
+  if (isSpam) return { score: 0, tag: "None" };
+
   const followers = num("follower_count");
   const following = num("following_count");
 
-  // Inactive/bot check
-  if (followers === 0 && following === 0 && !has("bio") && !has("pfp_url")) {
+  // Zero-engagement accounts = inactive/bot
+  if (followers === 0 && following === 0) {
     return { score: 0, tag: "None" };
   }
 
@@ -108,14 +110,11 @@ function scoreUser(row, headers) {
   const hasPfp = has("pfp_url") ? 1 : 0;
   const profileScore = ((hasBio + hasTwitter + hasUrl + hasPfp) / 4) * 15;
 
-  // --- Spam Penalty (up to -15) ---
-  const spamPenalty = spamLabel > 0 ? 15 : 0;
-
-  const raw = socialScore + repScore + profileScore - spamPenalty;
+  const raw = socialScore + repScore + profileScore;
   const score = Math.max(0, Math.min(100, Math.round(raw)));
 
   // --- Tagging ---
-  if (score < 10 || spamLabel > 0) return { score, tag: "None" };
+  if (score < 10) return { score, tag: "None" };
 
   // Writer signals: creator pattern (followers >> following), has bio, has url/github
   const ratio = following > 0 ? followers / following : followers;
