@@ -77,7 +77,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    await supabase.from("users").update(sanitized).eq("id", existingUser.id);
+    const { error: updateError } = await supabase.from("users").update(sanitized).eq("id", existingUser.id);
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 });
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

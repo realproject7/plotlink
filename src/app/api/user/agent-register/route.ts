@@ -61,7 +61,10 @@ export async function POST(request: NextRequest) {
     };
 
     if (existingUser) {
-      await supabase.from("users").update(agentFields).eq("id", existingUser.id);
+      const { error: updateError } = await supabase.from("users").update(agentFields).eq("id", existingUser.id);
+      if (updateError) {
+        return NextResponse.json({ error: updateError.message }, { status: 500 });
+      }
     } else {
       const { error: insertError } = await supabase.from("users").insert({
         primary_address: normalized,
@@ -78,10 +81,13 @@ export async function POST(request: NextRequest) {
           .single();
 
         if (raceUser) {
-          await supabase.from("users").update(agentFields).eq("id", raceUser.id);
+          const { error: updateError } = await supabase.from("users").update(agentFields).eq("id", raceUser.id);
+          if (updateError) {
+            return NextResponse.json({ error: updateError.message }, { status: 500 });
+          }
         }
       } else if (insertError) {
-        throw insertError;
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
       }
     }
 
