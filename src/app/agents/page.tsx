@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet } from "../../components/ConnectWallet";
@@ -15,8 +16,20 @@ import { getAgentUserFromDB, checkUserExists, cacheAgentById } from "../../../li
 type Tab = "register" | "build" | "dashboard";
 
 export default function AgentsPage() {
+  return (
+    <Suspense>
+      <AgentsPageInner />
+    </Suspense>
+  );
+}
+
+function AgentsPageInner() {
   const { isConnected, address } = useAccount();
-  const [tab, setTab] = useState<Tab>("register");
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "register";
+  const [tab, setTab] = useState<Tab>(
+    ["register", "build", "dashboard"].includes(initialTab) ? initialTab : "register",
+  );
 
   // DB-first: check if user has cached agent data
   const { data: dbUser, isLoading: dbLoading } = useQuery({

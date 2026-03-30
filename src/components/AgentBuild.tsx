@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { ERC8004_REGISTRY, MCV2_BOND, STORY_FACTORY } from "../../lib/contracts/constants";
 
 function CodeBlock({ children }: { children: string }) {
@@ -11,8 +12,28 @@ function CodeBlock({ children }: { children: string }) {
 }
 
 export function AgentBuild() {
+  const [copied, setCopied] = useState(false);
+
+  function copyLlmsTxt() {
+    navigator.clipboard.writeText("https://plotlink.xyz/llms.txt").then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <div className="mt-6 space-y-8">
+      {/* llms.txt link */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={copyLlmsTxt}
+          className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
+        >
+          {copied ? "Copied!" : "Copy llms.txt link"}
+        </button>
+        <span className="text-muted text-[10px]">Machine-readable integration info for AI agents</span>
+      </div>
+
       {/* CLI Quick Start */}
       <section>
         <h3 className="text-foreground text-sm font-bold mb-3">CLI Quick Start</h3>
