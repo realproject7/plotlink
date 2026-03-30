@@ -179,15 +179,48 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
       if (maxBalance <= BigInt(0)) return;
 
-      const fromToken = getTokenAddress(payToken);
-      const quote = await getZapQuote(fromToken, tokenAddress, maxBalance, "exact-input");
-      if (quote.tokensOut && quote.tokensOut > BigInt(0)) {
-        setAmount(formatUnits(quote.tokensOut, 18));
+      if (isPlotMode) {
+        // PLOT mode: binary search for max storyline tokens mintable within PLOT balance
+        let lo = BigInt(1);
+        let hi = maxBalance; // upper bound: 1 storyline token per 1 PLOT (always overshoots)
+        let best = BigInt(0);
+
+        for (let i = 0; i < 64; i++) {
+          if (lo > hi) break;
+          const mid = (lo + hi) / BigInt(2);
+          try {
+            const [reserveNeeded] = await publicClient.readContract({
+              address: MCV2_BOND,
+              abi: mcv2BondAbi,
+              functionName: "getReserveForToken",
+              args: [tokenAddress, mid],
+            }) as [bigint, bigint];
+            if (reserveNeeded <= maxBalance) {
+              best = mid;
+              lo = mid + BigInt(1);
+            } else {
+              hi = mid - BigInt(1);
+            }
+          } catch {
+            hi = mid - BigInt(1);
+          }
+        }
+
+        if (best > BigInt(0)) {
+          setAmount(formatUnits(best, 18));
+        }
+      } else {
+        // Zap mode (ETH/USDC/HUNT): get quote from zap contract
+        const fromToken = getTokenAddress(payToken);
+        const quote = await getZapQuote(fromToken, tokenAddress, maxBalance, "exact-input");
+        if (quote.tokensOut && quote.tokensOut > BigInt(0)) {
+          setAmount(formatUnits(quote.tokensOut, 18));
+        }
       }
     } catch {
       // Silently fail — user can enter amount manually
     }
-  }, [address, isConnected, isEthMode, isErc20ZapMode, erc20BalanceToken, payToken, tokenAddress, ethBalanceData]);
+  }, [address, isConnected, isEthMode, isErc20ZapMode, isPlotMode, erc20BalanceToken, payToken, tokenAddress, ethBalanceData]);
 
   const executeTrade = useCallback(async () => {
     if (!address || parsedAmount === BigInt(0)) return;
