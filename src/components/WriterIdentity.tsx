@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { lookupByAddress } from "../../lib/farcaster";
+import { getFarcasterProfile } from "../../lib/actions";
 import { truncateAddress } from "../../lib/utils";
 
 /**
@@ -8,7 +8,7 @@ import { truncateAddress } from "../../lib/utils";
  * Links to the internal profile page at /profile/[address].
  */
 export async function WriterIdentity({ address }: { address: string }) {
-  const profile = await lookupByAddress(address);
+  const profile = await getFarcasterProfile(address);
 
   if (!profile) {
     return (
