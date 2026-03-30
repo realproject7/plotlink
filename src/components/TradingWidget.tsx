@@ -180,34 +180,92 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       if (maxBalance <= BigInt(0)) return;
 
       if (isPlotMode) {
-        // PLOT mode: binary search for max storyline tokens mintable within PLOT balance
-        let lo = BigInt(1);
-        let hi = maxBalance; // upper bound: 1 storyline token per 1 PLOT (always overshoots)
-        let best = BigInt(0);
+        // PLOT mode: find max storyline tokens mintable within PLOT balance.
+        // Uses batched multicall probes to minimize RPC round-trips (2-4 calls total).
 
-        for (let i = 0; i < 64; i++) {
-          if (lo > hi) break;
-          const mid = (lo + hi) / BigInt(2);
-          try {
-            const [reserveNeeded] = await publicClient.readContract({
-              address: MCV2_BOND,
-              abi: mcv2BondAbi,
-              functionName: "getReserveForToken",
-              args: [tokenAddress, mid],
-            }) as [bigint, bigint];
+        // Step 1: Exponential search to find upper bound (tokens can be very cheap early on the curve)
+        const expProbes: bigint[] = [];
+        for (let exp = BigInt(0); exp < BigInt(20); exp++) {
+          expProbes.push(BigInt(10) ** exp * BigInt(10) ** BigInt(18)); // 1, 10, 100, ... × 1e18
+        }
+
+        const expResults = await publicClient.multicall({
+          contracts: expProbes.map((probe) => ({
+            address: MCV2_BOND,
+            abi: mcv2BondAbi,
+            functionName: "getReserveForToken" as const,
+            args: [tokenAddress, probe],
+          })),
+          allowFailure: true,
+        });
+
+        // Find the highest probe that fits within maxBalance
+        let lo = BigInt(0);
+        let hi = BigInt(0);
+        for (let i = 0; i < expResults.length; i++) {
+          const r = expResults[i];
+          if (r.status === "success") {
+            const [reserveNeeded] = r.result as unknown as [bigint, bigint];
             if (reserveNeeded <= maxBalance) {
-              best = mid;
-              lo = mid + BigInt(1);
+              lo = expProbes[i];
+              hi = i + 1 < expProbes.length ? expProbes[i + 1] : expProbes[i] * BigInt(10);
             } else {
-              hi = mid - BigInt(1);
+              hi = expProbes[i];
+              break;
             }
-          } catch {
-            hi = mid - BigInt(1);
+          } else {
+            hi = i > 0 ? expProbes[i] : expProbes[0];
+            break;
           }
         }
 
-        if (best > BigInt(0)) {
-          setAmount(formatUnits(best, 18));
+        if (lo <= BigInt(0)) {
+          // Even 1 token exceeds balance — nothing to do
+        } else {
+          // Step 2-3: Two rounds of 16-point linear probes to narrow down (~2 multicalls)
+          let best = lo;
+          for (let round = 0; round < 2; round++) {
+            const step = (hi - lo) / BigInt(17);
+            if (step <= BigInt(0)) break;
+
+            const probes: bigint[] = [];
+            for (let i = 1; i <= 16; i++) {
+              probes.push(lo + step * BigInt(i));
+            }
+
+            const results = await publicClient.multicall({
+              contracts: probes.map((probe) => ({
+                address: MCV2_BOND,
+                abi: mcv2BondAbi,
+                functionName: "getReserveForToken" as const,
+                args: [tokenAddress, probe],
+              })),
+              allowFailure: true,
+            });
+
+            let narrowedHi = hi;
+            for (let i = 0; i < results.length; i++) {
+              const r = results[i];
+              if (r.status === "success") {
+                const [reserveNeeded] = r.result as unknown as [bigint, bigint];
+                if (reserveNeeded <= maxBalance) {
+                  best = probes[i];
+                  lo = probes[i];
+                } else {
+                  narrowedHi = probes[i];
+                  break;
+                }
+              } else {
+                narrowedHi = i > 0 ? probes[i] : lo;
+                break;
+              }
+            }
+            hi = narrowedHi;
+          }
+
+          if (best > BigInt(0)) {
+            setAmount(formatUnits(best, 18));
+          }
         }
       } else {
         // Zap mode (ETH/USDC/HUNT): get quote from zap contract
