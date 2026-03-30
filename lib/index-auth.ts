@@ -1,19 +1,32 @@
 /**
- * Shared auth check for real-time indexer endpoints.
+ * Tx hash validation for real-time indexer endpoints.
  *
- * Uses server-only INDEX_SECRET. The client never sees this value —
- * frontend calls go through a server action proxy that injects it.
- *
- * Fails closed in production when INDEX_SECRET is unset.
+ * Prevents DoS by rejecting invalid or stale tx hashes before expensive
+ * processing (multi-retry receipt fetch, block lookup, contract reads).
+ * A single non-retry getTransactionReceipt is cheap (~1 RPC call).
  */
 
-const INDEX_SECRET = process.env.INDEX_SECRET;
+import { type Hex } from "viem";
+import { publicClient } from "./rpc";
 
-export function verifyIndexAuth(req: Request): boolean {
-  if (!INDEX_SECRET) {
-    // Allow in dev, fail closed in production
-    return process.env.NODE_ENV !== "production";
+const MAX_TX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Validate that a tx hash corresponds to a real, recent transaction.
+ * Returns the receipt if valid, or null if the tx is missing/stale.
+ */
+export async function validateRecentTx(txHash: Hex) {
+  try {
+    const receipt = await publicClient.getTransactionReceipt({ hash: txHash });
+    if (!receipt || receipt.status !== "success") return null;
+
+    // Check recency via block timestamp
+    const block = await publicClient.getBlock({ blockNumber: receipt.blockNumber });
+    const txAgeMs = Date.now() - Number(block.timestamp) * 1000;
+    if (txAgeMs > MAX_TX_AGE_MS) return null;
+
+    return receipt;
+  } catch {
+    return null;
   }
-  const key = req.headers.get("x-index-key");
-  return key === INDEX_SECRET;
 }

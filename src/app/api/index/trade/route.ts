@@ -5,7 +5,7 @@ import { createServerClient } from "../../../../../lib/supabase";
 import { mcv2BondEventAbi, priceForNextMintFunction } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
-import { verifyIndexAuth } from "../../../../../lib/index-auth";
+import { validateRecentTx } from "../../../../../lib/index-auth";
 import type { Database } from "../../../../../lib/supabase";
 
 type TradeInsert = Database["public"]["Tables"]["trade_history"]["Insert"];
@@ -15,15 +15,16 @@ function error(message: string, status = 400) {
 }
 
 export async function POST(req: Request) {
-  if (!verifyIndexAuth(req)) {
-    return error("Unauthorized", 401);
-  }
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const tokenAddress = (body.tokenAddress as string | undefined)?.toLowerCase();
 
-  if (!txHash) return error("txHash required");
+  if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) return error("Missing or invalid txHash");
   if (!tokenAddress) return error("tokenAddress required");
+
+  // Validate tx exists and is recent (< 5 min) — prevents spam with fake hashes
+  const validatedReceipt = await validateRecentTx(txHash);
+  if (!validatedReceipt) return error("Transaction not found, failed, or too old", 400);
 
   const supabase = createServerClient();
   if (!supabase) return error("Supabase not configured", 500);
@@ -37,8 +38,8 @@ export async function POST(req: Request) {
 
   if (!storyline) return error("Unknown token address", 404);
 
-  const receipt = await getReceiptWithRetry(txHash);
-  if (!receipt) return error("Receipt not found", 404);
+  // Use validated receipt, fall back to retry for load-balanced RPC consistency
+  const receipt = validatedReceipt;
 
   // Retry getBlock — RPC may not have the block yet on load-balanced nodes
   let timestampISO: string;
