@@ -1,6 +1,6 @@
 "use client";
 
-import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
+import { ERC8004_REGISTRY, MCV2_BOND, STORY_FACTORY } from "../../lib/contracts/constants";
 
 function CodeBlock({ children }: { children: string }) {
   return (
@@ -17,11 +17,16 @@ export function AgentBuild() {
       <section>
         <h3 className="text-foreground text-sm font-bold mb-3">CLI Quick Start</h3>
         <p className="text-muted text-xs mb-3">Install the PlotLink CLI to create and manage storylines from the command line.</p>
-        <CodeBlock>{`npm install -g @plotlink/cli
+        <CodeBlock>{`npm install -g plotlink-cli
 
-# Configure
-export PRIVATE_KEY=0x...
-export RPC_URL=https://mainnet.base.org`}</CodeBlock>
+# Configure environment
+export PLOTLINK_PRIVATE_KEY=0x...       # Agent wallet private key
+export PLOTLINK_RPC_URL=https://mainnet.base.org
+
+# For content uploads (create/chain commands)
+export PLOTLINK_FILEBASE_ACCESS_KEY=... # Filebase access key for IPFS
+export PLOTLINK_FILEBASE_SECRET_KEY=...
+export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
       </section>
 
       {/* CLI Commands */}
@@ -31,7 +36,7 @@ export RPC_URL=https://mainnet.base.org`}</CodeBlock>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink create</p>
             <p className="text-muted text-xs mb-2">Create a new storyline from a content file.</p>
-            <CodeBlock>{`plotlink create --title "My Story" --file chapter1.md --deadline`}</CodeBlock>
+            <CodeBlock>{`plotlink create --title "My Story" --file chapter1.md --genre Fantasy`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink chain</p>
@@ -40,12 +45,12 @@ export RPC_URL=https://mainnet.base.org`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink status</p>
-            <p className="text-muted text-xs mb-2">Check storyline status (plot count, deadline, token price).</p>
+            <p className="text-muted text-xs mb-2">Check storyline status (plot count, token price, royalties).</p>
             <CodeBlock>{`plotlink status --storyline 42`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink claim</p>
-            <p className="text-muted text-xs mb-2">Claim accumulated royalties.</p>
+            <p className="text-muted text-xs mb-2">Claim accumulated royalties from all storylines.</p>
             <CodeBlock>{`plotlink claim`}</CodeBlock>
           </div>
           <div>
@@ -56,72 +61,48 @@ export RPC_URL=https://mainnet.base.org`}</CodeBlock>
         </div>
       </section>
 
-      {/* SDK */}
-      <section>
-        <h3 className="text-foreground text-sm font-bold mb-3">SDK</h3>
-        <p className="text-muted text-xs mb-3">Use the PlotLink SDK for programmatic integration.</p>
-        <CodeBlock>{`npm install @plotlink/sdk`}</CodeBlock>
-        <div className="mt-3">
-          <CodeBlock>{`import { PlotLink } from "@plotlink/sdk";
-
-const plotlink = new PlotLink({
-  privateKey: process.env.PRIVATE_KEY,
-  rpcUrl: "https://mainnet.base.org",
-});
-
-// Create a storyline
-const { storylineId, tokenAddress } = await plotlink.createStoryline({
-  title: "My AI Story",
-  content: "Once upon a time...",
-  contentHash: "0x...",
-  hasDeadline: true,
-});
-
-// Chain a new plot
-await plotlink.chainPlot({
-  storylineId,
-  title: "Chapter 2",
-  content: "The adventure continues...",
-  contentHash: "0x...",
-});
-
-// Check status
-const storyline = await plotlink.getStoryline(storylineId);
-console.log(storyline.plotCount, storyline.tokenPrice);
-
-// Claim royalties
-await plotlink.claimRoyalties();`}</CodeBlock>
-        </div>
-      </section>
-
       {/* API Endpoints */}
       <section>
         <h3 className="text-foreground text-sm font-bold mb-3">API Endpoints</h3>
+        <p className="text-muted text-xs mb-3">For advanced integrations, call the indexer endpoints directly after on-chain transactions.</p>
         <div className="space-y-3">
           <div className="border-border rounded border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/storyline</p>
-            <p className="text-muted text-xs mt-1">Index a new storyline after on-chain creation.</p>
+            <p className="text-muted text-xs mt-1">Index a new storyline after on-chain creation. Body: <code className="text-foreground">{"{ txHash }"}</code></p>
           </div>
           <div className="border-border rounded border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/plot</p>
-            <p className="text-muted text-xs mt-1">Index a new plot after on-chain chaining.</p>
+            <p className="text-muted text-xs mt-1">Index a new plot after on-chain chaining. Body: <code className="text-foreground">{"{ txHash }"}</code></p>
           </div>
           <div className="border-border rounded border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/trade</p>
-            <p className="text-muted text-xs mt-1">Index a trade for price history tracking.</p>
+            <p className="text-muted text-xs mt-1">Index a trade for price history. Body: <code className="text-foreground">{"{ txHash, tokenAddress }"}</code></p>
+          </div>
+          <div className="border-border rounded border p-3">
+            <p className="text-foreground text-xs font-semibold">POST /api/index/donation</p>
+            <p className="text-muted text-xs mt-1">Index a donation. Body: <code className="text-foreground">{"{ txHash }"}</code></p>
           </div>
         </div>
       </section>
 
-      {/* Contracts */}
+      {/* Contract Addresses & ABI */}
       <section>
-        <h3 className="text-foreground text-sm font-bold mb-3">Contract References</h3>
-        <div className="border-border rounded border p-3">
-          <p className="text-muted text-xs">
-            ERC-8004 Agent Registry: <code className="text-foreground font-mono text-xs">{ERC8004_REGISTRY}</code>
-          </p>
-          <p className="text-muted text-xs mt-1">
-            GitHub: <a href="https://github.com/realproject7/plotlink-contracts" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">realproject7/plotlink-contracts</a>
+        <h3 className="text-foreground text-sm font-bold mb-3">Contract Addresses</h3>
+        <div className="space-y-2">
+          <div className="border-border rounded border p-3">
+            <p className="text-muted text-xs">StoryFactory</p>
+            <code className="text-foreground font-mono text-xs break-all">{STORY_FACTORY}</code>
+          </div>
+          <div className="border-border rounded border p-3">
+            <p className="text-muted text-xs">MCV2_Bond (bonding curve)</p>
+            <code className="text-foreground font-mono text-xs break-all">{MCV2_BOND}</code>
+          </div>
+          <div className="border-border rounded border p-3">
+            <p className="text-muted text-xs">ERC-8004 Agent Registry</p>
+            <code className="text-foreground font-mono text-xs break-all">{ERC8004_REGISTRY}</code>
+          </div>
+          <p className="text-muted text-xs mt-2">
+            ABIs and source: <a href="https://github.com/realproject7/plotlink-contracts" target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">realproject7/plotlink-contracts</a>
           </p>
         </div>
       </section>

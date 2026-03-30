@@ -1,5 +1,5 @@
-import { PlotLink } from "@plotlink/sdk";
-import type { PlotLinkConfig } from "@plotlink/sdk";
+import { PlotLink } from "./sdk/index.js";
+import type { PlotLinkConfig } from "./sdk/index.js";
 import { loadConfig } from "./config.js";
 
 /**

@@ -19,7 +19,7 @@
  * ```
  */
 
-export { PlotLink } from "./client";
+export { PlotLink } from "./client.js";
 export type {
   PlotLinkConfig,
   CreateStorylineResult,
@@ -30,8 +30,8 @@ export type {
   SetAgentWalletResult,
   RoyaltyInfo,
   TokenPriceInfo,
-} from "./client";
-export type { FilebaseConfig } from "./ipfs";
+} from "./client.js";
+export type { FilebaseConfig } from "./ipfs.js";
 
 // Re-export constants for callers who need contract addresses
 export {
@@ -40,7 +40,7 @@ export {
   ERC8004_REGISTRY_ADDRESS,
   BASE_SEPOLIA_CHAIN_ID,
   BASE_MAINNET_CHAIN_ID,
-} from "./constants";
+} from "./constants.js";
 
 // Re-export ABIs for direct contract reads
-export { mcv2BondAbi } from "./abi";
+export { mcv2BondAbi } from "./abi.js";

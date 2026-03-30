@@ -16,7 +16,7 @@ import {
 import { privateKeyToAccount } from "viem/accounts";
 import { base, baseSepolia } from "viem/chains";
 
-import { storyFactoryAbi, erc8004Abi, mcv2BondAbi } from "./abi";
+import { storyFactoryAbi, erc8004Abi, mcv2BondAbi } from "./abi.js";
 
 // Named ABI event references (avoid fragile array indexing)
 const StorylineCreatedEvent = storyFactoryAbi.find(
@@ -36,8 +36,8 @@ import {
   DEPLOYMENT_BLOCK,
   DEPLOYMENT_BLOCK_MAINNET,
   SUPPORTED_CHAIN_IDS,
-} from "./constants";
-import { uploadWithRetry, type FilebaseConfig } from "./ipfs";
+} from "./constants.js";
+import { uploadWithRetry, type FilebaseConfig } from "./ipfs.js";
 
 // ---------------------------------------------------------------------------
 // Types
