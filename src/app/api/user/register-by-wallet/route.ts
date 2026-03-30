@@ -4,6 +4,7 @@ import { getUserByWallet } from "../../../../../lib/farcaster-indexer";
 import { lookupByAddress } from "../../../../../lib/farcaster";
 import { fetchQuotientScore } from "../../../../../lib/quotient";
 import { buildUserData } from "../../../../../lib/user-data";
+import { findUserByWallet, upsertUser } from "../../../../../lib/user-upsert";
 
 /**
  * POST /api/user/register-by-wallet
@@ -32,23 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists (by verified_addresses or primary_address)
-    let existingUser = null;
-    const { data: byVerified } = await supabase
-      .from("users")
-      .select("*")
-      .contains("verified_addresses", [normalizedAddress])
-      .single();
-
-    if (byVerified) {
-      existingUser = byVerified;
-    } else {
-      const { data: byPrimary } = await supabase
-        .from("users")
-        .select("*")
-        .eq("primary_address", normalizedAddress)
-        .single();
-      existingUser = byPrimary;
-    }
+    const existingUser = await findUserByWallet(supabase, normalizedAddress);
 
     // If user exists and data is fresh (< 5 min), return cached
     if (existingUser?.steemhunt_fetched_at) {
@@ -100,44 +85,16 @@ export async function POST(request: NextRequest) {
       quotientData,
     });
 
-    // Upsert: INSERT then UPDATE on conflict
-    const { data: insertData, error: insertError } = await supabase
-      .from("users")
-      .insert(userData)
-      .select()
-      .single();
+    const { data: finalData, error: upsertError } = await upsertUser(
+      supabase, userData, normalizedAddress, existingUser,
+    );
 
-    let finalData = insertData;
-
-    if (insertError) {
-      if (insertError.code === "23505") {
-        // Unique violation — update by the conflicting identity
-        const updateQuery = supabase.from("users").update(userData);
-        const conditioned = existingUser
-          ? updateQuery.eq("id", existingUser.id)
-          : userData.fid != null
-            ? updateQuery.eq("fid", userData.fid)
-            : updateQuery.eq("primary_address", normalizedAddress);
-
-        const { data: updateData, error: updateError } = await conditioned
-          .select()
-          .single();
-
-        if (updateError) {
-          console.error("[register-by-wallet] Update error:", updateError);
-          return NextResponse.json(
-            { error: "Failed to save user data" },
-            { status: 500 },
-          );
-        }
-        finalData = updateData;
-      } else {
-        console.error("[register-by-wallet] Insert error:", insertError);
-        return NextResponse.json(
-          { error: "Failed to save user data" },
-          { status: 500 },
-        );
-      }
+    if (upsertError) {
+      console.error("[register-by-wallet] Upsert error:", upsertError);
+      return NextResponse.json(
+        { error: "Failed to save user data" },
+        { status: 500 },
+      );
     }
 
     return NextResponse.json({ success: true, user: finalData });

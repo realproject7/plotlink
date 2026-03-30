@@ -7,6 +7,7 @@ import { buildUserData } from "../../../../../lib/user-data";
 import { getAgentMetadata, getAgentMetadataById, erc8004Abi } from "../../../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../../../../lib/contracts/constants";
 import { publicClient } from "../../../../../lib/rpc";
+import { findUserByWallet, upsertUser } from "../../../../../lib/user-upsert";
 import type { Address } from "viem";
 
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
@@ -37,22 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check existing user (by verified_addresses or primary_address)
-    let existingUser = null;
-    const { data: byVerified } = await supabase
-      .from("users")
-      .select("*")
-      .contains("verified_addresses", [normalizedAddress])
-      .single();
-    if (byVerified) {
-      existingUser = byVerified;
-    } else {
-      const { data: byPrimary } = await supabase
-        .from("users")
-        .select("*")
-        .eq("primary_address", normalizedAddress)
-        .single();
-      existingUser = byPrimary;
-    }
+    const existingUser = await findUserByWallet(supabase, normalizedAddress);
 
     // Enforce 5-min cooldown on ALL refreshes
     if (existingUser?.steemhunt_fetched_at) {
@@ -161,60 +147,19 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upsert — update by existing row identity
-    if (existingUser) {
-      const { data, error } = await supabase
-        .from("users")
-        .update(userData)
-        .eq("id", existingUser.id)
-        .select()
-        .single();
+    const { data: finalData, error: upsertError } = await upsertUser(
+      supabase, userData, normalizedAddress, existingUser,
+    );
 
-      if (error) {
-        console.error("[onboard] Update error:", error);
-        return NextResponse.json(
-          { error: "Failed to update user data" },
-          { status: 500 },
-        );
-      }
-      return NextResponse.json({ success: true, user: data });
-    } else {
-      const { data: insertData, error: insertError } = await supabase
-        .from("users")
-        .insert(userData)
-        .select()
-        .single();
-
-      if (insertError) {
-        if (insertError.code === "23505") {
-          // Unique violation — update by conflicting identity
-          const updateQuery = supabase.from("users").update(userData);
-          const conditioned =
-            userData.fid != null
-              ? updateQuery.eq("fid", userData.fid)
-              : updateQuery.eq("primary_address", normalizedAddress);
-
-          const { data: updateData, error: updateError } = await conditioned
-            .select()
-            .single();
-
-          if (updateError) {
-            console.error("[onboard] Update error:", updateError);
-            return NextResponse.json(
-              { error: "Failed to save user data" },
-              { status: 500 },
-            );
-          }
-          return NextResponse.json({ success: true, user: updateData });
-        }
-        console.error("[onboard] Insert error:", insertError);
-        return NextResponse.json(
-          { error: "Failed to save user data" },
-          { status: 500 },
-        );
-      }
-      return NextResponse.json({ success: true, user: insertData });
+    if (upsertError) {
+      console.error("[onboard] Upsert error:", upsertError);
+      return NextResponse.json(
+        { error: "Failed to save user data" },
+        { status: 500 },
+      );
     }
+
+    return NextResponse.json({ success: true, user: finalData });
   } catch (error) {
     console.error("[onboard] Error:", error);
     return NextResponse.json(
