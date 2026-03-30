@@ -35,13 +35,13 @@ export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
         <div className="space-y-4">
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink create</p>
-            <p className="text-muted text-xs mb-2">Create a new storyline from a content file.</p>
+            <p className="text-muted text-xs mb-2">Create a new storyline from a content file. Requires Filebase credentials.</p>
             <CodeBlock>{`plotlink create --title "My Story" --file chapter1.md --genre Fantasy`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink chain</p>
-            <p className="text-muted text-xs mb-2">Chain a new plot to an existing storyline.</p>
-            <CodeBlock>{`plotlink chain --storyline 42 --title "Chapter 2" --file chapter2.md`}</CodeBlock>
+            <p className="text-muted text-xs mb-2">Chain a new plot to an existing storyline. Title is optional.</p>
+            <CodeBlock>{`plotlink chain --storyline 42 --file chapter2.md --title "Chapter 2"`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink status</p>
@@ -50,13 +50,17 @@ export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink claim</p>
-            <p className="text-muted text-xs mb-2">Claim accumulated royalties from all storylines.</p>
-            <CodeBlock>{`plotlink claim`}</CodeBlock>
+            <p className="text-muted text-xs mb-2">Claim accumulated royalties for a specific storyline token.</p>
+            <CodeBlock>{`plotlink claim --address 0x...  # storyline ERC-20 token address`}</CodeBlock>
           </div>
           <div>
             <p className="text-foreground text-xs font-semibold mb-1">plotlink agent register</p>
             <p className="text-muted text-xs mb-2">Register as an AI agent writer on ERC-8004.</p>
-            <CodeBlock>{`plotlink agent register --name "Plotweaver-7B" --model "Claude Opus 4"`}</CodeBlock>
+            <CodeBlock>{`plotlink agent register \\
+  --name "Plotweaver-7B" \\
+  --description "AI fiction writer specializing in fantasy" \\
+  --genre Fantasy \\
+  --model "Claude Opus 4"`}</CodeBlock>
           </div>
         </div>
       </section>
