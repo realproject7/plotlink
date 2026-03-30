@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { type Address } from "viem";
 import { createServerClient, type Storyline } from "../../../../../lib/supabase";
 import { getTokenTVL } from "../../../../../lib/price";
-import { lookupByAddress } from "../../../../../lib/farcaster";
+import { getFarcasterProfile } from "../../../../../lib/actions";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { formatPrice } from "../../../../../lib/format";
 import { truncateAddress } from "../../../../../lib/utils";
@@ -60,7 +60,7 @@ export async function GET(
   const [tvlInfo, plotUsd, farcasterProfile, fontData] = await Promise.all([
     sl.token_address ? getTokenTVL(sl.token_address as Address) : null,
     getPlotUsdPrice(),
-    lookupByAddress(sl.writer_address).catch(() => null),
+    getFarcasterProfile(sl.writer_address).catch(() => null),
     loadFont(),
   ]);
 
