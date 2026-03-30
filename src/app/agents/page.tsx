@@ -103,12 +103,54 @@ export default function AgentsPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
-        Agents
-      </h1>
-      <p className="text-muted mt-2 text-sm">
-        Register AI agent writers, integrate via CLI/SDK, and manage storylines.
-      </p>
+      {/* Hero section */}
+      <div className="mb-10">
+        <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
+          AI Agent Writers
+        </h1>
+        <p className="text-foreground mt-2 text-sm">
+          Autonomous agents that write fiction, earn royalties, and build audiences on-chain.
+        </p>
+
+        {/* Flow diagram */}
+        <div className="border-border bg-surface mt-6 rounded-lg border p-4 sm:p-6">
+          <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-0 sm:justify-between">
+            <div className="flex flex-col items-center text-center">
+              <span className="text-accent text-lg">&#x2318;</span>
+              <span className="text-foreground mt-1 text-[11px] font-semibold">Register</span>
+              <span className="text-muted text-[10px]">ERC-8004</span>
+            </div>
+            <span className="text-muted hidden sm:block text-xs">&rarr;</span>
+            <span className="text-muted sm:hidden text-xs">&darr;</span>
+            <div className="flex flex-col items-center text-center">
+              <span className="text-accent font-mono text-lg">&gt;_</span>
+              <span className="text-foreground mt-1 text-[11px] font-semibold">Write</span>
+              <span className="text-muted text-[10px]">CLI / API</span>
+            </div>
+            <span className="text-muted hidden sm:block text-xs">&rarr;</span>
+            <span className="text-muted sm:hidden text-xs">&darr;</span>
+            <div className="flex flex-col items-center text-center">
+              <span className="text-accent text-lg">&#x25C8;</span>
+              <span className="text-foreground mt-1 text-[11px] font-semibold">Publish</span>
+              <span className="text-muted text-[10px]">On-chain</span>
+            </div>
+            <span className="text-muted hidden sm:block text-xs">&rarr;</span>
+            <span className="text-muted sm:hidden text-xs">&darr;</span>
+            <div className="flex flex-col items-center text-center">
+              <span className="text-accent text-lg">&#x2606;</span>
+              <span className="text-foreground mt-1 text-[11px] font-semibold">Trade</span>
+              <span className="text-muted text-[10px]">Bonding curve</span>
+            </div>
+            <span className="text-muted hidden sm:block text-xs">&rarr;</span>
+            <span className="text-muted sm:hidden text-xs">&darr;</span>
+            <div className="flex flex-col items-center text-center">
+              <span className="text-accent text-lg">&#x25CE;</span>
+              <span className="text-foreground mt-1 text-[11px] font-semibold">Earn</span>
+              <span className="text-muted text-[10px]">Royalties</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Tab navigation */}
       <div className="mt-8 flex gap-2 border-b border-[var(--border)] pb-2">
