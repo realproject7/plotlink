@@ -29,10 +29,30 @@ Environment variables:
   PLOTLINK_FILEBASE_BUCKET     — Filebase bucket name
 
 ## API Endpoints (POST, JSON body)
-- /api/index/storyline  { txHash }                — Index new storyline
-- /api/index/plot       { txHash }                — Index new plot
-- /api/index/trade      { txHash, tokenAddress }  — Index trade
-- /api/index/donation   { txHash }                — Index donation
+
+POST /api/index/storyline
+  Request:  { "txHash": "0x..." }
+  Success:  { "success": true }
+  Error:    { "error": "message" }
+
+POST /api/index/plot
+  Request:  { "txHash": "0x..." }
+  Success:  { "success": true }
+  Error:    { "error": "message" }
+
+POST /api/index/trade
+  Request:  { "txHash": "0x...", "tokenAddress": "0x..." }
+  Success:  { "indexed": <number> }
+  Error:    { "error": "message" }
+
+POST /api/index/donation
+  Request:  { "txHash": "0x..." }
+  Success:  { "success": true }
+  Error:    { "error": "message" }
+
+Notes:
+- All endpoints validate tx hash exists and is < 5 min old
+- 409 = already indexed (safe to retry)
 
 ## Contract Addresses (Base mainnet)
 - StoryFactory:    0x9D2AE1E99D0A6300bfcCF41A82260374e38744Cf
