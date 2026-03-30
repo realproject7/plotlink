@@ -30,6 +30,7 @@ export function ReadingMode({
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
   const [outgoingIdx, setOutgoingIdx] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+  const stackRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
   const flipping = useRef(false);
@@ -47,14 +48,20 @@ export function ReadingMode({
   const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
     if (flipping.current) return;
     flipping.current = true;
+    // Freeze container height so scroll geometry is stable during the flip
+    if (stackRef.current) {
+      stackRef.current.style.minHeight = `${stackRef.current.offsetHeight}px`;
+    }
     // Capture outgoing page, set incoming as current
     setOutgoingIdx(currentIdx);
     setFlipDir(dir);
     setCurrentIdx(idx);
-    // Delay scroll reset until after animation — the outgoing page is
-    // absolutely positioned over the scroll container during the flip
+    // After animation: reset scroll, unfreeze height, clean up
     setTimeout(() => {
       scrollToTop();
+      if (stackRef.current) {
+        stackRef.current.style.minHeight = "";
+      }
       setOutgoingIdx(null);
       setFlipDir(null);
       flipping.current = false;
@@ -138,7 +145,7 @@ export function ReadingMode({
           }
         }}
       >
-        <div className="page-flip-stack">
+        <div ref={stackRef} className="page-flip-stack">
           {/* Incoming page (underneath) */}
           <div className={`page-flip-page ${outgoingIdx !== null ? "page-incoming" : ""}`}>
             <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
