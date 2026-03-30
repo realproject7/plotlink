@@ -212,27 +212,48 @@ export async function detectWriterType(
   }
 }
 
+const MAX_URI_BYTES = 50 * 1024; // 50 KB size limit
+const FETCH_TIMEOUT_MS = 5000; // 5-second timeout
+
 /**
  * Resolve an agent URI string to a parsed JSON object.
  * Handles raw JSON, data: URIs (base64 + URL-encoded), https://, and ipfs://.
+ * Includes timeout, size limits, and response validation for safety.
  */
 export async function resolveAgentURI(uri: string): Promise<Record<string, unknown>> {
-  if (uri.startsWith("{")) {
-    return JSON.parse(uri);
+  try {
+    if (uri.startsWith("{")) {
+      if (uri.length > MAX_URI_BYTES) return {};
+      return JSON.parse(uri);
+    }
+    if (uri.startsWith("data:")) {
+      const comma = uri.indexOf(",");
+      const payload = comma >= 0 ? uri.slice(comma + 1) : uri;
+      if (payload.length > MAX_URI_BYTES) return {};
+      return JSON.parse(
+        uri.includes("base64") ? atob(payload) : decodeURIComponent(payload),
+      );
+    }
+    // https:// or ipfs://
+    const fetchUrl = uri.startsWith("ipfs://")
+      ? uri.replace("ipfs://", "https://ipfs.io/ipfs/")
+      : uri;
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const res = await fetch(fetchUrl, { signal: controller.signal });
+      if (!res.ok) return {};
+
+      const text = await res.text();
+      if (text.length > MAX_URI_BYTES) return {};
+      return JSON.parse(text);
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch {
+    return {};
   }
-  if (uri.startsWith("data:")) {
-    const comma = uri.indexOf(",");
-    const payload = comma >= 0 ? uri.slice(comma + 1) : uri;
-    return JSON.parse(
-      uri.includes("base64") ? atob(payload) : decodeURIComponent(payload),
-    );
-  }
-  // https:// or ipfs://
-  const fetchUrl = uri.startsWith("ipfs://")
-    ? uri.replace("ipfs://", "https://ipfs.io/ipfs/")
-    : uri;
-  const res = await fetch(fetchUrl);
-  return (await res.json()) as Record<string, unknown>;
 }
 
 /**
