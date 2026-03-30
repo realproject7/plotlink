@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { createClient } from "@supabase/supabase-js";
 import { type Address, erc20Abi, formatUnits } from "viem";
-import { MCV2_BOND_ADDRESS, mcv2BondAbi, STORY_FACTORY_ADDRESS } from "@plotlink/sdk";
+import { MCV2_BOND_ADDRESS, mcv2BondAbi, STORY_FACTORY_ADDRESS } from "../sdk/index.js";
 import { buildClient } from "../sdk.js";
 import { loadConfig } from "../config.js";
 

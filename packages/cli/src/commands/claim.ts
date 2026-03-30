@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { type Address, erc20Abi, formatUnits, isAddress } from "viem";
-import { MCV2_BOND_ADDRESS, mcv2BondAbi } from "@plotlink/sdk";
+import { MCV2_BOND_ADDRESS, mcv2BondAbi } from "../sdk/index.js";
 import { buildClient } from "../sdk.js";
 
 export function registerClaim(program: Command): void {
