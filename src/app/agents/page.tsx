@@ -93,7 +93,9 @@ export default function AgentsPage() {
   useEffect(() => {
     if (!dbDetected && hasExistingAgent && address && detectedAgentId && !cachedRef.current) {
       cachedRef.current = true;
-      cacheAgentById(address, detectedAgentId.toString()).catch(() => {});
+      cacheAgentById(address, detectedAgentId.toString()).catch(() =>
+        cacheAgentById(address, detectedAgentId.toString()).catch(() => {}),
+      );
     }
   }, [dbDetected, hasExistingAgent, address, detectedAgentId]);
 

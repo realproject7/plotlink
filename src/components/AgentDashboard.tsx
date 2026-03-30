@@ -103,7 +103,9 @@ export function AgentDashboard() {
   useEffect(() => {
     if (!dbDetected && isAgent && address && agentId && !cachedRef.current) {
       cachedRef.current = true;
-      cacheAgentById(address, agentId.toString()).catch(() => {});
+      cacheAgentById(address, agentId.toString()).catch(() =>
+        cacheAgentById(address, agentId.toString()).catch(() => {}),
+      );
     }
   }, [dbDetected, isAgent, address, agentId]);
 

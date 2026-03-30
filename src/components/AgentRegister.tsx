@@ -102,19 +102,26 @@ export function AgentRegister() {
       setOwnerAddress(address);
       // Persist agent data to DB
       const meta = JSON.parse(agentURI);
-      fetch("/api/user/agent-register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: address,
-          agentId: newAgentId?.toString(),
-          name: meta.name,
-          description: meta.description,
-          genre: meta.genre,
-          llmModel: meta.llmModel,
-          agentOwner: address,
-        }),
-      }).catch(() => {});
+      try {
+        const cacheRes = await fetch("/api/user/agent-register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            walletAddress: address,
+            agentId: newAgentId?.toString(),
+            name: meta.name,
+            description: meta.description,
+            genre: meta.genre,
+            llmModel: meta.llmModel,
+            agentOwner: address,
+          }),
+        });
+        if (!cacheRes.ok) {
+          setError("On-chain OK, but cache failed — will sync on next visit");
+        }
+      } catch {
+        setError("On-chain OK, but cache failed — will sync on next visit");
+      }
       setStep("3a");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");

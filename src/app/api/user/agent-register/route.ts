@@ -61,12 +61,36 @@ export async function POST(request: NextRequest) {
     };
 
     if (existingUser) {
-      await supabase.from("users").update(agentFields).eq("id", existingUser.id);
+      const { error: updateError } = await supabase.from("users").update(agentFields).eq("id", existingUser.id);
+      if (updateError) {
+        return NextResponse.json({ error: updateError.message }, { status: 500 });
+      }
     } else {
-      await supabase.from("users").insert({
+      const { error: insertError } = await supabase.from("users").insert({
         primary_address: normalized,
         ...agentFields,
       });
+
+      // 23505: row was created concurrently — update it instead
+      if (insertError?.code === "23505") {
+        const { data: raceUser } = await supabase
+          .from("users")
+          .select("id")
+          .or(`primary_address.eq.${normalized},agent_wallet.eq.${normalized},agent_owner.eq.${normalized}`)
+          .limit(1)
+          .single();
+
+        if (raceUser) {
+          const { error: updateError } = await supabase.from("users").update(agentFields).eq("id", raceUser.id);
+          if (updateError) {
+            return NextResponse.json({ error: updateError.message }, { status: 500 });
+          }
+        } else {
+          return NextResponse.json({ error: "Conflict but user not found on retry" }, { status: 500 });
+        }
+      } else if (insertError) {
+        return NextResponse.json({ error: insertError.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ ok: true });
