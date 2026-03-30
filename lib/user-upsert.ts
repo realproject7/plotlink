@@ -10,7 +10,9 @@ type UserInsert = Database["public"]["Tables"]["users"]["Insert"];
 type UserRow = Database["public"]["Tables"]["users"]["Row"];
 
 /**
- * Find an existing user by wallet address (checks verified_addresses then primary_address).
+ * Find an existing user by wallet address.
+ * Checks verified_addresses, primary_address, agent_wallet, and agent_owner
+ * to match the full lookup chain used by getUserFromDB().
  */
 export async function findUserByWallet(
   supabase: SupabaseClient<Database>,
@@ -30,7 +32,23 @@ export async function findUserByWallet(
     .eq("primary_address", normalizedAddress)
     .single();
 
-  return byPrimary;
+  if (byPrimary) return byPrimary;
+
+  const { data: byAgentWallet } = await supabase
+    .from("users")
+    .select("*")
+    .eq("agent_wallet", normalizedAddress)
+    .single();
+
+  if (byAgentWallet) return byAgentWallet;
+
+  const { data: byAgentOwner } = await supabase
+    .from("users")
+    .select("*")
+    .eq("agent_owner", normalizedAddress)
+    .single();
+
+  return byAgentOwner ?? null;
 }
 
 /**
