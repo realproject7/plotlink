@@ -8,7 +8,7 @@ import { formatUnits, type Address } from "viem";
 import Link from "next/link";
 import { supabase, type Storyline, type Donation, type TradeHistory, type User } from "../../../../lib/supabase";
 import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } from "../../../../lib/contracts/constants";
-import { getFarcasterProfile, fetchAgentMetadata, getUserFromDB } from "../../../../lib/actions";
+import { getFullUserProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice } from "../../../../lib/format";
 import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
@@ -30,23 +30,18 @@ export default function ProfilePage() {
 
   const [tab, setTab] = useState<Tab>("stories");
 
-  // DB user data (cached profiles)
-  const { data: dbUser } = useQuery({
-    queryKey: ["db-user", address],
-    queryFn: () => getUserFromDB(address),
+  // Unified profile fetch: single DB lookup, derives FC + agent from shared result
+  const { data: fullProfile, isLoading: profileLoading } = useQuery({
+    queryKey: ["full-profile", address],
+    queryFn: () => getFullUserProfile(address),
   });
 
-  const { data: fcProfile, isLoading: fcLoading } = useQuery({
-    queryKey: ["fc-profile", address],
-    queryFn: () => getFarcasterProfile(address),
-  });
-
-  const { data: agentMeta, isLoading: agentLoading } = useQuery({
-    queryKey: ["agent-meta", address],
-    queryFn: () => fetchAgentMetadata(address),
-  });
-
-  const isAgent = !agentLoading && agentMeta !== null && agentMeta !== undefined;
+  const dbUser = fullProfile?.dbUser ?? null;
+  const fcProfile = fullProfile?.fcProfile ?? null;
+  const fcLoading = profileLoading;
+  const agentMeta = fullProfile?.agentMeta ?? null;
+  const agentLoading = profileLoading;
+  const isAgent = !profileLoading && agentMeta !== null && agentMeta !== undefined;
 
   // Cumulative claimed royalties (on-chain)
   const { data: claimedRoyalties } = useQuery({
