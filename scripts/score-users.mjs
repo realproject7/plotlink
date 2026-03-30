@@ -90,6 +90,11 @@ function scoreUser(row, headers) {
     return { score: 0, tag: "None" };
   }
 
+  // No profile data at all = None
+  if (!has("bio") && !has("pfp_url") && !has("twitter")) {
+    return { score: 0, tag: "None" };
+  }
+
   // --- Social Reach (40%) ---
   const fcReach = logScale(followers, 100000); // FC followers, log-scaled to 100k
   const xReach = logScale(num("x_followers_count"), 500000); // X followers
