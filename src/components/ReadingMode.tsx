@@ -28,7 +28,7 @@ export function ReadingMode({
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
-  const [flipPhase, setFlipPhase] = useState<"out" | "in" | null>(null);
+  const [outgoingIdx, setOutgoingIdx] = useState<number | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -36,6 +36,7 @@ export function ReadingMode({
   const { isMiniApp } = usePlatformDetection();
 
   const chapter = chapters[currentIdx];
+  const outgoingChapter = outgoingIdx !== null ? chapters[outgoingIdx] : null;
   const hasPrev = currentIdx > 0;
   const hasNext = currentIdx < chapters.length - 1;
 
@@ -46,21 +47,18 @@ export function ReadingMode({
   const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
     if (flipping.current) return;
     flipping.current = true;
-    // Phase 1: flip out the current page
+    // Capture outgoing page, set incoming as current
+    setOutgoingIdx(currentIdx);
     setFlipDir(dir);
-    setFlipPhase("out");
+    setCurrentIdx(idx);
+    scrollToTop();
+    // Clear outgoing page after animation completes
     setTimeout(() => {
-      // Phase 2: swap content and flip in the new page
-      setCurrentIdx(idx);
-      scrollToTop();
-      setFlipPhase("in");
-      setTimeout(() => {
-        setFlipDir(null);
-        setFlipPhase(null);
-        flipping.current = false;
-      }, 200);
-    }, 200);
-  }, [scrollToTop]);
+      setOutgoingIdx(null);
+      setFlipDir(null);
+      flipping.current = false;
+    }, 500);
+  }, [currentIdx, scrollToTop]);
 
   const goPrev = useCallback(() => {
     if (hasPrev) navigate(currentIdx - 1, "right");
@@ -139,17 +137,34 @@ export function ReadingMode({
           }
         }}
       >
-        <div className={`mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12 ${
-          flipPhase === "out" && flipDir === "left" ? "page-flip-out-left"
-          : flipPhase === "out" && flipDir === "right" ? "page-flip-out-right"
-          : flipPhase === "in" && flipDir === "left" ? "page-flip-in-left"
-          : flipPhase === "in" && flipDir === "right" ? "page-flip-in-right"
-          : ""
-        }`}>
-          {chapter?.content ? (
-            <StoryContent content={chapter.content} />
-          ) : (
-            <p className="text-muted text-sm italic">Content unavailable</p>
+        <div className="page-flip-stack">
+          {/* Incoming page (underneath) */}
+          <div className={`page-flip-page ${outgoingIdx !== null ? "page-incoming" : ""}`}>
+            <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
+              {chapter?.content ? (
+                <StoryContent content={chapter.content} />
+              ) : (
+                <p className="text-muted text-sm italic">Content unavailable</p>
+              )}
+            </div>
+          </div>
+
+          {/* Outgoing page (on top, flipping away) */}
+          {outgoingChapter && flipDir && (
+            <div
+              className={`page-flip-page page-outgoing ${
+                flipDir === "left" ? "page-flip-out-left" : "page-flip-out-right"
+              }`}
+              style={{ background: "var(--paper-bg, #F5F0E8)" }}
+            >
+              <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
+                {outgoingChapter.content ? (
+                  <StoryContent content={outgoingChapter.content} />
+                ) : (
+                  <p className="text-muted text-sm italic">Content unavailable</p>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
