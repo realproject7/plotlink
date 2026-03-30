@@ -29,6 +29,7 @@ export function ReadingMode({
   const [showToc, setShowToc] = useState(false);
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
   const [outgoingIdx, setOutgoingIdx] = useState<number | null>(null);
+  const [outgoingScroll, setOutgoingScroll] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const stackRef = useRef<HTMLDivElement>(null);
   const touchStartX = useRef(0);
@@ -48,17 +49,20 @@ export function ReadingMode({
   const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
     if (flipping.current) return;
     flipping.current = true;
-    // Freeze container height so scroll geometry is stable during the flip
+    // Capture scroll offset so the outgoing page can render at its old position
+    const scrollOffset = contentRef.current?.scrollTop ?? 0;
+    setOutgoingScroll(scrollOffset);
+    // Freeze container height so layout is stable during the flip
     if (stackRef.current) {
       stackRef.current.style.minHeight = `${stackRef.current.offsetHeight}px`;
     }
-    // Capture outgoing page, set incoming as current
+    // Set outgoing, swap to incoming, and scroll to top immediately
     setOutgoingIdx(currentIdx);
     setFlipDir(dir);
     setCurrentIdx(idx);
-    // After animation: reset scroll, unfreeze height, clean up
+    scrollToTop();
+    // After animation: unfreeze height, clean up
     setTimeout(() => {
-      scrollToTop();
       if (stackRef.current) {
         stackRef.current.style.minHeight = "";
       }
@@ -157,13 +161,16 @@ export function ReadingMode({
             </div>
           </div>
 
-          {/* Outgoing page (on top, flipping away) */}
+          {/* Outgoing page (on top, flipping away at its old scroll offset) */}
           {outgoingChapter && flipDir && (
             <div
               className={`page-flip-page page-outgoing ${
                 flipDir === "left" ? "page-flip-out-left" : "page-flip-out-right"
               }`}
-              style={{ background: "var(--paper-bg, #F5F0E8)" }}
+              style={{
+                background: "var(--paper-bg, #F5F0E8)",
+                top: `-${outgoingScroll}px`,
+              }}
             >
               <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
                 {outgoingChapter.content ? (
