@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { type Hex, decodeEventLog, encodeEventTopics } from "viem";
 import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
+import { verifyIndexAuth } from "../../../../../lib/index-auth";
 import {
   storyFactoryAbi,
   plotChainedEvent,
@@ -25,6 +26,9 @@ function error(message: string, status = 400) {
 }
 
 export async function POST(req: Request) {
+  if (!verifyIndexAuth(req)) {
+    return error("Unauthorized", 401);
+  }
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const fallbackContent = body.content as string | undefined;

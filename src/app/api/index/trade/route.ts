@@ -5,6 +5,7 @@ import { createServerClient } from "../../../../../lib/supabase";
 import { mcv2BondEventAbi, priceForNextMintFunction } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
+import { verifyIndexAuth } from "../../../../../lib/index-auth";
 import type { Database } from "../../../../../lib/supabase";
 
 type TradeInsert = Database["public"]["Tables"]["trade_history"]["Insert"];
@@ -14,6 +15,9 @@ function error(message: string, status = 400) {
 }
 
 export async function POST(req: Request) {
+  if (!verifyIndexAuth(req)) {
+    return error("Unauthorized", 401);
+  }
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const tokenAddress = (body.tokenAddress as string | undefined)?.toLowerCase();
