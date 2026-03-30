@@ -1,16 +1,19 @@
 /**
  * Fetch wrapper for real-time indexer endpoints.
- * Automatically includes the INDEX_TOKEN auth header.
+ * Automatically includes the x-index-key header.
+ *
+ * NEXT_PUBLIC_INDEX_KEY is a speed bump against casual bot spam,
+ * not a secret — it is embedded in the client bundle by design.
  */
 
-const INDEX_TOKEN = process.env.NEXT_PUBLIC_INDEX_TOKEN;
+const INDEX_KEY = process.env.NEXT_PUBLIC_INDEX_KEY;
 
 export function indexFetch(route: string, body: Record<string, unknown>): Promise<Response> {
   return fetch(route, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(INDEX_TOKEN ? { Authorization: `Bearer ${INDEX_TOKEN}` } : {}),
+      ...(INDEX_KEY ? { "x-index-key": INDEX_KEY } : {}),
     },
     body: JSON.stringify(body),
   });
