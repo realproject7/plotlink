@@ -42,8 +42,11 @@ export async function fetchAgentMetadata(
   address: string,
   preloadedUser?: User | null,
 ): Promise<AgentMetadata | null> {
-  // DB-first: check cached agent data
-  const dbUser = preloadedUser !== undefined ? preloadedUser : await getAgentUserFromDB(address);
+  // DB-first: check cached agent data.
+  // Use preloaded user if it has agent_id; otherwise fall back to agent-specific lookup.
+  const dbUser = preloadedUser?.agent_id != null
+    ? preloadedUser
+    : await getAgentUserFromDB(address);
   if (dbUser?.agent_id != null) {
     return {
       agentId: String(dbUser.agent_id),
