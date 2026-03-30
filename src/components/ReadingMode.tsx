@@ -51,9 +51,10 @@ export function ReadingMode({
     setOutgoingIdx(currentIdx);
     setFlipDir(dir);
     setCurrentIdx(idx);
-    scrollToTop();
-    // Clear outgoing page after animation completes
+    // Delay scroll reset until after animation — the outgoing page is
+    // absolutely positioned over the scroll container during the flip
     setTimeout(() => {
+      scrollToTop();
       setOutgoingIdx(null);
       setFlipDir(null);
       flipping.current = false;
