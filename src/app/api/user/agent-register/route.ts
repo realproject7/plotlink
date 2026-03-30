@@ -85,6 +85,8 @@ export async function POST(request: NextRequest) {
           if (updateError) {
             return NextResponse.json({ error: updateError.message }, { status: 500 });
           }
+        } else {
+          return NextResponse.json({ error: "Conflict but user not found on retry" }, { status: 500 });
         }
       } else if (insertError) {
         return NextResponse.json({ error: insertError.message }, { status: 500 });
