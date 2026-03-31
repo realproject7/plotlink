@@ -59,22 +59,22 @@ export function NavBar() {
         </div>
 
         {/* Right side: wallet + mobile toggle */}
-        <div className="flex items-center gap-2">
-          {/* Desktop: full ConnectWallet */}
+        <div className="flex items-center gap-1.5">
+          {/* Desktop: pill ConnectWallet */}
           <div className="hidden md:block">
             <ConnectWallet />
           </div>
-          {/* Mobile: compact Connect button / PFP in top nav */}
+          {/* Mobile: matched-height boxes — PFP box + hamburger box */}
           <div className="md:hidden">
             <ConnectWallet compact />
           </div>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="text-muted hover:text-foreground p-1 transition-colors md:hidden"
+            className="border-border text-muted hover:text-foreground flex items-center justify-center rounded border px-2 py-1 transition-colors md:hidden"
             aria-label="Toggle menu"
             aria-expanded={mobileOpen}
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               {mobileOpen ? (
                 <>
                   <line x1="18" y1="6" x2="6" y2="18" />

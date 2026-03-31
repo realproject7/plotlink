@@ -45,15 +45,15 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
 
   // Connected state
   if (isConnected && address) {
-    const shortAddr = address.slice(0, 6);
+    const displayAddr = truncateAddress(address);
 
-    // Compact mode: PFP + short identifier for mobile top nav
+    // Compact mode: bordered box for mobile top nav (matches hamburger box height)
     if (compact) {
       return (
         <Link
           href={`/profile/${address}`}
           onClick={onNavigate}
-          className="text-accent inline-flex items-center gap-1 text-xs font-medium hover:opacity-80 transition-opacity"
+          className="border-border text-accent inline-flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
         >
           {profile?.pfpUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -67,37 +67,30 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
           )}
           {profile
             ? `@${profile.username.length > 10 ? profile.username.slice(0, 10) + "…" : profile.username}`
-            : shortAddr}
+            : displayAddr}
         </Link>
       );
     }
 
-    // Full mode: PFP + username + shortened address (no disconnect)
+    // Full mode: pill with PFP + @username or truncated address
     return (
-      <div className="border-border flex items-center gap-3 rounded border px-3 py-2 text-sm">
-        <Link
-          href={`/profile/${address}`}
-          onClick={onNavigate}
-          className="text-accent inline-flex items-center gap-1.5 font-medium hover:opacity-80 transition-opacity"
-        >
-          {profile?.pfpUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.pfpUrl}
-              alt=""
-              width={16}
-              height={16}
-              className="rounded-full"
-            />
-          )}
-          {profile ? `@${profile.username}` : shortAddr}
-        </Link>
-        {profile && (
-          <span className="text-muted text-[10px] font-mono">
-            {shortAddr}
-          </span>
+      <Link
+        href={`/profile/${address}`}
+        onClick={onNavigate}
+        className="border-border text-accent inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
+      >
+        {profile?.pfpUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.pfpUrl}
+            alt=""
+            width={18}
+            height={18}
+            className="rounded-full"
+          />
         )}
-      </div>
+        {profile ? `@${profile.username}` : displayAddr}
+      </Link>
     );
   }
 
@@ -123,8 +116,8 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
               type="button"
               className={
                 compact
-                  ? "border-accent text-accent hover:bg-accent hover:text-background rounded border px-2.5 py-1 text-xs transition-colors"
-                  : "border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+                  ? "border-border text-accent hover:bg-accent hover:text-background rounded border px-2 py-1 text-xs font-medium transition-colors"
+                  : "border-border text-accent hover:bg-accent hover:text-background rounded-full border px-3 py-1 text-xs font-medium transition-colors"
               }
             >
               {compact ? "Connect" : "connect wallet"}
