@@ -10,8 +10,8 @@ import { supabase, type Storyline, type Donation, type TradeHistory, type User }
 import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } from "../../../../lib/contracts/constants";
 import { getFullUserProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
-import { formatPrice } from "../../../../lib/format";
-import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
+import { formatPrice, formatSupply } from "../../../../lib/format";
+import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo, get24hPriceChange, getTokenTVL } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
@@ -169,7 +169,7 @@ export default function ProfilePage() {
           connectedAddress={connectedAddress ?? null}
         />
       )}
-      {tab === "portfolio" && <PortfolioTab address={address} />}
+      {tab === "portfolio" && <PortfolioTab address={address} isOwnProfile={isOwnProfile} />}
       {tab === "activity" && <ActivityTab address={address} />}
     </div>
   );
@@ -1137,9 +1137,11 @@ interface PortfolioHolding {
   value: bigint;
   entryPrice: number | null;
   lastTraded: string | null;
+  priceChange: number | null;
+  reserveDecimals: number;
 }
 
-function PortfolioTab({ address }: { address: string }) {
+function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile: boolean }) {
   const { data: plotUsd } = usePlotUsdPrice();
 
   // Fetch on-chain token holdings
@@ -1175,18 +1177,24 @@ function PortfolioTab({ address }: { address: string }) {
         .filter((h) => h.balance.status === "success" && (h.balance.result as bigint) > BigInt(0));
       if (held.length === 0) return [];
 
-      // Fetch prices for held tokens
+      // Fetch prices, 24h change, and TVL for held tokens
       const results = await Promise.all(
         held.map(async ({ sl, balance: balResult }): Promise<PortfolioHolding | null> => {
+          const tokenAddr = sl.token_address as Address;
           const balance = balResult.result as bigint;
           try {
-            const price = await browserClient.readContract({
-              address: MCV2_BOND,
-              abi: mcv2BondAbi,
-              functionName: "priceForNextMint",
-              args: [sl.token_address as Address],
-            });
+            const [price, priceChangeResult, tvlResult] = await Promise.all([
+              browserClient.readContract({
+                address: MCV2_BOND,
+                abi: mcv2BondAbi,
+                functionName: "priceForNextMint",
+                args: [tokenAddr],
+              }),
+              get24hPriceChange(tokenAddr, browserClient).catch(() => null),
+              getTokenTVL(tokenAddr, browserClient).catch(() => null),
+            ]);
             const priceBI = BigInt(price);
+            const reserveDecimals = tvlResult?.decimals ?? 18;
             const value = (balance * priceBI) / BigInt(10 ** 18);
 
             // Derive entry price from first mint in trade_history
@@ -1218,7 +1226,12 @@ function PortfolioTab({ address }: { address: string }) {
               }
             }
 
-            return { storyline: sl, balance, price: priceBI, value, entryPrice, lastTraded };
+            return {
+              storyline: sl, balance, price: priceBI, value,
+              entryPrice, lastTraded,
+              priceChange: priceChangeResult?.changePercent ?? null,
+              reserveDecimals,
+            };
           } catch {
             return null;
           }
@@ -1238,22 +1251,38 @@ function PortfolioTab({ address }: { address: string }) {
     staleTime: 60000,
   });
 
-  // Donation history (given as reader)
-  const { data: donationsGiven = [], isLoading: donGivenLoading } = useQuery({
+  // Donation history (given as reader) — paginated
+  const DONATION_PAGE = 10;
+  const {
+    data: donationPages,
+    isLoading: donGivenLoading,
+    isFetchingNextPage: donFetchingNext,
+    fetchNextPage: donFetchNext,
+    hasNextPage: donHasNext,
+  } = useInfiniteQuery({
     queryKey: ["profile-donations-given", address],
-    queryFn: async () => {
-      if (!supabase) return [];
-      const { data } = await supabase
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as Donation[], totalCount: 0 };
+      const { data: rows, count } = await supabase
         .from("donations")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("donor_address", address)
         .eq("contract_address", STORY_FACTORY.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .limit(20)
+        .range(pageParam, pageParam + DONATION_PAGE - 1)
         .returns<Donation[]>();
-      return data ?? [];
+      return { rows: rows ?? [], totalCount: count ?? 0 };
     },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
+    enabled: isOwnProfile,
   });
+  const donationsGiven = donationPages?.pages.flatMap((p) => p.rows) ?? [];
+  const donationTotalCount = donationPages?.pages[0]?.totalCount ?? 0;
 
   // Aggregate donations received as writer
   const { data: donationsReceived, isLoading: donRecvLoading } = useQuery({
@@ -1289,20 +1318,14 @@ function PortfolioTab({ address }: { address: string }) {
   const hasHoldings = holdings && holdings.length > 0;
   const hasDonationsGiven = donationsGiven.length > 0;
   const hasDonationsReceived = donationsReceived && donationsReceived.count > 0;
-  const hasAny = hasHoldings || hasDonationsGiven || hasDonationsReceived;
-
-  if (!hasAny) {
-    return (
-      <div className="py-12 text-center">
-        <p className="text-muted text-sm">No holdings or donations yet.</p>
-        <p className="text-muted mt-1 text-xs">
-          This address hasn&apos;t purchased any storyline tokens or made donations.
-        </p>
-      </div>
-    );
-  }
 
   const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
+  const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
+  const bestPick = holdings && holdings.length > 0
+    ? holdings.reduce((best, h) =>
+        (h.priceChange ?? -Infinity) > (best.priceChange ?? -Infinity) ? h : best
+      )
+    : null;
   const totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
 
   return (
@@ -1311,18 +1334,35 @@ function PortfolioTab({ address }: { address: string }) {
       {hasHoldings && (
         <>
           <div className="border-border bg-surface rounded border px-4 py-3">
-            <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Portfolio Value</p>
-            <span className="text-accent text-lg font-bold">
-              {formatPrice(formatUnits(totalValue, 18))} {RESERVE_LABEL}
-            </span>
-            {plotUsd && (
-              <span className="text-muted ml-2 text-sm">
-                ≈ {formatUsdValue(Number(formatUnits(totalValue, 18)) * plotUsd)}
-              </span>
-            )}
-            <span className="text-muted ml-2 text-xs">
-              across {holdings!.length} {holdings!.length === 1 ? "token" : "tokens"}
-            </span>
+            <div className="text-muted grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="block text-[10px] uppercase tracking-wider">Portfolio Value</span>
+                <span className="text-accent text-lg font-bold">
+                  {formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}
+                </span>
+                {plotUsd && (
+                  <span className="text-muted ml-2 text-sm">
+                    ≈ {formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)}
+                  </span>
+                )}
+                <span className="text-muted ml-2 text-xs">
+                  across {holdings!.length} {holdings!.length === 1 ? "token" : "tokens"}
+                </span>
+              </div>
+              {bestPick && bestPick.priceChange !== null && (
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wider">Best Pick (24h)</span>
+                  <span className="text-foreground">
+                    {bestPick.storyline.title.slice(0, 20)}
+                    {bestPick.storyline.title.length > 20 ? "..." : ""}{" "}
+                    <span className={bestPick.priceChange >= 0 ? "text-accent" : "text-error"}>
+                      {bestPick.priceChange >= 0 ? "+" : ""}
+                      {bestPick.priceChange.toFixed(1)}%
+                    </span>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Token holdings */}
@@ -1349,12 +1389,17 @@ function PortfolioTab({ address }: { address: string }) {
                   </div>
                   <div className="shrink-0 text-right">
                     <span className="text-accent text-sm font-medium">
-                      {formatPrice(formatUnits(h.value, 18))} {RESERVE_LABEL}
+                      {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
                     </span>
                     {plotUsd && (
                       <span className="text-muted ml-1 text-xs">
-                        ({formatUsdValue(Number(formatUnits(h.value, 18)) * plotUsd)})
+                        ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
                       </span>
+                    )}
+                    {h.priceChange !== null && (
+                      <div className={`text-[10px] ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                        {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1401,14 +1446,17 @@ function PortfolioTab({ address }: { address: string }) {
         </div>
       )}
 
-      {/* Donations given as reader */}
-      {hasDonationsGiven && (
+      {/* Donations given as reader — own profile only, paginated */}
+      {isOwnProfile && hasDonationsGiven && (
         <div>
           <p className="text-muted text-xs uppercase tracking-wider">
             Donations Given
-            {totalDonated > BigInt(0) && (
+            {donationTotalCount > 0 && (
               <span className="text-foreground ml-2 normal-case">
-                {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL} total
+                {donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}
+                {totalDonated > BigInt(0) && (
+                  <> &middot; {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL} total loaded</>
+                )}
               </span>
             )}
           </p>
@@ -1450,7 +1498,164 @@ function PortfolioTab({ address }: { address: string }) {
               </div>
             ))}
           </div>
+          {donHasNext && (
+            <button
+              onClick={() => donFetchNext()}
+              disabled={donFetchingNext}
+              className="text-accent hover:text-foreground mt-2 w-full text-center text-xs transition-colors disabled:opacity-50"
+            >
+              {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
+            </button>
+          )}
         </div>
+      )}
+
+      {/* Trading History — public data, shown for all profiles */}
+      <PortfolioTradingHistory address={address} plotUsd={plotUsd} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio Trading History — paginated trades
+// ---------------------------------------------------------------------------
+
+const TRADE_PAGE_SIZE = 10;
+
+function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUsd?: number | null }) {
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["portfolio-trades", address],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as TradeHistory[], totalCount: 0 };
+      const { data: rows, count } = await supabase
+        .from("trade_history")
+        .select("*", { count: "exact" })
+        .eq("user_address", address.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .range(pageParam, pageParam + TRADE_PAGE_SIZE - 1)
+        .returns<TradeHistory[]>();
+      return { rows: rows ?? [], totalCount: count ?? 0 };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
+  });
+
+  const trades = data?.pages.flatMap((p) => p.rows) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+  // Fetch storyline titles for displayed trades
+  const storylineIds = [...new Set(trades.map((t) => t.storyline_id))];
+  const { data: storylineTitles } = useQuery({
+    queryKey: ["storyline-titles", storylineIds.join(",")],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return {} as Record<number, string>;
+      const { data: rows } = await supabase
+        .from("storylines")
+        .select("storyline_id, title")
+        .in("storyline_id", storylineIds);
+      const map: Record<number, string> = {};
+      for (const r of rows ?? []) map[r.storyline_id] = r.title;
+      return map;
+    },
+    enabled: storylineIds.length > 0,
+  });
+
+  if (isLoading) return <p className="text-muted mt-4 text-sm">Loading trades...</p>;
+  if (trades.length === 0) return null;
+
+  return (
+    <div>
+      <p className="text-muted text-xs uppercase tracking-wider">
+        Trading History
+        <span className="text-foreground ml-2 normal-case">
+          {totalCount} {totalCount === 1 ? "trade" : "trades"}
+        </span>
+      </p>
+
+      <div className="mt-2 space-y-2">
+        {trades.map((t) => {
+          const isBuy = t.event_type === "mint";
+          const title = storylineTitles?.[t.storyline_id];
+          const tokenCount = t.price_per_token > 0 ? t.reserve_amount / t.price_per_token : 0;
+          return (
+            <div
+              key={`${t.tx_hash}-${t.log_index}`}
+              className="border-border rounded border px-3 py-2 text-xs"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
+                      {isBuy ? "Buy" : "Sell"}
+                    </span>
+                    <Link
+                      href={`/story/${t.storyline_id}`}
+                      className="text-foreground hover:text-accent truncate transition-colors"
+                      title={title || `Story #${t.storyline_id}`}
+                    >
+                      {title || `Story #${t.storyline_id}`}
+                    </Link>
+                  </div>
+                  <div className="text-muted mt-1 flex items-center gap-2">
+                    {tokenCount > 0 && (
+                      <span>{formatSupply(tokenCount)} tokens</span>
+                    )}
+                    {t.block_timestamp && (
+                      <time dateTime={t.block_timestamp}>
+                        {new Date(t.block_timestamp).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </time>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-foreground font-medium">
+                    {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+                    {plotUsd && (
+                      <span className="text-muted ml-1 text-[10px] font-normal">
+                        (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
+                      </span>
+                    )}
+                  </span>
+                  {t.tx_hash && (
+                    <a
+                      href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted hover:text-accent transition-colors"
+                      title="View on Basescan"
+                    >
+                      &#x2197;
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors disabled:opacity-50"
+        >
+          {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
+        </button>
       )}
     </div>
   );
