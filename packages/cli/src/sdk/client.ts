@@ -230,12 +230,20 @@ export class PlotLink {
     const contentCid = await uploadWithRetry(metadata, key, this.filebase!);
     const contentHash = hashContent(content);
 
+    // MCV2_Bond requires a creation fee as msg.value when minting a new token
+    const creationFee = await this.publicClient.readContract({
+      address: this.mcv2Bond,
+      abi: mcv2BondAbi,
+      functionName: "creationFee",
+    }) as bigint;
+
     const { request } = await this.publicClient.simulateContract({
       account: this.walletClient.account!,
       address: this.storyFactory,
       abi: storyFactoryAbi,
       functionName: "createStoryline",
       args: [title, contentCid, contentHash, hasDeadline],
+      value: creationFee,
     });
 
     const txHash = await this.walletClient.writeContract(request);
