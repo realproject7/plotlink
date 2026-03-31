@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useParams } from "next/navigation";
-import { useAccount } from "wagmi";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useParams, useSearchParams } from "next/navigation";
+import { useAccount, useSignMessage } from "wagmi";
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { formatUnits, type Address } from "viem";
 import Link from "next/link";
 import { supabase, type Storyline, type Donation, type TradeHistory, type User } from "../../../../lib/supabase";
@@ -11,13 +11,18 @@ import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } fro
 import { getFullUserProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice } from "../../../../lib/format";
-import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
+import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo, getTokenTVL } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
 import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../../../lib/usd-price";
 import { DisconnectButton } from "../../../components/ConnectWallet";
+import { GENRES, LANGUAGES } from "../../../../lib/genres";
+import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
+import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
+import { WriterTradingStats } from "../../../components/WriterTradingStats";
+import { DropdownSelect } from "../../../components/DropdownSelect";
 
 type Tab = "stories" | "portfolio" | "activity";
 
@@ -29,7 +34,11 @@ export default function ProfilePage() {
   const isOwnProfile = connectedAddress?.toLowerCase() === address;
   const queryClient = useQueryClient();
 
-  const [tab, setTab] = useState<Tab>("stories");
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as Tab) || "stories";
+  const [tab, setTab] = useState<Tab>(
+    ["stories", "portfolio", "activity"].includes(initialTab) ? initialTab : "stories"
+  );
 
   // Unified profile fetch: single DB lookup, derives FC + agent from shared result
   const { data: fullProfile, isLoading: profileLoading } = useQuery({
@@ -157,6 +166,7 @@ export default function ProfilePage() {
           isAgent={isAgent}
           agentMeta={agentMeta ?? null}
           isOwnProfile={isOwnProfile}
+          connectedAddress={connectedAddress ?? null}
         />
       )}
       {tab === "portfolio" && <PortfolioTab address={address} />}
@@ -436,7 +446,7 @@ function ProfileHeader({
             </a>
             <CopyButton text={address} />
           </div>
-          {claimedRoyalties && claimedRoyalties > BigInt(0) && (
+          {claimedRoyalties != null && claimedRoyalties > BigInt(0) && (
             <div className="text-muted mt-1.5 text-[11px]">
               Royalties: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
             </div>
@@ -501,12 +511,15 @@ function StoriesTab({
   isAgent,
   agentMeta,
   isOwnProfile,
+  connectedAddress,
 }: {
   address: string;
   isAgent: boolean;
   agentMeta: AgentMetadata | null;
   isOwnProfile: boolean;
+  connectedAddress: string | null;
 }) {
+  const { data: plotUsd } = usePlotUsdPrice();
   const { data: storylines = [], isLoading, error } = useQuery({
     queryKey: ["profile-storylines", address],
     queryFn: async () => {
@@ -709,7 +722,13 @@ function StoriesTab({
       {/* Story portfolio */}
       <div className="space-y-3">
         {storylines.map((s) => (
-          <StoryRow key={s.id} storyline={s} />
+          <StoryRow
+            key={s.id}
+            storyline={s}
+            isOwnProfile={isOwnProfile}
+            writerAddress={connectedAddress as Address}
+            plotUsd={plotUsd}
+          />
         ))}
       </div>
     </div>
@@ -725,7 +744,17 @@ function StatCell({ label, value }: { label: string; value: string }) {
   );
 }
 
-function StoryRow({ storyline }: { storyline: Storyline }) {
+function StoryRow({
+  storyline,
+  isOwnProfile,
+  writerAddress,
+  plotUsd,
+}: {
+  storyline: Storyline;
+  isOwnProfile: boolean;
+  writerAddress: Address;
+  plotUsd?: number | null;
+}) {
   const tokenAddr = storyline.token_address as Address;
 
   const { data: priceInfo } = useQuery({
@@ -825,6 +854,238 @@ function StoryRow({ storyline }: { storyline: Storyline }) {
             year: "numeric",
           })}
         </div>
+      )}
+
+      {/* Genre prompt — own profile only, when genre not set */}
+      {isOwnProfile && !storyline.genre && (
+        <GenrePrompt
+          storylineId={storyline.storyline_id}
+          language={storyline.language}
+          writerAddress={writerAddress}
+        />
+      )}
+
+      {/* Deadline countdown — own profile, active storylines */}
+      {!storyline.sunset && storyline.last_plot_time && (
+        <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+      )}
+
+      {/* Token price + TVL — visible to all */}
+      {storyline.token_address && (
+        <div className="mt-3 space-y-2">
+          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
+          {/* Claim royalties — own profile only */}
+          {isOwnProfile && (
+            <ClaimRoyalties
+              tokenAddress={storyline.token_address as Address}
+              plotCount={storyline.plot_count}
+              beneficiary={writerAddress}
+              plotUsd={plotUsd}
+            />
+          )}
+        </div>
+      )}
+
+      {/* Donation history — own profile only */}
+      {isOwnProfile && storyline.token_address && (
+        <ProfileDonationHistory storylineId={storyline.storyline_id} />
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Genre Prompt — for setting genre on own profile storylines
+// ---------------------------------------------------------------------------
+
+const genreOptions = [
+  { value: "", label: "Select genre..." },
+  ...GENRES.map((g) => ({ value: g, label: g })),
+];
+const languageOptions = LANGUAGES.map((l) => ({ value: l, label: l }));
+
+function GenrePrompt({
+  storylineId,
+  language,
+  writerAddress,
+}: {
+  storylineId: number;
+  language: string;
+  writerAddress: string;
+}) {
+  const [genre, setGenre] = useState("");
+  const [lang, setLang] = useState(language || "English");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { signMessageAsync } = useSignMessage();
+
+  async function handleSave() {
+    if (!genre) return;
+    setSaving(true);
+    setErr(null);
+    try {
+      const langValue = language ? "" : lang;
+      const message = `Update storyline ${storylineId} metadata genre:${genre} language:${langValue}`;
+      const signature = await signMessageAsync({ message });
+
+      const res = await fetch(`/api/storyline/${storylineId}/metadata`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          genre,
+          ...(language ? {} : { language: lang }),
+          address: writerAddress,
+          signature,
+          message,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Error (${res.status})`);
+      }
+      queryClient.invalidateQueries({ queryKey: ["profile-storylines"] });
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Failed to save");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="border-accent/30 bg-surface mt-2 rounded border px-3 py-2.5">
+      <p className="text-foreground text-xs font-medium">
+        Set your genre
+        <span className="text-muted font-normal">
+          {" — "}improve discoverability by categorizing your story.
+        </span>
+      </p>
+      <div className="mt-2 flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <DropdownSelect
+            value={genre}
+            onChange={setGenre}
+            options={genreOptions}
+            placeholder="Select genre..."
+            disabled={saving}
+          />
+        </div>
+        {!language && (
+          <div className="min-w-0 flex-1">
+            <DropdownSelect
+              value={lang}
+              onChange={setLang}
+              options={languageOptions}
+              disabled={saving}
+            />
+          </div>
+        )}
+        <button
+          onClick={handleSave}
+          disabled={!genre || saving}
+          className="border-accent text-accent hover:bg-accent hover:text-background shrink-0 rounded border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {saving ? "Saving..." : "Save"}
+        </button>
+      </div>
+      {err && <p className="text-error mt-1 text-[10px]">{err}</p>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Donation History — own profile storyline donations
+// ---------------------------------------------------------------------------
+
+const DONATION_PAGE_SIZE = 10;
+
+function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
+  const {
+    data,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["profile-donations", storylineId],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as Donation[], totalCount: 0 };
+      const { data: rows, count } = await supabase
+        .from("donations")
+        .select("*", { count: "exact" })
+        .eq("storyline_id", storylineId)
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .range(pageParam, pageParam + DONATION_PAGE_SIZE - 1)
+        .returns<Donation[]>();
+      return { rows: rows ?? [], totalCount: count ?? 0 };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
+  });
+
+  const donations = data?.pages.flatMap((p) => p.rows) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+  if (donations.length === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <span className="text-muted block text-[10px] uppercase tracking-wider">
+        Donation History
+      </span>
+      <div className="mt-1 space-y-1">
+        {donations.map((d) => (
+          <div
+            key={d.id}
+            className="text-muted flex items-center justify-between text-[10px]"
+          >
+            <div className="flex gap-2">
+              <a
+                href={`/profile/${d.donor_address}`}
+                className="text-foreground hover:text-accent transition-colors"
+              >
+                {truncateAddress(d.donor_address)}
+              </a>
+              {d.block_timestamp && (
+                <time dateTime={d.block_timestamp}>
+                  {new Date(d.block_timestamp).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </time>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-accent font-medium">
+                {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
+              </span>
+              {d.tx_hash && (
+                <a
+                  href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-accent transition-colors"
+                  title="View on Basescan"
+                >
+                  &#x2197;
+                </a>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors disabled:opacity-50"
+        >
+          {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
+        </button>
       )}
     </div>
   );
