@@ -224,6 +224,8 @@ export class PlotLink {
     validateNonEmpty("title", title);
     validateNonEmpty("content", content);
     validateNonEmpty("genre", genre);
+    validateTitle(title);
+    validateContentLength(content);
 
     const metadata = JSON.stringify({ title, genre, content });
     const key = `plotlink/storylines/${Date.now()}-${slugify(title)}.json`;
@@ -289,6 +291,7 @@ export class PlotLink {
   ): Promise<ChainPlotResult> {
     this.requireFilebase();
     validateNonEmpty("content", content);
+    validateContentLength(content);
 
     const key = `plotlink/plots/${storylineId}-${Date.now()}.txt`;
     const contentCid = await uploadWithRetry(content, key, this.filebase!);
@@ -664,6 +667,29 @@ export class PlotLink {
 function validateNonEmpty(name: string, value: string): void {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(`"${name}" must be a non-empty string.`);
+  }
+}
+
+// Content limits — mirrored from lib/content.ts in the web app
+const MAX_TITLE_LENGTH = 60;
+const MIN_CONTENT_LENGTH = 500;
+const MAX_CONTENT_LENGTH = 10_000;
+
+function validateTitle(title: string): void {
+  const charCount = [...title].length;
+  if (charCount > MAX_TITLE_LENGTH) {
+    throw new Error(
+      `Title must be ${MAX_TITLE_LENGTH} characters or less (currently: ${charCount})`,
+    );
+  }
+}
+
+function validateContentLength(content: string): void {
+  const charCount = [...content].length;
+  if (charCount < MIN_CONTENT_LENGTH || charCount > MAX_CONTENT_LENGTH) {
+    throw new Error(
+      `Content must be between ${MIN_CONTENT_LENGTH} and ${MAX_CONTENT_LENGTH} characters (currently: ${charCount})`,
+    );
   }
 }
 
