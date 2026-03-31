@@ -10,7 +10,7 @@ import { supabase, type Storyline, type Donation, type TradeHistory, type User }
 import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } from "../../../../lib/contracts/constants";
 import { getFullUserProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
-import { formatPrice } from "../../../../lib/format";
+import { formatPrice, formatSupply } from "../../../../lib/format";
 import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
@@ -169,7 +169,7 @@ export default function ProfilePage() {
           connectedAddress={connectedAddress ?? null}
         />
       )}
-      {tab === "portfolio" && <PortfolioTab address={address} />}
+      {tab === "portfolio" && <PortfolioTab address={address} isOwnProfile={isOwnProfile} />}
       {tab === "activity" && <ActivityTab address={address} />}
     </div>
   );
@@ -1139,7 +1139,7 @@ interface PortfolioHolding {
   lastTraded: string | null;
 }
 
-function PortfolioTab({ address }: { address: string }) {
+function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile: boolean }) {
   const { data: plotUsd } = usePlotUsdPrice();
 
   // Fetch on-chain token holdings
@@ -1401,8 +1401,8 @@ function PortfolioTab({ address }: { address: string }) {
         </div>
       )}
 
-      {/* Donations given as reader */}
-      {hasDonationsGiven && (
+      {/* Donations given as reader — own profile only */}
+      {isOwnProfile && hasDonationsGiven && (
         <div>
           <p className="text-muted text-xs uppercase tracking-wider">
             Donations Given
@@ -1451,6 +1451,154 @@ function PortfolioTab({ address }: { address: string }) {
             ))}
           </div>
         </div>
+      )}
+
+      {/* Trading History — public data, shown for all profiles */}
+      <PortfolioTradingHistory address={address} plotUsd={plotUsd} />
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Portfolio Trading History — paginated trades
+// ---------------------------------------------------------------------------
+
+const TRADE_PAGE_SIZE = 10;
+
+function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUsd?: number | null }) {
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["portfolio-trades", address],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as TradeHistory[], totalCount: 0 };
+      const { data: rows, count } = await supabase
+        .from("trade_history")
+        .select("*", { count: "exact" })
+        .eq("user_address", address.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .range(pageParam, pageParam + TRADE_PAGE_SIZE - 1)
+        .returns<TradeHistory[]>();
+      return { rows: rows ?? [], totalCount: count ?? 0 };
+    },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
+  });
+
+  const trades = data?.pages.flatMap((p) => p.rows) ?? [];
+  const totalCount = data?.pages[0]?.totalCount ?? 0;
+
+  // Fetch storyline titles for displayed trades
+  const storylineIds = [...new Set(trades.map((t) => t.storyline_id))];
+  const { data: storylineTitles } = useQuery({
+    queryKey: ["storyline-titles", storylineIds.join(",")],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return {} as Record<number, string>;
+      const { data: rows } = await supabase
+        .from("storylines")
+        .select("storyline_id, title")
+        .in("storyline_id", storylineIds);
+      const map: Record<number, string> = {};
+      for (const r of rows ?? []) map[r.storyline_id] = r.title;
+      return map;
+    },
+    enabled: storylineIds.length > 0,
+  });
+
+  if (isLoading) return <p className="text-muted mt-4 text-sm">Loading trades...</p>;
+  if (trades.length === 0) return null;
+
+  return (
+    <div>
+      <p className="text-muted text-xs uppercase tracking-wider">
+        Trading History
+        <span className="text-foreground ml-2 normal-case">
+          {totalCount} {totalCount === 1 ? "trade" : "trades"}
+        </span>
+      </p>
+
+      <div className="mt-2 space-y-2">
+        {trades.map((t) => {
+          const isBuy = t.event_type === "mint";
+          const title = storylineTitles?.[t.storyline_id];
+          const tokenCount = t.price_per_token > 0 ? t.reserve_amount / t.price_per_token : 0;
+          return (
+            <div
+              key={`${t.tx_hash}-${t.log_index}`}
+              className="border-border rounded border px-3 py-2 text-xs"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
+                      {isBuy ? "Buy" : "Sell"}
+                    </span>
+                    <Link
+                      href={`/story/${t.storyline_id}`}
+                      className="text-foreground hover:text-accent truncate transition-colors"
+                      title={title || `Story #${t.storyline_id}`}
+                    >
+                      {title || `Story #${t.storyline_id}`}
+                    </Link>
+                  </div>
+                  <div className="text-muted mt-1 flex items-center gap-2">
+                    {tokenCount > 0 && (
+                      <span>{formatSupply(tokenCount)} tokens</span>
+                    )}
+                    {t.block_timestamp && (
+                      <time dateTime={t.block_timestamp}>
+                        {new Date(t.block_timestamp).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </time>
+                    )}
+                  </div>
+                </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="text-foreground font-medium">
+                    {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+                    {plotUsd && (
+                      <span className="text-muted ml-1 text-[10px] font-normal">
+                        (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
+                      </span>
+                    )}
+                  </span>
+                  {t.tx_hash && (
+                    <a
+                      href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted hover:text-accent transition-colors"
+                      title="View on Basescan"
+                    >
+                      &#x2197;
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {hasNextPage && (
+        <button
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          className="text-accent hover:text-foreground mt-4 w-full text-center text-xs transition-colors disabled:opacity-50"
+        >
+          {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
+        </button>
       )}
     </div>
   );
