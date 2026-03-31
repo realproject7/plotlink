@@ -19,39 +19,77 @@ export function registerStatus(program: Command): void {
         console.log(`Fetching storyline ${storylineId}...`);
 
         // -----------------------------------------------------------------
-        // 1. On-chain event data (always available)
+        // 1. Storyline data — Supabase primary, paginated RPC fallback
         // -----------------------------------------------------------------
-        const info = await client.getStoryline(storylineId);
-        if (!info) {
-          console.error(`Storyline ${storylineId} not found on-chain.`);
-          process.exit(1);
-        }
+        let title = "";
+        let creator: Address = "0x0000000000000000000000000000000000000000";
+        let tokenAddress: Address = "0x0000000000000000000000000000000000000000";
+        let hasDeadline = false;
+        let openingCID = "";
+        let plotCount = 0;
 
-        // -----------------------------------------------------------------
-        // 2. Supabase metadata (optional — richer data when configured)
-        // -----------------------------------------------------------------
+        // Supabase-only metadata
         let dbRow: {
-          plot_count: number;
           last_plot_time: string | null;
-          has_deadline: boolean;
           sunset: boolean;
           writer_type: number | null;
           block_timestamp: string | null;
         } | null = null;
 
+        // Try Supabase first (fast, indexed), fall back to paginated RPC
+        // if not configured or if the storyline isn't indexed yet
+        let fromSupabase = false;
         if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
           const supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
           const { data } = await supabase
             .from("storylines")
-            .select("plot_count, last_plot_time, has_deadline, sunset, writer_type, block_timestamp")
+            .select("title, writer_address, token_address, has_deadline, plot_count, last_plot_time, sunset, writer_type, block_timestamp")
             .eq("storyline_id", Number(storylineId))
             .eq("contract_address", client.storyFactory.toLowerCase())
             .single();
-          dbRow = data;
+
+          if (data) {
+            fromSupabase = true;
+            title = data.title;
+            creator = data.writer_address as Address;
+            tokenAddress = data.token_address as Address;
+            hasDeadline = data.has_deadline;
+            plotCount = data.plot_count;
+            dbRow = {
+              last_plot_time: data.last_plot_time,
+              sunset: data.sunset,
+              writer_type: data.writer_type,
+              block_timestamp: data.block_timestamp,
+            };
+
+            // Opening CID is only in event logs; fetch via paginated RPC
+            const info = await client.getStoryline(storylineId);
+            if (info) {
+              openingCID = info.openingCID;
+            }
+          }
+        }
+
+        if (!fromSupabase) {
+          // Fallback: paginated RPC log fetching (chunks into RPC-safe ranges)
+          const info = await client.getStoryline(storylineId);
+          if (!info) {
+            console.error(`Storyline ${storylineId} not found on-chain.`);
+            process.exit(1);
+          }
+
+          title = info.title;
+          creator = info.creator;
+          tokenAddress = info.tokenAddress;
+          hasDeadline = info.hasDeadline;
+          openingCID = info.openingCID;
+
+          const plots = await client.getPlots(storylineId);
+          plotCount = plots.length;
         }
 
         // -----------------------------------------------------------------
-        // 3. Reserve token metadata (symbol + decimals via tokenBond)
+        // 2. Reserve token metadata (symbol + decimals via tokenBond)
         // -----------------------------------------------------------------
         let tokenSymbol = "TOKEN";
         let tokenDecimals = 18;
@@ -62,7 +100,7 @@ export function registerStatus(program: Command): void {
             address: client.mcv2Bond,
             abi: mcv2BondAbi,
             functionName: "tokenBond",
-            args: [info.tokenAddress],
+            args: [tokenAddress],
           });
           bondCreator = (bond as readonly unknown[])[0] as Address;
           const reserveToken = (bond as readonly unknown[])[4] as Address;
@@ -86,12 +124,12 @@ export function registerStatus(program: Command): void {
         }
 
         // -----------------------------------------------------------------
-        // 4. On-chain token price (MCV2_Bond)
+        // 3. On-chain token price (MCV2_Bond)
         // -----------------------------------------------------------------
-        const tokenPrice = await client.getTokenPrice(info.tokenAddress);
+        const tokenPrice = await client.getTokenPrice(tokenAddress);
 
         // -----------------------------------------------------------------
-        // 5. On-chain royalty info
+        // 4. On-chain royalty info
         // -----------------------------------------------------------------
         let unclaimedRoyalty: bigint | null = null;
         try {
@@ -104,25 +142,16 @@ export function registerStatus(program: Command): void {
         }
 
         // -----------------------------------------------------------------
-        // 6. Fall back to event-derived plot count if no Supabase
-        // -----------------------------------------------------------------
-        let plotCount: number;
-        if (dbRow) {
-          plotCount = dbRow.plot_count;
-        } else {
-          const plots = await client.getPlots(storylineId);
-          plotCount = plots.length;
-        }
-
-        // -----------------------------------------------------------------
         // Display
         // -----------------------------------------------------------------
         console.log();
-        console.log(`Title:            ${info.title}`);
-        console.log(`Creator:          ${info.creator}`);
-        console.log(`Token:            ${info.tokenAddress}`);
-        console.log(`Has deadline:     ${info.hasDeadline ? "yes" : "no"}`);
-        console.log(`Opening CID:      ${info.openingCID}`);
+        console.log(`Title:            ${title}`);
+        console.log(`Creator:          ${creator}`);
+        console.log(`Token:            ${tokenAddress}`);
+        console.log(`Has deadline:     ${hasDeadline ? "yes" : "no"}`);
+        if (openingCID) {
+          console.log(`Opening CID:      ${openingCID}`);
+        }
         console.log(`Plot count:       ${plotCount}`);
 
         if (dbRow) {
@@ -136,7 +165,7 @@ export function registerStatus(program: Command): void {
           }
 
           // Deadline remaining (7 days from last plot)
-          if (dbRow.has_deadline && dbRow.last_plot_time && !dbRow.sunset) {
+          if (hasDeadline && dbRow.last_plot_time && !dbRow.sunset) {
             const DEADLINE_HOURS = 168;
             const deadlineMs =
               new Date(dbRow.last_plot_time).getTime() + DEADLINE_HOURS * 60 * 60 * 1000;
