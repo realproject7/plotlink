@@ -78,9 +78,9 @@ function scoreUser(row, headers) {
   // Instant disqualify
   if (bool("is_blacklisted")) return { score: 0, tag: "None" };
 
-  const spamRaw = get("spam_label").trim();
-  const isSpam = spamRaw.length > 0 && spamRaw !== "0";
-  if (isSpam) return { score: 0, tag: "None" };
+  // spam_label: 1 = spam, 2 = verified non-spammer, 0/blank = unknown
+  const spamLabel = parseInt(get("spam_label"), 10);
+  if (spamLabel === 1) return { score: 0, tag: "None" };
 
   const followers = num("follower_count");
   const following = num("following_count");
@@ -103,7 +103,7 @@ function scoreUser(row, headers) {
 
   // --- Reputation (30%) ---
   const neynarScore = Math.min(1, num("neynar_score"));
-  const quotientScore = Math.min(1, num("quotient_score") / 100);
+  const quotientScore = Math.min(1, num("quotient_score"));
   const powerBadge = bool("power_badge") ? 1 : 0;
   const proBadge = bool("is_pro_subscriber") ? 1 : 0;
   const repScore = (neynarScore * 0.4 + quotientScore * 0.3 + powerBadge * 0.2 + proBadge * 0.1) * 30;
@@ -115,7 +115,10 @@ function scoreUser(row, headers) {
   const hasPfp = has("pfp_url") ? 1 : 0;
   const profileScore = ((hasBio + hasTwitter + hasUrl + hasPfp) / 4) * 15;
 
-  const raw = socialScore + repScore + profileScore;
+  // spam_label=0/blank (unknown) applies a small penalty; spam_label=2 (verified) gets a bonus
+  const spamPenalty = spamLabel === 2 ? 2 : (isNaN(spamLabel) || spamLabel === 0) ? -3 : 0;
+
+  const raw = socialScore + repScore + profileScore + spamPenalty;
   const score = Math.max(0, Math.min(100, Math.round(raw)));
 
   // --- Tagging ---
