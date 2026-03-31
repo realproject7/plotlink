@@ -43,16 +43,17 @@ test.describe("Navigation", () => {
     await page.goto("/create");
     await page.locator("body").waitFor();
 
+    // Filter browser-level network errors (not app-level JS errors).
+    // "Failed to load resource" is emitted by the browser for HTTP 4xx/5xx
+    // on external fetches (e.g. WalletConnect/RainbowKit metadata).
     const realErrors = errors.filter(
       (e) =>
         !e.includes("Failed to fetch") &&
+        !e.includes("Failed to load resource") &&
         !e.includes("net::ERR") &&
         !e.includes("Hydration") &&
         !e.includes("RPC") &&
-        !e.includes("favicon") &&
-        !e.includes("walletconnect.com") &&
-        !e.includes("walletconnect.org") &&
-        !e.includes("reown.com"),
+        !e.includes("favicon"),
     );
 
     expect(realErrors).toEqual([]);
