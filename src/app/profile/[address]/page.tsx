@@ -1318,18 +1318,6 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
   const hasHoldings = holdings && holdings.length > 0;
   const hasDonationsGiven = donationsGiven.length > 0;
   const hasDonationsReceived = donationsReceived && donationsReceived.count > 0;
-  const hasAny = hasHoldings || hasDonationsGiven || hasDonationsReceived;
-
-  if (!hasAny) {
-    return (
-      <div className="py-12 text-center">
-        <p className="text-muted text-sm">No holdings or donations yet.</p>
-        <p className="text-muted mt-1 text-xs">
-          This address hasn&apos;t purchased any storyline tokens or made donations.
-        </p>
-      </div>
-    );
-  }
 
   const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
   const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
