@@ -11,7 +11,7 @@ import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } fro
 import { getFullUserProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice, formatSupply } from "../../../../lib/format";
-import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
+import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo, get24hPriceChange, getTokenTVL } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
@@ -1137,6 +1137,8 @@ interface PortfolioHolding {
   value: bigint;
   entryPrice: number | null;
   lastTraded: string | null;
+  priceChange: number | null;
+  reserveDecimals: number;
 }
 
 function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile: boolean }) {
@@ -1175,18 +1177,24 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         .filter((h) => h.balance.status === "success" && (h.balance.result as bigint) > BigInt(0));
       if (held.length === 0) return [];
 
-      // Fetch prices for held tokens
+      // Fetch prices, 24h change, and TVL for held tokens
       const results = await Promise.all(
         held.map(async ({ sl, balance: balResult }): Promise<PortfolioHolding | null> => {
+          const tokenAddr = sl.token_address as Address;
           const balance = balResult.result as bigint;
           try {
-            const price = await browserClient.readContract({
-              address: MCV2_BOND,
-              abi: mcv2BondAbi,
-              functionName: "priceForNextMint",
-              args: [sl.token_address as Address],
-            });
+            const [price, priceChangeResult, tvlResult] = await Promise.all([
+              browserClient.readContract({
+                address: MCV2_BOND,
+                abi: mcv2BondAbi,
+                functionName: "priceForNextMint",
+                args: [tokenAddr],
+              }),
+              get24hPriceChange(tokenAddr, browserClient).catch(() => null),
+              getTokenTVL(tokenAddr, browserClient).catch(() => null),
+            ]);
             const priceBI = BigInt(price);
+            const reserveDecimals = tvlResult?.decimals ?? 18;
             const value = (balance * priceBI) / BigInt(10 ** 18);
 
             // Derive entry price from first mint in trade_history
@@ -1218,7 +1226,12 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
               }
             }
 
-            return { storyline: sl, balance, price: priceBI, value, entryPrice, lastTraded };
+            return {
+              storyline: sl, balance, price: priceBI, value,
+              entryPrice, lastTraded,
+              priceChange: priceChangeResult?.changePercent ?? null,
+              reserveDecimals,
+            };
           } catch {
             return null;
           }
@@ -1238,22 +1251,38 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
     staleTime: 60000,
   });
 
-  // Donation history (given as reader)
-  const { data: donationsGiven = [], isLoading: donGivenLoading } = useQuery({
+  // Donation history (given as reader) — paginated
+  const DONATION_PAGE = 10;
+  const {
+    data: donationPages,
+    isLoading: donGivenLoading,
+    isFetchingNextPage: donFetchingNext,
+    fetchNextPage: donFetchNext,
+    hasNextPage: donHasNext,
+  } = useInfiniteQuery({
     queryKey: ["profile-donations-given", address],
-    queryFn: async () => {
-      if (!supabase) return [];
-      const { data } = await supabase
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!supabase) return { rows: [] as Donation[], totalCount: 0 };
+      const { data: rows, count } = await supabase
         .from("donations")
-        .select("*")
+        .select("*", { count: "exact" })
         .eq("donor_address", address)
         .eq("contract_address", STORY_FACTORY.toLowerCase())
         .order("block_timestamp", { ascending: false })
-        .limit(20)
+        .range(pageParam, pageParam + DONATION_PAGE - 1)
         .returns<Donation[]>();
-      return data ?? [];
+      return { rows: rows ?? [], totalCount: count ?? 0 };
     },
+    initialPageParam: 0,
+    getNextPageParam: (_lastPage, allPages) => {
+      const totalFetched = allPages.reduce((sum, p) => sum + p.rows.length, 0);
+      const totalCount = allPages[0]?.totalCount ?? 0;
+      return totalFetched < totalCount ? totalFetched : undefined;
+    },
+    enabled: isOwnProfile,
   });
+  const donationsGiven = donationPages?.pages.flatMap((p) => p.rows) ?? [];
+  const donationTotalCount = donationPages?.pages[0]?.totalCount ?? 0;
 
   // Aggregate donations received as writer
   const { data: donationsReceived, isLoading: donRecvLoading } = useQuery({
@@ -1303,6 +1332,12 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
   }
 
   const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
+  const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
+  const bestPick = holdings && holdings.length > 0
+    ? holdings.reduce((best, h) =>
+        (h.priceChange ?? -Infinity) > (best.priceChange ?? -Infinity) ? h : best
+      )
+    : null;
   const totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
 
   return (
@@ -1311,18 +1346,35 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
       {hasHoldings && (
         <>
           <div className="border-border bg-surface rounded border px-4 py-3">
-            <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Portfolio Value</p>
-            <span className="text-accent text-lg font-bold">
-              {formatPrice(formatUnits(totalValue, 18))} {RESERVE_LABEL}
-            </span>
-            {plotUsd && (
-              <span className="text-muted ml-2 text-sm">
-                ≈ {formatUsdValue(Number(formatUnits(totalValue, 18)) * plotUsd)}
-              </span>
-            )}
-            <span className="text-muted ml-2 text-xs">
-              across {holdings!.length} {holdings!.length === 1 ? "token" : "tokens"}
-            </span>
+            <div className="text-muted grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="block text-[10px] uppercase tracking-wider">Portfolio Value</span>
+                <span className="text-accent text-lg font-bold">
+                  {formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}
+                </span>
+                {plotUsd && (
+                  <span className="text-muted ml-2 text-sm">
+                    ≈ {formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)}
+                  </span>
+                )}
+                <span className="text-muted ml-2 text-xs">
+                  across {holdings!.length} {holdings!.length === 1 ? "token" : "tokens"}
+                </span>
+              </div>
+              {bestPick && bestPick.priceChange !== null && (
+                <div>
+                  <span className="block text-[10px] uppercase tracking-wider">Best Pick (24h)</span>
+                  <span className="text-foreground">
+                    {bestPick.storyline.title.slice(0, 20)}
+                    {bestPick.storyline.title.length > 20 ? "..." : ""}{" "}
+                    <span className={bestPick.priceChange >= 0 ? "text-accent" : "text-error"}>
+                      {bestPick.priceChange >= 0 ? "+" : ""}
+                      {bestPick.priceChange.toFixed(1)}%
+                    </span>
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Token holdings */}
@@ -1349,12 +1401,17 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   </div>
                   <div className="shrink-0 text-right">
                     <span className="text-accent text-sm font-medium">
-                      {formatPrice(formatUnits(h.value, 18))} {RESERVE_LABEL}
+                      {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
                     </span>
                     {plotUsd && (
                       <span className="text-muted ml-1 text-xs">
-                        ({formatUsdValue(Number(formatUnits(h.value, 18)) * plotUsd)})
+                        ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
                       </span>
+                    )}
+                    {h.priceChange !== null && (
+                      <div className={`text-[10px] ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                        {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
+                      </div>
                     )}
                   </div>
                 </div>
@@ -1401,14 +1458,17 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         </div>
       )}
 
-      {/* Donations given as reader — own profile only */}
+      {/* Donations given as reader — own profile only, paginated */}
       {isOwnProfile && hasDonationsGiven && (
         <div>
           <p className="text-muted text-xs uppercase tracking-wider">
             Donations Given
-            {totalDonated > BigInt(0) && (
+            {donationTotalCount > 0 && (
               <span className="text-foreground ml-2 normal-case">
-                {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL} total
+                {donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}
+                {totalDonated > BigInt(0) && (
+                  <> &middot; {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL} total loaded</>
+                )}
               </span>
             )}
           </p>
@@ -1450,6 +1510,15 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
               </div>
             ))}
           </div>
+          {donHasNext && (
+            <button
+              onClick={() => donFetchNext()}
+              disabled={donFetchingNext}
+              className="text-accent hover:text-foreground mt-2 w-full text-center text-xs transition-colors disabled:opacity-50"
+            >
+              {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
+            </button>
+          )}
         </div>
       )}
 
