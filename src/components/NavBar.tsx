@@ -23,9 +23,9 @@ export function NavBar() {
     { href: "/token", label: "$PLOT" },
   ];
 
-  const isActive = (href: string) => {
-    if (href.startsWith("/profile/")) {
-      return pathname.startsWith("/profile/");
+  const isActive = (href: string, label: string) => {
+    if (label === "Dashboard") {
+      return pathname.startsWith("/profile/") || pathname.startsWith("/dashboard/");
     }
     return pathname === href || pathname.startsWith(href + "/");
   };
@@ -53,7 +53,7 @@ export function NavBar() {
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
           {navLinks.map(({ href, label }) => {
-            const active = isActive(href);
+            const active = isActive(href, label);
             return (
               <Link
                 key={label}
@@ -109,7 +109,7 @@ export function NavBar() {
         <div className="border-t border-[var(--border)] bg-[var(--bg)] px-4 pb-3 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             {navLinks.map(({ href, label }) => {
-              const active = isActive(href);
+              const active = isActive(href, label);
               return (
                 <Link
                   key={label}
