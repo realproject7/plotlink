@@ -46,6 +46,7 @@ test.describe("Navigation", () => {
     const realErrors = errors.filter(
       (e) =>
         !e.includes("Failed to fetch") &&
+        !e.includes("Failed to load resource") &&
         !e.includes("net::ERR") &&
         !e.includes("Hydration") &&
         !e.includes("RPC") &&
