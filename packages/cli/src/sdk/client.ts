@@ -318,17 +318,15 @@ export class PlotLink {
    * @returns Storyline info or null if not found
    */
   async getStoryline(storylineId: bigint): Promise<StorylineInfo | null> {
-    const logs = await this.publicClient.getLogs({
+    const logs = await this.getLogsPaginated({
       address: this.storyFactory,
       event: StorylineCreatedEvent,
       args: { storylineId },
-      fromBlock: this.deploymentBlock,
-      toBlock: "latest",
     });
 
     if (logs.length === 0) return null;
 
-    const log = logs[0];
+    const log = logs[0] as { args: Record<string, unknown> };
     const args = log.args as {
       writer: Address;
       tokenAddress: Address;
@@ -355,16 +353,14 @@ export class PlotLink {
    * @returns Array of plot info objects, ordered by plot index
    */
   async getPlots(storylineId: bigint): Promise<PlotInfo[]> {
-    const logs = await this.publicClient.getLogs({
+    const logs = await this.getLogsPaginated({
       address: this.storyFactory,
       event: PlotChainedEvent,
       args: { storylineId },
-      fromBlock: this.deploymentBlock,
-      toBlock: "latest",
     });
 
     return logs.map((log) => {
-      const args = log.args as {
+      const args = (log as { args: Record<string, unknown> }).args as {
         storylineId: bigint;
         plotIndex: bigint;
         writer: Address;
@@ -379,6 +375,32 @@ export class PlotLink {
         contentHash: args.contentHash,
       };
     });
+  }
+
+  /**
+   * Read storyline struct directly from contract storage.
+   * Uses readContract instead of getLogs, avoiding RPC block-range limits.
+   * Does not include title or openingCID (those are only in event logs).
+   */
+  async getStorylineStruct(storylineId: bigint): Promise<{
+    writer: Address;
+    token: Address;
+    plotCount: number;
+    lastPlotTime: number;
+    hasDeadline: boolean;
+  } | null> {
+    try {
+      const result = await this.publicClient.readContract({
+        address: this.storyFactory,
+        abi: storyFactoryAbi,
+        functionName: "storylines",
+        args: [storylineId],
+      });
+      const [writer, token, plotCount, lastPlotTime, hasDeadline] = result as [Address, Address, number, number, boolean];
+      return { writer, token, plotCount, lastPlotTime, hasDeadline };
+    } catch {
+      return null;
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -600,6 +622,35 @@ export class PlotLink {
           "Pass { filebase: { accessKey, secretKey, bucket } } to the PlotLink constructor.",
       );
     }
+  }
+
+  /**
+   * Paginated getLogs that chunks requests into RPC-safe ranges.
+   * Public RPCs typically limit eth_getLogs to 10,000 blocks per request.
+   */
+  private async getLogsPaginated(params: {
+    address: Address;
+    event: (typeof storyFactoryAbi)[number] & { type: "event" };
+    args?: Record<string, unknown>;
+  }): Promise<unknown[]> {
+    const MAX_RANGE = BigInt(9_999);
+    const latestBlock = await this.publicClient.getBlockNumber();
+    const from = this.deploymentBlock;
+    const allLogs: unknown[] = [];
+
+    for (let start = from; start <= latestBlock; start += MAX_RANGE + 1n) {
+      const end = start + MAX_RANGE > latestBlock ? latestBlock : start + MAX_RANGE;
+      const logs = await this.publicClient.getLogs({
+        address: params.address,
+        event: params.event,
+        args: params.args,
+        fromBlock: start,
+        toBlock: end,
+      } as Parameters<typeof this.publicClient.getLogs>[0]);
+      allLogs.push(...logs);
+    }
+
+    return allLogs;
   }
 }
 

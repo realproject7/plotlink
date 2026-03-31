@@ -109,6 +109,19 @@ export const storyFactoryAbi = [
     inputs: [],
     outputs: [{ name: "", type: "address" }],
   },
+  {
+    type: "function",
+    name: "storylines",
+    stateMutability: "view",
+    inputs: [{ name: "storylineId", type: "uint256" }],
+    outputs: [
+      { name: "writer", type: "address" },
+      { name: "token", type: "address" },
+      { name: "plotCount", type: "uint24" },
+      { name: "lastPlotTime", type: "uint40" },
+      { name: "hasDeadline", type: "bool" },
+    ],
+  },
 ] as const;
 
 // ---------------------------------------------------------------------------
