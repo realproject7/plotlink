@@ -6,13 +6,15 @@ import { browserClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL } from "../../lib/contracts/constants";
 import { formatPrice } from "../../lib/format";
+import { formatUsdValue } from "../../lib/usd-price";
 import type { Storyline } from "../../lib/supabase";
 
 interface WriterTradingStatsProps {
   storyline: Storyline;
+  plotUsd?: number | null;
 }
 
-export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
+export function WriterTradingStats({ storyline, plotUsd }: WriterTradingStatsProps) {
   const tokenAddress = storyline.token_address as Address;
 
   // Fetch price + TVL together so they succeed/fail atomically
@@ -49,6 +51,11 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
         <span className="font-semibold text-accent">
           {data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}
         </span>
+        {data && plotUsd && (
+          <span className="text-muted ml-1 text-[10px]">
+            (≈ {formatUsdValue(parseFloat(data.price) * plotUsd)})
+          </span>
+        )}
       </div>
       <div>
         <span className="block text-[10px] uppercase tracking-wider">
@@ -57,6 +64,11 @@ export function WriterTradingStats({ storyline }: WriterTradingStatsProps) {
         <span className="font-semibold text-accent">
           {data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}
         </span>
+        {data && plotUsd && (
+          <span className="text-muted ml-1 text-[10px]">
+            (≈ {formatUsdValue(parseFloat(data.tvl) * plotUsd)})
+          </span>
+        )}
       </div>
     </div>
   );

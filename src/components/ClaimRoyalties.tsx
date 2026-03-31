@@ -7,6 +7,7 @@ import { formatUnits, type Address } from "viem";
 import { browserClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
+import { formatUsdValue } from "../../lib/usd-price";
 
 function formatTruncated(value: bigint, decimals: number, digits = 10): string {
   const raw = formatUnits(value, decimals);
@@ -22,9 +23,10 @@ interface ClaimRoyaltiesProps {
   tokenAddress: Address;
   plotCount: number;
   beneficiary: Address;
+  plotUsd?: number | null;
 }
 
-export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRoyaltiesProps) {
+export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }: ClaimRoyaltiesProps) {
   const [txState, setTxState] = useState<TxState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [claimedAmount, setClaimedAmount] = useState<bigint>(BigInt(0));
@@ -146,6 +148,11 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           <span className={`ml-1 font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
             {formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}
           </span>
+          {unclaimed > BigInt(0) && plotUsd && (
+            <span className="text-muted ml-1 text-[10px]">
+              (≈ {formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)})
+            </span>
+          )}
           {totalClaimed > BigInt(0) && (
             <span className="text-muted ml-1 text-[10px]">
               (claimed: {formatTruncated(totalClaimed, decimals)} {RESERVE_LABEL} so far)

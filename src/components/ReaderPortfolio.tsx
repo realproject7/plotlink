@@ -9,6 +9,7 @@ import { erc20Abi, mcv2BondAbi, get24hPriceChange, getTokenTVL } from "../../lib
 import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../lib/supabase";
 import Link from "next/link";
+import { formatUsdValue } from "../../lib/usd-price";
 
 interface Holding {
   storyline: Storyline;
@@ -19,7 +20,7 @@ interface Holding {
   reserveDecimals: number;
 }
 
-export function ReaderPortfolio() {
+export function ReaderPortfolio({ plotUsd }: { plotUsd?: number | null }) {
   const { address, isConnected } = useAccount();
   const { data: holdings, isLoading } = useQuery({
     queryKey: ["reader-portfolio", address],
@@ -128,6 +129,11 @@ export function ReaderPortfolio() {
               <span className="text-accent text-sm font-medium">
                 {formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}
               </span>
+              {plotUsd && (
+                <span className="text-muted ml-1 text-[10px]">
+                  (≈ {formatUsdValue(parseFloat(formatUnits(totalValue, reserveDecimals)) * plotUsd)})
+                </span>
+              )}
             </div>
             {bestPick && bestPick.priceChange !== null && (
               <div>
@@ -166,6 +172,11 @@ export function ReaderPortfolio() {
                 <div className="text-right">
                   <div className="text-foreground">
                     {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
+                    {plotUsd && (
+                      <span className="text-muted ml-1 text-[10px]">
+                        (≈ {formatUsdValue(parseFloat(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
+                      </span>
+                    )}
                   </div>
                   {h.priceChange !== null && (
                     <div

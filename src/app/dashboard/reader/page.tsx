@@ -11,6 +11,8 @@ import { formatUnits } from "viem";
 import { ConnectWallet } from "../../../components/ConnectWallet";
 import { RESERVE_LABEL, PLOT_TOKEN, STORY_FACTORY, EXPLORER_URL } from "../../../../lib/contracts/constants";
 import { browserClient as publicClient } from "../../../../lib/rpc";
+import { formatUsdValue } from "../../../../lib/usd-price";
+import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
 import { type Address } from "viem";
 
 /** Truncate formatUnits output to at most `digits` decimal places */
@@ -25,6 +27,7 @@ const PAGE_SIZE = 10;
 
 export default function ReaderDashboard() {
   const { address, isConnected } = useAccount();
+  const { data: plotUsd } = usePlotUsdPrice();
 
   const {
     data,
@@ -97,10 +100,10 @@ export default function ReaderDashboard() {
         <WriterIdentityClient address={address!} />
       </p>
 
-      <ReaderPortfolio />
+      <ReaderPortfolio plotUsd={plotUsd} />
 
       {/* --- Trading History --- */}
-      <TradingHistory address={address!} />
+      <TradingHistory address={address!} plotUsd={plotUsd} />
 
       {/* --- Donation History --- */}
       <section className="mt-8">
@@ -188,7 +191,7 @@ function DonationRow({ donation, decimals }: { donation: Donation; decimals: num
 
 const TRADE_PAGE_SIZE = 10;
 
-function TradingHistory({ address }: { address: string }) {
+function TradingHistory({ address, plotUsd }: { address: string; plotUsd?: number | null }) {
   const {
     data,
     isLoading,
@@ -287,6 +290,11 @@ function TradingHistory({ address }: { address: string }) {
                 <div className="flex shrink-0 items-center gap-2">
                   <span className="text-foreground font-medium">
                     {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+                    {plotUsd && (
+                      <span className="text-muted ml-1 text-[10px] font-normal">
+                        (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
+                      </span>
+                    )}
                   </span>
                   {t.tx_hash && (
                     <a
