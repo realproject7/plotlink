@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
 import { isFarcasterMiniApp } from "../../lib/farcaster-detect";
 import { truncateAddress } from "../../lib/utils";
@@ -9,7 +10,7 @@ import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
 
 export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
+  const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const autoConnectAttempted = useRef(false);
   const [inMiniApp, setInMiniApp] = useState(false);
@@ -36,6 +37,7 @@ export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) 
     });
   }, [inMiniApp, connectors, connect, isConnected]);
 
+  // Connected state: show Farcaster PFP + username + address + disconnect
   if (isConnected && address) {
     return (
       <div className="border-border flex items-center gap-3 rounded border px-3 py-2 text-sm">
@@ -71,21 +73,33 @@ export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) 
     );
   }
 
+  // Disconnected state: RainbowKit modal (outside Farcaster) or auto-connect (inside)
   return (
-    <button
-      onClick={() => {
-        // Use Farcaster connector only when confirmed inside a mini app
-        const farcasterConnector = inMiniApp
-          ? connectors.find((c) => c.type === "farcasterMiniApp")
-          : undefined;
-        const fallback = connectors.find((c) => c.type === "injected");
-        const connector = farcasterConnector ?? fallback;
-        if (connector) connect({ connector });
+    <ConnectButton.Custom>
+      {({ openConnectModal, mounted }) => {
+        const ready = mounted;
+
+        return (
+          <div
+            {...(!ready && {
+              "aria-hidden": true,
+              style: {
+                opacity: 0,
+                pointerEvents: "none" as const,
+                userSelect: "none" as const,
+              },
+            })}
+          >
+            <button
+              onClick={openConnectModal}
+              type="button"
+              className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+            >
+              connect wallet
+            </button>
+          </div>
+        );
       }}
-      disabled={isPending}
-      className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors disabled:opacity-50"
-    >
-      {isPending ? "connecting..." : "connect wallet"}
-    </button>
+    </ConnectButton.Custom>
   );
 }
