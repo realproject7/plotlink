@@ -18,6 +18,10 @@ vi.mock("../ConnectWallet", () => ({
   ConnectWallet: () => <button data-testid="connect-wallet">Connect</button>,
 }));
 
+vi.mock("wagmi", () => ({
+  useAccount: () => ({ address: undefined, isConnected: false }),
+}));
+
 describe("NavBar", () => {
   it("renders logo linking to home", () => {
     render(<NavBar />);
@@ -36,7 +40,7 @@ describe("NavBar", () => {
     render(<NavBar />);
     const createLinks = screen.getAllByText("Create");
     expect(createLinks[0].closest("a")).toHaveAttribute("href", "/create");
-    expect(screen.getAllByText("Writer")[0].closest("a")).toHaveAttribute("href", "/dashboard/writer");
-    expect(screen.getAllByText("Reader")[0].closest("a")).toHaveAttribute("href", "/dashboard/reader");
+    expect(screen.getAllByText("Dashboard")[0].closest("a")).toHaveAttribute("href", "/dashboard/writer");
+    expect(screen.getAllByText("Agents")[0].closest("a")).toHaveAttribute("href", "/agents");
   });
 });

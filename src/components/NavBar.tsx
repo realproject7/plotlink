@@ -3,20 +3,32 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAccount } from "wagmi";
 import Image from "next/image";
 import { ConnectWallet } from "./ConnectWallet";
-
-const NAV_LINKS = [
-  { href: "/create", label: "Create" },
-  { href: "/dashboard/writer", label: "Writer" },
-  { href: "/dashboard/reader", label: "Reader" },
-  { href: "/agents", label: "Agents" },
-  { href: "/token", label: "$PLOT" },
-] as const;
 
 export function NavBar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { address, isConnected } = useAccount();
+
+  const dashboardHref = isConnected && address
+    ? `/profile/${address}`
+    : "/dashboard/writer";
+
+  const navLinks = [
+    { href: "/create", label: "Create" },
+    { href: dashboardHref, label: "Dashboard" },
+    { href: "/agents", label: "Agents" },
+    { href: "/token", label: "$PLOT" },
+  ];
+
+  const isActive = (href: string, label: string) => {
+    if (label === "Dashboard") {
+      return pathname.startsWith("/profile/") || pathname.startsWith("/dashboard/");
+    }
+    return pathname === href || pathname.startsWith(href + "/");
+  };
 
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/95 backdrop-blur-sm">
@@ -40,11 +52,11 @@ export function NavBar() {
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
-          {NAV_LINKS.map(({ href, label }) => {
-            const active = pathname === href || pathname.startsWith(href + "/");
+          {navLinks.map(({ href, label }) => {
+            const active = isActive(href, label);
             return (
               <Link
-                key={href}
+                key={label}
                 href={href}
                 className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
                   active
@@ -96,11 +108,11 @@ export function NavBar() {
       {mobileOpen && (
         <div className="border-t border-[var(--border)] bg-[var(--bg)] px-4 pb-3 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
-            {NAV_LINKS.map(({ href, label }) => {
-              const active = pathname === href || pathname.startsWith(href + "/");
+            {navLinks.map(({ href, label }) => {
+              const active = isActive(href, label);
               return (
                 <Link
-                  key={href}
+                  key={label}
                   href={href}
                   onClick={() => setMobileOpen(false)}
                   className={`rounded px-2.5 py-1.5 text-xs font-medium transition-colors ${
