@@ -160,6 +160,13 @@ export const erc8004Abi = [
 export const mcv2BondAbi = [
   {
     type: "function",
+    name: "creationFee",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "getRoyaltyInfo",
     stateMutability: "view",
     inputs: [
