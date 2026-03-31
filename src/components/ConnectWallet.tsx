@@ -65,7 +65,9 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
               className="rounded-full"
             />
           )}
-          {profile ? `@${profile.username}` : shortAddr}
+          {profile
+            ? `@${profile.username.length > 10 ? profile.username.slice(0, 10) + "…" : profile.username}`
+            : shortAddr}
         </Link>
       );
     }
@@ -90,9 +92,11 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
           )}
           {profile ? `@${profile.username}` : shortAddr}
         </Link>
-        <span className="text-muted text-[10px] font-mono">
-          {shortAddr}
-        </span>
+        {profile && (
+          <span className="text-muted text-[10px] font-mono">
+            {shortAddr}
+          </span>
+        )}
       </div>
     );
   }
