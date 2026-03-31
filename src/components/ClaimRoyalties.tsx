@@ -8,7 +8,6 @@ import { browserClient } from "../../lib/rpc";
 import { mcv2BondAbi, getTokenTVL } from "../../lib/price";
 import { MCV2_BOND, RESERVE_LABEL, EXPLORER_URL, PLOT_TOKEN } from "../../lib/contracts/constants";
 import { formatUsdValue } from "../../lib/usd-price";
-import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 
 function formatTruncated(value: bigint, decimals: number, digits = 10): string {
   const raw = formatUnits(value, decimals);
@@ -24,9 +23,10 @@ interface ClaimRoyaltiesProps {
   tokenAddress: Address;
   plotCount: number;
   beneficiary: Address;
+  plotUsd?: number | null;
 }
 
-export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRoyaltiesProps) {
+export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }: ClaimRoyaltiesProps) {
   const [txState, setTxState] = useState<TxState>("idle");
   const [error, setError] = useState<string | null>(null);
   const [claimedAmount, setClaimedAmount] = useState<bigint>(BigInt(0));
@@ -34,7 +34,6 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
   const [showTooltip, setShowTooltip] = useState(false);
 
   const { writeContractAsync } = useWriteContract();
-  const { data: plotUsd } = usePlotUsdPrice();
 
   // Fetch unclaimed royalty balance + cumulative claimed
   const { data: royaltyInfo } = useQuery({
@@ -151,7 +150,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary }: ClaimRo
           </span>
           {unclaimed > BigInt(0) && plotUsd && (
             <span className="text-muted ml-1 text-[10px]">
-              ({formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)})
+              (≈ {formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)})
             </span>
           )}
           {totalClaimed > BigInt(0) && (

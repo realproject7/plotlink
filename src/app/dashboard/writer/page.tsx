@@ -18,6 +18,7 @@ import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice } from "../../../../lib/format";
 import Link from "next/link";
 import { ConnectWallet } from "../../../components/ConnectWallet";
+import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
 import { type Address } from "viem";
 
 function formatViewCountDashboard(n: number): string {
@@ -51,6 +52,7 @@ const languageOptions = LANGUAGES.map((l) => ({ value: l, label: l }));
 
 export default function WriterDashboard() {
   const { address, isConnected } = useAccount();
+  const { data: plotUsd } = usePlotUsdPrice();
 
   const { data: storylines = [], isLoading, error } = useQuery({
     queryKey: ["writer-storylines", address],
@@ -91,7 +93,7 @@ export default function WriterDashboard() {
 
       <div className="mt-8 space-y-4">
         {storylines.map((s) => (
-          <StorylineDetail key={s.id} storyline={s} writerAddress={address!} />
+          <StorylineDetail key={s.id} storyline={s} writerAddress={address!} plotUsd={plotUsd} />
         ))}
         {!isLoading && !error && storylines.length === 0 && (
           <p className="text-muted py-8 text-center text-sm">
@@ -103,7 +105,7 @@ export default function WriterDashboard() {
   );
 }
 
-function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; writerAddress: Address }) {
+function StorylineDetail({ storyline, writerAddress, plotUsd }: { storyline: Storyline; writerAddress: Address; plotUsd?: number | null }) {
   return (
     <div className="border-border rounded border px-4 py-4">
       <div className="flex items-start justify-between gap-3">
@@ -172,11 +174,12 @@ function StorylineDetail({ storyline, writerAddress }: { storyline: Storyline; w
 
       {storyline.token_address && (
         <div className="mt-3 space-y-2">
-          <WriterTradingStats storyline={storyline} />
+          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
           <ClaimRoyalties
             tokenAddress={storyline.token_address as Address}
             plotCount={storyline.plot_count}
             beneficiary={writerAddress}
+            plotUsd={plotUsd}
           />
         </div>
       )}

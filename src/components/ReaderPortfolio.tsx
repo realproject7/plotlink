@@ -10,7 +10,6 @@ import { MCV2_BOND, RESERVE_LABEL, STORY_FACTORY } from "../../lib/contracts/con
 import { supabase, type Storyline } from "../../lib/supabase";
 import Link from "next/link";
 import { formatUsdValue } from "../../lib/usd-price";
-import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 
 interface Holding {
   storyline: Storyline;
@@ -21,9 +20,8 @@ interface Holding {
   reserveDecimals: number;
 }
 
-export function ReaderPortfolio() {
+export function ReaderPortfolio({ plotUsd }: { plotUsd?: number | null }) {
   const { address, isConnected } = useAccount();
-  const { data: plotUsd } = usePlotUsdPrice();
   const { data: holdings, isLoading } = useQuery({
     queryKey: ["reader-portfolio", address],
     queryFn: async (): Promise<Holding[]> => {
@@ -133,7 +131,7 @@ export function ReaderPortfolio() {
               </span>
               {plotUsd && (
                 <span className="text-muted ml-1 text-[10px]">
-                  ({formatUsdValue(parseFloat(formatUnits(totalValue, reserveDecimals)) * plotUsd)})
+                  (≈ {formatUsdValue(parseFloat(formatUnits(totalValue, reserveDecimals)) * plotUsd)})
                 </span>
               )}
             </div>
@@ -176,7 +174,7 @@ export function ReaderPortfolio() {
                     {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
                     {plotUsd && (
                       <span className="text-muted ml-1 text-[10px]">
-                        ({formatUsdValue(parseFloat(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
+                        (≈ {formatUsdValue(parseFloat(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
                       </span>
                     )}
                   </div>

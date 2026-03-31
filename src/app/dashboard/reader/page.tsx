@@ -27,6 +27,7 @@ const PAGE_SIZE = 10;
 
 export default function ReaderDashboard() {
   const { address, isConnected } = useAccount();
+  const { data: plotUsd } = usePlotUsdPrice();
 
   const {
     data,
@@ -99,10 +100,10 @@ export default function ReaderDashboard() {
         <WriterIdentityClient address={address!} />
       </p>
 
-      <ReaderPortfolio />
+      <ReaderPortfolio plotUsd={plotUsd} />
 
       {/* --- Trading History --- */}
-      <TradingHistory address={address!} />
+      <TradingHistory address={address!} plotUsd={plotUsd} />
 
       {/* --- Donation History --- */}
       <section className="mt-8">
@@ -190,8 +191,7 @@ function DonationRow({ donation, decimals }: { donation: Donation; decimals: num
 
 const TRADE_PAGE_SIZE = 10;
 
-function TradingHistory({ address }: { address: string }) {
-  const { data: plotUsd } = usePlotUsdPrice();
+function TradingHistory({ address, plotUsd }: { address: string; plotUsd?: number | null }) {
   const {
     data,
     isLoading,
@@ -292,7 +292,7 @@ function TradingHistory({ address }: { address: string }) {
                     {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
                     {plotUsd && (
                       <span className="text-muted ml-1 text-[10px] font-normal">
-                        ({formatUsdValue(t.reserve_amount * plotUsd)})
+                        (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
                       </span>
                     )}
                   </span>
