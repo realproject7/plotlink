@@ -46,11 +46,13 @@ test.describe("Navigation", () => {
     const realErrors = errors.filter(
       (e) =>
         !e.includes("Failed to fetch") &&
-        !e.includes("Failed to load resource") &&
         !e.includes("net::ERR") &&
         !e.includes("Hydration") &&
         !e.includes("RPC") &&
-        !e.includes("favicon"),
+        !e.includes("favicon") &&
+        !e.includes("walletconnect.com") &&
+        !e.includes("walletconnect.org") &&
+        !e.includes("reown.com"),
     );
 
     expect(realErrors).toEqual([]);
