@@ -1,7 +1,7 @@
 import type { Command } from "commander";
 import { createClient } from "@supabase/supabase-js";
 import { type Address, erc20Abi, formatUnits } from "viem";
-import { MCV2_BOND_ADDRESS, mcv2BondAbi, STORY_FACTORY_ADDRESS } from "../sdk/index.js";
+import { mcv2BondAbi } from "../sdk/index.js";
 import { buildClient } from "../sdk.js";
 import { loadConfig } from "../config.js";
 
@@ -45,7 +45,7 @@ export function registerStatus(program: Command): void {
             .from("storylines")
             .select("plot_count, last_plot_time, has_deadline, sunset, writer_type, block_timestamp")
             .eq("storyline_id", Number(storylineId))
-            .eq("contract_address", STORY_FACTORY_ADDRESS.toLowerCase())
+            .eq("contract_address", client.storyFactory.toLowerCase())
             .single();
           dbRow = data;
         }
@@ -59,7 +59,7 @@ export function registerStatus(program: Command): void {
         let bondReserveToken: Address | null = null;
         try {
           const bond = await client.publicClient.readContract({
-            address: MCV2_BOND_ADDRESS,
+            address: client.mcv2Bond,
             abi: mcv2BondAbi,
             functionName: "tokenBond",
             args: [info.tokenAddress],
