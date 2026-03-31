@@ -149,8 +149,8 @@ export class PlotLink {
   readonly walletClient: WalletClient;
   readonly address: Address;
 
-  private readonly storyFactory: Address;
-  private readonly mcv2Bond: Address;
+  readonly storyFactory: Address;
+  readonly mcv2Bond: Address;
   private readonly erc8004Registry: Address;
   private readonly filebase: FilebaseConfig | undefined;
   private readonly chain: Chain;

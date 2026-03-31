@@ -1,6 +1,6 @@
 import type { Command } from "commander";
 import { type Address, erc20Abi, formatUnits, isAddress } from "viem";
-import { MCV2_BOND_ADDRESS, mcv2BondAbi } from "../sdk/index.js";
+import { mcv2BondAbi } from "../sdk/index.js";
 import { buildClient } from "../sdk.js";
 
 export function registerClaim(program: Command): void {
@@ -20,7 +20,7 @@ export function registerClaim(program: Command): void {
         // Fetch bond data (creator = beneficiary, reserve token for display)
         console.log("Checking royalties...");
         const bond = await client.publicClient.readContract({
-          address: MCV2_BOND_ADDRESS,
+          address: client.mcv2Bond,
           abi: mcv2BondAbi,
           functionName: "tokenBond",
           args: [tokenAddress],
