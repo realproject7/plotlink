@@ -828,7 +828,7 @@ function StoryRow({
         </div>
       </div>
 
-      <div className="text-muted mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs sm:grid-cols-4">
+      <div className={`text-muted mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs ${isOwnProfile ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
         <span>
           {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
         </span>
@@ -843,6 +843,9 @@ function StoryRow({
         <span>
           {formatViewCount(storyline.view_count)} views
         </span>
+        {isOwnProfile && storyline.token_address && (
+          <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+        )}
       </div>
 
       {storyline.block_timestamp && (
@@ -865,8 +868,8 @@ function StoryRow({
         />
       )}
 
-      {/* Deadline countdown — own profile, active storylines */}
-      {!storyline.sunset && storyline.last_plot_time && (
+      {/* Deadline countdown — own profile only, active storylines */}
+      {isOwnProfile && !storyline.sunset && storyline.last_plot_time && (
         <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
       )}
 
@@ -1088,6 +1091,38 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
         </button>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Donation Count — inline stat for own profile story cards
+// ---------------------------------------------------------------------------
+
+function StoryDonationCount({ storylineId, tokenAddress }: { storylineId: number; tokenAddress: string }) {
+  const { data } = useQuery({
+    queryKey: ["story-donation-count", storylineId, tokenAddress],
+    queryFn: async () => {
+      if (!supabase) return { total: BigInt(0), count: 0 };
+      const rows = await supabase
+        .from("donations")
+        .select("amount")
+        .eq("storyline_id", storylineId)
+        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .then((r: { data: { amount: string }[] | null }) => r.data);
+      if (!rows || rows.length === 0) return { total: BigInt(0), count: 0 };
+      const total = rows.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
+      return { total, count: rows.length };
+    },
+  });
+
+  if (!data || data.count === 0) {
+    return <span>— donations</span>;
+  }
+
+  return (
+    <span>
+      {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL} <span className="text-muted">({data.count})</span>
+    </span>
   );
 }
 
