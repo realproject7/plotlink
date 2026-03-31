@@ -1150,8 +1150,8 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
     queryFn: async (): Promise<PortfolioHolding[]> => {
       if (!supabase) return [];
 
-      // Scan all storylines with tokens (matches ReaderPortfolio pattern)
-      // to catch holdings acquired via direct transfers, not just indexed trades
+      // Scan all storylines with tokens to catch holdings acquired via
+      // direct transfers, not just indexed trades
       const { data: storylines } = await supabase
         .from("storylines")
         .select("*")
