@@ -17,6 +17,7 @@ import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
 import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../../../lib/usd-price";
+import { DisconnectButton } from "../../../components/ConnectWallet";
 
 type Tab = "stories" | "portfolio" | "activity";
 
@@ -241,6 +242,7 @@ function ProfileHeader({
                 </span>
               )
             )}
+            {isOwnProfile && <DisconnectButton />}
           </div>
 
           {/* Bio */}

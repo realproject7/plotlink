@@ -60,8 +60,13 @@ export function NavBar() {
 
         {/* Right side: wallet + mobile toggle */}
         <div className="flex items-center gap-2">
+          {/* Desktop: full ConnectWallet */}
           <div className="hidden md:block">
             <ConnectWallet />
+          </div>
+          {/* Mobile: compact Connect button / PFP in top nav */}
+          <div className="md:hidden">
+            <ConnectWallet compact />
           </div>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}

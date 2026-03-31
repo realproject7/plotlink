@@ -8,7 +8,13 @@ import { isFarcasterMiniApp } from "../../lib/farcaster-detect";
 import { truncateAddress } from "../../lib/utils";
 import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
 
-export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) {
+interface ConnectWalletProps {
+  onNavigate?: () => void;
+  /** Compact mode for mobile top nav — shows only PFP + short ID */
+  compact?: boolean;
+}
+
+export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
@@ -37,8 +43,34 @@ export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) 
     });
   }, [inMiniApp, connectors, connect, isConnected]);
 
-  // Connected state: show Farcaster PFP + username + address + disconnect
+  // Connected state
   if (isConnected && address) {
+    const shortAddr = address.slice(0, 6);
+
+    // Compact mode: PFP + short identifier for mobile top nav
+    if (compact) {
+      return (
+        <Link
+          href={`/profile/${address}`}
+          onClick={onNavigate}
+          className="text-accent inline-flex items-center gap-1 text-xs font-medium hover:opacity-80 transition-opacity"
+        >
+          {profile?.pfpUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.pfpUrl}
+              alt=""
+              width={16}
+              height={16}
+              className="rounded-full"
+            />
+          )}
+          {profile ? `@${profile.username}` : shortAddr}
+        </Link>
+      );
+    }
+
+    // Full mode: PFP + username + shortened address (no disconnect)
     return (
       <div className="border-border flex items-center gap-3 rounded border px-3 py-2 text-sm">
         <Link
@@ -56,24 +88,16 @@ export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) 
               className="rounded-full"
             />
           )}
-          {profile ? `@${profile.username}` : truncateAddress(address)}
+          {profile ? `@${profile.username}` : shortAddr}
         </Link>
-        {profile && (
-          <span className="text-muted text-[10px] font-mono">
-            {truncateAddress(address)}
-          </span>
-        )}
-        <button
-          onClick={() => disconnect()}
-          className="text-muted hover:text-error transition-colors"
-        >
-          disconnect
-        </button>
+        <span className="text-muted text-[10px] font-mono">
+          {shortAddr}
+        </span>
       </div>
     );
   }
 
-  // Disconnected state: RainbowKit modal (outside Farcaster) or auto-connect (inside)
+  // Disconnected state: RainbowKit modal
   return (
     <ConnectButton.Custom>
       {({ openConnectModal, mounted }) => {
@@ -93,13 +117,34 @@ export function ConnectWallet({ onNavigate }: { onNavigate?: () => void } = {}) 
             <button
               onClick={openConnectModal}
               type="button"
-              className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+              className={
+                compact
+                  ? "border-accent text-accent hover:bg-accent hover:text-background rounded border px-2.5 py-1 text-xs transition-colors"
+                  : "border-accent text-accent hover:bg-accent hover:text-background rounded border px-4 py-2 text-sm transition-colors"
+              }
             >
-              connect wallet
+              {compact ? "Connect" : "connect wallet"}
             </button>
           </div>
         );
       }}
     </ConnectButton.Custom>
+  );
+}
+
+/**
+ * Disconnect button for use on the profile page.
+ * Only renders when the viewer is viewing their own profile.
+ */
+export function DisconnectButton() {
+  const { disconnect } = useDisconnect();
+
+  return (
+    <button
+      onClick={() => disconnect()}
+      className="text-muted hover:text-error border-border rounded border px-2 py-0.5 text-[10px] transition-colors"
+    >
+      disconnect
+    </button>
   );
 }
