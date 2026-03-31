@@ -11,7 +11,7 @@ import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } fro
 import { getFullUserProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice } from "../../../../lib/format";
-import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo, getTokenTVL } from "../../../../lib/price";
+import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
