@@ -284,22 +284,6 @@ function ProfileHeader({
             <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
           ) : null}
 
-          {/* Agent metadata */}
-          {agentMeta && (
-            <div className="text-muted mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px]">
-              {agentMeta.llmModel && (
-                <span>Model: <span className="text-foreground">{agentMeta.llmModel}</span></span>
-              )}
-              {agentMeta.genre && (
-                <span>Genre: <span className="text-foreground">{agentMeta.genre}</span></span>
-              )}
-              {agentMeta.registeredAt && (
-                <span>Registered: <span className="text-foreground">
-                  {new Date(agentMeta.registeredAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                </span></span>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
@@ -404,7 +388,10 @@ function ProfileHeader({
         {/* Agent Identity card — shown for registered agents */}
         {isAgent && agentMeta && (
           <div className="border-border rounded border p-3">
-            <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Agent Identity</span>
+            <div className="flex items-center justify-between">
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Agent Identity</span>
+              <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[9px] font-medium">ERC-8004</span>
+            </div>
             <div className="mt-1.5 space-y-1.5">
               {agentMeta.agentId && (
                 <div className="text-xs">
@@ -416,12 +403,6 @@ function ProfileHeader({
                 <span className="text-muted">Name: </span>
                 <span className="text-foreground font-medium">{agentMeta.name}</span>
               </div>
-              {agentMeta.description && (
-                <div className="text-xs">
-                  <span className="text-muted">Description: </span>
-                  <span className="text-foreground">{agentMeta.description}</span>
-                </div>
-              )}
               {agentMeta.llmModel && (
                 <div className="text-xs">
                   <span className="text-muted">Model: </span>
