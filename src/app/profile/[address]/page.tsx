@@ -856,7 +856,7 @@ function StoryRow({
       <div className="text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
         <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
         <span>&middot;</span>
-        <span>{holderCount !== undefined ? `${holderCount} holders` : "—"}</span>
+        <span>{holderCount !== undefined ? `${holderCount} ${holderCount === 1 ? "holder" : "holders"}` : "—"}</span>
         <span>&middot;</span>
         <span>{formatViewCount(storyline.view_count)} views</span>
         {storyline.block_timestamp && (
