@@ -677,44 +677,50 @@ function StoriesTab({
 
   return (
     <div className="mt-6 space-y-4">
-      {/* Writer Stats — compact horizontal row */}
-      <div className="border-border rounded border px-4 py-3">
-        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-          <span className="text-muted text-[10px] uppercase tracking-wider">Writer</span>
-          <span className="text-foreground font-medium">{storylines.length}</span>
-          <span className="text-muted">stories</span>
-          <span className="text-muted">&middot;</span>
-          <span className="text-foreground font-medium">{totalPlots}</span>
-          <span className="text-muted">plots</span>
-          <span className="text-muted">&middot;</span>
-          <span className="text-foreground font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span>
-          <span className="text-muted">holders</span>
-          <span className="text-muted">&middot;</span>
-          {totalDonations > BigInt(0) ? (
-            <>
-              <span className="text-foreground font-medium">{formatPrice(formatUnits(totalDonations, 18))} {RESERVE_LABEL}</span>
-              {plotUsd != null && (
-                <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
-              )}
-            </>
-          ) : (
-            <span className="text-foreground font-medium">—</span>
-          )}
-          <span className="text-muted">donated</span>
+      {/* Writer Stats — structured grid */}
+      <div className="border-border rounded border px-4 py-3 text-xs">
+        <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Writer Stats</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Stories</span>
+            <span className="text-foreground text-right font-medium">{storylines.length}</span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Plots</span>
+            <span className="text-foreground text-right font-medium">{totalPlots}</span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Holders</span>
+            <span className="text-foreground text-right font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Views</span>
+            <span className="text-foreground text-right font-medium">
+              {storylines.reduce((sum, s) => sum + (s.view_count ?? 0), 0)}
+            </span>
+          </div>
+        </div>
+        <div className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
+          <span className="text-muted">Donated</span>
+          <span className="text-foreground text-right font-medium">
+            {totalDonations > BigInt(0)
+              ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}`
+              : "—"}
+            {totalDonations > BigInt(0) && plotUsd != null && (
+              <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
+            )}
+          </span>
           {isOwnProfile && royaltyInfo && (
             <>
-              <span className="text-muted">&middot;</span>
-              {royaltyInfo.unclaimed > BigInt(0) ? (
-                <>
-                  <span className="text-accent font-medium">{formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} {RESERVE_LABEL}</span>
-                  {plotUsd != null && (
-                    <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
-                  )}
-                </>
-              ) : (
-                <span className="text-foreground font-medium">—</span>
-              )}
-              <span className="text-muted">claimable</span>
+              <span className="text-muted">Claimable</span>
+              <span className="text-accent text-right font-medium">
+                {royaltyInfo.unclaimed > BigInt(0)
+                  ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}`
+                  : "—"}
+                {royaltyInfo.unclaimed > BigInt(0) && plotUsd != null && (
+                  <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
+                )}
+              </span>
             </>
           )}
         </div>
@@ -823,68 +829,76 @@ function StoryRow({
   });
 
   return (
-    <div className="border-b border-border pb-4">
-      {/* Primary: title + badges + price */}
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+    <div className="border-border rounded border divide-y divide-border text-xs">
+      {/* Title section */}
+      <div className="px-4 py-3">
         <Link
           href={`/story/${storyline.storyline_id}`}
           className="text-foreground hover:text-accent text-sm font-medium transition-colors"
         >
           {storyline.title}
         </Link>
-        {storyline.genre && (
-          <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[9px] font-medium">
-            {storyline.genre}
-          </span>
-        )}
-        {storyline.sunset ? (
-          <span className="text-muted text-[9px]">complete</span>
-        ) : (
-          <span className="text-green-700 text-[9px]">active</span>
-        )}
-        {priceInfo && (
-          <span className="text-foreground text-xs font-medium ml-auto shrink-0">
-            {formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}
-            {plotUsd != null && (
-              <span className="text-muted font-normal"> (≈ {formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)})</span>
+        <div className="mt-0.5 flex items-center gap-2 text-[11px]">
+          {storyline.genre && <span className="text-muted">{storyline.genre}</span>}
+          {storyline.sunset ? (
+            <span className="text-muted">complete</span>
+          ) : (
+            <span className="text-green-700">active</span>
+          )}
+        </div>
+      </div>
+
+      {/* Stats grid */}
+      <div className="px-4 py-3 space-y-1">
+        <div className="grid grid-cols-[auto_1fr] gap-x-3">
+          <span className="text-muted">Price</span>
+          <span className="text-foreground text-right font-medium">
+            {priceInfo ? formatPrice(priceInfo.pricePerToken) : "—"} {priceInfo ? RESERVE_LABEL : ""}
+            {priceInfo && plotUsd != null && (
+              <span className="text-muted font-normal"> {formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)}</span>
             )}
           </span>
-        )}
-      </div>
-
-      {/* Secondary: compact stats */}
-      <div className="text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
-        <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
-        <span>&middot;</span>
-        <span>{holderCount !== undefined ? `${holderCount} ${holderCount === 1 ? "holder" : "holders"}` : "—"}</span>
-        <span>&middot;</span>
-        <span>{formatViewCount(storyline.view_count)} views</span>
-        {storyline.block_timestamp && (
-          <>
-            <span>&middot;</span>
-            <span>{new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-          </>
-        )}
-      </div>
-
-      {/* TVL + donations */}
-      {storyline.token_address && (
-        <div className="mt-1.5 space-y-1">
-          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
-          <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
         </div>
-      )}
+        {storyline.token_address && (
+          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
+        )}
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Plots</span>
+            <span className="text-foreground text-right font-medium">{storyline.plot_count}</span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Holders</span>
+            <span className="text-foreground text-right font-medium">{holderCount ?? "—"}</span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Views</span>
+            <span className="text-foreground text-right font-medium">{formatViewCount(storyline.view_count)}</span>
+          </div>
+          <div className="grid grid-cols-[auto_1fr] gap-x-2">
+            <span className="text-muted">Created</span>
+            <span className="text-foreground text-right font-medium">
+              {storyline.block_timestamp
+                ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", year: "2-digit" })
+                : "—"}
+            </span>
+          </div>
+        </div>
+        {storyline.token_address && (
+          <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+        )}
+      </div>
 
       {/* Deadline */}
       {!storyline.sunset && storyline.last_plot_time && (
-        <div className="mt-1.5">
+        <div className="px-4 py-2">
           <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
         </div>
       )}
 
-      {/* Owner-only: genre edit, royalties, donation history */}
+      {/* Genre prompt — own profile */}
       {isOwnProfile && !storyline.genre && (
-        <div className="mt-2">
+        <div className="px-4 py-2">
           <GenrePrompt
             storylineId={storyline.storyline_id}
             language={storyline.language}
@@ -892,8 +906,10 @@ function StoryRow({
           />
         </div>
       )}
+
+      {/* Royalties + Claim — own profile */}
       {isOwnProfile && storyline.token_address && (
-        <div className="mt-2">
+        <div className="px-4 py-2">
           <ClaimRoyalties
             tokenAddress={storyline.token_address as Address}
             plotCount={storyline.plot_count}
@@ -902,8 +918,12 @@ function StoryRow({
           />
         </div>
       )}
+
+      {/* Donation history — own profile */}
       {isOwnProfile && storyline.token_address && (
-        <ProfileDonationHistory storylineId={storyline.storyline_id} />
+        <div className="px-4 py-2">
+          <ProfileDonationHistory storylineId={storyline.storyline_id} />
+        </div>
       )}
     </div>
   );
