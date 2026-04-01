@@ -65,9 +65,7 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
               className="rounded-full"
             />
           )}
-          {profile
-            ? `@${profile.username.length > 10 ? profile.username.slice(0, 10) + "…" : profile.username}`
-            : displayAddr}
+          {displayAddr}
         </Link>
       );
     }
@@ -89,7 +87,7 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
             className="rounded-full"
           />
         )}
-        {profile ? `@${profile.username}` : displayAddr}
+        {displayAddr}
       </Link>
     );
   }
