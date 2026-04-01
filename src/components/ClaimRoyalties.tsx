@@ -139,7 +139,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
                     Chain at least 2 plots ({plotCount}/2) {eligible && "\u2713"}
                   </li>
                   <li>
-                    Royalties accrue when readers trade your token ({formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}{plotUsd != null && unclaimed > BigInt(0) ? ` ≈ ${formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)}` : ""} unclaimed)
+                    Royalties accrue when readers trade your token ({formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}{plotUsd != null ? ` ≈ ${formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)}` : ""} unclaimed)
                   </li>
                 </ul>
               </div>
