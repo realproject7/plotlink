@@ -750,7 +750,7 @@ function StoriesTab({
       )}
 
       {/* Story portfolio */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {storylines.map((s) => (
           <StoryRow
             key={s.id}
@@ -823,122 +823,88 @@ function StoryRow({
   });
 
   return (
-    <div className="flex flex-col sm:flex-row gap-4">
-      {/* Moleskine book card */}
-      <Link
-        href={`/story/${storyline.storyline_id}`}
-        className="moleskine-notebook group relative block shrink-0 self-start"
-        style={{ width: "140px" }}
-      >
-        <div
-          className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
-          style={{
-            aspectRatio: "2/3",
-            borderRadius: "5px 15px 15px 5px",
-            backgroundColor: "#F5EFE6",
-            boxShadow: "2px 4px 12px rgba(44, 24, 16, 0.1)",
-          }}
+    <div className="border-b border-border pb-4">
+      {/* Primary: title + badges + price */}
+      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        <Link
+          href={`/story/${storyline.storyline_id}`}
+          className="text-foreground hover:text-accent text-sm font-medium transition-colors"
         >
-          {/* Elastic band */}
-          <div
-            className="pointer-events-none absolute inset-y-[-1px] right-[18px] z-20 w-[6px] rounded-[2px]"
-            style={{ background: "rgba(139, 69, 19, 0.18)" }}
-          />
-          {/* Top: genre */}
-          <div className="relative z-10 px-3 pt-3">
-            <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
-              {storyline.genre || "Uncategorized"}
-            </span>
-          </div>
-          {/* Center: title */}
-          <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
-            <h3 className="font-heading text-sm font-bold leading-tight tracking-tight text-[var(--accent)]">
-              {storyline.title}
-            </h3>
-          </div>
-          {/* Bottom: plot count + status */}
-          <div className="relative z-10 flex items-center gap-1.5 px-3 pb-3">
-            <span className="rounded-sm border border-[var(--border)] px-1 py-0.5 text-[8px] text-[var(--text-muted)]">
-              {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-            </span>
-            {storyline.sunset ? (
-              <span className="rounded-sm border border-[var(--border)] px-1 py-0.5 text-[8px] text-[var(--text-muted)]">
-                complete
-              </span>
-            ) : (
-              <span className="rounded-sm border border-green-700/30 px-1 py-0.5 text-[8px] text-green-700">
-                active
-              </span>
+          {storyline.title}
+        </Link>
+        {storyline.genre && (
+          <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[9px] font-medium">
+            {storyline.genre}
+          </span>
+        )}
+        {storyline.sunset ? (
+          <span className="text-muted text-[9px]">complete</span>
+        ) : (
+          <span className="text-green-700 text-[9px]">active</span>
+        )}
+        {priceInfo && (
+          <span className="text-foreground text-xs font-medium ml-auto shrink-0">
+            {formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}
+            {plotUsd != null && (
+              <span className="text-muted font-normal"> (≈ {formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)})</span>
             )}
-          </div>
-        </div>
-      </Link>
+          </span>
+        )}
+      </div>
 
-      {/* Info below/beside the book — all visible, no toggles */}
-      <div className="min-w-0 flex-1 space-y-2">
-        {/* Stats row */}
-        <div className="text-muted flex flex-wrap gap-x-3 gap-y-1 text-xs">
-          {priceInfo ? (
-            <span>
-              Price: <span className="text-foreground font-medium">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</span>
-              {plotUsd != null && <span> (≈ {formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)})</span>}
-            </span>
-          ) : (
-            <span>Price: —</span>
-          )}
-          <span className="text-border">&middot;</span>
-          <span>{holderCount !== undefined ? `${holderCount} holder${holderCount !== 1 ? "s" : ""}` : "—"}</span>
-          <span className="text-border">&middot;</span>
-          <span>{formatViewCount(storyline.view_count)} views</span>
-          {storyline.block_timestamp && (
-            <>
-              <span className="text-border">&middot;</span>
-              <span>
-                {new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-              </span>
-            </>
-          )}
-        </div>
+      {/* Secondary: compact stats */}
+      <div className="text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
+        <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
+        <span>&middot;</span>
+        <span>{holderCount !== undefined ? `${holderCount} holders` : "—"}</span>
+        <span>&middot;</span>
+        <span>{formatViewCount(storyline.view_count)} views</span>
+        {storyline.block_timestamp && (
+          <>
+            <span>&middot;</span>
+            <span>{new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+          </>
+        )}
+      </div>
 
-        {/* TVL + trading stats */}
-        {storyline.token_address && (
+      {/* TVL + donations */}
+      {storyline.token_address && (
+        <div className="mt-1.5 space-y-1">
           <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
-        )}
-
-        {/* Donations */}
-        {storyline.token_address && (
           <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
-        )}
+        </div>
+      )}
 
-        {/* Deadline countdown */}
-        {!storyline.sunset && storyline.last_plot_time && (
+      {/* Deadline */}
+      {!storyline.sunset && storyline.last_plot_time && (
+        <div className="mt-1.5">
           <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-        )}
+        </div>
+      )}
 
-        {/* Genre prompt */}
-        {isOwnProfile && !storyline.genre && (
+      {/* Owner-only: genre edit, royalties, donation history */}
+      {isOwnProfile && !storyline.genre && (
+        <div className="mt-2">
           <GenrePrompt
             storylineId={storyline.storyline_id}
             language={storyline.language}
             writerAddress={writerAddress}
           />
-        )}
-
-        {/* Claim royalties */}
-        {isOwnProfile && storyline.token_address && (
+        </div>
+      )}
+      {isOwnProfile && storyline.token_address && (
+        <div className="mt-2">
           <ClaimRoyalties
             tokenAddress={storyline.token_address as Address}
             plotCount={storyline.plot_count}
             beneficiary={writerAddress}
             plotUsd={plotUsd}
           />
-        )}
-
-        {/* Donation history */}
-        {isOwnProfile && storyline.token_address && (
-          <ProfileDonationHistory storylineId={storyline.storyline_id} />
-        )}
-      </div>
+        </div>
+      )}
+      {isOwnProfile && storyline.token_address && (
+        <ProfileDonationHistory storylineId={storyline.storyline_id} />
+      )}
     </div>
   );
 }
