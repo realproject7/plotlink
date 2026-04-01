@@ -1387,66 +1387,53 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
 
       {/* Token holdings */}
       {hasHoldings && (
-        <div className="space-y-2">
+        <div className="space-y-0 divide-y divide-border">
           {holdings!.map((h) => (
-            <div
-              key={h.storyline.id}
-              className="border-border rounded border px-4 py-3"
-            >
-              {/* Row 1: Title + value */}
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-baseline gap-2">
-                  <Link
-                    href={`/story/${h.storyline.storyline_id}`}
-                    className="text-foreground hover:text-accent text-sm font-medium transition-colors"
-                  >
-                    {h.storyline.title}
-                  </Link>
-                  {h.storyline.genre && (
-                    <span className="border-border rounded border px-1.5 py-0.5 text-[10px] text-muted">
-                      {h.storyline.genre}
-                    </span>
-                  )}
-                </div>
-                <div className="flex shrink-0 items-center gap-1.5">
-                  <span className="text-accent text-sm font-medium">
-                    {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
+            <div key={h.storyline.id} className="py-3">
+              {/* Primary: title + genre + value + change */}
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <Link
+                  href={`/story/${h.storyline.storyline_id}`}
+                  className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+                >
+                  {h.storyline.title}
+                </Link>
+                {h.storyline.genre && (
+                  <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[9px] font-medium">
+                    {h.storyline.genre}
                   </span>
-                  {plotUsd && (
-                    <span className="text-muted text-xs">
-                      ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
-                    </span>
-                  )}
-                  {h.priceChange !== null && (
-                    <span className={`text-[10px] ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                      {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
-                    </span>
-                  )}
-                </div>
-              </div>
-              {/* Row 2: Inline stats */}
-              <div className="text-muted mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs">
-                <span>{formatPrice(formatUnits(h.balance, 18))} tokens</span>
-                <span className="text-border">&middot;</span>
-                <span>
-                  price <span className="text-foreground">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
-                  {plotUsd != null && <span> (≈ {formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
+                )}
+                <span className="text-accent text-sm font-medium ml-auto shrink-0">
+                  {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
                 </span>
+                {plotUsd && (
+                  <span className="text-muted text-xs shrink-0">
+                    ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
+                  </span>
+                )}
+                {h.priceChange !== null && (
+                  <span className={`text-[10px] shrink-0 ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                    {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
+                  </span>
+                )}
+              </div>
+              {/* Secondary: compact stats */}
+              <div className="text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
+                <span>{formatPrice(formatUnits(h.balance, 18))} tokens</span>
+                <span>&middot;</span>
+                <span>price {formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
+                {plotUsd != null && <span>(≈ {formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
                 {h.entryPrice !== null && h.entryPrice > 0 && (
                   <>
-                    <span className="text-border">&middot;</span>
-                    <span>
-                      entry <span className="text-foreground">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
-                      {plotUsd != null && <span> (≈ {formatUsdValue(h.entryPrice * plotUsd)})</span>}
-                    </span>
+                    <span>&middot;</span>
+                    <span>entry {formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
+                    {plotUsd != null && <span>(≈ {formatUsdValue(h.entryPrice * plotUsd)})</span>}
                   </>
                 )}
                 {h.lastTraded && (
                   <>
-                    <span className="text-border">&middot;</span>
-                    <span>
-                      {new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </span>
+                    <span>&middot;</span>
+                    <span>{new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
                   </>
                 )}
               </div>
