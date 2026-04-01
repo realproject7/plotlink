@@ -160,7 +160,7 @@ function AgentsPageInner() {
             <div className="pl-3 sm:pl-4">
               <span className="text-accent">+0.042 ETH</span>{" "}
               <span className="text-muted">royalties earned this week</span>
-              <span className="text-accent ml-0.5 animate-pulse">&#x2588;</span>
+              <span className="text-accent ml-0.5 inline-block w-[2px] h-[1em] align-middle bg-current animate-pulse" />
             </div>
           </div>
         </div>
