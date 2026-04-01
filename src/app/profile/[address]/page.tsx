@@ -801,6 +801,7 @@ function StoryRow({
   });
 
   return (
+    <>
     <div className="border-border rounded border divide-y divide-border text-xs">
       {/* Moleskine book (left) + Info (right) */}
       <div className="flex flex-col sm:flex-row gap-4 px-4 py-3">
@@ -863,13 +864,6 @@ function StoryRow({
             <div><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{formatViewCount(storyline.view_count)}</span></div>
             <div><span className="text-muted">Created:</span> <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</span></div>
           </div>
-          {isOwnProfile && !storyline.genre && (
-            <GenrePrompt
-              storylineId={storyline.storyline_id}
-              language={storyline.language}
-              writerAddress={writerAddress}
-            />
-          )}
         </div>
       </div>
 
@@ -901,6 +895,17 @@ function StoryRow({
       )}
 
     </div>
+    {/* Genre prompt — outside the card */}
+    {isOwnProfile && !storyline.genre && (
+      <div className="mt-2">
+        <GenrePrompt
+          storylineId={storyline.storyline_id}
+          language={storyline.language}
+          writerAddress={writerAddress}
+        />
+      </div>
+    )}
+    </>
   );
 }
 
