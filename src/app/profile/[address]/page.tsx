@@ -1370,30 +1370,26 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
 
   return (
     <div className="mt-6 space-y-4">
-      {/* Portfolio summary — compact horizontal row */}
+      {/* Portfolio summary — structured grid */}
       {hasHoldings && (
-        <div className="border-border rounded border px-4 py-3">
-          <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
-            <span className="text-muted text-[10px] uppercase tracking-wider">Portfolio</span>
-            <span className="text-accent text-sm font-bold">
+        <div className="border-border rounded border px-4 py-3 text-xs">
+          <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Portfolio</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            <span className="text-muted">Value</span>
+            <span className="text-foreground text-right font-medium">
               {formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}
+              {plotUsd && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)})</span>}
             </span>
-            {plotUsd && (
-              <span className="text-muted">≈ {formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)}</span>
-            )}
-            <span className="text-muted">&middot;</span>
-            <span className="text-foreground font-medium">{holdings!.length}</span>
-            <span className="text-muted">{holdings!.length === 1 ? "token" : "tokens"}</span>
+            <span className="text-muted">Tokens</span>
+            <span className="text-foreground text-right font-medium">{holdings!.length}</span>
             {bestPick && bestPick.priceChange !== null && (
               <>
-                <span className="text-muted">&middot;</span>
-                <span className="text-muted">best 24h:</span>
-                <span className="text-foreground">
-                  {bestPick.storyline.title.slice(0, 20)}
-                  {bestPick.storyline.title.length > 20 ? "..." : ""}
-                </span>
-                <span className={bestPick.priceChange >= 0 ? "text-accent" : "text-error"}>
-                  {bestPick.priceChange >= 0 ? "+" : ""}{bestPick.priceChange.toFixed(1)}%
+                <span className="text-muted">Best 24h</span>
+                <span className="text-foreground text-right font-medium">
+                  {bestPick.storyline.title.slice(0, 20)}{bestPick.storyline.title.length > 20 ? "..." : ""}
+                  <span className={`ml-2 ${bestPick.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                    {bestPick.priceChange >= 0 ? "+" : ""}{bestPick.priceChange.toFixed(1)}%
+                  </span>
                 </span>
               </>
             )}
@@ -1401,140 +1397,132 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         </div>
       )}
 
-      {/* Token holdings */}
-      {hasHoldings && (
-        <div className="space-y-0 divide-y divide-border">
-          {holdings!.map((h) => (
-            <div key={h.storyline.id} className="py-3">
-              {/* Primary: title + genre + value + change */}
-              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <Link
-                  href={`/story/${h.storyline.storyline_id}`}
-                  className="text-foreground hover:text-accent text-sm font-medium transition-colors"
-                >
-                  {h.storyline.title}
-                </Link>
-                {h.storyline.genre && (
-                  <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[9px] font-medium">
-                    {h.storyline.genre}
-                  </span>
-                )}
-                <span className="text-accent text-sm font-medium ml-auto shrink-0">
-                  {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
+      {/* Token holdings — structured cards */}
+      {hasHoldings && holdings!.map((h) => (
+        <div key={h.storyline.id} className="border-border rounded border text-xs">
+          {/* Title + genre */}
+          <div className="px-4 py-3 flex items-baseline gap-2">
+            <Link
+              href={`/story/${h.storyline.storyline_id}`}
+              className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+            >
+              {h.storyline.title}
+            </Link>
+            {h.storyline.genre && (
+              <span className="text-muted text-[9px] shrink-0">{h.storyline.genre}</span>
+            )}
+          </div>
+          {/* Stats grid */}
+          <div className="border-t border-border px-4 py-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            <span className="text-muted">Value</span>
+            <span className="text-foreground text-right font-medium">
+              {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
+              {plotUsd && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})</span>}
+            </span>
+            {h.priceChange !== null && (
+              <>
+                <span className="text-muted">Change</span>
+                <span className={`text-right font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                  {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
                 </span>
-                {plotUsd && (
-                  <span className="text-muted text-xs shrink-0">
-                    ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})
-                  </span>
-                )}
-                {h.priceChange !== null && (
-                  <span className={`text-[10px] shrink-0 ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                    {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
-                  </span>
-                )}
-              </div>
-              {/* Secondary: compact stats */}
-              <div className="text-muted mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px]">
-                <span>{formatPrice(formatUnits(h.balance, 18))} tokens</span>
-                <span>&middot;</span>
-                <span>price {formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
-                {plotUsd != null && <span>(≈ {formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
-                {h.entryPrice !== null && h.entryPrice > 0 && (
-                  <>
-                    <span>&middot;</span>
-                    <span>entry {formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
-                    {plotUsd != null && <span>(≈ {formatUsdValue(h.entryPrice * plotUsd)})</span>}
-                  </>
-                )}
-                {h.lastTraded && (
-                  <>
-                    <span>&middot;</span>
-                    <span>{new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+              </>
+            )}
+            <span className="text-muted">Balance</span>
+            <span className="text-foreground text-right font-medium">{formatPrice(formatUnits(h.balance, 18))} tokens</span>
+            <span className="text-muted">Price</span>
+            <span className="text-foreground text-right font-medium">
+              {formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}
+              {plotUsd != null && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
+            </span>
+            {h.entryPrice !== null && h.entryPrice > 0 && (
+              <>
+                <span className="text-muted">Entry</span>
+                <span className="text-foreground text-right font-medium">
+                  {formatPrice(h.entryPrice)} {RESERVE_LABEL}
+                  {plotUsd != null && <span className="text-muted font-normal"> ({formatUsdValue(h.entryPrice * plotUsd)})</span>}
+                </span>
+              </>
+            )}
+            {h.lastTraded && (
+              <>
+                <span className="text-muted">Traded</span>
+                <span className="text-foreground text-right font-medium">
+                  {new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </span>
+              </>
+            )}
+          </div>
         </div>
-      )}
+      ))}
 
-      {/* Donations — consistent card styling for both received and given */}
+      {/* Donations — structured card */}
       {(hasDonationsReceived || (isOwnProfile && hasDonationsGiven)) && (
-        <div className="border-border rounded border px-4 py-3 space-y-3">
-          {hasDonationsReceived && (
-            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
-              <span className="text-muted text-[10px] uppercase tracking-wider">Received</span>
-              <span className="text-accent font-medium">
-                {formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}
-              </span>
-              {plotUsd != null && (
-                <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(donationsReceived!.total, 18)) * plotUsd)})</span>
-              )}
-              <span className="text-muted">from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}</span>
-            </div>
-          )}
-
-          {isOwnProfile && hasDonationsGiven && (
-            <div>
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
-                <span className="text-muted text-[10px] uppercase tracking-wider">Given</span>
-                <span className="text-foreground font-medium">
-                  {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}
+        <div className="border-border rounded border px-4 py-3 text-xs">
+          <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Donations</p>
+          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+            {hasDonationsReceived && (
+              <>
+                <span className="text-muted">Received</span>
+                <span className="text-foreground text-right font-medium">
+                  {formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}
+                  {plotUsd != null && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(donationsReceived!.total, 18)) * plotUsd)})</span>}
                 </span>
-                {plotUsd != null && totalDonated > BigInt(0) && (
-                  <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>
-                )}
-                <span className="text-muted">{donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
-              </div>
-              <div className="mt-2 space-y-1">
-                {donationsGiven.map((d) => (
-                  <div key={d.id} className="text-muted flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] py-0.5">
-                    <Link
-                      href={`/story/${d.storyline_id}`}
-                      className="text-foreground hover:text-accent transition-colors"
-                    >
-                      Story #{d.storyline_id}
-                    </Link>
-                    <span className="text-accent font-medium">
-                      {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
-                    </span>
-                    {plotUsd != null && (
-                      <span>(≈ {formatUsdValue(Number(formatUnits(BigInt(d.amount), 18)) * plotUsd)})</span>
-                    )}
+                <span />
+                <span className="text-muted text-right">from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}</span>
+              </>
+            )}
+            {isOwnProfile && hasDonationsGiven && (
+              <>
+                <span className="text-muted">Given</span>
+                <span className="text-foreground text-right font-medium">
+                  {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}
+                  {plotUsd != null && totalDonated > BigInt(0) && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>}
+                </span>
+                <span />
+                <span className="text-muted text-right">{donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
+              </>
+            )}
+          </div>
+          {isOwnProfile && hasDonationsGiven && (
+            <div className="mt-3 space-y-2">
+              {donationsGiven.map((d) => (
+                <div key={d.id} className="grid grid-cols-[auto_1fr_auto] gap-x-2 items-baseline text-[11px]">
+                  <Link
+                    href={`/story/${d.storyline_id}`}
+                    className="text-foreground hover:text-accent transition-colors"
+                  >
+                    Story #{d.storyline_id}
+                  </Link>
+                  <span className="text-foreground text-right font-medium">
+                    {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
+                  </span>
+                  <span className="text-muted flex items-center gap-1">
                     {d.block_timestamp && (
-                      <time dateTime={d.block_timestamp} className="text-[10px]">
+                      <time dateTime={d.block_timestamp}>
                         {new Date(d.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </time>
                     )}
                     {d.tx_hash && (
-                      <a
-                        href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-muted hover:text-accent transition-colors"
-                        title="View on Basescan"
-                      >
-                        &#x2197;
-                      </a>
+                      <a href={`${EXPLORER_URL}/tx/${d.tx_hash}`} target="_blank" rel="noopener noreferrer" className="hover:text-accent">&#x2197;</a>
                     )}
-                  </div>
-                ))}
-                {donHasNext && (
-                  <button
-                    onClick={() => donFetchNext()}
-                    disabled={donFetchingNext}
-                    className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors disabled:opacity-50"
-                  >
-                    {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
-                  </button>
-                )}
-              </div>
+                  </span>
+                </div>
+              ))}
+              {donHasNext && (
+                <button
+                  onClick={() => donFetchNext()}
+                  disabled={donFetchingNext}
+                  className="text-accent hover:text-foreground mt-1 w-full text-center text-[10px] transition-colors disabled:opacity-50"
+                >
+                  {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
+                </button>
+              )}
             </div>
           )}
         </div>
       )}
 
-      {/* Trading History — public data, shown for all profiles */}
+      {/* Trading History */}
       <PortfolioTradingHistory address={address} plotUsd={plotUsd} />
     </div>
   );
@@ -1598,60 +1586,50 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
   if (trades.length === 0) return null;
 
   return (
-    <div className="border-border rounded border">
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 text-xs">
+    <div className="border-border rounded border text-xs">
+      <div className="px-4 py-3">
         <span className="text-muted text-[10px] uppercase tracking-wider">Trades</span>
-        <span className="text-foreground font-medium">{totalCount}</span>
-        <span className="text-muted">{totalCount === 1 ? "trade" : "trades"}</span>
+        <span className="text-foreground ml-2 font-medium">{totalCount} {totalCount === 1 ? "trade" : "trades"}</span>
       </div>
 
-      <div className="border-t border-border px-4 py-2 space-y-1.5">
+      <div className="border-t border-border divide-y divide-border">
         {trades.map((t) => {
           const isBuy = t.event_type === "mint";
           const title = storylineTitles?.[t.storyline_id];
           const tokenCount = t.price_per_token > 0 ? t.reserve_amount / t.price_per_token : 0;
           return (
-            <div
-              key={`${t.tx_hash}-${t.log_index}`}
-              className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs py-1"
-            >
-              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
-                {isBuy ? "Buy" : "Sell"}
-              </span>
-              <Link
-                href={`/story/${t.storyline_id}`}
-                className="text-foreground hover:text-accent transition-colors"
-                title={title || `Story #${t.storyline_id}`}
-              >
-                {title || `Story #${t.storyline_id}`}
-              </Link>
-              <span className="text-foreground font-medium">
-                {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
-              </span>
-              {plotUsd && (
-                <span className="text-muted text-[10px]">
-                  (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
+            <div key={`${t.tx_hash}-${t.log_index}`} className="px-4 py-2 space-y-0.5">
+              {/* Row 1: action + title */}
+              <div className="flex items-baseline gap-2">
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
+                  {isBuy ? "Buy" : "Sell"}
                 </span>
-              )}
-              {tokenCount > 0 && (
-                <span className="text-muted text-[10px]">{formatSupply(tokenCount)} tokens</span>
-              )}
-              {t.block_timestamp && (
-                <time dateTime={t.block_timestamp} className="text-muted text-[10px]">
-                  {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </time>
-              )}
-              {t.tx_hash && (
-                <a
-                  href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-muted hover:text-accent transition-colors"
-                  title="View on Basescan"
+                <Link
+                  href={`/story/${t.storyline_id}`}
+                  className="text-foreground hover:text-accent transition-colors"
                 >
-                  &#x2197;
-                </a>
-              )}
+                  {title || `Story #${t.storyline_id}`}
+                </Link>
+              </div>
+              {/* Row 2: tokens + amount */}
+              <div className="grid grid-cols-[auto_1fr] gap-x-2 text-[11px]">
+                <span className="text-muted">{tokenCount > 0 ? `${formatSupply(tokenCount)} tokens` : ""}</span>
+                <span className="text-foreground text-right font-medium">
+                  {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+                  {plotUsd && <span className="text-muted font-normal"> ({formatUsdValue(t.reserve_amount * plotUsd)})</span>}
+                </span>
+              </div>
+              {/* Row 3: date + tx link */}
+              <div className="text-muted flex items-center gap-1 text-[10px]">
+                {t.block_timestamp && (
+                  <time dateTime={t.block_timestamp}>
+                    {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </time>
+                )}
+                {t.tx_hash && (
+                  <a href={`${EXPLORER_URL}/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="hover:text-accent ml-auto">&#x2197;</a>
+                )}
+              </div>
             </div>
           );
         })}
