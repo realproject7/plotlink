@@ -12,9 +12,10 @@ import type { Storyline } from "../../lib/supabase";
 interface WriterTradingStatsProps {
   storyline: Storyline;
   plotUsd?: number | null;
+  showPrice?: boolean;
 }
 
-export function WriterTradingStats({ storyline, plotUsd }: WriterTradingStatsProps) {
+export function WriterTradingStats({ storyline, plotUsd, showPrice = true }: WriterTradingStatsProps) {
   const tokenAddress = storyline.token_address as Address;
 
   // Fetch price + TVL together so they succeed/fail atomically
@@ -44,11 +45,13 @@ export function WriterTradingStats({ storyline, plotUsd }: WriterTradingStatsPro
 
   return (
     <div className="space-y-1 text-xs">
-      <div>
-        <span className="text-muted">Price:</span>{" "}
-        <span className="text-foreground font-medium">{data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}</span>
-        {data && plotUsd && <span className="text-muted"> ({formatUsdValue(parseFloat(data.price) * plotUsd)})</span>}
-      </div>
+      {showPrice && (
+        <div>
+          <span className="text-muted">Price:</span>{" "}
+          <span className="text-foreground font-medium">{data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}</span>
+          {data && plotUsd && <span className="text-muted"> ({formatUsdValue(parseFloat(data.price) * plotUsd)})</span>}
+        </div>
+      )}
       <div>
         <span className="text-muted">TVL:</span>{" "}
         <span className="text-foreground font-medium">{data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}</span>
