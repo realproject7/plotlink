@@ -122,7 +122,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
         )}
       </div>
       {/* Claim button */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 justify-end">
         <button
           onClick={txState === "error" ? reset : executeClaim}
           disabled={

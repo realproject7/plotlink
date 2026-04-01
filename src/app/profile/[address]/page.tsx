@@ -1034,7 +1034,7 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
         {donations.map((d) => (
           <div
             key={d.id}
-            className="text-muted flex items-center justify-between text-[10px]"
+            className="text-muted flex items-center justify-between text-xs"
           >
             <div className="flex gap-2">
               <a
@@ -1078,7 +1078,7 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
         <button
           onClick={() => fetchNextPage()}
           disabled={isFetchingNextPage}
-          className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors disabled:opacity-50"
+          className="text-accent hover:text-foreground mt-2 w-full text-center text-xs transition-colors disabled:opacity-50"
         >
           {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
         </button>
