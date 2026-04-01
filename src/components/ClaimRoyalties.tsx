@@ -148,7 +148,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
           <span className={`ml-1 font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
             {formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}
           </span>
-          {unclaimed > BigInt(0) && plotUsd && (
+          {plotUsd != null && (
             <span className="text-muted ml-1 text-[10px]">
               (≈ {formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)})
             </span>
