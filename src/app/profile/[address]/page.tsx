@@ -693,30 +693,38 @@ function StoriesTab({
   const sortedGenres = Array.from(genreCounts.entries()).sort((a, b) => b[1] - a[1]);
 
   return (
-    <div className="mt-6 space-y-6">
-      {/* Writer Stats */}
-      <div className="border-border bg-surface rounded border px-4 py-3">
-        <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Writer Stats</p>
-        <div className={`grid grid-cols-2 gap-3 text-xs ${isOwnProfile && royaltyInfo ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
-          <StatCell label="Storylines" value={String(storylines.length)} />
-          <StatCell label="Total Plots" value={String(totalPlots)} />
-          <StatCell
-            label="Holders"
-            value={totalHolders !== undefined ? String(totalHolders) : "—"}
-          />
-          <StatCell
-            label="Donations"
-            value={totalDonations > BigInt(0)
-              ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}${plotUsd != null ? ` (≈ ${formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})` : ""}`
-              : "—"}
-          />
-          {isOwnProfile && royaltyInfo && (
-            <StatCell
-              label="Claimable"
-              value={royaltyInfo.unclaimed > BigInt(0)
-                ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}${plotUsd != null ? ` (≈ ${formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})` : ""}`
-                : "—"}
-            />
+    <div className="mt-6 space-y-4">
+      {/* Writer Stats — compact horizontal row */}
+      <div className="border-border rounded border px-4 py-3">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs">
+          <span className="text-muted text-[10px] uppercase tracking-wider">Writer</span>
+          <span className="text-foreground font-medium">{storylines.length}</span>
+          <span className="text-muted">stories</span>
+          <span className="text-muted">&middot;</span>
+          <span className="text-foreground font-medium">{totalPlots}</span>
+          <span className="text-muted">plots</span>
+          <span className="text-muted">&middot;</span>
+          <span className="text-foreground font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span>
+          <span className="text-muted">holders</span>
+          {totalDonations > BigInt(0) && (
+            <>
+              <span className="text-muted">&middot;</span>
+              <span className="text-foreground font-medium">{formatPrice(formatUnits(totalDonations, 18))} {RESERVE_LABEL}</span>
+              {plotUsd != null && (
+                <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
+              )}
+              <span className="text-muted">donated</span>
+            </>
+          )}
+          {isOwnProfile && royaltyInfo && royaltyInfo.unclaimed > BigInt(0) && (
+            <>
+              <span className="text-muted">&middot;</span>
+              <span className="text-accent font-medium">{formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} {RESERVE_LABEL}</span>
+              {plotUsd != null && (
+                <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
+              )}
+              <span className="text-muted">claimable</span>
+            </>
           )}
         </div>
       </div>
@@ -762,15 +770,6 @@ function StoriesTab({
           />
         ))}
       </div>
-    </div>
-  );
-}
-
-function StatCell({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <span className="text-muted block text-[10px] uppercase tracking-wider">{label}</span>
-      <span className="text-foreground font-medium">{value}</span>
     </div>
   );
 }
@@ -834,6 +833,7 @@ function StoryRow({
 
   return (
     <div className="border-border rounded border px-4 py-3">
+      {/* Row 1: Title + badges */}
       <div className="flex items-start justify-between gap-3">
         <Link
           href={`/story/${storyline.storyline_id}`}
@@ -859,35 +859,41 @@ function StoryRow({
         </div>
       </div>
 
-      <div className={`text-muted mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-xs ${isOwnProfile ? "sm:grid-cols-5" : "sm:grid-cols-4"}`}>
-        <span>
-          {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-        </span>
-        <span>
-          {priceInfo
-            ? `${formatPrice(priceInfo.pricePerToken)} ${RESERVE_LABEL}${plotUsd != null ? ` (≈ ${formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)})` : ""}`
-            : "—"}
-        </span>
-        <span>
-          {holderCount !== undefined ? `${holderCount} holder${holderCount !== 1 ? "s" : ""}` : "—"}
-        </span>
-        <span>
-          {formatViewCount(storyline.view_count)} views
-        </span>
-        {isOwnProfile && storyline.token_address && (
-          <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+      {/* Row 2: Key stats — inline */}
+      <div className="text-muted mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
+        <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
+        <span className="text-border">&middot;</span>
+        <span>{holderCount !== undefined ? `${holderCount} holder${holderCount !== 1 ? "s" : ""}` : "—"}</span>
+        <span className="text-border">&middot;</span>
+        <span>{formatViewCount(storyline.view_count)} views</span>
+        <span className="text-border">&middot;</span>
+        {priceInfo ? (
+          <span>
+            <span className="text-foreground font-medium">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</span>
+            {plotUsd != null && (
+              <span className="text-muted"> (≈ {formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)})</span>
+            )}
+          </span>
+        ) : (
+          <span>—</span>
+        )}
+        {storyline.block_timestamp && (
+          <>
+            <span className="text-border">&middot;</span>
+            <span>
+              {new Date(storyline.block_timestamp).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </>
         )}
       </div>
 
-      {storyline.block_timestamp && (
-        <div className="text-muted mt-1 text-[10px]">
-          Created{" "}
-          {new Date(storyline.block_timestamp).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </div>
+      {/* Deadline countdown — own profile only, active storylines */}
+      {isOwnProfile && !storyline.sunset && storyline.last_plot_time && (
+        <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
       )}
 
       {/* Genre prompt — own profile only, when genre not set */}
@@ -899,30 +905,35 @@ function StoryRow({
         />
       )}
 
-      {/* Deadline countdown — own profile only, active storylines */}
-      {isOwnProfile && !storyline.sunset && storyline.last_plot_time && (
-        <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-      )}
-
-      {/* Token price + TVL — visible to all */}
-      {storyline.token_address && (
-        <div className="mt-3 space-y-2">
-          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
-          {/* Claim royalties — own profile only */}
-          {isOwnProfile && (
-            <ClaimRoyalties
-              tokenAddress={storyline.token_address as Address}
-              plotCount={storyline.plot_count}
-              beneficiary={writerAddress}
-              plotUsd={plotUsd}
-            />
-          )}
+      {/* Claim royalties — own profile only */}
+      {isOwnProfile && storyline.token_address && (
+        <div className="mt-3">
+          <ClaimRoyalties
+            tokenAddress={storyline.token_address as Address}
+            plotCount={storyline.plot_count}
+            beneficiary={writerAddress}
+            plotUsd={plotUsd}
+          />
         </div>
       )}
 
-      {/* Donation history — own profile only */}
-      {isOwnProfile && storyline.token_address && (
-        <ProfileDonationHistory storylineId={storyline.storyline_id} />
+      {/* Expandable: TVL, donations, donation history */}
+      {storyline.token_address && (
+        <details className="mt-3 group">
+          <summary className="text-muted cursor-pointer text-[10px] hover:text-foreground transition-colors list-none">
+            <span className="group-open:hidden">&#x25B6; more details</span>
+            <span className="hidden group-open:inline">&#x25BC; details</span>
+          </summary>
+          <div className="mt-2 space-y-2">
+            <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
+            {isOwnProfile && (
+              <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+            )}
+            {isOwnProfile && (
+              <ProfileDonationHistory storylineId={storyline.storyline_id} />
+            )}
+          </div>
+        </details>
       )}
     </div>
   );
@@ -1152,13 +1163,20 @@ function StoryDonationCount({ storylineId, tokenAddress }: { storylineId: number
   });
 
   if (!data || data.count === 0) {
-    return <span>— donations</span>;
+    return <div className="text-muted text-xs">No donations</div>;
   }
 
   return (
-    <span>
-      {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL}{plotUsd != null && ` (≈ ${formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})`} <span className="text-muted">({data.count})</span>
-    </span>
+    <div className="text-xs">
+      <span className="text-muted text-[10px] uppercase tracking-wider">Donations</span>
+      <span className="text-foreground ml-2 font-medium">
+        {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL}
+      </span>
+      {plotUsd != null && (
+        <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})</span>
+      )}
+      <span className="text-muted"> ({data.count})</span>
+    </div>
   );
 }
 
