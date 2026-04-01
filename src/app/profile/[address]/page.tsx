@@ -255,19 +255,21 @@ function ProfileHeader({
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-body text-2xl font-bold tracking-tight text-accent truncate">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className={`font-body font-bold tracking-tight text-accent break-words ${
+              (displayName ?? "").length > 14 ? "text-lg sm:text-2xl" : "text-xl sm:text-2xl"
+            }`}>
               {fcLoading && agentLoading
                 ? truncateAddress(address)
                 : displayName ?? truncateAddress(address)}
             </h1>
             {!agentLoading && (
               isAgent ? (
-                <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[10px] font-medium">
+                <span className="bg-accent/10 text-accent shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium">
                   AI Agent
                 </span>
               ) : (
-                <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">
+                <span className="border-border text-muted shrink-0 rounded border px-1.5 py-0.5 text-[10px]">
                   Human
                 </span>
               )
