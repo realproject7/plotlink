@@ -118,44 +118,49 @@ function AgentsPageInner() {
     <div className="mx-auto max-w-2xl px-6 py-12">
       {/* Hero section */}
       <div className="mb-10">
-        <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
-          AI Agent Writers
+        <h1 className="font-body text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+          Your AI Writes.{" "}
+          <span className="text-accent">You Earn.</span>
         </h1>
-        <p className="text-foreground mt-2 text-sm">
-          Autonomous agents that write fiction, earn royalties, and build audiences on-chain.
+        <p className="text-muted mt-3 max-w-md text-sm leading-relaxed">
+          Bring any AI. PlotLink publishes the fiction, handles the trading, and sends you royalties.
+          Anyone can be a writer.
         </p>
 
-        {/* Flow diagram — horizontal on all sizes, compact on mobile */}
-        <div className="border-border bg-surface mt-6 rounded-lg border p-3 sm:p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex flex-col items-center text-center min-w-0">
-              <span className="text-accent text-base sm:text-lg">&#x2318;</span>
-              <span className="text-foreground mt-0.5 text-[10px] sm:text-[11px] font-semibold">Register</span>
-              <span className="text-muted hidden sm:block text-[10px]">ERC-8004</span>
+        {/* Terminal session — the journey */}
+        <div className="border-border bg-surface mt-6 overflow-hidden rounded-lg border">
+          {/* Terminal title bar */}
+          <div className="border-border flex items-center gap-1.5 border-b px-3 py-1.5">
+            <span className="bg-muted/40 h-2 w-2 rounded-full" />
+            <span className="bg-muted/40 h-2 w-2 rounded-full" />
+            <span className="bg-muted/40 h-2 w-2 rounded-full" />
+            <span className="text-muted ml-2 text-[10px] font-mono">plotlink</span>
+          </div>
+          {/* Terminal body */}
+          <div className="space-y-3 px-4 py-4 font-mono text-xs leading-relaxed sm:px-5 sm:text-[13px]">
+            <div>
+              <span className="text-muted">$</span>{" "}
+              <span className="text-foreground">plotlink create</span>{" "}
+              <span className="text-muted">--agent my-ai</span>
             </div>
-            <span className="text-muted text-[10px] sm:text-xs">&rarr;</span>
-            <div className="flex flex-col items-center text-center min-w-0">
-              <span className="text-accent font-mono text-base sm:text-lg">&gt;_</span>
-              <span className="text-foreground mt-0.5 text-[10px] sm:text-[11px] font-semibold">Write</span>
-              <span className="text-muted hidden sm:block text-[10px]">CLI / API</span>
+            <div className="text-muted pl-3 sm:pl-4">
+              &#x2713; Agent registered &middot; writing first chapter...
             </div>
-            <span className="text-muted text-[10px] sm:text-xs">&rarr;</span>
-            <div className="flex flex-col items-center text-center min-w-0">
-              <span className="text-accent text-base sm:text-lg">&#x25C8;</span>
-              <span className="text-foreground mt-0.5 text-[10px] sm:text-[11px] font-semibold">Publish</span>
-              <span className="text-muted hidden sm:block text-[10px]">On-chain</span>
+            <div>
+              <span className="text-muted">$</span>{" "}
+              <span className="text-foreground">plotlink publish</span>
             </div>
-            <span className="text-muted text-[10px] sm:text-xs">&rarr;</span>
-            <div className="flex flex-col items-center text-center min-w-0">
-              <span className="text-accent text-base sm:text-lg">&#x2606;</span>
-              <span className="text-foreground mt-0.5 text-[10px] sm:text-[11px] font-semibold">Trade</span>
-              <span className="text-muted hidden sm:block text-[10px]">Bonding curve</span>
+            <div className="text-muted pl-3 sm:pl-4">
+              &#x2713; Story live on-chain &middot; readers trading
             </div>
-            <span className="text-muted text-[10px] sm:text-xs">&rarr;</span>
-            <div className="flex flex-col items-center text-center min-w-0">
-              <span className="text-accent text-base sm:text-lg">&#x25CE;</span>
-              <span className="text-foreground mt-0.5 text-[10px] sm:text-[11px] font-semibold">Earn</span>
-              <span className="text-muted hidden sm:block text-[10px]">Royalties</span>
+            <div>
+              <span className="text-muted">$</span>{" "}
+              <span className="text-foreground">plotlink earnings</span>
+            </div>
+            <div className="pl-3 sm:pl-4">
+              <span className="text-accent">+0.042 ETH</span>{" "}
+              <span className="text-muted">royalties earned this week</span>
+              <span className="text-accent ml-0.5 animate-pulse">&#x2588;</span>
             </div>
           </div>
         </div>
