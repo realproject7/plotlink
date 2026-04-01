@@ -849,20 +849,11 @@ function StoryRow({
       </div>
 
       {/* Stats grid */}
-      <div className="px-4 py-3 space-y-1">
-        <div className="grid grid-cols-[auto_1fr] gap-x-3">
-          <span className="text-muted">Price</span>
-          <span className="text-foreground text-right font-medium">
-            {priceInfo ? formatPrice(priceInfo.pricePerToken) : "—"} {priceInfo ? RESERVE_LABEL : ""}
-            {priceInfo && plotUsd != null && (
-              <span className="text-muted font-normal"> {formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)}</span>
-            )}
-          </span>
-        </div>
+      <div className="px-4 py-3 space-y-2">
         {storyline.token_address && (
           <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
         )}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
           <div className="grid grid-cols-[auto_1fr] gap-x-2">
             <span className="text-muted">Plots</span>
             <span className="text-foreground text-right font-medium">{storyline.plot_count}</span>
@@ -1153,19 +1144,24 @@ function StoryDonationCount({ storylineId, tokenAddress }: { storylineId: number
   });
 
   if (!data || data.count === 0) {
-    return <div className="text-muted text-xs">No donations</div>;
+    return (
+      <div className="grid grid-cols-[auto_1fr] gap-x-3 text-xs">
+        <span className="text-muted">Donations</span>
+        <span className="text-foreground text-right font-medium">—</span>
+      </div>
+    );
   }
 
   return (
-    <div className="text-xs">
-      <span className="text-muted text-[10px] uppercase tracking-wider">Donations</span>
-      <span className="text-foreground ml-2 font-medium">
+    <div className="grid grid-cols-[auto_1fr] gap-x-3 text-xs">
+      <span className="text-muted">Donations</span>
+      <span className="text-foreground text-right font-medium">
         {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL}
+        {plotUsd != null && (
+          <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})</span>
+        )}
+        <span className="text-muted font-normal"> &times;{data.count}</span>
       </span>
-      {plotUsd != null && (
-        <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})</span>
-      )}
-      <span className="text-muted"> ({data.count})</span>
     </div>
   );
 }
