@@ -1395,29 +1395,34 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
             <Link
               href={`/story/${h.storyline.storyline_id}`}
               className="moleskine-notebook group relative block shrink-0 self-start"
-              style={{ width: "100px" }}
+              style={{ width: "120px" }}
             >
               <div
                 className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
                 style={{
                   aspectRatio: "2/3",
-                  borderRadius: "5px 10px 10px 5px",
+                  borderRadius: "5px 12px 12px 5px",
                   backgroundColor: "#F5EFE6",
                   boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
                 }}
               >
                 <div
-                  className="pointer-events-none absolute inset-y-[-1px] right-[14px] z-20 w-[4px] rounded-[2px]"
+                  className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
                   style={{ background: "rgba(139, 69, 19, 0.15)" }}
                 />
-                <div className="relative z-10 px-2 pt-2">
-                  <span className="rounded-sm bg-[var(--accent)]/10 px-1 py-0.5 text-[7px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+                <div className="relative z-10 px-2.5 pt-2.5">
+                  <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
                     {h.storyline.genre || "Uncategorized"}
                   </span>
                 </div>
-                <div className="relative z-10 flex flex-1 items-center justify-center px-2 text-center">
-                  <span className="font-heading text-[11px] font-bold leading-tight text-[var(--accent)]">
+                <div className="relative z-10 flex flex-1 items-center justify-center px-2.5 text-center">
+                  <span className="font-heading text-xs font-bold leading-tight text-[var(--accent)]">
                     {h.storyline.title}
+                  </span>
+                </div>
+                <div className="relative z-10 px-2.5 pb-2.5">
+                  <span className="text-[8px] text-[var(--text-muted)]">
+                    {h.storyline.plot_count} {h.storyline.plot_count === 1 ? "plot" : "plots"}
                   </span>
                 </div>
               </div>
