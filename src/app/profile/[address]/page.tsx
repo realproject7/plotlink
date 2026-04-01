@@ -1599,6 +1599,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
           const tokenCount = t.price_per_token > 0 ? t.reserve_amount / t.price_per_token : 0;
           return (
             <div key={`${t.tx_hash}-${t.log_index}`} className="px-4 py-2 space-y-0.5">
+              {/* Row 1: action + title */}
               <div className="flex items-baseline gap-2">
                 <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
                   {isBuy ? "Buy" : "Sell"}
@@ -1610,22 +1611,24 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
                   {title || `Story #${t.storyline_id}`}
                 </Link>
               </div>
-              <div className="grid grid-cols-[auto_1fr_auto] gap-x-2 text-[11px]">
+              {/* Row 2: tokens + amount */}
+              <div className="grid grid-cols-[auto_1fr] gap-x-2 text-[11px]">
                 <span className="text-muted">{tokenCount > 0 ? `${formatSupply(tokenCount)} tokens` : ""}</span>
                 <span className="text-foreground text-right font-medium">
                   {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
                   {plotUsd && <span className="text-muted font-normal"> ({formatUsdValue(t.reserve_amount * plotUsd)})</span>}
                 </span>
-                <span className="text-muted flex items-center gap-1">
-                  {t.block_timestamp && (
-                    <time dateTime={t.block_timestamp}>
-                      {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </time>
-                  )}
-                  {t.tx_hash && (
-                    <a href={`${EXPLORER_URL}/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="hover:text-accent">&#x2197;</a>
-                  )}
-                </span>
+              </div>
+              {/* Row 3: date + tx link */}
+              <div className="text-muted flex items-center gap-1 text-[10px]">
+                {t.block_timestamp && (
+                  <time dateTime={t.block_timestamp}>
+                    {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </time>
+                )}
+                {t.tx_hash && (
+                  <a href={`${EXPLORER_URL}/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="hover:text-accent ml-auto">&#x2197;</a>
+                )}
               </div>
             </div>
           );
