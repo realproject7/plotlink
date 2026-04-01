@@ -1457,7 +1457,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 <button
                   onClick={() => donFetchNext()}
                   disabled={donFetchingNext}
-                  className="text-accent hover:text-foreground mt-1 w-full text-center text-[10px] transition-colors disabled:opacity-50"
+                  className="text-accent hover:text-foreground mt-1 w-full text-center text-xs transition-colors disabled:opacity-50"
                 >
                   {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
                 </button>
@@ -1565,7 +1565,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
                 </span>
               </div>
               {/* Row 3: date + tx link */}
-              <div className="text-muted flex items-center gap-1 text-[10px]">
+              <div className="text-muted flex items-center gap-1 text-xs">
                 {t.block_timestamp && (
                   <time dateTime={t.block_timestamp}>
                     {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -1585,7 +1585,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
           <button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="text-accent hover:text-foreground w-full text-center text-[10px] transition-colors disabled:opacity-50"
+            className="text-accent hover:text-foreground w-full text-center text-xs transition-colors disabled:opacity-50"
           >
             {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
           </button>

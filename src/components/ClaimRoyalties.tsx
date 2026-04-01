@@ -174,24 +174,24 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
         </div>
       )}
       {!eligible && txState === "idle" && (
-        <p className="text-muted text-[10px]">
+        <p className="text-muted text-xs">
           Chain at least 2 plots to enable claims ({plotCount}/2)
         </p>
       )}
       {eligible && unclaimed === BigInt(0) && txState === "idle" && totalClaimed === BigInt(0) && (
-        <p className="text-muted text-[10px]">
+        <p className="text-muted text-xs">
           No royalties yet — accrue when readers trade your token
         </p>
       )}
       {txHash && txState === "done" && (
-        <p className="text-muted text-[10px]">
+        <p className="text-muted text-xs">
           Claimed {formatTruncated(claimedAmount, decimals)} {RESERVE_LABEL} —{" "}
           <a href={`${EXPLORER_URL}/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
             {txHash.slice(0, 10)}...{txHash.slice(-8)}
           </a>
         </p>
       )}
-      {error && <p className="text-[10px] text-error">{error}</p>}
+      {error && <p className="text-xs text-error">{error}</p>}
     </div>
   );
 }
