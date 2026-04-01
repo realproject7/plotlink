@@ -477,6 +477,9 @@ function ProfileHeader({
           {claimedRoyalties != null && claimedRoyalties > BigInt(0) && (
             <div className="text-muted mt-1.5 text-[11px]">
               Royalties: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+              {plotUsdPrice != null && (
+                <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsdPrice)})</span>
+              )}
             </div>
           )}
         </div>
@@ -704,14 +707,14 @@ function StoriesTab({
           <StatCell
             label="Donations"
             value={totalDonations > BigInt(0)
-              ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}`
+              ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}${plotUsd != null ? ` (≈ ${formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})` : ""}`
               : "—"}
           />
           {isOwnProfile && royaltyInfo && (
             <StatCell
               label="Claimable"
               value={royaltyInfo.unclaimed > BigInt(0)
-                ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}`
+                ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}${plotUsd != null ? ` (≈ ${formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})` : ""}`
                 : "—"}
             />
           )}
@@ -862,7 +865,7 @@ function StoryRow({
         </span>
         <span>
           {priceInfo
-            ? `${formatPrice(priceInfo.pricePerToken)} ${RESERVE_LABEL}`
+            ? `${formatPrice(priceInfo.pricePerToken)} ${RESERVE_LABEL}${plotUsd != null ? ` (≈ ${formatUsdValue(Number(priceInfo.pricePerToken) * plotUsd)})` : ""}`
             : "—"}
         </span>
         <span>
@@ -1031,6 +1034,7 @@ function GenrePrompt({
 const DONATION_PAGE_SIZE = 10;
 
 function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
+  const { data: plotUsd } = usePlotUsdPrice();
   const {
     data,
     isFetchingNextPage,
@@ -1094,6 +1098,9 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
               <span className="text-accent font-medium">
                 {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
               </span>
+              {plotUsd != null && (
+                <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(BigInt(d.amount), 18)) * plotUsd)})</span>
+              )}
               {d.tx_hash && (
                 <a
                   href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
@@ -1127,6 +1134,7 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
 // ---------------------------------------------------------------------------
 
 function StoryDonationCount({ storylineId, tokenAddress }: { storylineId: number; tokenAddress: string }) {
+  const { data: plotUsd } = usePlotUsdPrice();
   const { data } = useQuery({
     queryKey: ["story-donation-count", storylineId, tokenAddress],
     queryFn: async () => {
@@ -1149,7 +1157,7 @@ function StoryDonationCount({ storylineId, tokenAddress }: { storylineId: number
 
   return (
     <span>
-      {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL} <span className="text-muted">({data.count})</span>
+      {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL}{plotUsd != null && ` (≈ ${formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})`} <span className="text-muted">({data.count})</span>
     </span>
   );
 }
@@ -1437,10 +1445,16 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   </span>
                   <span>
                     Price: <span className="text-foreground">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
+                    {plotUsd != null && (
+                      <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>
+                    )}
                   </span>
                   {h.entryPrice !== null && h.entryPrice > 0 && (
                     <span>
                       Entry: <span className="text-foreground">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
+                      {plotUsd != null && (
+                        <span className="text-muted"> (≈ {formatUsdValue(h.entryPrice * plotUsd)})</span>
+                      )}
                     </span>
                   )}
                   {h.lastTraded && (
@@ -1468,6 +1482,9 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
           <span className="text-accent text-sm font-medium">
             {formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}
           </span>
+          {plotUsd != null && (
+            <span className="text-muted ml-1 text-xs">(≈ {formatUsdValue(Number(formatUnits(donationsReceived!.total, 18)) * plotUsd)})</span>
+          )}
           <span className="text-muted ml-2 text-xs">
             from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}
           </span>
@@ -1483,7 +1500,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
               <span className="text-foreground ml-2 normal-case">
                 {donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}
                 {totalDonated > BigInt(0) && (
-                  <> &middot; {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL} total loaded</>
+                  <> &middot; {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}{plotUsd != null && ` (≈ ${formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})`} total loaded</>
                 )}
               </span>
             )}
@@ -1511,6 +1528,9 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   <span className="text-accent font-medium">
                     {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
                   </span>
+                  {plotUsd != null && (
+                    <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(BigInt(d.amount), 18)) * plotUsd)})</span>
+                  )}
                   {d.tx_hash && (
                     <a
                       href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
@@ -1700,11 +1720,14 @@ interface FeedEntry {
   storyTitle?: string;
   txHash?: string;
   detail?: string;
+  /** Numeric PLOT amount for USD conversion */
+  reserveAmount?: number;
 }
 
 const FEED_PAGE_SIZE = 30;
 
 function ActivityTab({ address }: { address: string }) {
+  const { data: plotUsd } = usePlotUsdPrice();
   const [visibleCount, setVisibleCount] = useState(FEED_PAGE_SIZE);
 
   const { data: feed = [], isLoading } = useQuery({
@@ -1798,6 +1821,7 @@ function ActivityTab({ address }: { address: string }) {
           detail: tokenAmount
             ? `${tokenAmount} tokens for ${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`
             : `${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`,
+          reserveAmount: t.reserve_amount,
           txHash: t.tx_hash,
         });
       }
@@ -1810,6 +1834,7 @@ function ActivityTab({ address }: { address: string }) {
           timestamp: d.block_timestamp,
           storylineId: d.storyline_id,
           detail: `${formatPrice(formatUnits(BigInt(d.amount), 18))} ${RESERVE_LABEL}`,
+          reserveAmount: Number(formatUnits(BigInt(d.amount), 18)),
           txHash: d.tx_hash,
         });
       }
@@ -1853,7 +1878,7 @@ function ActivityTab({ address }: { address: string }) {
     <div className="mt-6">
       <div className="space-y-1.5">
         {visible.map((entry, i) => (
-          <FeedRow key={`${entry.type}-${entry.timestamp}-${i}`} entry={entry} />
+          <FeedRow key={`${entry.type}-${entry.timestamp}-${i}`} entry={entry} plotUsd={plotUsd} />
         ))}
       </div>
       {hasMore && (
@@ -1888,7 +1913,7 @@ const EVENT_COLORS: Record<FeedEntry["type"], string> = {
   claimed_royalties: "text-green-700",
 };
 
-function FeedRow({ entry }: { entry: FeedEntry }) {
+function FeedRow({ entry, plotUsd }: { entry: FeedEntry; plotUsd?: number | null }) {
   return (
     <div className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
       {/* Row 1 (mobile) / Left (desktop): event type + story title */}
@@ -1910,7 +1935,10 @@ function FeedRow({ entry }: { entry: FeedEntry }) {
       {/* Row 2 (mobile) / Right (desktop): detail + date + tx link */}
       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-18 sm:shrink-0 sm:pl-0">
         {entry.detail && (
-          <span className="text-muted">{entry.detail}</span>
+          <span className="text-muted">
+            {entry.detail}
+            {entry.reserveAmount != null && plotUsd != null && ` (≈ ${formatUsdValue(entry.reserveAmount * plotUsd)})`}
+          </span>
         )}
         <time dateTime={entry.timestamp} className="text-muted whitespace-nowrap text-[10px]">
           {new Date(entry.timestamp).toLocaleDateString("en-US", {
