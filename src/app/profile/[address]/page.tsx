@@ -170,7 +170,7 @@ export default function ProfilePage() {
                 : "text-muted hover:text-foreground"
             }`}
           >
-            {t === "stories" ? "Writer" : t === "portfolio" ? "Portfolio" : "Activity"}
+            {t === "stories" ? "Writer" : t === "portfolio" ? "Reader" : "Activity"}
           </button>
         ))}
       </div>
@@ -1356,10 +1356,11 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
 
   return (
     <div className="mt-6 space-y-4">
-      {/* Portfolio summary — structured grid */}
+      {/* Portfolio summary */}
       {hasHoldings && (
+        <>
+        <p className="text-muted text-[10px] uppercase tracking-wider">Portfolio</p>
         <div className="border-border rounded border px-4 py-3 text-xs">
-          <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Portfolio</p>
           <div className="space-y-1">
             <div>
               <span className="text-muted">Value:</span>{" "}
@@ -1380,54 +1381,84 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
             )}
           </div>
         </div>
+        </>
       )}
 
-      {/* Token holdings — structured cards */}
-      {hasHoldings && holdings!.map((h) => (
+      {/* Token holdings */}
+      {hasHoldings && (
+        <>
+        <p className="text-muted text-[10px] uppercase tracking-wider">Token Holdings</p>
+        {holdings!.map((h) => (
         <div key={h.storyline.id} className="border-border rounded border text-xs">
-          {/* Title + genre */}
-          <div className="px-4 py-3 flex items-baseline gap-2">
+          {/* Moleskine book (left) + Info (right) */}
+          <div className="flex flex-col sm:flex-row gap-4 px-4 py-3">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
-              className="font-body text-base font-bold text-accent hover:opacity-80 transition-opacity"
+              className="moleskine-notebook group relative block shrink-0 self-start"
+              style={{ width: "120px" }}
             >
-              {h.storyline.title}
+              <div
+                className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
+                style={{
+                  aspectRatio: "2/3",
+                  borderRadius: "5px 12px 12px 5px",
+                  backgroundColor: "#F5EFE6",
+                  boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
+                }}
+              >
+                <div
+                  className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
+                  style={{ background: "rgba(139, 69, 19, 0.15)" }}
+                />
+                <div className="relative z-10 px-2.5 pt-2.5">
+                  <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+                    {h.storyline.genre || "Uncategorized"}
+                  </span>
+                </div>
+                <div className="relative z-10 flex flex-1 items-center justify-center px-2.5 text-center">
+                  <span className="font-heading text-xs font-bold leading-tight text-[var(--accent)]">
+                    {h.storyline.title}
+                  </span>
+                </div>
+                <div className="relative z-10 px-2.5 pb-2.5">
+                  <span className="text-[8px] text-[var(--text-muted)]">
+                    {h.storyline.plot_count} {h.storyline.plot_count === 1 ? "plot" : "plots"}
+                  </span>
+                </div>
+              </div>
             </Link>
-            {h.storyline.genre && (
-              <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[10px] font-medium shrink-0">{h.storyline.genre}</span>
-            )}
-          </div>
-          {/* Stats */}
-          <div className="border-t border-border px-4 py-3 space-y-1">
-            <div>
-              <span className="text-muted">Value:</span>{" "}
-              <span className="text-foreground font-medium">{formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}</span>
-              {plotUsd && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})</span>}
-              {h.priceChange !== null && (
-                <span className={`ml-2 font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                  {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
-                </span>
+            <div className="min-w-0 flex-1 space-y-1">
+              <div>
+                <span className="text-foreground font-medium">{formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}</span>
+                {plotUsd && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})</span>}
+                {h.priceChange !== null && (
+                  <span className={`ml-2 font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                    {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
+                  </span>
+                )}
+              </div>
+              <div><span className="text-muted">Balance:</span> <span className="text-foreground font-medium">{formatPrice(formatUnits(h.balance, 18))} tokens</span></div>
+              <div>
+                <span className="text-muted">Price:</span>{" "}
+                <span className="text-foreground font-medium">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
+                {plotUsd != null && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
+              </div>
+              {h.entryPrice !== null && h.entryPrice > 0 && (
+                <div>
+                  <span className="text-muted">Entry:</span>{" "}
+                  <span className="text-foreground font-medium">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
+                  {plotUsd != null && <span className="text-muted"> ({formatUsdValue(h.entryPrice * plotUsd)})</span>}
+                </div>
+              )}
+              {h.lastTraded && (
+                <div><span className="text-muted">Traded:</span> <span className="text-foreground font-medium">{new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
               )}
             </div>
-            <div><span className="text-muted">Balance:</span> <span className="text-foreground font-medium">{formatPrice(formatUnits(h.balance, 18))} tokens</span></div>
-            <div>
-              <span className="text-muted">Price:</span>{" "}
-              <span className="text-foreground font-medium">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
-              {plotUsd != null && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
-            </div>
-            {h.entryPrice !== null && h.entryPrice > 0 && (
-              <div>
-                <span className="text-muted">Entry:</span>{" "}
-                <span className="text-foreground font-medium">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
-                {plotUsd != null && <span className="text-muted"> ({formatUsdValue(h.entryPrice * plotUsd)})</span>}
-              </div>
-            )}
-            {h.lastTraded && (
-              <div><span className="text-muted">Traded:</span> <span className="text-foreground font-medium">{new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
-            )}
           </div>
         </div>
       ))}
+        </>
+      )}
 
       {/* Donations — structured card */}
       {(hasDonationsReceived || (isOwnProfile && hasDonationsGiven)) && (
