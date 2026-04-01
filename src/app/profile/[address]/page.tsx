@@ -67,6 +67,20 @@ export default function ProfilePage() {
     },
   });
 
+  // PLOT token balance (on-chain)
+  const { data: plotBalance } = useQuery({
+    queryKey: ["profile-plot-balance", address],
+    queryFn: async () => {
+      return browserClient.readContract({
+        address: PLOT_TOKEN,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [address as Address],
+      });
+    },
+  });
+  const { data: plotUsdPrice } = usePlotUsdPrice();
+
   // Refresh profile handler (5-min cooldown enforced server-side)
   const [refreshing, setRefreshing] = useState(false);
   const [refreshError, setRefreshError] = useState<string | null>(null);
@@ -133,6 +147,8 @@ export default function ProfilePage() {
         agentLoading={agentLoading}
         isAgent={isAgent}
         claimedRoyalties={claimedRoyalties ?? null}
+        plotBalance={plotBalance ?? null}
+        plotUsdPrice={plotUsdPrice ?? null}
         dbUser={dbUser ?? null}
         isOwnProfile={isOwnProfile}
         onRefresh={handleRefresh}
@@ -187,6 +203,8 @@ function ProfileHeader({
   agentLoading,
   isAgent,
   claimedRoyalties,
+  plotBalance,
+  plotUsdPrice,
   dbUser,
   isOwnProfile,
   onRefresh,
@@ -202,6 +220,8 @@ function ProfileHeader({
   agentLoading: boolean;
   isAgent: boolean;
   claimedRoyalties: bigint | null;
+  plotBalance: bigint | null;
+  plotUsdPrice: number | null;
   dbUser: User | null;
   isOwnProfile: boolean;
   onRefresh: () => void;
@@ -446,6 +466,14 @@ function ProfileHeader({
             </a>
             <CopyButton text={address} />
           </div>
+          {plotBalance != null && (
+            <div className="text-muted mt-1.5 text-[11px]">
+              Balance: <span className="text-foreground font-medium">{Number(formatUnits(plotBalance, 18)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} PLOT</span>
+              {plotUsdPrice != null && (
+                <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(plotBalance, 18)) * plotUsdPrice)})</span>
+              )}
+            </div>
+          )}
           {claimedRoyalties != null && claimedRoyalties > BigInt(0) && (
             <div className="text-muted mt-1.5 text-[11px]">
               Royalties: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
