@@ -164,7 +164,7 @@ export default async function StoryPage({ params }: { params: Params }) {
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
         {/* Story content — genesis + table of contents */}
-        <main>
+        <main className="min-w-0">
           {genesis ? (
             <>
               <GenesisSection

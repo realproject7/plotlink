@@ -118,6 +118,10 @@ code, pre, .font-mono {
 /* Markdown rendering inside ruled paper — fiction-focused prose.
    All vertical spacing must be multiples of var(--line-height) (28px)
    to stay aligned with the ruled-paper grid lines. */
+.story-markdown {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 .story-markdown h1 {
   font-size: 1.5rem;
   line-height: calc(var(--line-height) * 2);
