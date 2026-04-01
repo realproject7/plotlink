@@ -677,51 +677,35 @@ function StoriesTab({
 
   return (
     <div className="mt-6 space-y-4">
-      {/* Writer Stats — structured grid */}
+      {/* Writer Stats — natural inline */}
       <div className="border-border rounded border px-4 py-3 text-xs">
         <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Writer Stats</p>
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Stories</span>
-            <span className="text-foreground text-right font-medium">{storylines.length}</span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Plots</span>
-            <span className="text-foreground text-right font-medium">{totalPlots}</span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Holders</span>
-            <span className="text-foreground text-right font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Views</span>
-            <span className="text-foreground text-right font-medium">
-              {storylines.reduce((sum, s) => sum + (s.view_count ?? 0), 0)}
-            </span>
-          </div>
+          <span><span className="text-muted">Stories:</span> <span className="text-foreground font-medium">{storylines.length}</span></span>
+          <span><span className="text-muted">Plots:</span> <span className="text-foreground font-medium">{totalPlots}</span></span>
+          <span><span className="text-muted">Holders:</span> <span className="text-foreground font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span></span>
+          <span><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{storylines.reduce((sum, s) => sum + (s.view_count ?? 0), 0)}</span></span>
         </div>
-        <div className="mt-1 grid grid-cols-[auto_1fr] gap-x-2 gap-y-1">
-          <span className="text-muted">Donated</span>
-          <span className="text-foreground text-right font-medium">
-            {totalDonations > BigInt(0)
-              ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}`
-              : "—"}
+        <div className="mt-1 space-y-1">
+          <div>
+            <span className="text-muted">Donated:</span>{" "}
+            <span className="text-foreground font-medium">
+              {totalDonations > BigInt(0) ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}` : "—"}
+            </span>
             {totalDonations > BigInt(0) && plotUsd != null && (
-              <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
+              <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
             )}
-          </span>
+          </div>
           {isOwnProfile && royaltyInfo && (
-            <>
-              <span className="text-muted">Claimable</span>
-              <span className="text-accent text-right font-medium">
-                {royaltyInfo.unclaimed > BigInt(0)
-                  ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}`
-                  : "—"}
-                {royaltyInfo.unclaimed > BigInt(0) && plotUsd != null && (
-                  <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
-                )}
+            <div>
+              <span className="text-muted">Claimable:</span>{" "}
+              <span className="text-accent font-medium">
+                {royaltyInfo.unclaimed > BigInt(0) ? `${formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} ${RESERVE_LABEL}` : "—"}
               </span>
-            </>
+              {royaltyInfo.unclaimed > BigInt(0) && plotUsd != null && (
+                <span className="text-muted"> ({formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -830,62 +814,44 @@ function StoryRow({
 
   return (
     <div className="border-border rounded border divide-y divide-border text-xs">
-      {/* Title section */}
+      {/* Title + badges */}
       <div className="px-4 py-3">
         <Link
           href={`/story/${storyline.storyline_id}`}
-          className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+          className="font-body text-base font-bold text-accent hover:opacity-80 transition-opacity"
         >
           {storyline.title}
         </Link>
-        <div className="mt-0.5 flex items-center gap-2 text-[11px]">
-          {storyline.genre && <span className="text-muted">{storyline.genre}</span>}
+        <div className="mt-1 flex items-center gap-1.5">
+          {storyline.genre && (
+            <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[10px] font-medium">{storyline.genre}</span>
+          )}
           {storyline.sunset ? (
-            <span className="text-muted">complete</span>
+            <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
           ) : (
-            <span className="text-green-700">active</span>
+            <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
           )}
         </div>
       </div>
 
-      {/* Stats grid */}
+      {/* Stats */}
       <div className="px-4 py-3 space-y-2">
         {storyline.token_address && (
           <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
         )}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Plots</span>
-            <span className="text-foreground text-right font-medium">{storyline.plot_count}</span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Holders</span>
-            <span className="text-foreground text-right font-medium">{holderCount ?? "—"}</span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Views</span>
-            <span className="text-foreground text-right font-medium">{formatViewCount(storyline.view_count)}</span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr] gap-x-2">
-            <span className="text-muted">Created</span>
-            <span className="text-foreground text-right font-medium">
-              {storyline.block_timestamp
-                ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", year: "2-digit" })
-                : "—"}
-            </span>
-          </div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+          <span><span className="text-muted">Plots:</span> <span className="text-foreground font-medium">{storyline.plot_count}</span></span>
+          <span><span className="text-muted">Holders:</span> <span className="text-foreground font-medium">{holderCount ?? "—"}</span></span>
+          <span><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{formatViewCount(storyline.view_count)}</span></span>
+          <span><span className="text-muted">Created:</span> <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", year: "2-digit" }) : "—"}</span></span>
         </div>
         {storyline.token_address && (
           <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
         )}
-      </div>
-
-      {/* Deadline */}
-      {!storyline.sunset && storyline.last_plot_time && (
-        <div className="px-4 py-2">
+        {!storyline.sunset && storyline.last_plot_time && (
           <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Genre prompt — own profile */}
       {isOwnProfile && !storyline.genre && (
@@ -1068,7 +1034,7 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
         {donations.map((d) => (
           <div
             key={d.id}
-            className="text-muted flex items-center justify-between text-[10px]"
+            className="text-muted flex items-center justify-between text-xs"
           >
             <div className="flex gap-2">
               <a
@@ -1112,7 +1078,7 @@ function ProfileDonationHistory({ storylineId }: { storylineId: number }) {
         <button
           onClick={() => fetchNextPage()}
           disabled={isFetchingNextPage}
-          className="text-accent hover:text-foreground mt-2 w-full text-center text-[10px] transition-colors disabled:opacity-50"
+          className="text-accent hover:text-foreground mt-2 w-full text-center text-xs transition-colors disabled:opacity-50"
         >
           {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - donations.length} remaining)`}
         </button>
@@ -1145,23 +1111,20 @@ function StoryDonationCount({ storylineId, tokenAddress }: { storylineId: number
 
   if (!data || data.count === 0) {
     return (
-      <div className="grid grid-cols-[auto_1fr] gap-x-3 text-xs">
-        <span className="text-muted">Donations</span>
-        <span className="text-foreground text-right font-medium">—</span>
+      <div className="text-xs">
+        <span className="text-muted">Donations:</span> <span className="text-foreground font-medium">—</span>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-[auto_1fr] gap-x-3 text-xs">
-      <span className="text-muted">Donations</span>
-      <span className="text-foreground text-right font-medium">
-        {formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL}
-        {plotUsd != null && (
-          <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})</span>
-        )}
-        <span className="text-muted font-normal"> &times;{data.count}</span>
-      </span>
+    <div className="text-xs">
+      <span className="text-muted">Donations:</span>{" "}
+      <span className="text-foreground font-medium">{formatPrice(formatUnits(data.total, 18))} {RESERVE_LABEL}</span>
+      {plotUsd != null && (
+        <span className="text-muted"> ({formatUsdValue(Number(formatUnits(data.total, 18)) * plotUsd)})</span>
+      )}
+      <span className="text-muted"> &times;{data.count}</span>
     </div>
   );
 }
@@ -1374,24 +1337,23 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
       {hasHoldings && (
         <div className="border-border rounded border px-4 py-3 text-xs">
           <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Portfolio</p>
-          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-            <span className="text-muted">Value</span>
-            <span className="text-foreground text-right font-medium">
-              {formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}
-              {plotUsd && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)})</span>}
-            </span>
-            <span className="text-muted">Tokens</span>
-            <span className="text-foreground text-right font-medium">{holdings!.length}</span>
+          <div className="space-y-1">
+            <div>
+              <span className="text-muted">Value:</span>{" "}
+              <span className="text-foreground font-medium">{formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}</span>
+              {plotUsd && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)})</span>}
+            </div>
+            <div><span className="text-muted">Tokens:</span> <span className="text-foreground font-medium">{holdings!.length}</span></div>
             {bestPick && bestPick.priceChange !== null && (
-              <>
-                <span className="text-muted">Best 24h</span>
-                <span className="text-foreground text-right font-medium">
+              <div>
+                <span className="text-muted">Best 24h:</span>{" "}
+                <span className="text-foreground font-medium">
                   {bestPick.storyline.title.slice(0, 20)}{bestPick.storyline.title.length > 20 ? "..." : ""}
-                  <span className={`ml-2 ${bestPick.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                    {bestPick.priceChange >= 0 ? "+" : ""}{bestPick.priceChange.toFixed(1)}%
-                  </span>
                 </span>
-              </>
+                <span className={`ml-1 font-medium ${bestPick.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                  {bestPick.priceChange >= 0 ? "+" : ""}{bestPick.priceChange.toFixed(1)}%
+                </span>
+              </div>
             )}
           </div>
         </div>
@@ -1404,52 +1366,41 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
           <div className="px-4 py-3 flex items-baseline gap-2">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
-              className="text-foreground hover:text-accent text-sm font-medium transition-colors"
+              className="font-body text-base font-bold text-accent hover:opacity-80 transition-opacity"
             >
               {h.storyline.title}
             </Link>
             {h.storyline.genre && (
-              <span className="text-muted text-[9px] shrink-0">{h.storyline.genre}</span>
+              <span className="bg-accent/10 text-accent rounded px-1.5 py-0.5 text-[10px] font-medium shrink-0">{h.storyline.genre}</span>
             )}
           </div>
-          {/* Stats grid */}
-          <div className="border-t border-border px-4 py-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-            <span className="text-muted">Value</span>
-            <span className="text-foreground text-right font-medium">
-              {formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}
-              {plotUsd && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})</span>}
-            </span>
-            {h.priceChange !== null && (
-              <>
-                <span className="text-muted">Change</span>
-                <span className={`text-right font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+          {/* Stats */}
+          <div className="border-t border-border px-4 py-3 space-y-1">
+            <div>
+              <span className="text-muted">Value:</span>{" "}
+              <span className="text-foreground font-medium">{formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}</span>
+              {plotUsd && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})</span>}
+              {h.priceChange !== null && (
+                <span className={`ml-2 font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
                   {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
                 </span>
-              </>
-            )}
-            <span className="text-muted">Balance</span>
-            <span className="text-foreground text-right font-medium">{formatPrice(formatUnits(h.balance, 18))} tokens</span>
-            <span className="text-muted">Price</span>
-            <span className="text-foreground text-right font-medium">
-              {formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}
-              {plotUsd != null && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
-            </span>
+              )}
+            </div>
+            <div><span className="text-muted">Balance:</span> <span className="text-foreground font-medium">{formatPrice(formatUnits(h.balance, 18))} tokens</span></div>
+            <div>
+              <span className="text-muted">Price:</span>{" "}
+              <span className="text-foreground font-medium">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
+              {plotUsd != null && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
+            </div>
             {h.entryPrice !== null && h.entryPrice > 0 && (
-              <>
-                <span className="text-muted">Entry</span>
-                <span className="text-foreground text-right font-medium">
-                  {formatPrice(h.entryPrice)} {RESERVE_LABEL}
-                  {plotUsd != null && <span className="text-muted font-normal"> ({formatUsdValue(h.entryPrice * plotUsd)})</span>}
-                </span>
-              </>
+              <div>
+                <span className="text-muted">Entry:</span>{" "}
+                <span className="text-foreground font-medium">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
+                {plotUsd != null && <span className="text-muted"> ({formatUsdValue(h.entryPrice * plotUsd)})</span>}
+              </div>
             )}
             {h.lastTraded && (
-              <>
-                <span className="text-muted">Traded</span>
-                <span className="text-foreground text-right font-medium">
-                  {new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                </span>
-              </>
+              <div><span className="text-muted">Traded:</span> <span className="text-foreground font-medium">{new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
             )}
           </div>
         </div>
@@ -1459,34 +1410,28 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
       {(hasDonationsReceived || (isOwnProfile && hasDonationsGiven)) && (
         <div className="border-border rounded border px-4 py-3 text-xs">
           <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Donations</p>
-          <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+          <div className="space-y-1">
             {hasDonationsReceived && (
-              <>
-                <span className="text-muted">Received</span>
-                <span className="text-foreground text-right font-medium">
-                  {formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}
-                  {plotUsd != null && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(donationsReceived!.total, 18)) * plotUsd)})</span>}
-                </span>
-                <span />
-                <span className="text-muted text-right">from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}</span>
-              </>
+              <div>
+                <span className="text-muted">Received:</span>{" "}
+                <span className="text-foreground font-medium">{formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}</span>
+                {plotUsd != null && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(donationsReceived!.total, 18)) * plotUsd)})</span>}
+                <span className="text-muted"> from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}</span>
+              </div>
             )}
             {isOwnProfile && hasDonationsGiven && (
-              <>
-                <span className="text-muted">Given</span>
-                <span className="text-foreground text-right font-medium">
-                  {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}
-                  {plotUsd != null && totalDonated > BigInt(0) && <span className="text-muted font-normal"> ({formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>}
-                </span>
-                <span />
-                <span className="text-muted text-right">{donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
-              </>
+              <div>
+                <span className="text-muted">Given:</span>{" "}
+                <span className="text-foreground font-medium">{formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}</span>
+                {plotUsd != null && totalDonated > BigInt(0) && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>}
+                <span className="text-muted"> · {donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
+              </div>
             )}
           </div>
           {isOwnProfile && hasDonationsGiven && (
             <div className="mt-3 space-y-2">
               {donationsGiven.map((d) => (
-                <div key={d.id} className="grid grid-cols-[auto_1fr_auto] gap-x-2 items-baseline text-[11px]">
+                <div key={d.id} className="grid grid-cols-[auto_1fr_auto] gap-x-2 items-baseline text-xs">
                   <Link
                     href={`/story/${d.storyline_id}`}
                     className="text-foreground hover:text-accent transition-colors"
@@ -1512,7 +1457,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 <button
                   onClick={() => donFetchNext()}
                   disabled={donFetchingNext}
-                  className="text-accent hover:text-foreground mt-1 w-full text-center text-[10px] transition-colors disabled:opacity-50"
+                  className="text-accent hover:text-foreground mt-1 w-full text-center text-xs transition-colors disabled:opacity-50"
                 >
                   {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
                 </button>
@@ -1612,7 +1557,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
                 </Link>
               </div>
               {/* Row 2: tokens + amount */}
-              <div className="grid grid-cols-[auto_1fr] gap-x-2 text-[11px]">
+              <div className="grid grid-cols-[auto_1fr] gap-x-2 text-xs">
                 <span className="text-muted">{tokenCount > 0 ? `${formatSupply(tokenCount)} tokens` : ""}</span>
                 <span className="text-foreground text-right font-medium">
                   {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
@@ -1620,7 +1565,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
                 </span>
               </div>
               {/* Row 3: date + tx link */}
-              <div className="text-muted flex items-center gap-1 text-[10px]">
+              <div className="text-muted flex items-center gap-1 text-xs">
                 {t.block_timestamp && (
                   <time dateTime={t.block_timestamp}>
                     {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
@@ -1640,7 +1585,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
           <button
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className="text-accent hover:text-foreground w-full text-center text-[10px] transition-colors disabled:opacity-50"
+            className="text-accent hover:text-foreground w-full text-center text-xs transition-colors disabled:opacity-50"
           >
             {isFetchingNextPage ? "Loading..." : `Load more (${totalCount - trades.length} remaining)`}
           </button>
