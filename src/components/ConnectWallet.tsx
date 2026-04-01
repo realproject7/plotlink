@@ -53,7 +53,7 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
         <Link
           href={`/profile/${address}`}
           onClick={onNavigate}
-          className="border-border text-accent inline-flex items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
+          className="border-border text-accent inline-flex h-7 items-center gap-1.5 rounded border px-2 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
         >
           {profile?.pfpUrl && (
             // eslint-disable-next-line @next/next/no-img-element
@@ -77,7 +77,7 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
       <Link
         href={`/profile/${address}`}
         onClick={onNavigate}
-        className="border-border text-accent inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
+        className="border-border text-accent inline-flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
       >
         {profile?.pfpUrl && (
           // eslint-disable-next-line @next/next/no-img-element
@@ -116,8 +116,8 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
               type="button"
               className={
                 compact
-                  ? "border-border text-accent hover:bg-accent hover:text-background rounded border px-2 py-1 text-xs font-medium transition-colors"
-                  : "border-border text-accent hover:bg-accent hover:text-background rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+                  ? "border-border text-accent hover:bg-accent hover:text-background flex h-7 items-center rounded border px-2 py-1 text-xs font-medium transition-colors"
+                  : "border-border text-accent hover:bg-accent hover:text-background rounded border px-3 py-1 text-xs font-medium transition-colors"
               }
             >
               {compact ? "Connect" : "connect wallet"}
