@@ -1465,14 +1465,14 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 <span>{formatPrice(formatUnits(h.balance, 18))} tokens</span>
                 <span className="text-border">&middot;</span>
                 <span>
-                  price <span className="text-foreground">{formatPrice(formatUnits(h.price, 18))}</span>
+                  price <span className="text-foreground">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
                   {plotUsd != null && <span> (≈ {formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
                 </span>
                 {h.entryPrice !== null && h.entryPrice > 0 && (
                   <>
                     <span className="text-border">&middot;</span>
                     <span>
-                      entry <span className="text-foreground">{formatPrice(h.entryPrice)}</span>
+                      entry <span className="text-foreground">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
                       {plotUsd != null && <span> (≈ {formatUsdValue(h.entryPrice * plotUsd)})</span>}
                     </span>
                   </>
