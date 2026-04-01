@@ -1506,8 +1506,8 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
           )}
 
           {isOwnProfile && hasDonationsGiven && (
-            <details className="group">
-              <summary className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs cursor-pointer list-none">
+            <div>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
                 <span className="text-muted text-[10px] uppercase tracking-wider">Given</span>
                 <span className="text-foreground font-medium">
                   {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}
@@ -1516,44 +1516,38 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>
                 )}
                 <span className="text-muted">{donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
-                <span className="text-muted text-[10px] group-open:hidden">&#x25B6;</span>
-                <span className="text-muted text-[10px] hidden group-open:inline">&#x25BC;</span>
-              </summary>
+              </div>
               <div className="mt-2 space-y-1">
                 {donationsGiven.map((d) => (
-                  <div key={d.id} className="text-muted flex items-center justify-between text-[11px]">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/story/${d.storyline_id}`}
-                        className="text-foreground hover:text-accent transition-colors"
+                  <div key={d.id} className="text-muted flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11px] py-0.5">
+                    <Link
+                      href={`/story/${d.storyline_id}`}
+                      className="text-foreground hover:text-accent transition-colors"
+                    >
+                      Story #{d.storyline_id}
+                    </Link>
+                    <span className="text-accent font-medium">
+                      {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
+                    </span>
+                    {plotUsd != null && (
+                      <span>(≈ {formatUsdValue(Number(formatUnits(BigInt(d.amount), 18)) * plotUsd)})</span>
+                    )}
+                    {d.block_timestamp && (
+                      <time dateTime={d.block_timestamp} className="text-[10px]">
+                        {new Date(d.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      </time>
+                    )}
+                    {d.tx_hash && (
+                      <a
+                        href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-muted hover:text-accent transition-colors"
+                        title="View on Basescan"
                       >
-                        Story #{d.storyline_id}
-                      </Link>
-                      {d.block_timestamp && (
-                        <time dateTime={d.block_timestamp} className="text-[10px]">
-                          {new Date(d.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        </time>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-accent font-medium">
-                        {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
-                      </span>
-                      {plotUsd != null && (
-                        <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(BigInt(d.amount), 18)) * plotUsd)})</span>
-                      )}
-                      {d.tx_hash && (
-                        <a
-                          href={`${EXPLORER_URL}/tx/${d.tx_hash}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-muted hover:text-accent transition-colors"
-                          title="View on Basescan"
-                        >
-                          &#x2197;
-                        </a>
-                      )}
-                    </div>
+                        &#x2197;
+                      </a>
+                    )}
                   </div>
                 ))}
                 {donHasNext && (
@@ -1566,7 +1560,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   </button>
                 )}
               </div>
-            </details>
+            </div>
           )}
         </div>
       )}
@@ -1635,14 +1629,12 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
   if (trades.length === 0) return null;
 
   return (
-    <details className="border-border rounded border group" open>
-      <summary className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 text-xs cursor-pointer list-none">
+    <div className="border-border rounded border">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 text-xs">
         <span className="text-muted text-[10px] uppercase tracking-wider">Trades</span>
         <span className="text-foreground font-medium">{totalCount}</span>
         <span className="text-muted">{totalCount === 1 ? "trade" : "trades"}</span>
-        <span className="text-muted text-[10px] group-open:hidden">&#x25B6;</span>
-        <span className="text-muted text-[10px] hidden group-open:inline">&#x25BC;</span>
-      </summary>
+      </div>
 
       <div className="border-t border-border px-4 py-2 space-y-1.5">
         {trades.map((t) => {
@@ -1652,49 +1644,45 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
           return (
             <div
               key={`${t.tx_hash}-${t.log_index}`}
-              className="flex items-center justify-between gap-2 text-xs py-1"
+              className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs py-1"
             >
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
-                  {isBuy ? "Buy" : "Sell"}
+              <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${isBuy ? "bg-accent/10 text-accent" : "bg-error/10 text-error"}`}>
+                {isBuy ? "Buy" : "Sell"}
+              </span>
+              <Link
+                href={`/story/${t.storyline_id}`}
+                className="text-foreground hover:text-accent transition-colors"
+                title={title || `Story #${t.storyline_id}`}
+              >
+                {title || `Story #${t.storyline_id}`}
+              </Link>
+              <span className="text-foreground font-medium">
+                {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
+              </span>
+              {plotUsd && (
+                <span className="text-muted text-[10px]">
+                  (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
                 </span>
-                <Link
-                  href={`/story/${t.storyline_id}`}
-                  className="text-foreground hover:text-accent truncate transition-colors"
-                  title={title || `Story #${t.storyline_id}`}
+              )}
+              {tokenCount > 0 && (
+                <span className="text-muted text-[10px]">{formatSupply(tokenCount)} tokens</span>
+              )}
+              {t.block_timestamp && (
+                <time dateTime={t.block_timestamp} className="text-muted text-[10px]">
+                  {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                </time>
+              )}
+              {t.tx_hash && (
+                <a
+                  href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted hover:text-accent transition-colors"
+                  title="View on Basescan"
                 >
-                  {title || `Story #${t.storyline_id}`}
-                </Link>
-                {tokenCount > 0 && (
-                  <span className="text-muted text-[10px] shrink-0">{formatSupply(tokenCount)} tokens</span>
-                )}
-                {t.block_timestamp && (
-                  <time dateTime={t.block_timestamp} className="text-muted text-[10px] shrink-0">
-                    {new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                  </time>
-                )}
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5">
-                <span className="text-foreground font-medium">
-                  {formatPrice(t.reserve_amount)} {RESERVE_LABEL}
-                </span>
-                {plotUsd && (
-                  <span className="text-muted text-[10px]">
-                    (≈ {formatUsdValue(t.reserve_amount * plotUsd)})
-                  </span>
-                )}
-                {t.tx_hash && (
-                  <a
-                    href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-muted hover:text-accent transition-colors"
-                    title="View on Basescan"
-                  >
-                    &#x2197;
-                  </a>
-                )}
-              </div>
+                  &#x2197;
+                </a>
+              )}
             </div>
           );
         })}
@@ -1711,7 +1699,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
           </button>
         </div>
       )}
-    </details>
+    </div>
   );
 }
 
