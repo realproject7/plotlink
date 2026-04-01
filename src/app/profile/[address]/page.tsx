@@ -904,12 +904,6 @@ function StoryRow({
         </div>
       )}
 
-      {/* Donation history — own profile */}
-      {isOwnProfile && storyline.token_address && (
-        <div className="px-4 py-2">
-          <ProfileDonationHistory storylineId={storyline.storyline_id} />
-        </div>
-      )}
     </div>
   );
 }
