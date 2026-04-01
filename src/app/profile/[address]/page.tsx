@@ -706,22 +706,30 @@ function StoriesTab({
           <span className="text-muted">&middot;</span>
           <span className="text-foreground font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span>
           <span className="text-muted">holders</span>
-          {totalDonations > BigInt(0) && (
+          <span className="text-muted">&middot;</span>
+          {totalDonations > BigInt(0) ? (
             <>
-              <span className="text-muted">&middot;</span>
               <span className="text-foreground font-medium">{formatPrice(formatUnits(totalDonations, 18))} {RESERVE_LABEL}</span>
               {plotUsd != null && (
                 <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
               )}
-              <span className="text-muted">donated</span>
             </>
+          ) : (
+            <span className="text-foreground font-medium">—</span>
           )}
-          {isOwnProfile && royaltyInfo && royaltyInfo.unclaimed > BigInt(0) && (
+          <span className="text-muted">donated</span>
+          {isOwnProfile && royaltyInfo && (
             <>
               <span className="text-muted">&middot;</span>
-              <span className="text-accent font-medium">{formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} {RESERVE_LABEL}</span>
-              {plotUsd != null && (
-                <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
+              {royaltyInfo.unclaimed > BigInt(0) ? (
+                <>
+                  <span className="text-accent font-medium">{formatPrice(formatUnits(royaltyInfo.unclaimed, 18))} {RESERVE_LABEL}</span>
+                  {plotUsd != null && (
+                    <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(royaltyInfo.unclaimed, 18)) * plotUsd)})</span>
+                  )}
+                </>
+              ) : (
+                <span className="text-foreground font-medium">—</span>
               )}
               <span className="text-muted">claimable</span>
             </>
@@ -926,9 +934,7 @@ function StoryRow({
           </summary>
           <div className="mt-2 space-y-2">
             <WriterTradingStats storyline={storyline} plotUsd={plotUsd} />
-            {isOwnProfile && (
-              <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
-            )}
+            <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
             {isOwnProfile && (
               <ProfileDonationHistory storylineId={storyline.storyline_id} />
             )}
