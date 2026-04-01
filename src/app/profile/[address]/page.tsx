@@ -1506,8 +1506,8 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
           )}
 
           {isOwnProfile && hasDonationsGiven && (
-            <details className="group">
-              <summary className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs cursor-pointer list-none">
+            <div>
+              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-xs">
                 <span className="text-muted text-[10px] uppercase tracking-wider">Given</span>
                 <span className="text-foreground font-medium">
                   {formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}
@@ -1516,9 +1516,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   <span className="text-muted">(≈ {formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>
                 )}
                 <span className="text-muted">{donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
-                <span className="text-muted text-[10px] group-open:hidden">&#x25B6;</span>
-                <span className="text-muted text-[10px] hidden group-open:inline">&#x25BC;</span>
-              </summary>
+              </div>
               <div className="mt-2 space-y-1">
                 {donationsGiven.map((d) => (
                   <div key={d.id} className="text-muted flex items-center justify-between text-[11px]">
@@ -1566,7 +1564,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   </button>
                 )}
               </div>
-            </details>
+            </div>
           )}
         </div>
       )}
@@ -1635,14 +1633,12 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
   if (trades.length === 0) return null;
 
   return (
-    <details className="border-border rounded border group" open>
-      <summary className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 text-xs cursor-pointer list-none">
+    <div className="border-border rounded border">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-4 py-3 text-xs">
         <span className="text-muted text-[10px] uppercase tracking-wider">Trades</span>
         <span className="text-foreground font-medium">{totalCount}</span>
         <span className="text-muted">{totalCount === 1 ? "trade" : "trades"}</span>
-        <span className="text-muted text-[10px] group-open:hidden">&#x25B6;</span>
-        <span className="text-muted text-[10px] hidden group-open:inline">&#x25BC;</span>
-      </summary>
+      </div>
 
       <div className="border-t border-border px-4 py-2 space-y-1.5">
         {trades.map((t) => {
@@ -1711,7 +1707,7 @@ function PortfolioTradingHistory({ address, plotUsd }: { address: string; plotUs
           </button>
         </div>
       )}
-    </details>
+    </div>
   );
 }
 
