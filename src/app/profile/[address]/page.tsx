@@ -863,6 +863,13 @@ function StoryRow({
             <div><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{formatViewCount(storyline.view_count)}</span></div>
             <div><span className="text-muted">Created:</span> <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</span></div>
           </div>
+          {isOwnProfile && !storyline.genre && (
+            <GenrePrompt
+              storylineId={storyline.storyline_id}
+              language={storyline.language}
+              writerAddress={writerAddress}
+            />
+          )}
         </div>
       </div>
 
@@ -878,17 +885,6 @@ function StoryRow({
       {!storyline.sunset && storyline.last_plot_time && (
         <div className="px-4 py-2">
           <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-        </div>
-      )}
-
-      {/* Genre prompt — own profile */}
-      {isOwnProfile && !storyline.genre && (
-        <div className="px-4 py-2">
-          <GenrePrompt
-            storylineId={storyline.storyline_id}
-            language={storyline.language}
-            writerAddress={writerAddress}
-          />
         </div>
       )}
 
