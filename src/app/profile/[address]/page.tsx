@@ -911,7 +911,7 @@ function StoryRow({
         )}
 
         {/* Deadline countdown */}
-        {isOwnProfile && !storyline.sunset && storyline.last_plot_time && (
+        {!storyline.sunset && storyline.last_plot_time && (
           <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
         )}
 
