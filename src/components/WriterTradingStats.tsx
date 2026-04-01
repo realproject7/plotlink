@@ -43,32 +43,24 @@ export function WriterTradingStats({ storyline, plotUsd }: WriterTradingStatsPro
   });
 
   return (
-    <div className="text-muted grid grid-cols-2 gap-2 text-xs">
-      <div>
-        <span className="block text-[10px] uppercase tracking-wider">
-          Token Price
-        </span>
-        <span className="font-semibold text-accent">
+    <div className="space-y-1 text-xs">
+      <div className="grid grid-cols-[auto_1fr] gap-x-3">
+        <span className="text-muted">Price</span>
+        <span className="text-foreground text-right font-medium">
           {data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}
+          {data && plotUsd && (
+            <span className="text-muted font-normal"> ({formatUsdValue(parseFloat(data.price) * plotUsd)})</span>
+          )}
         </span>
-        {data && plotUsd && (
-          <span className="text-muted ml-1 text-[10px]">
-            (≈ {formatUsdValue(parseFloat(data.price) * plotUsd)})
-          </span>
-        )}
       </div>
-      <div>
-        <span className="block text-[10px] uppercase tracking-wider">
-          TVL
-        </span>
-        <span className="font-semibold text-accent">
+      <div className="grid grid-cols-[auto_1fr] gap-x-3">
+        <span className="text-muted">TVL</span>
+        <span className="text-foreground text-right font-medium">
           {data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}
+          {data && plotUsd && (
+            <span className="text-muted font-normal"> ({formatUsdValue(parseFloat(data.tvl) * plotUsd)})</span>
+          )}
         </span>
-        {data && plotUsd && (
-          <span className="text-muted ml-1 text-[10px]">
-            (≈ {formatUsdValue(parseFloat(data.tvl) * plotUsd)})
-          </span>
-        )}
       </div>
     </div>
   );
