@@ -104,9 +104,17 @@ export function NavBar() {
         </div>
       </div>
 
+      {/* Mobile backdrop — closes menu on outside tap */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 z-40 md:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* Mobile dropdown */}
       {mobileOpen && (
-        <div className="border-t border-[var(--border)] bg-[var(--bg)] px-4 pb-3 pt-2 md:hidden">
+        <div className="relative z-50 border-t border-[var(--border)] bg-[var(--bg)] px-4 pb-3 pt-2 md:hidden">
           <div className="flex flex-col gap-1">
             {navLinks.map(({ href, label }) => {
               const active = isActive(href, label);
