@@ -9,7 +9,20 @@ import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
  *
  * POST /api/cron/reconcile-plots
  */
-export async function POST() {
+/** Cron authorization — fail closed in production when CRON_SECRET is unset */
+function verifyCron(req: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
+    return process.env.NODE_ENV !== "production";
+  }
+  const authHeader = req.headers.get("authorization");
+  return authHeader === `Bearer ${secret}`;
+}
+
+export async function POST(req: Request) {
+  if (!verifyCron(req)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const supabase = createServerClient();
   if (!supabase) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
