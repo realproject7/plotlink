@@ -920,7 +920,6 @@ function StoryRow({
           {/* TVL + Donations (inline in info area) */}
           {storyline.token_address && (
             <>
-              <div className="border-t border-border w-12 my-1.5" />
               <div className="space-y-0.5">
                 <WriterTradingStats storyline={storyline} plotUsd={plotUsd} showPrice={false} />
                 <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
