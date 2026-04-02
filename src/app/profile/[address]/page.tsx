@@ -1443,17 +1443,17 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
   const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
   const totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
 
-  // Compute portfolio-level cost basis % change
+  // Compute portfolio-level cost basis % change (only if all holdings have entry prices)
   const portfolioCostPct = (() => {
     if (!holdings || holdings.length === 0 || plotUsd == null) return null;
+    if (holdings.some(h => h.entryPrice === null || h.entryPrice <= 0)) return null;
     let totalCurrentUsd = 0;
     let totalCostUsd = 0;
     for (const h of holdings) {
-      if (h.entryPrice === null || h.entryPrice <= 0) continue;
       const currentPrice = Number(formatUnits(h.price, 18));
       const balanceNum = Number(formatUnits(h.balance, 18));
       totalCurrentUsd += currentPrice * balanceNum * plotUsd;
-      totalCostUsd += h.entryPrice * balanceNum * plotUsd;
+      totalCostUsd += h.entryPrice! * balanceNum * plotUsd;
     }
     if (totalCostUsd === 0) return null;
     return ((totalCurrentUsd - totalCostUsd) / totalCostUsd) * 100;
