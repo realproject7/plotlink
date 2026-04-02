@@ -4,10 +4,8 @@ import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../lib/usd-price";
 import { useQuery } from "@tanstack/react-query";
 import { get24hPriceChange } from "../../lib/price";
-import { createPublicClient, http, type Address } from "viem";
-import { base } from "viem/chains";
-
-const browserClient = createPublicClient({ chain: base, transport: http() });
+import { browserClient } from "../../lib/rpc";
+import { type Address } from "viem";
 
 /**
  * Client component that displays Market Cap in USD with 24h % change.
