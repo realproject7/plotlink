@@ -260,20 +260,25 @@ function StoryHeader({
 }) {
   return (
     <header className="border-border border-b pb-6">
+      {/* Title */}
       <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
         {storyline.title}
       </h1>
-      <div className="text-muted mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        <span>
-          by{" "}
-          <Suspense fallback={<span className="text-foreground">{truncateAddress(storyline.writer_address)}</span>}>
-            <WriterIdentity address={storyline.writer_address} />
-          </Suspense>
-        </span>
-        <span>
-          {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-        </span>
+
+      {/* Writer */}
+      <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
+        <span>Writer</span>
+        <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
+          <WriterIdentity address={storyline.writer_address} />
+        </Suspense>
+        {storyline.writer_type === 1 && <AgentBadge />}
+      </div>
+
+      {/* Stats + Badges */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
+        <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
         <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+        <RatingSummary storylineId={storyline.storyline_id} />
         {storyline.genre && (
           <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
             {storyline.genre}
@@ -284,8 +289,6 @@ function StoryHeader({
             {storyline.language}
           </span>
         )}
-        {storyline.writer_type === 1 && <AgentBadge />}
-        <RatingSummary storylineId={storyline.storyline_id} />
       </div>
 
       {priceInfo && (
