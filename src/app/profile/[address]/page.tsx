@@ -679,14 +679,26 @@ function StoriesTab({
     <div className="mt-6 space-y-4">
       {/* Writer Stats — title outside box */}
       <p className="text-muted text-[10px] uppercase tracking-wider">Writer Stats</p>
-      <div className="border-border rounded border px-4 py-3 text-xs">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1">
-          <span><span className="text-muted">Stories:</span> <span className="text-foreground font-medium">{storylines.length}</span></span>
-          <span><span className="text-muted">Plots:</span> <span className="text-foreground font-medium">{totalPlots}</span></span>
-          <span><span className="text-muted">Holders:</span> <span className="text-foreground font-medium">{totalHolders !== undefined ? totalHolders : "—"}</span></span>
-          <span><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{storylines.reduce((sum, s) => sum + (s.view_count ?? 0), 0)}</span></span>
+      <div className="border-border rounded border px-4 py-3 text-xs space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{storylines.length}</div>
+            <div className="text-muted text-[9px]">Stories</div>
+          </div>
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{totalPlots}</div>
+            <div className="text-muted text-[9px]">Plots</div>
+          </div>
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{totalHolders !== undefined ? totalHolders : "—"}</div>
+            <div className="text-muted text-[9px]">Holders</div>
+          </div>
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{storylines.reduce((sum, s) => sum + (s.view_count ?? 0), 0)}</div>
+            <div className="text-muted text-[9px]">Views</div>
+          </div>
         </div>
-        <div className="mt-1">
+        <div className="border-border rounded border px-3 py-1.5">
           <span className="text-muted">Received:</span>{" "}
           <span className="text-foreground font-medium">
             {totalDonations > BigInt(0) ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}` : "—"}
@@ -804,11 +816,11 @@ function StoryRow({
     <>
     <div className="border-border rounded border divide-y divide-border text-xs">
       {/* Moleskine book (left) + Info (right) */}
-      <div className="flex flex-row gap-4 px-4 py-3">
+      <div className="flex flex-row items-center gap-4 px-4 py-3">
         {/* Moleskine book card */}
         <Link
           href={`/story/${storyline.storyline_id}`}
-          className="moleskine-notebook group relative block shrink-0 self-start w-[110px] sm:w-[150px]"
+          className="moleskine-notebook group relative block shrink-0 w-[130px] sm:w-[180px]"
         >
           <div
             className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
@@ -828,8 +840,8 @@ function StoryRow({
                 {storyline.genre || "Uncategorized"}
               </span>
             </div>
-            <div className="relative z-10 flex flex-1 items-center justify-center px-2.5 text-center">
-              <span className="font-heading text-xs font-bold leading-tight text-[var(--accent)]">
+            <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
+              <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
                 {storyline.title}
               </span>
             </div>
@@ -843,20 +855,29 @@ function StoryRow({
 
         {/* Info (right) */}
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="space-y-0.5">
-            <div>
-              <span className="text-muted">Plots:</span> <span className="text-foreground font-medium">{storyline.plot_count}</span>
-              <span className="text-muted ml-2">&middot;</span>
-              {storyline.sunset ? (
-                <span className="border-border text-muted ml-2 rounded border px-1.5 py-0.5 text-[10px]">complete</span>
-              ) : (
-                <span className="border border-green-700/30 text-green-700 ml-2 rounded px-1.5 py-0.5 text-[10px]">active</span>
-              )}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
+              <div className="text-muted text-[9px]">Plots</div>
             </div>
-            <div><span className="text-muted">Holders:</span> <span className="text-foreground font-medium">{holderCount ?? "—"}</span></div>
-            <div><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{formatViewCount(storyline.view_count)}</span></div>
-            <div><span className="text-muted">Created:</span> <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</span></div>
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{holderCount ?? "—"}</div>
+              <div className="text-muted text-[9px]">Holders</div>
+            </div>
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{formatViewCount(storyline.view_count)}</div>
+              <div className="text-muted text-[9px]">Views</div>
+            </div>
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</div>
+              <div className="text-muted text-[9px]">Created</div>
+            </div>
           </div>
+          {storyline.sunset ? (
+            <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
+          ) : (
+            <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
+          )}
           {/* TVL + Donations (inline in info area) */}
           {storyline.token_address && (
             <>
@@ -1386,10 +1407,10 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         {holdings!.map((h) => (
         <div key={h.storyline.id} className="border-border rounded border text-xs">
           {/* Moleskine book (left) + Info (right) */}
-          <div className="flex flex-row gap-4 px-4 py-3">
+          <div className="flex flex-row items-center gap-4 px-4 py-3">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
-              className="moleskine-notebook group relative block shrink-0 self-start w-[110px] sm:w-[150px]"
+              className="moleskine-notebook group relative block shrink-0 w-[130px] sm:w-[180px]"
             >
               <div
                 className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
@@ -1409,8 +1430,8 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                     {h.storyline.genre || "Uncategorized"}
                   </span>
                 </div>
-                <div className="relative z-10 flex flex-1 items-center justify-center px-2.5 text-center">
-                  <span className="font-heading text-xs font-bold leading-tight text-[var(--accent)]">
+                <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
+                  <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
                     {h.storyline.title}
                   </span>
                 </div>
