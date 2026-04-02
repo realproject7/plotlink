@@ -1486,7 +1486,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         {holdings!.map((h) => (
         <div key={h.storyline.id} className="border-border rounded border text-xs">
           {/* Moleskine book (left) + Info (right) */}
-          <div className="flex flex-row items-center gap-4 px-4 py-3">
+          <div className="flex flex-col sm:flex-row items-center gap-4 px-4 py-3">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
               className="moleskine-notebook group relative block shrink-0 w-[130px] sm:w-[180px]"
