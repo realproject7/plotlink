@@ -567,6 +567,32 @@ function StoriesTab({
     enabled: storylineIds.length > 0,
   });
 
+  // Batch-fetch average ratings for all storylines
+  const { data: ratingsMap = new Map<number, { average: number; count: number }>() } = useQuery({
+    queryKey: ["profile-ratings-batch", storylineIds],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return new Map<number, { average: number; count: number }>();
+      const { data } = await supabase
+        .from("ratings")
+        .select("storyline_id, rating")
+        .in("storyline_id", storylineIds);
+      const map = new Map<number, { average: number; count: number }>();
+      if (!data) return map;
+      const grouped = new Map<number, number[]>();
+      for (const r of data as { storyline_id: number; rating: number }[]) {
+        const arr = grouped.get(r.storyline_id) ?? [];
+        arr.push(r.rating);
+        grouped.set(r.storyline_id, arr);
+      }
+      for (const [sid, ratings] of grouped) {
+        const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+        map.set(sid, { average: avg, count: ratings.length });
+      }
+      return map;
+    },
+    enabled: storylineIds.length > 0,
+  });
+
   // Total token holders across all writer's storylines (on-chain balanceOf)
   const { data: totalHolders } = useQuery({
     queryKey: ["profile-total-holders", address, storylineIds],
@@ -748,6 +774,7 @@ function StoriesTab({
             isOwnProfile={isOwnProfile}
             writerAddress={connectedAddress as Address}
             plotUsd={plotUsd}
+            ratingData={ratingsMap.get(s.storyline_id)}
           />
         ))}
       </div>
@@ -760,11 +787,13 @@ function StoryRow({
   isOwnProfile,
   writerAddress,
   plotUsd,
+  ratingData,
 }: {
   storyline: Storyline;
   isOwnProfile: boolean;
   writerAddress: Address;
   plotUsd?: number | null;
+  ratingData?: { average: number; count: number };
 }) {
   const tokenAddr = storyline.token_address as Address;
 
@@ -810,17 +839,6 @@ function StoryRow({
     },
     staleTime: 60000,
     enabled: !!storyline.token_address,
-  });
-
-  // Average rating for this storyline
-  const { data: ratingData } = useQuery<{ average: number; count: number }>({
-    queryKey: ["ratings", storyline.storyline_id],
-    queryFn: async () => {
-      const res = await fetch(`/api/ratings?storylineId=${storyline.storyline_id}`);
-      if (!res.ok) throw new Error("Failed to fetch ratings");
-      return res.json();
-    },
-    staleTime: 60000,
   });
 
   return (
