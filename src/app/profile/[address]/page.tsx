@@ -183,6 +183,7 @@ export default function ProfilePage() {
           agentMeta={agentMeta ?? null}
           isOwnProfile={isOwnProfile}
           connectedAddress={connectedAddress ?? null}
+          claimedRoyalties={claimedRoyalties}
         />
       )}
       {tab === "portfolio" && <PortfolioTab address={address} isOwnProfile={isOwnProfile} />}
@@ -526,12 +527,14 @@ function StoriesTab({
   agentMeta,
   isOwnProfile,
   connectedAddress,
+  claimedRoyalties,
 }: {
   address: string;
   isAgent: boolean;
   agentMeta: AgentMetadata | null;
   isOwnProfile: boolean;
   connectedAddress: string | null;
+  claimedRoyalties?: bigint;
 }) {
   const { data: plotUsd } = usePlotUsdPrice();
   const { data: storylines = [], isLoading, error } = useQuery({
@@ -726,7 +729,7 @@ function StoriesTab({
           </div>
         </div>
         <div className="border-border rounded border px-3 py-1.5">
-          <span className="text-muted">Received:</span>{" "}
+          <span className="text-muted">Donations Received:</span>{" "}
           <span className="text-foreground font-medium">
             {totalDonations > BigInt(0) ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}` : "—"}
           </span>
@@ -734,6 +737,17 @@ function StoriesTab({
             <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
           )}
         </div>
+        {claimedRoyalties !== undefined && claimedRoyalties > BigInt(0) && (
+          <div className="border-border rounded border px-3 py-1.5">
+            <span className="text-muted">Royalties Claimed:</span>{" "}
+            <span className="text-foreground font-medium">
+              {formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}
+            </span>
+            {plotUsd != null && (
+              <span className="text-muted"> ({formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsd)})</span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Agent extras */}
