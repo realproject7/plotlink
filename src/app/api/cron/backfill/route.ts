@@ -360,7 +360,7 @@ async function processPlotChained(
 
   const { error: plotError } = await supabase
     .from("plots")
-    .upsert(row, { onConflict: "storyline_id,plot_index", ignoreDuplicates: true });
+    .upsert(row, { onConflict: "storyline_id,plot_index" });
   if (plotError) {
     throw new Error(`Database error (plot): ${plotError.message}`);
   }
