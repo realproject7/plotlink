@@ -567,6 +567,33 @@ function StoriesTab({
     enabled: storylineIds.length > 0,
   });
 
+  // Batch-fetch average ratings for all storylines
+  const { data: ratingsMap = new Map<number, { average: number; count: number }>() } = useQuery({
+    queryKey: ["profile-ratings-batch", storylineIds],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return new Map<number, { average: number; count: number }>();
+      const { data } = await supabase
+        .from("ratings")
+        .select("storyline_id, rating")
+        .in("storyline_id", storylineIds)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      const map = new Map<number, { average: number; count: number }>();
+      if (!data) return map;
+      const grouped = new Map<number, number[]>();
+      for (const r of data as { storyline_id: number; rating: number }[]) {
+        const arr = grouped.get(r.storyline_id) ?? [];
+        arr.push(r.rating);
+        grouped.set(r.storyline_id, arr);
+      }
+      for (const [sid, ratings] of grouped) {
+        const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+        map.set(sid, { average: avg, count: ratings.length });
+      }
+      return map;
+    },
+    enabled: storylineIds.length > 0,
+  });
+
   // Total token holders across all writer's storylines (on-chain balanceOf)
   const { data: totalHolders } = useQuery({
     queryKey: ["profile-total-holders", address, storylineIds],
@@ -748,6 +775,7 @@ function StoriesTab({
             isOwnProfile={isOwnProfile}
             writerAddress={connectedAddress as Address}
             plotUsd={plotUsd}
+            ratingData={ratingsMap.get(s.storyline_id)}
           />
         ))}
       </div>
@@ -760,11 +788,13 @@ function StoryRow({
   isOwnProfile,
   writerAddress,
   plotUsd,
+  ratingData,
 }: {
   storyline: Storyline;
   isOwnProfile: boolean;
   writerAddress: Address;
   plotUsd?: number | null;
+  ratingData?: { average: number; count: number };
 }) {
   const tokenAddr = storyline.token_address as Address;
 
@@ -869,15 +899,10 @@ function StoryRow({
               <div className="text-muted text-[9px]">Views</div>
             </div>
             <div className="border-border rounded border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</div>
-              <div className="text-muted text-[9px]">Created</div>
+              <div className="text-foreground text-sm font-bold">{ratingData && ratingData.count > 0 ? ratingData.average.toFixed(1) : "—"}</div>
+              <div className="text-muted text-[9px]">Rating</div>
             </div>
           </div>
-          {storyline.sunset ? (
-            <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
-          ) : (
-            <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
-          )}
           {/* TVL + Donations (inline in info area) */}
           {storyline.token_address && (
             <>
@@ -891,12 +916,26 @@ function StoryRow({
         </div>
       </div>
 
-      {/* Deadline */}
-      {!storyline.sunset && storyline.last_plot_time && (
-        <div className="px-4 py-2">
-          <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+      {/* Status + Created + Deadline */}
+      <div className="px-4 py-2 text-xs space-y-0.5">
+        <div className="flex items-center gap-2">
+          {storyline.sunset ? (
+            <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
+          ) : (
+            <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
+          )}
+          {!storyline.sunset && storyline.last_plot_time && (
+            <>
+              <span className="text-muted">·</span>
+              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+            </>
+          )}
         </div>
-      )}
+        <div>
+          <span className="text-muted">Created:</span>{" "}
+          <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</span>
+        </div>
+      </div>
 
       {/* Royalties — own profile */}
       {isOwnProfile && storyline.token_address && (
