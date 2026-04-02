@@ -1314,7 +1314,18 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 .limit(1);
               if (firstMint && firstMint.length > 0) {
                 entryPrice = firstMint[0].price_per_token;
-                firstTraded = firstMint[0].block_timestamp;
+              }
+              // First trade of any type (mint or transfer-in)
+              const { data: firstTrade } = await supabase
+                .from("trade_history")
+                .select("block_timestamp")
+                .eq("user_address", address)
+                .eq("storyline_id", sl.storyline_id)
+                .eq("contract_address", MCV2_BOND.toLowerCase())
+                .order("block_timestamp", { ascending: true })
+                .limit(1);
+              if (firstTrade && firstTrade.length > 0) {
+                firstTraded = firstTrade[0].block_timestamp;
               }
               const { data: lastTrade } = await supabase
                 .from("trade_history")
@@ -1509,7 +1520,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 {/* Value */}
                 <div className="border-border rounded border px-2 py-1.5 text-center">
                   <div className="text-foreground text-sm font-bold leading-tight">
-                    {plotUsd ? formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd) : `${formatPrice(formatUnits(h.value, h.reserveDecimals))} ${RESERVE_LABEL}`}
+                    {plotUsd ? formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd) : "—"}
                     {h.priceChange !== null && (
                       <span className={`ml-1 text-xs font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
                         {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
