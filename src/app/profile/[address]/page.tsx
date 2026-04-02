@@ -1441,12 +1441,23 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
 
   const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
   const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
-  const bestPick = holdings && holdings.length > 0
-    ? holdings.reduce((best, h) =>
-        (h.priceChange ?? -Infinity) > (best.priceChange ?? -Infinity) ? h : best
-      )
-    : null;
   const totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
+
+  // Compute portfolio-level cost basis % change (only if all holdings have entry prices)
+  const portfolioCostPct = (() => {
+    if (!holdings || holdings.length === 0 || plotUsd == null) return null;
+    if (holdings.some(h => h.entryPrice === null || h.entryPrice <= 0)) return null;
+    let totalCurrentUsd = 0;
+    let totalCostUsd = 0;
+    for (const h of holdings) {
+      const currentPrice = Number(formatUnits(h.price, 18));
+      const balanceNum = Number(formatUnits(h.balance, 18));
+      totalCurrentUsd += currentPrice * balanceNum * plotUsd;
+      totalCostUsd += h.entryPrice! * balanceNum * plotUsd;
+    }
+    if (totalCostUsd === 0) return null;
+    return ((totalCurrentUsd - totalCostUsd) / totalCostUsd) * 100;
+  })();
 
   return (
     <div className="mt-6 space-y-4">
@@ -1455,24 +1466,21 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         <>
         <p className="text-muted text-[10px] uppercase tracking-wider">Portfolio</p>
         <div className="border-border rounded border px-4 py-3 text-xs">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <div className="border-border rounded border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{formatPrice(formatUnits(totalValue, reserveDecimals))}</div>
-              <div className="text-muted text-[9px]">{RESERVE_LABEL}</div>
-            </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{plotUsd ? formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd) : "—"}</div>
-              <div className="text-muted text-[9px]">USD</div>
+              <div className="text-foreground text-sm font-bold leading-tight">
+                {plotUsd ? formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd) : "—"}
+                {portfolioCostPct !== null && (
+                  <span className={`ml-1 text-xs font-medium ${portfolioCostPct >= 0 ? "text-accent" : "text-error"}`}>
+                    {portfolioCostPct >= 0 ? "+" : ""}{portfolioCostPct.toFixed(1)}%
+                  </span>
+                )}
+              </div>
+              <div className="text-muted text-[9px]">Value</div>
             </div>
             <div className="border-border rounded border px-2 py-1.5 text-center">
               <div className="text-foreground text-sm font-bold">{holdings!.length}</div>
               <div className="text-muted text-[9px]">Holdings</div>
-            </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center">
-              <div className={`text-sm font-bold ${bestPick && bestPick.priceChange !== null ? (bestPick.priceChange >= 0 ? "text-accent" : "text-error") : "text-foreground"}`}>
-                {bestPick && bestPick.priceChange !== null ? `${bestPick.priceChange >= 0 ? "+" : ""}${bestPick.priceChange.toFixed(1)}%` : "—"}
-              </div>
-              <div className="text-muted text-[9px]">Best 24h</div>
             </div>
           </div>
         </div>
@@ -1527,11 +1535,16 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 <div className="border-border rounded border px-2 py-1.5 text-center">
                   <div className="text-foreground text-sm font-bold leading-tight">
                     {plotUsd ? formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd) : "—"}
-                    {h.priceChange !== null && (
-                      <span className={`ml-1 text-xs font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                        {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
-                      </span>
-                    )}
+                    {(() => {
+                      if (h.entryPrice == null || h.entryPrice <= 0 || plotUsd == null) return null;
+                      const currentPrice = Number(formatUnits(h.price, 18));
+                      const costPct = ((currentPrice - h.entryPrice) / h.entryPrice) * 100;
+                      return (
+                        <span className={`ml-1 text-xs font-medium ${costPct >= 0 ? "text-accent" : "text-error"}`}>
+                          {costPct >= 0 ? "+" : ""}{costPct.toFixed(1)}%
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="text-muted text-[9px]">Value</div>
                 </div>
@@ -1540,33 +1553,9 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   <div className="text-foreground text-sm font-bold">{formatCompact(Number(formatUnits(h.balance, 18)))}</div>
                   <div className="text-muted text-[9px]">Balance</div>
                 </div>
-                {/* PnL */}
-                <div className="border-border rounded border px-2 py-1.5 text-center">
-                  {h.entryPrice !== null && h.entryPrice > 0 && plotUsd != null ? (() => {
-                    const currentPrice = Number(formatUnits(h.price, 18));
-                    const balanceNum = Number(formatUnits(h.balance, 18));
-                    const pnlUsd = (currentPrice - h.entryPrice) * balanceNum * plotUsd;
-                    const pnlPct = ((currentPrice - h.entryPrice) / h.entryPrice) * 100;
-                    const isPositive = pnlUsd >= 0;
-                    return (
-                      <div className={`text-sm font-bold leading-tight ${isPositive ? "text-accent" : "text-error"}`}>
-                        {isPositive ? "+" : "-"}{formatUsdValue(Math.abs(pnlUsd))}
-                        <span className="ml-1 text-xs">{isPositive ? "+" : ""}{pnlPct.toFixed(1)}%</span>
-                      </div>
-                    );
-                  })() : (
-                    <div className="text-foreground text-sm font-bold">—</div>
-                  )}
-                  <div className="text-muted text-[9px]">PnL</div>
-                </div>
-                {/* First Traded */}
-                <div className="border-border rounded border px-2 py-1.5 text-center">
-                  <div className="text-foreground text-sm font-bold">
-                    {h.firstTraded ? new Date(h.firstTraded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
-                  </div>
-                  <div className="text-muted text-[9px]">First Traded</div>
-                </div>
               </div>
+              {/* Recent transactions */}
+              <HoldingRecentTrades address={address} storylineId={h.storyline.storyline_id} plotUsd={plotUsd} />
             </div>
           </div>
         </div>
@@ -1575,6 +1564,48 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
       )}
 
       {/* Donations and Trading History moved to Activity tab */}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Holding Recent Trades — last 5 transactions for a specific story token
+// ---------------------------------------------------------------------------
+
+function HoldingRecentTrades({ address, storylineId, plotUsd }: { address: string; storylineId: number; plotUsd?: number | null }) {
+  const { data: trades, isLoading } = useQuery({
+    queryKey: ["holding-recent-trades", address, storylineId],
+    queryFn: async () => {
+      if (!supabase) return [];
+      const { data } = await supabase
+        .from("trade_history")
+        .select("event_type, reserve_amount, block_timestamp")
+        .eq("user_address", address)
+        .eq("storyline_id", storylineId)
+        .eq("contract_address", MCV2_BOND.toLowerCase())
+        .order("block_timestamp", { ascending: false })
+        .limit(5);
+      return data ?? [];
+    },
+    staleTime: 60000,
+  });
+
+  if (isLoading || !trades || trades.length === 0) return null;
+
+  return (
+    <div className="mt-2 space-y-1">
+      {trades.map((t, i) => {
+        const isBuy = t.event_type === "mint";
+        const date = new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        const amount = plotUsd != null ? formatUsdValue(t.reserve_amount * plotUsd) : `${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`;
+        return (
+          <div key={i} className="flex items-center justify-between text-[10px]">
+            <span className={isBuy ? "text-accent" : "text-error"}>{isBuy ? "Buy" : "Sell"}</span>
+            <span className="text-foreground">{amount}</span>
+            <span className="text-muted">{date}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }
