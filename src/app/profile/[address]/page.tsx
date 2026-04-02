@@ -1449,12 +1449,11 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
     let totalCurrentUsd = 0;
     let totalCostUsd = 0;
     for (const h of holdings) {
+      if (h.entryPrice === null || h.entryPrice <= 0) continue;
       const currentPrice = Number(formatUnits(h.price, 18));
       const balanceNum = Number(formatUnits(h.balance, 18));
       totalCurrentUsd += currentPrice * balanceNum * plotUsd;
-      if (h.entryPrice !== null && h.entryPrice > 0) {
-        totalCostUsd += h.entryPrice * balanceNum * plotUsd;
-      }
+      totalCostUsd += h.entryPrice * balanceNum * plotUsd;
     }
     if (totalCostUsd === 0) return null;
     return ((totalCurrentUsd - totalCostUsd) / totalCostUsd) * 100;
