@@ -46,8 +46,7 @@ const walletConnectors = connectorsForWallets(
   },
 );
 
-// Farcaster miniapp connector first for auto-connect in Warpcast
-const connectors = [farcasterMiniApp(), ...walletConnectors];
+const connectors = walletConnectors;
 
 export const config = createConfig({
   chains: [base, baseSepolia],
