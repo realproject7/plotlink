@@ -22,7 +22,6 @@ import { WriterIdentity } from "../../../components/WriterIdentity";
 import { ViewCount, ViewTracker } from "../../../components/ViewCount";
 import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
-import { UsdPriceTag } from "../../../components/UsdPriceTag";
 import { MarketCapBox } from "../../../components/MarketCapBox";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
@@ -259,8 +258,6 @@ function StoryHeader({
   storyline: Storyline;
   priceInfo: TokenPriceInfo | null;
 }) {
-  const reserveLabel = RESERVE_LABEL;
-
   return (
     <header className="border-border border-b pb-6">
       <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
