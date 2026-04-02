@@ -36,11 +36,7 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
     const farcasterConnector = connectors.find((c) => c.type === "farcasterMiniApp");
     if (!farcasterConnector) return;
 
-    farcasterConnector.isAuthorized().then((authorized) => {
-      if (authorized) {
-        connect({ connector: farcasterConnector });
-      }
-    });
+    connect({ connector: farcasterConnector });
   }, [inMiniApp, connectors, connect, isConnected]);
 
   // Connected state
