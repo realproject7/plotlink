@@ -1,13 +1,17 @@
--- Deduplicate plots rows with the same (storyline_id, plot_index), keeping the
--- earliest entry (lowest id). Then add a unique constraint to prevent recurrence.
+-- Deduplicate plots rows with the same (storyline_id, plot_index), preferring
+-- the row with the richest data (non-null title first, then latest id as tiebreaker).
+-- Then add a unique constraint to prevent recurrence.
 -- Finally re-reconcile plot_count from the deduplicated data.
 
--- Step 1: Delete duplicate rows, keeping the one with the smallest id per pair
+-- Step 1: For each (storyline_id, plot_index) group, keep the best row:
+-- prefer rows with a non-empty title, then the latest id as tiebreaker.
 DELETE FROM plots
 WHERE id NOT IN (
-  SELECT MIN(id)
+  SELECT DISTINCT ON (storyline_id, plot_index) id
   FROM plots
-  GROUP BY storyline_id, plot_index
+  ORDER BY storyline_id, plot_index,
+    (COALESCE(title, '') != '') DESC,
+    id DESC
 );
 
 -- Step 2: Add unique constraint to prevent future duplicates
