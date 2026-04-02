@@ -50,7 +50,7 @@ export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: s
 
   return (
     <div className="text-xs">
-      <span className="text-muted">Deadline:</span>{" "}
+      {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
       <span className="text-accent font-medium">{formatted}</span>
     </div>
   );
