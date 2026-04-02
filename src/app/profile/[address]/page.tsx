@@ -919,16 +919,14 @@ function StoryRow({
       {/* Status + Created + Deadline */}
       <div className="px-4 py-2 text-xs space-y-0.5">
         <div className="flex items-center gap-2">
+          {!storyline.sunset && storyline.last_plot_time && (
+            <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+          )}
+          <span className="text-muted">·</span>
           {storyline.sunset ? (
             <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
           ) : (
             <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
-          )}
-          {!storyline.sunset && storyline.last_plot_time && (
-            <>
-              <span className="text-muted">·</span>
-              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-            </>
           )}
         </div>
         <div>
@@ -1416,24 +1414,25 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         <>
         <p className="text-muted text-[10px] uppercase tracking-wider">Portfolio</p>
         <div className="border-border rounded border px-4 py-3 text-xs">
-          <div className="space-y-1">
-            <div>
-              <span className="text-muted">Value:</span>{" "}
-              <span className="text-foreground font-medium">{formatPrice(formatUnits(totalValue, reserveDecimals))} {RESERVE_LABEL}</span>
-              {plotUsd && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd)})</span>}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{formatPrice(formatUnits(totalValue, reserveDecimals))}</div>
+              <div className="text-muted text-[9px]">{RESERVE_LABEL}</div>
             </div>
-            <div><span className="text-muted">Tokens:</span> <span className="text-foreground font-medium">{holdings!.length}</span></div>
-            {bestPick && bestPick.priceChange !== null && (
-              <div>
-                <span className="text-muted">Best 24h:</span>{" "}
-                <span className="text-foreground font-medium">
-                  {bestPick.storyline.title.slice(0, 20)}{bestPick.storyline.title.length > 20 ? "..." : ""}
-                </span>
-                <span className={`ml-1 font-medium ${bestPick.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                  {bestPick.priceChange >= 0 ? "+" : ""}{bestPick.priceChange.toFixed(1)}%
-                </span>
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{plotUsd ? formatUsdValue(Number(formatUnits(totalValue, reserveDecimals)) * plotUsd) : "—"}</div>
+              <div className="text-muted text-[9px]">USD</div>
+            </div>
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className="text-foreground text-sm font-bold">{holdings!.length}</div>
+              <div className="text-muted text-[9px]">Holdings</div>
+            </div>
+            <div className="border-border rounded border px-2 py-1.5 text-center">
+              <div className={`text-sm font-bold ${bestPick && bestPick.priceChange !== null ? (bestPick.priceChange >= 0 ? "text-accent" : "text-error") : "text-foreground"}`}>
+                {bestPick && bestPick.priceChange !== null ? `${bestPick.priceChange >= 0 ? "+" : ""}${bestPick.priceChange.toFixed(1)}%` : "—"}
               </div>
-            )}
+              <div className="text-muted text-[9px]">Best 24h</div>
+            </div>
           </div>
         </div>
         </>
@@ -1518,21 +1517,17 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
       {(hasDonationsReceived || (isOwnProfile && hasDonationsGiven)) && (
         <div className="border-border rounded border px-4 py-3 text-xs">
           <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Donations</p>
-          <div className="space-y-1">
+          <div className="grid grid-cols-2 gap-2">
             {hasDonationsReceived && (
-              <div>
-                <span className="text-muted">Received:</span>{" "}
-                <span className="text-foreground font-medium">{formatPrice(formatUnits(donationsReceived!.total, 18))} {RESERVE_LABEL}</span>
-                {plotUsd != null && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(donationsReceived!.total, 18)) * plotUsd)})</span>}
-                <span className="text-muted"> from {donationsReceived!.count} {donationsReceived!.count === 1 ? "donation" : "donations"}</span>
+              <div className="border-border rounded border px-2 py-1.5 text-center">
+                <div className="text-foreground text-sm font-bold">{formatPrice(formatUnits(donationsReceived!.total, 18))}</div>
+                <div className="text-muted text-[9px]">Received · {donationsReceived!.count}</div>
               </div>
             )}
             {isOwnProfile && hasDonationsGiven && (
-              <div>
-                <span className="text-muted">Given:</span>{" "}
-                <span className="text-foreground font-medium">{formatPrice(formatUnits(totalDonated, 18))} {RESERVE_LABEL}</span>
-                {plotUsd != null && totalDonated > BigInt(0) && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalDonated, 18)) * plotUsd)})</span>}
-                <span className="text-muted"> · {donationTotalCount} {donationTotalCount === 1 ? "donation" : "donations"}</span>
+              <div className="border-border rounded border px-2 py-1.5 text-center">
+                <div className="text-foreground text-sm font-bold">{formatPrice(formatUnits(totalDonated, 18))}</div>
+                <div className="text-muted text-[9px]">Given · {donationTotalCount}</div>
               </div>
             )}
           </div>
