@@ -575,7 +575,8 @@ function StoriesTab({
       const { data } = await supabase
         .from("ratings")
         .select("storyline_id, rating")
-        .in("storyline_id", storylineIds);
+        .in("storyline_id", storylineIds)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
       const map = new Map<number, { average: number; count: number }>();
       if (!data) return map;
       const grouped = new Map<number, number[]>();
