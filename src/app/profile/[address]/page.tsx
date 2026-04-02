@@ -1515,65 +1515,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         </>
       )}
 
-      {/* Donations — structured card */}
-      {(hasDonationsReceived || (isOwnProfile && hasDonationsGiven)) && (
-        <div className="border-border rounded border px-4 py-3 text-xs">
-          <p className="text-muted mb-2 text-[10px] uppercase tracking-wider">Donations</p>
-          <div className="grid grid-cols-2 gap-2">
-            {hasDonationsReceived && (
-              <div className="border-border rounded border px-2 py-1.5 text-center">
-                <div className="text-foreground text-sm font-bold">{formatPrice(formatUnits(donationsReceived!.total, 18))}</div>
-                <div className="text-muted text-[9px]">Received · {donationsReceived!.count}</div>
-              </div>
-            )}
-            {isOwnProfile && hasDonationsGiven && (
-              <div className="border-border rounded border px-2 py-1.5 text-center">
-                <div className="text-foreground text-sm font-bold">{formatPrice(formatUnits(totalDonated, 18))}</div>
-                <div className="text-muted text-[9px]">Given · {donationTotalCount}</div>
-              </div>
-            )}
-          </div>
-          {isOwnProfile && hasDonationsGiven && (
-            <div className="mt-3 space-y-2">
-              {donationsGiven.map((d) => (
-                <div key={d.id} className="grid grid-cols-[auto_1fr_auto] gap-x-2 items-baseline text-xs">
-                  <Link
-                    href={`/story/${d.storyline_id}`}
-                    className="text-foreground hover:text-accent transition-colors"
-                  >
-                    Story #{d.storyline_id}
-                  </Link>
-                  <span className="text-foreground text-right font-medium">
-                    {formatPrice(formatUnits(BigInt(d.amount), 18))} {RESERVE_LABEL}
-                  </span>
-                  <span className="text-muted flex items-center gap-1">
-                    {d.block_timestamp && (
-                      <time dateTime={d.block_timestamp}>
-                        {new Date(d.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      </time>
-                    )}
-                    {d.tx_hash && (
-                      <a href={`${EXPLORER_URL}/tx/${d.tx_hash}`} target="_blank" rel="noopener noreferrer" className="hover:text-accent">&#x2197;</a>
-                    )}
-                  </span>
-                </div>
-              ))}
-              {donHasNext && (
-                <button
-                  onClick={() => donFetchNext()}
-                  disabled={donFetchingNext}
-                  className="text-accent hover:text-foreground mt-1 w-full text-center text-xs transition-colors disabled:opacity-50"
-                >
-                  {donFetchingNext ? "Loading..." : `Load more (${donationTotalCount - donationsGiven.length} remaining)`}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Trading History */}
-      <PortfolioTradingHistory address={address} plotUsd={plotUsd} />
+      {/* Donations and Trading History moved to Activity tab */}
     </div>
   );
 }
@@ -1862,11 +1804,40 @@ function ActivityTab({ address }: { address: string }) {
     );
   }
 
+  // Activity Stats
+  const tradeEntries = feed.filter((e) => e.type === "bought" || e.type === "sold");
+  const donationEntries = feed.filter((e) => e.type === "donated");
+  const totalTradeAmount = tradeEntries.reduce((sum, e) => sum + (e.reserveAmount ?? 0), 0);
+  const totalDonationAmount = donationEntries.reduce((sum, e) => sum + (e.reserveAmount ?? 0), 0);
+
   const visible = feed.slice(0, visibleCount);
   const hasMore = visibleCount < feed.length;
 
   return (
-    <div className="mt-6">
+    <div className="mt-6 space-y-4">
+      {/* Activity Stats dashboard */}
+      <p className="text-muted text-[10px] uppercase tracking-wider">Activity Stats</p>
+      <div className="border-border rounded border px-4 py-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{tradeEntries.length}</div>
+            <div className="text-muted text-[9px]">Trades</div>
+          </div>
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{totalTradeAmount > 0 ? formatPrice(totalTradeAmount) : "—"}</div>
+            <div className="text-muted text-[9px]">Trade Vol ({RESERVE_LABEL})</div>
+          </div>
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{donationEntries.length}</div>
+            <div className="text-muted text-[9px]">Donations</div>
+          </div>
+          <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="text-foreground text-sm font-bold">{totalDonationAmount > 0 ? formatPrice(totalDonationAmount) : "—"}</div>
+            <div className="text-muted text-[9px]">Donated ({RESERVE_LABEL})</div>
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-1.5">
         {visible.map((entry, i) => (
           <FeedRow key={`${entry.type}-${entry.timestamp}-${i}`} entry={entry} plotUsd={plotUsd} />
