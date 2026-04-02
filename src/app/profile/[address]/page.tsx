@@ -736,21 +736,27 @@ function StoriesTab({
         </div>
         <div className="border-border rounded border px-3 py-1.5">
           <span className="text-muted">Donations Received:</span>{" "}
-          <span className="text-foreground font-medium">
-            {totalDonations > BigInt(0) ? `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}` : "—"}
-          </span>
-          {totalDonations > BigInt(0) && plotUsd != null && (
-            <span className="text-muted"> ({formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd)})</span>
+          {totalDonations > BigInt(0) ? (
+            <>
+              <span className="text-foreground font-medium">
+                {plotUsd != null ? formatUsdValue(Number(formatUnits(totalDonations, 18)) * plotUsd) : `${formatPrice(formatUnits(totalDonations, 18))} ${RESERVE_LABEL}`}
+              </span>
+              {plotUsd != null && (
+                <span className="text-muted"> ({formatPrice(formatUnits(totalDonations, 18))} {RESERVE_LABEL})</span>
+              )}
+            </>
+          ) : (
+            <span className="text-foreground font-medium">—</span>
           )}
         </div>
         {claimedRoyalties !== undefined && claimedRoyalties > BigInt(0) && (
           <div className="border-border rounded border px-3 py-1.5">
             <span className="text-muted">Royalties Claimed:</span>{" "}
             <span className="text-foreground font-medium">
-              {formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}
+              {plotUsd != null ? formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsd) : `${formatPrice(formatUnits(claimedRoyalties, 18))} ${RESERVE_LABEL}`}
             </span>
             {plotUsd != null && (
-              <span className="text-muted"> ({formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsd)})</span>
+              <span className="text-muted"> ({formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL})</span>
             )}
           </div>
         )}
@@ -1877,16 +1883,16 @@ function ActivityTab({ address }: { address: string }) {
             <div className="text-muted text-[9px]">Trades</div>
           </div>
           <div className="border-border rounded border px-2 py-1.5 text-center">
-            <div className="text-foreground text-sm font-bold">{totalTradeAmount > 0 ? formatPrice(totalTradeAmount) : "—"}</div>
-            <div className="text-muted text-[9px]">Trade Vol ({RESERVE_LABEL})</div>
+            <div className="text-foreground text-sm font-bold">{totalTradeAmount > 0 && plotUsd != null ? formatUsdValue(totalTradeAmount * plotUsd) : "—"}</div>
+            <div className="text-muted text-[9px]">Trade Vol</div>
           </div>
           <div className="border-border rounded border px-2 py-1.5 text-center">
             <div className="text-foreground text-sm font-bold">{donationEntries.length}</div>
             <div className="text-muted text-[9px]">Donations</div>
           </div>
           <div className="border-border rounded border px-2 py-1.5 text-center">
-            <div className="text-foreground text-sm font-bold">{totalDonationAmount > 0 ? formatPrice(totalDonationAmount) : "—"}</div>
-            <div className="text-muted text-[9px]">Donated ({RESERVE_LABEL})</div>
+            <div className="text-foreground text-sm font-bold">{totalDonationAmount > 0 && plotUsd != null ? formatUsdValue(totalDonationAmount * plotUsd) : "—"}</div>
+            <div className="text-muted text-[9px]">Donated</div>
           </div>
         </div>
       </div>
