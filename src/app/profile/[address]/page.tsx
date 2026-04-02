@@ -920,9 +920,11 @@ function StoryRow({
       <div className="px-4 py-2 text-xs space-y-0.5">
         <div className="flex items-center gap-2">
           {!storyline.sunset && storyline.last_plot_time && (
-            <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+            <>
+              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+              <span className="text-muted">·</span>
+            </>
           )}
-          <span className="text-muted">·</span>
           {storyline.sunset ? (
             <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
           ) : (
