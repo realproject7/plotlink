@@ -23,6 +23,7 @@ import { ViewCount, ViewTracker } from "../../../components/ViewCount";
 import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
 import { UsdPriceTag } from "../../../components/UsdPriceTag";
+import { MarketCapBox } from "../../../components/MarketCapBox";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
 function deduplicateByPlotIndex(plots: Plot[]) {
@@ -292,15 +293,11 @@ function StoryHeader({
 
       {priceInfo && (
         <div className="border-border bg-surface mt-4 grid grid-cols-2 gap-2 rounded border px-3 py-2 text-xs">
-          <div>
-            <span className="text-muted block text-[10px] uppercase tracking-wider">
-              Token Price
-            </span>
-            <span className="font-semibold text-accent">
-              {formatPrice(priceInfo.pricePerToken)} {reserveLabel}
-              <UsdPriceTag plotAmount={parseFloat(priceInfo.pricePerToken)} />
-            </span>
-          </div>
+          <MarketCapBox
+            tokenAddress={storyline.token_address}
+            totalSupply={parseFloat(priceInfo.totalSupply)}
+            pricePerToken={parseFloat(priceInfo.pricePerToken)}
+          />
           <div>
             <span className="text-muted block text-[10px] uppercase tracking-wider">
               Supply Minted
