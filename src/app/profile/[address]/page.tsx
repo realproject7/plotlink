@@ -804,12 +804,11 @@ function StoryRow({
     <>
     <div className="border-border rounded border divide-y divide-border text-xs">
       {/* Moleskine book (left) + Info (right) */}
-      <div className="flex flex-col sm:flex-row gap-4 px-4 py-3">
+      <div className="flex flex-row gap-4 px-4 py-3">
         {/* Moleskine book card */}
         <Link
           href={`/story/${storyline.storyline_id}`}
-          className="moleskine-notebook group relative block shrink-0 self-start"
-          style={{ width: "120px" }}
+          className="moleskine-notebook group relative block shrink-0 self-start w-[110px] sm:w-[150px]"
         >
           <div
             className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
@@ -844,12 +843,6 @@ function StoryRow({
 
         {/* Info (right) */}
         <div className="min-w-0 flex-1 space-y-1">
-          <Link
-            href={`/story/${storyline.storyline_id}`}
-            className="font-body text-base font-bold text-accent hover:opacity-80 transition-opacity"
-          >
-            {storyline.title}
-          </Link>
           <div className="space-y-0.5">
             <div>
               <span className="text-muted">Plots:</span> <span className="text-foreground font-medium">{storyline.plot_count}</span>
@@ -864,16 +857,18 @@ function StoryRow({
             <div><span className="text-muted">Views:</span> <span className="text-foreground font-medium">{formatViewCount(storyline.view_count)}</span></div>
             <div><span className="text-muted">Created:</span> <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}</span></div>
           </div>
+          {/* TVL + Donations (inline in info area) */}
+          {storyline.token_address && (
+            <>
+              <div className="border-t border-border w-12 my-1.5" />
+              <div className="space-y-0.5">
+                <WriterTradingStats storyline={storyline} plotUsd={plotUsd} showPrice={false} />
+                <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+              </div>
+            </>
+          )}
         </div>
       </div>
-
-      {/* TVL + Donations (below book row, no Price) */}
-      {storyline.token_address && (
-        <div className="px-4 py-2 space-y-1">
-          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} showPrice={false} />
-          <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
-        </div>
-      )}
 
       {/* Deadline */}
       {!storyline.sunset && storyline.last_plot_time && (
@@ -1387,15 +1382,14 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
       {/* Token holdings */}
       {hasHoldings && (
         <>
-        <p className="text-muted text-[10px] uppercase tracking-wider">Token Holdings</p>
+        <p className="text-muted text-[10px] uppercase tracking-wider">Story Token Holdings</p>
         {holdings!.map((h) => (
         <div key={h.storyline.id} className="border-border rounded border text-xs">
           {/* Moleskine book (left) + Info (right) */}
-          <div className="flex flex-col sm:flex-row gap-4 px-4 py-3">
+          <div className="flex flex-row gap-4 px-4 py-3">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
-              className="moleskine-notebook group relative block shrink-0 self-start"
-              style={{ width: "120px" }}
+              className="moleskine-notebook group relative block shrink-0 self-start w-[110px] sm:w-[150px]"
             >
               <div
                 className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"

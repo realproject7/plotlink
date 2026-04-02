@@ -111,8 +111,8 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
   return (
     <div className="text-xs space-y-1">
       <p className="text-muted text-[10px] uppercase tracking-wider">Royalties</p>
-      {/* Claimable row */}
-      <div>
+      {/* Claimable row + Claim button inline */}
+      <div className="flex items-center gap-2">
         <span className="text-muted">Claimable:</span>{" "}
         <span className={`font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
           {formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}
@@ -120,9 +120,6 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
         {plotUsd != null && unclaimed > BigInt(0) && (
           <span className="text-muted"> ({formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)})</span>
         )}
-      </div>
-      {/* Claim button */}
-      <div className="flex items-center gap-2 justify-end">
         <button
           onClick={txState === "error" ? reset : executeClaim}
           disabled={
