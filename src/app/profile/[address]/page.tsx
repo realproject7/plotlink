@@ -192,6 +192,12 @@ export default function ProfilePage() {
   );
 }
 
+function formatCompact(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
+  return n.toLocaleString();
+}
+
 // ---------------------------------------------------------------------------
 // Profile Header — Social Credibility Trust Dashboard
 // ---------------------------------------------------------------------------
@@ -1231,6 +1237,7 @@ interface PortfolioHolding {
   value: bigint;
   entryPrice: number | null;
   lastTraded: string | null;
+  firstTraded: string | null;
   priceChange: number | null;
   reserveDecimals: number;
 }
@@ -1294,6 +1301,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
             // Derive entry price from first mint in trade_history
             let entryPrice: number | null = null;
             let lastTraded: string | null = null;
+            let firstTraded: string | null = null;
             if (supabase) {
               const { data: firstMint } = await supabase
                 .from("trade_history")
@@ -1306,6 +1314,18 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 .limit(1);
               if (firstMint && firstMint.length > 0) {
                 entryPrice = firstMint[0].price_per_token;
+              }
+              // First trade of any type (mint or transfer-in)
+              const { data: firstTrade } = await supabase
+                .from("trade_history")
+                .select("block_timestamp")
+                .eq("user_address", address)
+                .eq("storyline_id", sl.storyline_id)
+                .eq("contract_address", MCV2_BOND.toLowerCase())
+                .order("block_timestamp", { ascending: true })
+                .limit(1);
+              if (firstTrade && firstTrade.length > 0) {
+                firstTraded = firstTrade[0].block_timestamp;
               }
               const { data: lastTrade } = await supabase
                 .from("trade_history")
@@ -1322,7 +1342,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
 
             return {
               storyline: sl, balance, price: priceBI, value,
-              entryPrice, lastTraded,
+              entryPrice, lastTraded, firstTraded,
               priceChange: priceChangeResult?.changePercent ?? null,
               reserveDecimals,
             };
@@ -1495,32 +1515,52 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 </div>
               </div>
             </Link>
-            <div className="min-w-0 flex-1 space-y-1">
-              <div>
-                <span className="text-foreground font-medium">{formatPrice(formatUnits(h.value, h.reserveDecimals))} {RESERVE_LABEL}</span>
-                {plotUsd && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd)})</span>}
-                {h.priceChange !== null && (
-                  <span className={`ml-2 font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
-                    {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
-                  </span>
-                )}
-              </div>
-              <div><span className="text-muted">Balance:</span> <span className="text-foreground font-medium">{formatPrice(formatUnits(h.balance, 18))} tokens</span></div>
-              <div>
-                <span className="text-muted">Price:</span>{" "}
-                <span className="text-foreground font-medium">{formatPrice(formatUnits(h.price, 18))} {RESERVE_LABEL}</span>
-                {plotUsd != null && <span className="text-muted"> ({formatUsdValue(Number(formatUnits(h.price, 18)) * plotUsd)})</span>}
-              </div>
-              {h.entryPrice !== null && h.entryPrice > 0 && (
-                <div>
-                  <span className="text-muted">Entry:</span>{" "}
-                  <span className="text-foreground font-medium">{formatPrice(h.entryPrice)} {RESERVE_LABEL}</span>
-                  {plotUsd != null && <span className="text-muted"> ({formatUsdValue(h.entryPrice * plotUsd)})</span>}
+            <div className="min-w-0 flex-1">
+              <div className="grid grid-cols-2 gap-2">
+                {/* Value */}
+                <div className="border-border rounded border px-2 py-1.5 text-center">
+                  <div className="text-foreground text-sm font-bold leading-tight">
+                    {plotUsd ? formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd) : "—"}
+                    {h.priceChange !== null && (
+                      <span className={`ml-1 text-xs font-medium ${h.priceChange >= 0 ? "text-accent" : "text-error"}`}>
+                        {h.priceChange >= 0 ? "+" : ""}{h.priceChange.toFixed(1)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-muted text-[9px]">Value</div>
                 </div>
-              )}
-              {h.lastTraded && (
-                <div><span className="text-muted">Traded:</span> <span className="text-foreground font-medium">{new Date(h.lastTraded).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span></div>
-              )}
+                {/* Balance */}
+                <div className="border-border rounded border px-2 py-1.5 text-center">
+                  <div className="text-foreground text-sm font-bold">{formatCompact(Number(formatUnits(h.balance, 18)))}</div>
+                  <div className="text-muted text-[9px]">Balance</div>
+                </div>
+                {/* PnL */}
+                <div className="border-border rounded border px-2 py-1.5 text-center">
+                  {h.entryPrice !== null && h.entryPrice > 0 && plotUsd != null ? (() => {
+                    const currentPrice = Number(formatUnits(h.price, 18));
+                    const balanceNum = Number(formatUnits(h.balance, 18));
+                    const pnlUsd = (currentPrice - h.entryPrice) * balanceNum * plotUsd;
+                    const pnlPct = ((currentPrice - h.entryPrice) / h.entryPrice) * 100;
+                    const isPositive = pnlUsd >= 0;
+                    return (
+                      <div className={`text-sm font-bold leading-tight ${isPositive ? "text-accent" : "text-error"}`}>
+                        {isPositive ? "+" : "-"}{formatUsdValue(Math.abs(pnlUsd))}
+                        <span className="ml-1 text-xs">{isPositive ? "+" : ""}{pnlPct.toFixed(1)}%</span>
+                      </div>
+                    );
+                  })() : (
+                    <div className="text-foreground text-sm font-bold">—</div>
+                  )}
+                  <div className="text-muted text-[9px]">PnL</div>
+                </div>
+                {/* First Traded */}
+                <div className="border-border rounded border px-2 py-1.5 text-center">
+                  <div className="text-foreground text-sm font-bold">
+                    {h.firstTraded ? new Date(h.firstTraded).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}
+                  </div>
+                  <div className="text-muted text-[9px]">First Traded</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
