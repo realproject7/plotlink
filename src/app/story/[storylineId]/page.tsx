@@ -290,7 +290,7 @@ function StoryHeader({
 
       {priceInfo && (
         <div className="mt-4 space-y-2 text-xs">
-          <div className="border-border bg-surface grid grid-cols-2 gap-2 rounded border px-3 py-2">
+          <div className="border-border bg-surface grid grid-cols-1 sm:grid-cols-2 gap-2 rounded border px-3 py-2">
             <MarketCapBox
               tokenAddress={storyline.token_address}
               totalSupply={parseFloat(priceInfo.totalSupply)}
@@ -317,7 +317,7 @@ function StoryHeader({
               <span className="text-muted block text-[10px] uppercase tracking-wider mb-1">
                 Next Plot Publish Deadline
               </span>
-              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel />
             </div>
           ) : null}
         </div>
