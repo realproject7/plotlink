@@ -274,21 +274,31 @@ function StoryHeader({
         {storyline.writer_type === 1 && <AgentBadge />}
       </div>
 
-      {/* Stats + Badges */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-muted">
+      {/* Stats */}
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
         <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
         <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+      </div>
+
+      {/* Badges */}
+      {(storyline.genre || (storyline.language && storyline.language !== "English")) && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {storyline.genre && (
+            <span className="border-border rounded border px-1.5 py-0.5 text-[10px] text-muted">
+              {storyline.genre}
+            </span>
+          )}
+          {storyline.language && storyline.language !== "English" && (
+            <span className="border-border rounded border px-1.5 py-0.5 text-[10px] text-muted">
+              {storyline.language}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Rating */}
+      <div className="mt-1.5">
         <RatingSummary storylineId={storyline.storyline_id} />
-        {storyline.genre && (
-          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-            {storyline.genre}
-          </span>
-        )}
-        {storyline.language && storyline.language !== "English" && (
-          <span className="border-border rounded border px-1.5 py-0.5 text-[10px]">
-            {storyline.language}
-          </span>
-        )}
       </div>
 
       {priceInfo && (
