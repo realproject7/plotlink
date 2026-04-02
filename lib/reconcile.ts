@@ -6,6 +6,8 @@ type SupabaseDB = SupabaseClient<Database>;
 /**
  * Reconcile a storyline's plot_count and last_plot_time from the plots table.
  * Uses COUNT(*) and MAX(block_timestamp) — idempotent and safe for replays.
+ * Relies on the unique constraint on (storyline_id, plot_index) to prevent
+ * duplicate rows that would inflate the count.
  *
  * Throws on any Supabase error so callers can handle failures.
  */

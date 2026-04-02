@@ -173,7 +173,7 @@ export async function POST(req: Request) {
 
   const { error: plotDbError } = await supabase.from("plots").upsert(
     plotRow,
-    { onConflict: "tx_hash,log_index" }
+    { onConflict: "storyline_id,plot_index", ignoreDuplicates: true }
   );
 
   if (plotDbError) {
