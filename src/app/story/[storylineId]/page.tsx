@@ -289,32 +289,39 @@ function StoryHeader({
       </div>
 
       {priceInfo && (
-        <div className="border-border bg-surface mt-4 grid grid-cols-2 gap-2 rounded border px-3 py-2 text-xs">
-          <MarketCapBox
-            tokenAddress={storyline.token_address}
-            totalSupply={parseFloat(priceInfo.totalSupply)}
-            pricePerToken={parseFloat(priceInfo.pricePerToken)}
-          />
-          <div>
-            <span className="text-muted block text-[10px] uppercase tracking-wider">
-              Supply Minted
-            </span>
-            <span className="font-semibold text-accent">
-              {formatSupply(priceInfo.totalSupply)} tokens
-            </span>
+        <div className="mt-4 space-y-2 text-xs">
+          <div className="border-border bg-surface grid grid-cols-2 gap-2 rounded border px-3 py-2">
+            <MarketCapBox
+              tokenAddress={storyline.token_address}
+              totalSupply={parseFloat(priceInfo.totalSupply)}
+              pricePerToken={parseFloat(priceInfo.pricePerToken)}
+            />
+            <div>
+              <span className="text-muted block text-[10px] uppercase tracking-wider">
+                Supply Minted
+              </span>
+              <span className="font-semibold text-accent">
+                {formatSupply(priceInfo.totalSupply)} tokens
+              </span>
+            </div>
           </div>
+          {storyline.sunset ? (
+            <div className="border-border bg-surface rounded border px-3 py-2">
+              <span className="text-muted">Story complete</span>
+              <span className="text-foreground ml-2">
+                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} total
+              </span>
+            </div>
+          ) : storyline.last_plot_time ? (
+            <div className="border-border bg-surface rounded border px-3 py-2">
+              <span className="text-muted block text-[10px] uppercase tracking-wider mb-1">
+                Next Plot Publish Deadline
+              </span>
+              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
+            </div>
+          ) : null}
         </div>
       )}
-      {storyline.sunset ? (
-        <div className="border-border bg-surface mt-4 rounded border px-3 py-2 text-xs">
-          <span className="text-muted">Story complete</span>
-          <span className="text-foreground ml-2">
-            {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} total
-          </span>
-        </div>
-      ) : storyline.last_plot_time ? (
-        <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-      ) : null}
       {!storyline.sunset && (
         <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} />
       )}
