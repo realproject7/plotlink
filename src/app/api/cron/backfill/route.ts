@@ -307,6 +307,9 @@ async function processStorylineCreated(
     throw new Error(`Database error (genesis plot): ${plotError.message}`);
   }
 
+  // Reconcile plot_count from actual plots rows (prevents genesis double-count)
+  await reconcileStorylinePlotCount(supabase, Number(storylineId));
+
   return { genesisPlotFailed: false };
 }
 

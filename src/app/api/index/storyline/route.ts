@@ -12,6 +12,7 @@ import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { hashContent } from "../../../../../lib/content";
 import { GENRES, LANGUAGES } from "../../../../../lib/genres";
 import type { Database } from "../../../../../lib/supabase";
+import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
 const IPFS_TIMEOUT_MS = 10_000;
@@ -178,6 +179,9 @@ export async function POST(req: Request) {
   if (plotDbError) {
     return error(`Database error (genesis plot): ${plotDbError.message}`, 500);
   }
+
+  // Reconcile plot_count from actual plots rows (prevents genesis double-count)
+  await reconcileStorylinePlotCount(supabase, Number(storylineId));
 
   return NextResponse.json({ success: true });
 }
