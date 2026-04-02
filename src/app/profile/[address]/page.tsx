@@ -1521,7 +1521,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 </div>
               </div>
             </Link>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 w-full sm:flex-1">
               <div className="grid grid-cols-2 gap-2">
                 {/* Value */}
                 <div className="border-border rounded border px-2 py-1.5 text-center">
