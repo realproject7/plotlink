@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 
 const DEADLINE_HOURS = 168;
 
-export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
+export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: string; hideLabel?: boolean }) {
   const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
   if (remaining === null) {
     return (
       <div className="text-xs">
-        <span className="text-muted">Deadline:</span>{" "}
+        {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
         <span className="text-accent font-medium">--</span>
       </div>
     );
@@ -28,7 +28,7 @@ export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
   if (remaining <= 0) {
     return (
       <div className="text-xs">
-        <span className="text-muted">Deadline:</span>{" "}
+        {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
         <span className="text-error font-medium">expired</span>
       </div>
     );
@@ -50,7 +50,7 @@ export function DeadlineCountdown({ lastPlotTime }: { lastPlotTime: string }) {
 
   return (
     <div className="text-xs">
-      <span className="text-muted">Deadline:</span>{" "}
+      {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
       <span className="text-accent font-medium">{formatted}</span>
     </div>
   );
