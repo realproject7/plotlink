@@ -1883,7 +1883,7 @@ function ActivityTab({ address }: { address: string }) {
             <div className="text-muted text-[9px]">Trades</div>
           </div>
           <div className="border-border rounded border px-2 py-1.5 text-center">
-            <div className="text-foreground text-sm font-bold">{totalTradeAmount > 0 && plotUsd != null ? formatUsdValue(totalTradeAmount * plotUsd) : totalTradeAmount > 0 ? formatPrice(totalTradeAmount) : "—"}</div>
+            <div className="text-foreground text-sm font-bold">{totalTradeAmount > 0 && plotUsd != null ? formatUsdValue(totalTradeAmount * plotUsd) : "—"}</div>
             <div className="text-muted text-[9px]">Trade Vol</div>
           </div>
           <div className="border-border rounded border px-2 py-1.5 text-center">
@@ -1891,7 +1891,7 @@ function ActivityTab({ address }: { address: string }) {
             <div className="text-muted text-[9px]">Donations</div>
           </div>
           <div className="border-border rounded border px-2 py-1.5 text-center">
-            <div className="text-foreground text-sm font-bold">{totalDonationAmount > 0 && plotUsd != null ? formatUsdValue(totalDonationAmount * plotUsd) : totalDonationAmount > 0 ? formatPrice(totalDonationAmount) : "—"}</div>
+            <div className="text-foreground text-sm font-bold">{totalDonationAmount > 0 && plotUsd != null ? formatUsdValue(totalDonationAmount * plotUsd) : "—"}</div>
             <div className="text-muted text-[9px]">Donated</div>
           </div>
         </div>
