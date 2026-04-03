@@ -38,7 +38,10 @@ function formatTokenAmount(value: bigint, decimals: number): string {
   if (num >= 0.001) {
     return num.toFixed(4);
   }
-  return num.toFixed(6);
+  if (num >= 0.000001) {
+    return num.toFixed(6);
+  }
+  return num.toExponential(2);
 }
 
 /** Retry a writeContractAsync call once if it fails with a nonce error. */
