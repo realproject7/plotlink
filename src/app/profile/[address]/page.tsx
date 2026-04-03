@@ -1604,19 +1604,20 @@ function HoldingRecentTrades({ address, storylineId, plotUsd }: { address: strin
               {isBuy ? "Buy" : "Sell"}
             </span>
             <span className="text-foreground">{amount}</span>
-            <time dateTime={t.block_timestamp} className="text-muted ml-auto whitespace-nowrap text-[10px]">
-              {date}
-            </time>
-            {t.tx_hash && (
+            {t.tx_hash ? (
               <a
                 href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-muted hover:text-accent transition-colors"
+                className="text-muted hover:text-accent ml-auto whitespace-nowrap text-[10px] transition-colors"
                 title="View on Basescan"
               >
-                &#x2197;
+                <time dateTime={t.block_timestamp}>{date}</time> &#x2197;
               </a>
+            ) : (
+              <time dateTime={t.block_timestamp} className="text-muted ml-auto whitespace-nowrap text-[10px]">
+                {date}
+              </time>
             )}
           </div>
         );
