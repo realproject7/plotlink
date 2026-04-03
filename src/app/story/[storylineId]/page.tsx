@@ -7,7 +7,7 @@ import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
-import { RatingSummaryWithSeparator } from "../../../components/RatingSummaryWithSeparator";
+import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { StoryContent } from "../../../components/StoryContent";
 import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
@@ -304,7 +304,7 @@ function StoryHeader({
 
           {/* Rating + Views */}
           <div className="mt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-xs text-muted">
-            <RatingSummaryWithSeparator storylineId={storyline.storyline_id} />
+            <RatingSummary storylineId={storyline.storyline_id} separator />
             <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
           </div>
 
