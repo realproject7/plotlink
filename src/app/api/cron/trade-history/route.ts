@@ -88,10 +88,11 @@ export async function GET(req: Request) {
   });
 
   // Fetch current PLOT/USD rate once per batch.
-  // If scanning blocks far behind head (~200+ blocks / ~7 min), the current rate
-  // may not reflect trade-time pricing. Mark as 'live' only for near-head scans.
+  // If the oldest block in this batch (fromBlock) is far behind head, the current
+  // rate may not reflect trade-time pricing. Use fromBlock for a conservative check
+  // so the entire batch is labeled consistently — only near-head batches get 'live'.
   const reserveUsdRate = await getReserveUsdRate();
-  const isCatchUp = currentBlock - toBlock > BigInt(200);
+  const isCatchUp = currentBlock - fromBlock > BigInt(200);
   const rateSource = reserveUsdRate !== null
     ? (isCatchUp ? "backfill_approx" : "live")
     : null;
