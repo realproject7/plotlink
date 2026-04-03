@@ -146,22 +146,34 @@
 
 ---
 
-## Tonight's Queue — Batch 61: Post-Review Fixes
+## Completed — Batch 61
 
-### 1. plotlink#796 — DonateWidget: unformatted balance shows raw 18-decimal values
-- Same bug as #789 but in DonateWidget.tsx (lines ~152, 164)
-- Apply same `formatTokenAmount` or extract to shared `src/lib/format.ts`
-- Branch: `task/796-donate-format`
+- Batch 61: DonateWidget format #799, RatingSummary dedup #800, Stats overflow guard #801
 
-### 2. plotlink#797 — Storyline header: RatingSummaryWithSeparator duplicates RatingSummary
-- Refactor to compose existing `RatingSummary` instead of duplicating query+render
-- Add `aria-hidden="true"` to decorative separator dot
-- Branch: `task/797-rating-summary-dedup`
+---
 
-### 3. plotlink#798 — Storyline stats: add min-w-0 overflow guard on mobile grid
-- MCap + Supply grid children need `min-w-0` for 320px screens
-- Prevents text overflow with large USD values + 24h% badge
-- Branch: `task/798-stats-overflow-guard`
+## Tonight's Queue — Batch 62: Storyline Page Polish + Deadline Enforcement
+
+### 1. plotlink#802 — Storyline page: 3-col stats boxes like profile page, beside Moleskine on desktop
+- Redesign Market Cap, Supply Minted, Deadline as bordered stat boxes matching profile page style
+- Desktop: place in the header area next to the Moleskine cover
+- Mobile: full-width row below header
+- Branch: `task/802-storyline-stats-boxes`
+
+### 2. plotlink#803 — Storyline page: left-align title and info on mobile
+- Mobile: title, rating, Writer/Plots/Genre rows should be left-aligned, not centered
+- Moleskine cover can stay centered
+- Desktop: no changes (already left-aligned)
+- Branch: `task/803-storyline-mobile-left-align`
+
+### 3. plotlink#804 — Block new plot creation when deadline is expired
+- `sunset` flag is never set to `true` by app code — button stays clickable after countdown expires
+- Front-end: disable "+ Add a new Plot" button (visible but `opacity-50 pointer-events-none`) when `last_plot_time + 168h < now`
+- Create page: show expired storylines in dropdown but disabled with "(expired)" label
+- API: add deadline validation in `src/app/api/index/plot/route.ts`
+- Optional: cron/trigger to set `sunset=true` for expired storylines
+- Contract already enforces (`chainPlot()` reverts), this is UX + defense-in-depth
+- Branch: `task/804-deadline-enforcement`
 
 ---
 

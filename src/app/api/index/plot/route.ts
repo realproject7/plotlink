@@ -113,6 +113,26 @@ export async function POST(req: Request) {
     return error("Supabase not configured", 500);
   }
 
+  // 7a. Check deadline — reject if storyline's 7-day deadline has expired
+  const DEADLINE_MS = 168 * 60 * 60 * 1000;
+  const { data: storylineRow } = await supabase
+    .from("storylines")
+    .select("last_plot_time, sunset")
+    .eq("storyline_id", Number(storylineId))
+    .single();
+
+  if (storylineRow) {
+    if (storylineRow.sunset) {
+      return error("Storyline has sunset — no new plots allowed", 400);
+    }
+    if (storylineRow.last_plot_time) {
+      const deadline = new Date(storylineRow.last_plot_time).getTime() + DEADLINE_MS;
+      if (Date.now() > deadline) {
+        return error("Storyline deadline expired — no new plots allowed", 400);
+      }
+    }
+  }
+
   const row: Database["public"]["Tables"]["plots"]["Insert"] = {
     storyline_id: Number(storylineId),
     plot_index: Number(plotIndex),

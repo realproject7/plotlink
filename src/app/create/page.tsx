@@ -56,11 +56,18 @@ async function fetchWriterStorylines(address: string): Promise<Storyline[]> {
     .select("*")
     .eq("writer_address", address.toLowerCase())
     .eq("hidden", false)
-    .eq("sunset", false)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("block_timestamp", { ascending: false })
     .returns<Storyline[]>();
   return data ?? [];
+}
+
+const DEADLINE_MS = 168 * 60 * 60 * 1000;
+
+function isStorylineExpired(s: Storyline): boolean {
+  if (s.sunset) return true;
+  if (!s.last_plot_time) return false;
+  return Date.now() > new Date(s.last_plot_time).getTime() + DEADLINE_MS;
 }
 
 export default function CreatePageWrapper() {
@@ -527,10 +534,12 @@ function CreatePage() {
                   onChange={(v) => setChainStorylineId(v ? Number(v) : null)}
                   disabled={chainBusy}
                   placeholder="Select a storyline"
-                  options={storylines.map((s) => ({
-                    value: String(s.storyline_id),
-                    label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})`,
-                  }))}
+                  options={storylines
+                    .filter((s) => !isStorylineExpired(s))
+                    .map((s) => ({
+                      value: String(s.storyline_id),
+                      label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})`,
+                    }))}
                 />
               )}
             </div>

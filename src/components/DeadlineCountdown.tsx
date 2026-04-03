@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-const DEADLINE_HOURS = 168;
+export const DEADLINE_HOURS = 168;
 
 export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: string; hideLabel?: boolean }) {
   const [remaining, setRemaining] = useState<number | null>(null);
