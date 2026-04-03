@@ -325,13 +325,10 @@ function StoryHeader({
               </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Stats grid — below cover+info on mobile, aligned with right column on desktop */}
-      {priceInfo && (
-        <div className="sm:pl-[176px]">
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {/* Stats grid — inside right column, next to cover */}
+          {priceInfo && (
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
                 <MarketCapBox
                   tokenAddress={storyline.token_address}
@@ -375,13 +372,12 @@ function StoryHeader({
                 <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
                 <div className="text-muted text-[9px]">Created</div>
               </div>
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* CTA — below stats, aligned with right column on desktop */}
-      <div className="sm:pl-[176px]">
-        <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
+          {/* CTA — in right column */}
+          <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
+        </div>
       </div>
     </header>
   );
