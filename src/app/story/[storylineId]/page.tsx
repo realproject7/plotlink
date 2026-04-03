@@ -7,7 +7,6 @@ import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
-import { RatingSummary } from "../../../components/RatingSummary";
 import { RatingSummaryWithSeparator } from "../../../components/RatingSummaryWithSeparator";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { StoryContent } from "../../../components/StoryContent";
