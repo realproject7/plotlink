@@ -7,7 +7,7 @@ import { TradingWidget } from "../../../components/TradingWidget";
 import { PriceChart } from "../../../components/PriceChart";
 import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
-import { RatingSummary } from "../../../components/RatingSummary";
+import { RatingSummaryWithSeparator } from "../../../components/RatingSummaryWithSeparator";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { StoryContent } from "../../../components/StoryContent";
 import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
@@ -260,47 +260,83 @@ function StoryHeader({
 }) {
   return (
     <header className="border-border border-b pb-6">
-      {/* Title */}
-      <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
-        {storyline.title}
-      </h1>
-
-      {/* Writer */}
-      <div className="mt-2 flex items-center gap-1.5 text-xs text-muted">
-        <span>Writer</span>
-        <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
-          <WriterIdentity address={storyline.writer_address} />
-        </Suspense>
-        {storyline.writer_type === 1 && <AgentBadge />}
-      </div>
-
-      {/* Stats */}
-      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted">
-        <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
-        <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
-      </div>
-
-      {/* Badges */}
-      {(storyline.genre || (storyline.language && storyline.language !== "English")) && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {storyline.genre && (
-            <span className="border-border rounded border px-1.5 py-0.5 text-[10px] text-muted">
-              {storyline.genre}
-            </span>
-          )}
-          {storyline.language && storyline.language !== "English" && (
-            <span className="border-border rounded border px-1.5 py-0.5 text-[10px] text-muted">
-              {storyline.language}
-            </span>
-          )}
+      {/* Moleskine cover + Info panel */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+        {/* Moleskine book cover */}
+        <div className="shrink-0 w-[130px] sm:w-[160px]">
+          <div
+            className="relative flex flex-col overflow-hidden border border-[var(--border)]"
+            style={{
+              aspectRatio: "2/3",
+              borderRadius: "5px 12px 12px 5px",
+              backgroundColor: "#F5EFE6",
+              boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
+            }}
+          >
+            <div
+              className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
+              style={{ background: "rgba(139, 69, 19, 0.15)" }}
+            />
+            <div className="relative z-10 px-2.5 pt-2.5">
+              <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+                {storyline.genre || "Uncategorized"}
+              </span>
+            </div>
+            <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
+              <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
+                {storyline.title}
+              </span>
+            </div>
+            <div className="relative z-10 px-2.5 pb-2.5">
+              <span className="text-[8px] text-[var(--text-muted)]">
+                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+              </span>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Rating */}
-      <div className="mt-1.5">
-        <RatingSummary storylineId={storyline.storyline_id} />
+        {/* Info panel */}
+        <div className="min-w-0 w-full sm:flex-1 text-center sm:text-left">
+          {/* Title */}
+          <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
+            {storyline.title}
+          </h1>
+
+          {/* Rating + Views */}
+          <div className="mt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-xs text-muted">
+            <RatingSummaryWithSeparator storylineId={storyline.storyline_id} />
+            <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+          </div>
+
+          {/* Info rows */}
+          <div className="mt-3 space-y-1.5 text-xs">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5">
+              <span className="text-muted w-14 shrink-0 text-right sm:text-left">Writer</span>
+              <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
+                <WriterIdentity address={storyline.writer_address} />
+              </Suspense>
+              {storyline.writer_type === 1 && <AgentBadge />}
+            </div>
+            <div className="flex items-center justify-center sm:justify-start gap-1.5">
+              <span className="text-muted w-14 shrink-0 text-right sm:text-left">Plots</span>
+              <span className="text-foreground font-medium">
+                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+              </span>
+            </div>
+            <div className="flex items-center justify-center sm:justify-start gap-1.5">
+              <span className="text-muted w-14 shrink-0 text-right sm:text-left">Genre</span>
+              <span className="text-foreground font-medium">
+                {storyline.genre || "Uncategorized"}
+                {storyline.language && storyline.language !== "English" && (
+                  <span className="text-muted ml-1.5">· {storyline.language}</span>
+                )}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
+      {/* Market stats */}
       {priceInfo && (
         <div className="mt-4 text-xs">
           <div className="border-border bg-surface grid grid-cols-1 sm:grid-cols-2 gap-2 rounded border px-3 py-2">
