@@ -32,7 +32,7 @@ export function AddPlotButton({
   if (expired) {
     return (
       <div
-        className="border-border text-muted mt-3 block rounded border py-2 text-center text-xs font-medium opacity-50"
+        className="border-border text-muted mt-3 inline-block rounded border px-6 py-2 text-center text-xs font-medium opacity-50"
         title={sunset ? "This story has sunset" : "The 7-day deadline has expired"}
       >
         {sunset ? "Story complete" : "Deadline expired"}

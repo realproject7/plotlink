@@ -332,7 +332,6 @@ function StoryHeader({
       {priceInfo && (
         <div className="sm:pl-[176px]">
           <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
                 <MarketCapBox
                   tokenAddress={storyline.token_address}
@@ -376,7 +375,6 @@ function StoryHeader({
                 <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
                 <div className="text-muted text-[9px]">Created</div>
               </div>
-            </div>
           </div>
         </div>
       )}
