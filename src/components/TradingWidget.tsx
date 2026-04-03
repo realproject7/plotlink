@@ -28,6 +28,20 @@ function applySlippage(amount: bigint, isBuy: boolean): bigint {
 
 const isZapAvailable = ZAP_PLOTLINK !== "0x0000000000000000000000000000000000000000";
 
+/** Retry a writeContractAsync call once if it fails with a nonce error. */
+async function retryOnNonceError<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn();
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "";
+    if (msg.includes("nonce") && msg.includes("low")) {
+      await new Promise((r) => setTimeout(r, 500));
+      return await fn();
+    }
+    throw err;
+  }
+}
+
 function getTokenDecimals(payToken: PayToken): number {
   if (payToken === "USDC") return 6;
   return 18;
@@ -317,7 +331,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
 
         setTxState("confirming");
         const tx = buildZapMintTx(fromToken, tokenAddress, parsedAmount, "exact-output", zapQuote);
-        const hash = await writeContractAsync(tx);
+        const hash = await retryOnNonceError(() => writeContractAsync(tx));
         setTxHash(hash);
         tradeHash = hash;
         setTxState("pending");
@@ -345,13 +359,13 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         }
 
         setTxState("confirming");
-        const hash = await writeContractAsync({
+        const hash = await retryOnNonceError(() => writeContractAsync({
           address: MCV2_BOND,
           abi: mcv2BondAbi,
           functionName: "mint",
           args: [tokenAddress, parsedAmount, maxCost, address],
           gas: BigInt(2_000_000),
-        });
+        }));
         setTxHash(hash);
         tradeHash = hash;
         setTxState("pending");
@@ -379,13 +393,13 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         }
 
         setTxState("confirming");
-        const hash = await writeContractAsync({
+        const hash = await retryOnNonceError(() => writeContractAsync({
           address: MCV2_BOND,
           abi: mcv2BondAbi,
           functionName: "burn",
           args: [tokenAddress, parsedAmount, minRefund, address],
           gas: BigInt(2_000_000),
-        });
+        }));
         setTxHash(hash);
         tradeHash = hash;
         setTxState("pending");
