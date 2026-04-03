@@ -312,6 +312,8 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               args: [ZAP_PLOTLINK, zapQuote.fromTokenAmount],
             });
             await publicClient.waitForTransactionReceipt({ hash: approveHash });
+            // Allow wallet provider to update its internal nonce after approval
+            await new Promise((r) => setTimeout(r, 500));
           }
         }
 
@@ -342,6 +344,8 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
             args: [MCV2_BOND, maxCost],
           });
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          // Allow wallet provider to update its internal nonce after approval
+          await new Promise((r) => setTimeout(r, 500));
         }
 
         setTxState("confirming");
@@ -376,6 +380,8 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
             args: [MCV2_BOND, parsedAmount],
           });
           await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          // Allow wallet provider to update its internal nonce after approval
+          await new Promise((r) => setTimeout(r, 500));
         }
 
         setTxState("confirming");
