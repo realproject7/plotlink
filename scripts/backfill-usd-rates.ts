@@ -86,35 +86,45 @@ async function getExactHistoricalRate(blockNumber: bigint): Promise<number | nul
 }
 
 /**
- * Fetch current PLOT/USD as approximate fallback.
+ * Approximate fallback: use current PLOT/HUNT ratio × historical HUNT/USD at
+ * the given block. This is more accurate than a single global rate because
+ * HUNT/USD varies over time, even though PLOT/HUNT is only current-state.
+ *
+ * Returns null if the historical HUNT/USD read fails.
  */
-async function getCurrentPlotUsd(): Promise<number | null> {
-  const client = createPublicClient({
-    chain: base,
-    transport: http(ARCHIVE_RPCS[0], { timeout: 5_000, retryCount: 1 }),
-  }) as PublicClient;
+async function getApproxHistoricalRate(blockNumber: bigint): Promise<number | null> {
+  for (const rpcUrl of ARCHIVE_RPCS) {
+    try {
+      const client = createPublicClient({
+        chain: base,
+        transport: http(rpcUrl, { timeout: 5_000, retryCount: 0 }),
+      }) as PublicClient;
 
-  try {
-    const [plotInHuntWei, huntUsdRate] = await Promise.all([
-      client.readContract({
+      // Current PLOT/HUNT (cannot read historically without archive for bonding curve)
+      const plotInHuntWei = await client.readContract({
         address: MCV2_BOND,
         abi: [priceForNextMintFunction],
         functionName: "priceForNextMint",
         args: [PLOT_TOKEN],
-      }),
-      client.readContract({
+      });
+
+      // Historical HUNT/USD at the trade's block
+      const huntUsdRate = await client.readContract({
         address: ONEINCH_SPOT_PRICE_AGGREGATOR,
         abi: spotPriceAbi,
         functionName: "getRate",
         args: [HUNT, USDC, false],
-      }),
-    ]);
-    const plotInHunt = Number(formatEther(BigInt(plotInHuntWei)));
-    const huntUsd = Number(huntUsdRate) / 1_000_000;
-    return plotInHunt * huntUsd;
-  } catch {
-    return null;
+        blockNumber,
+      });
+
+      const plotInHunt = Number(formatEther(BigInt(plotInHuntWei)));
+      const huntUsd = Number(huntUsdRate) / 1_000_000;
+      return plotInHunt * huntUsd;
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 async function main() {
@@ -139,14 +149,6 @@ async function main() {
 
   console.log(`Found ${trades.length} trades missing USD rates.`);
 
-  // Get current rate as approximate fallback
-  const approxRate = await getCurrentPlotUsd();
-  if (approxRate !== null) {
-    console.log(`Current PLOT/USD (approx fallback): $${approxRate.toFixed(8)}`);
-  } else {
-    console.warn("WARNING: Could not fetch current PLOT/USD — skipping approximate fallback");
-  }
-
   let exact = 0;
   let approx = 0;
   let failed = 0;
@@ -162,8 +164,13 @@ async function main() {
   console.log(`Trades span ${blockGroups.size} unique blocks.`);
 
   for (const [blockNumber, blockTrades] of blockGroups) {
-    // Try exact historical rate for this block
+    // Try exact historical rate (both PLOT/HUNT and HUNT/USD at historical block)
     const exactRate = await getExactHistoricalRate(BigInt(blockNumber));
+
+    // Fallback: current PLOT/HUNT × historical HUNT/USD at this block
+    const approxRate = exactRate === null
+      ? await getApproxHistoricalRate(BigInt(blockNumber))
+      : null;
 
     const rate = exactRate ?? approxRate;
     const source = exactRate !== null ? "backfill_exact" : "backfill_approx";

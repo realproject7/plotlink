@@ -87,8 +87,14 @@ export async function GET(req: Request) {
     toBlock,
   });
 
-  // Fetch current PLOT/USD rate once per batch (same rate for all trades in this scan)
+  // Fetch current PLOT/USD rate once per batch.
+  // If scanning blocks far behind head (~200+ blocks / ~7 min), the current rate
+  // may not reflect trade-time pricing. Mark as 'live' only for near-head scans.
   const reserveUsdRate = await getReserveUsdRate();
+  const isCatchUp = currentBlock - toBlock > BigInt(200);
+  const rateSource = reserveUsdRate !== null
+    ? (isCatchUp ? "backfill_approx" : "live")
+    : null;
 
   let inserted = 0;
   let skipped = 0;
@@ -134,6 +140,7 @@ export async function GET(req: Request) {
         supabase,
         getTimestamp,
         reserveUsdRate,
+        rateSource,
       );
       inserted++;
     } catch (err) {
@@ -174,6 +181,7 @@ async function processTradeEvent(
   supabase: SupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>,
   reserveUsdRate: number | null,
+  rateSource: string | null,
 ) {
   const args = decoded.args as {
     token: `0x${string}`;
@@ -227,7 +235,7 @@ async function processTradeEvent(
     contract_address: MCV2_BOND.toLowerCase(),
     user_address: args.receiver.toLowerCase(),
     reserve_usd_rate: reserveUsdRate,
-    rate_source: reserveUsdRate !== null ? "live" : null,
+    rate_source: rateSource,
   };
 
   const { error } = await supabase

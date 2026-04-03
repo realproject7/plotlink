@@ -216,6 +216,12 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
 
   const priceLabel = effectiveMode === "usd" ? "USD" : RESERVE_LABEL;
 
+  // In USD mode, check if the last charted point is actually the most recent trade.
+  // If newer trades exist without USD data, label accordingly.
+  const lastChartTime = new Date(chartPoints[lastIdx].time).getTime();
+  const lastTradeTime = new Date(tradePoints[tradePoints.length - 1].block_timestamp).getTime();
+  const isLatest = effectiveMode === "reserve" || lastChartTime >= lastTradeTime;
+
   return (
     <section className="border-border mt-4 rounded border px-4 py-4">
       <div className="flex items-center justify-between">
@@ -339,7 +345,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
       <p className="text-muted mt-1 text-[10px]">
         Price per token ({priceLabel})
         <span className="text-accent-dim">
-          {" "}&middot; latest: {formatPrice(chartPoints[lastIdx].price)} {priceLabel}
+          {" "}&middot; {isLatest ? "latest" : "last USD"}: {formatPrice(chartPoints[lastIdx].price)} {priceLabel}
         </span>
       </p>
       {effectiveMode === "usd" && hasApproxData && (
