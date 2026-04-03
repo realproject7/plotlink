@@ -263,128 +263,128 @@ function StoryHeader({
     : null;
 
   return (
-    <>
-      {/* Zone 1: Hero — Cover + Identity */}
-      <header className="border-border border-b pb-6">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-          {/* Moleskine book cover */}
-          <div className="shrink-0 w-[130px] sm:w-[160px]">
+    <header className="pb-6">
+      <div className="flex flex-row items-start gap-4">
+        {/* Moleskine book cover — left-aligned on all sizes */}
+        <div className="shrink-0 w-[100px] sm:w-[160px]">
+          <div
+            className="relative flex flex-col overflow-hidden border border-[var(--border)]"
+            style={{
+              aspectRatio: "2/3",
+              borderRadius: "5px 12px 12px 5px",
+              backgroundColor: "#F5EFE6",
+              boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
+            }}
+          >
             <div
-              className="relative flex flex-col overflow-hidden border border-[var(--border)]"
-              style={{
-                aspectRatio: "2/3",
-                borderRadius: "5px 12px 12px 5px",
-                backgroundColor: "#F5EFE6",
-                boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
-              }}
-            >
-              <div
-                className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
-                style={{ background: "rgba(139, 69, 19, 0.15)" }}
-              />
-              <div className="relative z-10 px-2.5 pt-2.5">
-                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
-                  {storyline.genre || "Uncategorized"}
-                </span>
-              </div>
-              <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
-                <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
-                  {storyline.title}
-                </span>
-              </div>
-              <div className="relative z-10 px-2.5 pb-2.5">
-                <span className="text-[8px] text-[var(--text-muted)]">
-                  {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-                </span>
-              </div>
+              className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
+              style={{ background: "rgba(139, 69, 19, 0.15)" }}
+            />
+            <div className="relative z-10 px-2.5 pt-2.5">
+              <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+                {storyline.genre || "Uncategorized"}
+              </span>
             </div>
-          </div>
-
-          {/* Info panel */}
-          <div className="min-w-0 w-full sm:flex-1">
-            <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
-              {storyline.title}
-            </h1>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-              <RatingSummary storylineId={storyline.storyline_id} separator />
-              <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+            <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
+              <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
+                {storyline.title}
+              </span>
             </div>
-            <div className="mt-3 space-y-1.5 text-xs">
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted w-14 shrink-0">Writer</span>
-                <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
-                  <WriterIdentity address={storyline.writer_address} />
-                </Suspense>
-                {storyline.writer_type === 1 && <AgentBadge />}
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-muted w-14 shrink-0">Genre</span>
-                <span className="text-foreground font-medium">
-                  {storyline.genre || "Uncategorized"}
-                  {storyline.language && storyline.language !== "English" && (
-                    <span className="text-muted ml-1.5">· {storyline.language}</span>
-                  )}
-                </span>
-              </div>
+            <div className="relative z-10 px-2.5 pb-2.5">
+              <span className="text-[8px] text-[var(--text-muted)]">
+                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+              </span>
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Zone 2: Stats Card + Action */}
-      {priceInfo && (
-        <div className="border-border rounded border px-3 py-3 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {/* Row 1 */}
-            <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-              <MarketCapBox
-                tokenAddress={storyline.token_address}
-                totalSupply={parseFloat(priceInfo.totalSupply)}
-                pricePerToken={parseFloat(priceInfo.pricePerToken)}
-              />
+        {/* Right column: info + stats + CTA */}
+        <div className="min-w-0 flex-1">
+          {/* Title */}
+          <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
+            {storyline.title}
+          </h1>
+
+          {/* Rating + Views */}
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+            <RatingSummary storylineId={storyline.storyline_id} separator />
+            <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+          </div>
+
+          {/* Info rows */}
+          <div className="mt-2 space-y-1 text-xs">
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted w-12 shrink-0">Writer</span>
+              <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
+                <WriterIdentity address={storyline.writer_address} />
+              </Suspense>
+              {storyline.writer_type === 1 && <AgentBadge />}
             </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-              <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
-              <div className="text-muted text-[9px]">Supply Minted</div>
-            </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-              {storyline.sunset ? (
-                <>
-                  <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-                  <div className="text-muted text-[9px]">Complete</div>
-                </>
-              ) : storyline.has_deadline && storyline.last_plot_time ? (
-                <>
-                  <div className="text-foreground text-sm font-bold leading-tight">
-                    <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-foreground text-sm font-bold" />
-                  </div>
-                  <div className="text-muted text-[9px]">Deadline</div>
-                </>
-              ) : (
-                <>
-                  <div className="text-foreground text-sm font-bold">—</div>
-                  <div className="text-muted text-[9px]">Deadline</div>
-                </>
-              )}
-            </div>
-            {/* Row 2 */}
-            <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-              <div className="text-foreground text-sm font-bold">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</div>
-              <div className="text-muted text-[9px]">Token Price</div>
-            </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-              <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-              <div className="text-muted text-[9px]">{storyline.plot_count === 1 ? "Plot" : "Plots"}</div>
-            </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-              <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
-              <div className="text-muted text-[9px]">Created</div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted w-12 shrink-0">Genre</span>
+              <span className="text-foreground font-medium">
+                {storyline.genre || "Uncategorized"}
+                {storyline.language && storyline.language !== "English" && (
+                  <span className="text-muted ml-1.5">· {storyline.language}</span>
+                )}
+              </span>
             </div>
           </div>
+
+          {/* Stats grid — inside right column */}
+          {priceInfo && (
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                <MarketCapBox
+                  tokenAddress={storyline.token_address}
+                  totalSupply={parseFloat(priceInfo.totalSupply)}
+                  pricePerToken={parseFloat(priceInfo.pricePerToken)}
+                />
+              </div>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
+                <div className="text-muted text-[9px]">Supply Minted</div>
+              </div>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                {storyline.sunset ? (
+                  <>
+                    <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
+                    <div className="text-muted text-[9px]">Complete</div>
+                  </>
+                ) : storyline.has_deadline && storyline.last_plot_time ? (
+                  <>
+                    <div className="text-foreground text-sm font-bold leading-tight">
+                      <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-foreground text-sm font-bold" />
+                    </div>
+                    <div className="text-muted text-[9px]">Deadline</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-foreground text-sm font-bold">—</div>
+                    <div className="text-muted text-[9px]">Deadline</div>
+                  </>
+                )}
+              </div>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                <div className="text-foreground text-sm font-bold">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</div>
+                <div className="text-muted text-[9px]">Token Price</div>
+              </div>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
+                <div className="text-muted text-[9px]">{storyline.plot_count === 1 ? "Plot" : "Plots"}</div>
+              </div>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
+                <div className="text-muted text-[9px]">Created</div>
+              </div>
+            </div>
+          )}
+
+          {/* CTA — in right column, auto-width */}
+          <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
         </div>
-      )}
-      <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
-    </>
+      </div>
+    </header>
   );
 }
 
