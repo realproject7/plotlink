@@ -5,6 +5,7 @@ import { createServerClient } from "../../../../../lib/supabase";
 import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
+import { getReserveUsdRate } from "../../../../../lib/reserve-usd-rate";
 import type { Database } from "../../../../../lib/supabase";
 
 const SCAN_BLOCKS = BigInt(200);
@@ -86,6 +87,9 @@ export async function GET(req: Request) {
     toBlock,
   });
 
+  // Fetch current PLOT/USD rate once per batch (same rate for all trades in this scan)
+  const reserveUsdRate = await getReserveUsdRate();
+
   let inserted = 0;
   let skipped = 0;
   let errors = 0;
@@ -129,6 +133,7 @@ export async function GET(req: Request) {
         storylineId,
         supabase,
         getTimestamp,
+        reserveUsdRate,
       );
       inserted++;
     } catch (err) {
@@ -168,6 +173,7 @@ async function processTradeEvent(
   storylineId: number,
   supabase: SupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>,
+  reserveUsdRate: number | null,
 ) {
   const args = decoded.args as {
     token: `0x${string}`;
@@ -220,6 +226,8 @@ async function processTradeEvent(
     log_index: log.logIndex!,
     contract_address: MCV2_BOND.toLowerCase(),
     user_address: args.receiver.toLowerCase(),
+    reserve_usd_rate: reserveUsdRate,
+    rate_source: reserveUsdRate !== null ? "live" : null,
   };
 
   const { error } = await supabase

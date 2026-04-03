@@ -358,6 +358,8 @@ export interface Database {
           log_index: number;
           contract_address: string;
           user_address: string | null;
+          reserve_usd_rate: number | null;
+          rate_source: string | null;
         };
         Insert: {
           id?: never;
@@ -373,6 +375,8 @@ export interface Database {
           log_index: number;
           contract_address: string;
           user_address?: string | null;
+          reserve_usd_rate?: number | null;
+          rate_source?: string | null;
         };
         Update: {
           id?: never;
@@ -388,6 +392,8 @@ export interface Database {
           log_index?: number;
           contract_address?: string;
           user_address?: string | null;
+          reserve_usd_rate?: number | null;
+          rate_source?: string | null;
         };
         Relationships: [];
       };

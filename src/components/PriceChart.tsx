@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits } from "viem";
 import { supabase } from "../../lib/supabase";
@@ -12,9 +13,18 @@ const PLOT_W = CHART_W - PAD.left - PAD.right;
 const PLOT_H = CHART_H - PAD.top - PAD.bottom;
 const MAX_POINTS = 50;
 
+type PriceMode = "usd" | "reserve";
+
 interface PriceChartProps {
   tokenAddress: Address;
   currentPriceRaw: bigint;
+}
+
+interface TradePoint {
+  price_per_token: number;
+  block_timestamp: string;
+  reserve_usd_rate: number | null;
+  rate_source: string | null;
 }
 
 function formatTime(iso: string): string {
@@ -28,14 +38,23 @@ function formatTime(iso: string): string {
   return d.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-function formatPrice(v: number): string {
+function formatReservePrice(v: number): string {
   if (v === 0) return "0";
   if (v < 0.001) return v.toExponential(0);
   if (v < 1) return v.toFixed(4);
   return v.toFixed(2);
 }
 
+function formatUsdPrice(v: number): string {
+  if (v === 0) return "$0";
+  if (v >= 1) return `$${v.toFixed(2)}`;
+  if (v >= 0.01) return `$${v.toFixed(4)}`;
+  if (v >= 0.0001) return `$${v.toFixed(6)}`;
+  return `$${v.toExponential(2)}`;
+}
+
 export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
+  const [mode, setMode] = useState<PriceMode>("usd");
   const currentPrice = Number(formatUnits(currentPriceRaw, 18));
 
   const { data: tradePoints } = useQuery({
@@ -44,17 +63,17 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
       if (!supabase) return [];
       const { data } = await supabase
         .from("trade_history")
-        .select("price_per_token, block_timestamp")
+        .select("price_per_token, block_timestamp, reserve_usd_rate, rate_source")
         .eq("token_address", tokenAddress.toLowerCase())
         .order("block_timestamp", { ascending: true });
       if (!data || data.length === 0) return [];
 
       // Downsample if too many points
-      if (data.length <= MAX_POINTS) return data;
+      if (data.length <= MAX_POINTS) return data as TradePoint[];
       const step = (data.length - 1) / (MAX_POINTS - 1);
-      const sampled = [];
+      const sampled: TradePoint[] = [];
       for (let i = 0; i < MAX_POINTS; i++) {
-        sampled.push(data[Math.round(i * step)]);
+        sampled.push(data[Math.round(i * step)] as TradePoint);
       }
       return sampled;
     },
@@ -63,6 +82,14 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   });
 
   const hasData = tradePoints && tradePoints.length > 0;
+
+  // Check if USD data is available (at least some points have a rate)
+  const hasUsdData = hasData && tradePoints.some((t) => t.reserve_usd_rate !== null);
+  const hasApproxData = hasData && tradePoints.some((t) => t.rate_source === "backfill_approx");
+
+  // If in USD mode but no USD data, fall back to reserve
+  const effectiveMode = mode === "usd" && !hasUsdData ? "reserve" : mode;
+  const formatPrice = effectiveMode === "usd" ? formatUsdPrice : formatReservePrice;
 
   // Empty state
   if (!hasData) {
@@ -80,7 +107,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
           <p className="text-muted mt-2 text-[10px]">No trading activity yet</p>
           {currentPrice > 0 && (
             <p className="text-accent mt-1 text-xs font-medium">
-              {formatPrice(currentPrice)} {RESERVE_LABEL}
+              {formatReservePrice(currentPrice)} {RESERVE_LABEL}
             </p>
           )}
         </div>
@@ -88,14 +115,37 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
     );
   }
 
-  // Build points array (round to eliminate floating-point noise)
-  const points = tradePoints.map((t) => ({
-    time: t.block_timestamp,
-    price: Math.round(Number(t.price_per_token) * 1e8) / 1e8,
-  }));
+  // Build points array with USD conversion where available
+  const points = tradePoints.map((t) => {
+    const reservePrice = Math.round(Number(t.price_per_token) * 1e8) / 1e8;
+    const usdPrice = t.reserve_usd_rate !== null
+      ? reservePrice * t.reserve_usd_rate
+      : null;
+    return {
+      time: t.block_timestamp,
+      price: effectiveMode === "usd" && usdPrice !== null ? usdPrice : reservePrice,
+      hasUsd: usdPrice !== null,
+      isApprox: t.rate_source === "backfill_approx",
+    };
+  });
+
+  // For USD mode, filter to only points with USD data
+  const chartPoints = effectiveMode === "usd"
+    ? points.filter((p) => p.hasUsd)
+    : points;
+
+  if (chartPoints.length === 0) {
+    // All points filtered out — shouldn't happen, but fallback
+    return (
+      <section className="border-border mt-4 rounded border px-4 py-4">
+        <h2 className="text-foreground text-sm font-medium">Price</h2>
+        <p className="text-muted mt-2 text-[10px]">USD pricing data not yet available</p>
+      </section>
+    );
+  }
 
   // Scale with minimum Y range to prevent micro-noise exaggeration
-  const prices = points.map((p) => p.price);
+  const prices = chartPoints.map((p) => p.price);
   const minY = Math.min(...prices);
   const maxY = Math.max(...prices);
   const rawRange = maxY - minY;
@@ -104,35 +154,99 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   const yPad = yRange * 0.1;
 
   const scaleX = (i: number) =>
-    PAD.left + (i / (points.length - 1 || 1)) * PLOT_W;
+    PAD.left + (i / (chartPoints.length - 1 || 1)) * PLOT_W;
   const scaleY = (v: number) =>
     PAD.top + PLOT_H - ((v - (minY - yPad)) / (yRange + yPad * 2)) * PLOT_H;
 
-  const linePoints = points
+  // Build line segments: solid for exact data, dashed for approximate
+  const lineSegments: { points: string; isApprox: boolean }[] = [];
+  let currentSegment: { indices: number[]; isApprox: boolean } | null = null;
+
+  for (let i = 0; i < chartPoints.length; i++) {
+    const isApprox = chartPoints[i].isApprox;
+    if (!currentSegment || currentSegment.isApprox !== isApprox) {
+      // Overlap with previous segment's last point for continuity
+      if (currentSegment && currentSegment.indices.length > 0) {
+        lineSegments.push({
+          points: currentSegment.indices
+            .map((idx) => `${scaleX(idx)},${scaleY(chartPoints[idx].price)}`)
+            .join(" "),
+          isApprox: currentSegment.isApprox,
+        });
+      }
+      currentSegment = {
+        indices: currentSegment ? [currentSegment.indices[currentSegment.indices.length - 1], i] : [i],
+        isApprox,
+      };
+    } else {
+      currentSegment.indices.push(i);
+    }
+  }
+  if (currentSegment && currentSegment.indices.length > 0) {
+    lineSegments.push({
+      points: currentSegment.indices
+        .map((idx) => `${scaleX(idx)},${scaleY(chartPoints[idx].price)}`)
+        .join(" "),
+      isApprox: currentSegment.isApprox,
+    });
+  }
+
+  // Full line for area fill
+  const allLinePoints = chartPoints
     .map((p, i) => `${scaleX(i)},${scaleY(p.price)}`)
     .join(" ");
 
   // Last point for pulse marker
-  const lastIdx = points.length - 1;
+  const lastIdx = chartPoints.length - 1;
   const lastX = scaleX(lastIdx);
-  const lastY = scaleY(points[lastIdx].price);
+  const lastY = scaleY(chartPoints[lastIdx].price);
 
   // Y-axis ticks
   const yTicks = [minY, (minY + maxY) / 2, maxY];
 
   // X-axis time labels (first, mid, last) — deduplicated when indices overlap
   const xLabelCandidates = [
-    { idx: 0, label: formatTime(points[0].time) },
-    { idx: Math.floor(lastIdx / 2), label: formatTime(points[Math.floor(lastIdx / 2)].time) },
-    { idx: lastIdx, label: formatTime(points[lastIdx].time) },
+    { idx: 0, label: formatTime(chartPoints[0].time) },
+    { idx: Math.floor(lastIdx / 2), label: formatTime(chartPoints[Math.floor(lastIdx / 2)].time) },
+    { idx: lastIdx, label: formatTime(chartPoints[lastIdx].time) },
   ];
   const xLabels = xLabelCandidates.filter(
     (item, i, arr) => arr.findIndex((a) => a.idx === item.idx) === i,
   );
 
+  const priceLabel = effectiveMode === "usd" ? "USD" : RESERVE_LABEL;
+
   return (
     <section className="border-border mt-4 rounded border px-4 py-4">
-      <h2 className="text-foreground text-sm font-medium">Price</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-foreground text-sm font-medium">Price</h2>
+        {hasUsdData && (
+          <div className="border-border flex rounded border text-[10px]">
+            <button
+              type="button"
+              className={`px-2 py-0.5 transition-colors ${
+                effectiveMode === "usd"
+                  ? "bg-accent text-white"
+                  : "text-muted hover:text-foreground"
+              }`}
+              onClick={() => setMode("usd")}
+            >
+              USD
+            </button>
+            <button
+              type="button"
+              className={`px-2 py-0.5 transition-colors ${
+                effectiveMode === "reserve"
+                  ? "bg-accent text-white"
+                  : "text-muted hover:text-foreground"
+              }`}
+              onClick={() => setMode("reserve")}
+            >
+              {RESERVE_LABEL}
+            </button>
+          </div>
+        )}
+      </div>
       <svg
         viewBox={`0 0 ${CHART_W} ${CHART_H}`}
         className="mt-2 w-full"
@@ -189,18 +303,23 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
           </linearGradient>
         </defs>
         <polygon
-          points={`${linePoints} ${scaleX(lastIdx)},${PAD.top + PLOT_H} ${PAD.left},${PAD.top + PLOT_H}`}
+          points={`${allLinePoints} ${scaleX(lastIdx)},${PAD.top + PLOT_H} ${PAD.left},${PAD.top + PLOT_H}`}
           fill="url(#priceGradient)"
         />
 
-        {/* Price line */}
-        <polyline
-          points={linePoints}
-          fill="none"
-          stroke="var(--accent)"
-          strokeWidth={1.5}
-          strokeLinejoin="round"
-        />
+        {/* Price line segments: solid for exact, dashed for approximate */}
+        {lineSegments.map((seg, i) => (
+          <polyline
+            key={`line-${i}`}
+            points={seg.points}
+            fill="none"
+            stroke="var(--accent)"
+            strokeWidth={1.5}
+            strokeLinejoin="round"
+            strokeDasharray={seg.isApprox && effectiveMode === "usd" ? "4 2" : undefined}
+            opacity={seg.isApprox && effectiveMode === "usd" ? 0.6 : 1}
+          />
+        ))}
 
         {/* Current price pulse marker */}
         <circle
@@ -218,11 +337,16 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
         <circle cx={lastX} cy={lastY} r={3} fill="var(--accent)" />
       </svg>
       <p className="text-muted mt-1 text-[10px]">
-        Price per token ({RESERVE_LABEL})
+        Price per token ({priceLabel})
         <span className="text-accent-dim">
-          {" "}&middot; latest: {formatPrice(points[lastIdx].price)} {RESERVE_LABEL}
+          {" "}&middot; latest: {formatPrice(chartPoints[lastIdx].price)} {priceLabel}
         </span>
       </p>
+      {effectiveMode === "usd" && hasApproxData && (
+        <p className="text-muted mt-0.5 text-[9px] opacity-60">
+          Dashed segments use approximate USD conversion
+        </p>
+      )}
     </section>
   );
 }

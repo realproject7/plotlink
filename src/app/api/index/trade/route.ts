@@ -6,6 +6,7 @@ import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
 import { validateRecentTx } from "../../../../../lib/index-auth";
+import { getReserveUsdRate } from "../../../../../lib/reserve-usd-rate";
 import type { Database } from "../../../../../lib/supabase";
 
 type TradeInsert = Database["public"]["Tables"]["trade_history"]["Insert"];
@@ -53,6 +54,9 @@ export async function POST(req: Request) {
       await new Promise((r) => setTimeout(r, attempt * 1000));
     }
   }
+
+  // Fetch current PLOT/USD rate for this trade batch
+  const reserveUsdRate = await getReserveUsdRate();
 
   let indexed = 0;
 
@@ -118,6 +122,8 @@ export async function POST(req: Request) {
         log_index: log.logIndex!,
         contract_address: MCV2_BOND.toLowerCase(),
         user_address: args.receiver.toLowerCase(),
+        reserve_usd_rate: reserveUsdRate,
+        rate_source: reserveUsdRate !== null ? "live" : null,
       };
 
       const { error: dbError } = await supabase
