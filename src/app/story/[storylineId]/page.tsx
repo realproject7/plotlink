@@ -298,20 +298,15 @@ function StoryHeader({
           </div>
         </div>
 
-        {/* Right column: info + stats + CTA */}
+        {/* Right column: info only */}
         <div className="min-w-0 flex-1">
-          {/* Title */}
           <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
             {storyline.title}
           </h1>
-
-          {/* Rating + Views */}
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
             <RatingSummary storylineId={storyline.storyline_id} separator />
             <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
           </div>
-
-          {/* Info rows */}
           <div className="mt-2 space-y-1 text-xs">
             <div className="flex items-center gap-1.5">
               <span className="text-muted w-12 shrink-0">Writer</span>
@@ -330,9 +325,13 @@ function StoryHeader({
               </span>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Stats grid — inside right column */}
-          {priceInfo && (
+      {/* Stats grid — below cover+info on mobile, aligned with right column on desktop */}
+      {priceInfo && (
+        <div className="sm:pl-[176px]">
+          <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
             <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
               <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
                 <MarketCapBox
@@ -378,11 +377,13 @@ function StoryHeader({
                 <div className="text-muted text-[9px]">Created</div>
               </div>
             </div>
-          )}
-
-          {/* CTA — in right column, auto-width */}
-          <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
+          </div>
         </div>
+      )}
+
+      {/* CTA — below stats, aligned with right column on desktop */}
+      <div className="sm:pl-[176px]">
+        <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
       </div>
     </header>
   );
