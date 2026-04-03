@@ -15,25 +15,27 @@ export function AddPlotButton({
   writerAddress,
   lastPlotTime,
   sunset,
+  hasDeadline,
 }: {
   storylineId: number;
   writerAddress: string;
   lastPlotTime?: string | null;
   sunset?: boolean;
+  hasDeadline?: boolean;
 }) {
   const { address } = useAccount();
   if (!address || address.toLowerCase() !== writerAddress.toLowerCase())
     return null;
 
-  const expired = sunset || (lastPlotTime ? isDeadlineExpired(lastPlotTime) : false);
+  const expired = sunset || (hasDeadline !== false && lastPlotTime ? isDeadlineExpired(lastPlotTime) : false);
 
   if (expired) {
     return (
       <div
         className="border-border text-muted mt-3 block w-full rounded border py-2 text-center text-xs font-medium opacity-50"
-        title="The 7-day deadline has expired"
+        title={sunset ? "This story has sunset" : "The 7-day deadline has expired"}
       >
-        Deadline expired
+        {sunset ? "Story complete" : "Deadline expired"}
       </div>
     );
   }
