@@ -65,6 +65,7 @@ async function fetchWriterStorylines(address: string): Promise<Storyline[]> {
 
 function isStorylineExpired(s: Storyline): boolean {
   if (s.sunset) return true;
+  if (!s.has_deadline) return false;
   if (!s.last_plot_time) return false;
   return Date.now() > new Date(s.last_plot_time).getTime() + DEADLINE_MS;
 }
