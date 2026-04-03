@@ -944,7 +944,7 @@ function StoryRow({
       {/* Status + Created + Deadline */}
       <div className="px-4 py-2 text-xs space-y-0.5">
         <div className="flex items-center gap-2">
-          {!storyline.sunset && storyline.last_plot_time && (
+          {!storyline.sunset && storyline.has_deadline && storyline.last_plot_time && (
             <>
               <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
               <span className="text-muted">·</span>
