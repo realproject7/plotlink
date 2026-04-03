@@ -5,6 +5,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 export interface SelectOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface SelectProps {
@@ -80,7 +81,7 @@ export function Select({
           break;
         case "Enter":
           e.preventDefault();
-          if (focusIndex >= 0 && focusIndex < allOptions.length) {
+          if (focusIndex >= 0 && focusIndex < allOptions.length && !allOptions[focusIndex].disabled) {
             onChange(allOptions[focusIndex].value);
             setOpen(false);
           }
@@ -135,17 +136,20 @@ export function Select({
               aria-selected={opt.value === value}
               onMouseEnter={() => setFocusIndex(i)}
               onClick={() => {
+                if (opt.disabled) return;
                 onChange(opt.value);
                 setOpen(false);
               }}
-              className={`cursor-pointer px-3 py-2 text-sm ${
-                opt.value === value
-                  ? "bg-accent text-background"
-                  : i === focusIndex
-                    ? "bg-border/50 text-foreground"
-                    : opt.value === ""
-                      ? "text-muted hover:bg-border/30"
-                      : "text-foreground hover:bg-border/30"
+              className={`px-3 py-2 text-sm ${
+                opt.disabled
+                  ? "text-muted opacity-50 cursor-default"
+                  : opt.value === value
+                    ? "bg-accent text-background cursor-pointer"
+                    : i === focusIndex
+                      ? "bg-border/50 text-foreground cursor-pointer"
+                      : opt.value === ""
+                        ? "text-muted hover:bg-border/30 cursor-pointer"
+                        : "text-foreground hover:bg-border/30 cursor-pointer"
               }`}
             >
               {opt.label}

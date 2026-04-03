@@ -372,9 +372,7 @@ function StoryHeader({
           )}
         </div>
       </div>
-      {!storyline.sunset && (
-        <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} />
-      )}
+      <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} />
     </header>
   );
 }

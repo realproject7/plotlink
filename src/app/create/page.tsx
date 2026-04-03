@@ -533,12 +533,14 @@ function CreatePage() {
                   onChange={(v) => setChainStorylineId(v ? Number(v) : null)}
                   disabled={chainBusy}
                   placeholder="Select a storyline"
-                  options={storylines
-                    .filter((s) => !isStorylineExpired(s))
-                    .map((s) => ({
+                  options={storylines.map((s) => {
+                    const expired = isStorylineExpired(s);
+                    return {
                       value: String(s.storyline_id),
-                      label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})`,
-                    }))}
+                      label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})${expired ? " (expired)" : ""}`,
+                      disabled: expired,
+                    };
+                  })}
                 />
               )}
             </div>

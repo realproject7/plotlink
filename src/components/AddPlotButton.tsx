@@ -14,16 +14,18 @@ export function AddPlotButton({
   storylineId,
   writerAddress,
   lastPlotTime,
+  sunset,
 }: {
   storylineId: number;
   writerAddress: string;
   lastPlotTime?: string | null;
+  sunset?: boolean;
 }) {
   const { address } = useAccount();
   if (!address || address.toLowerCase() !== writerAddress.toLowerCase())
     return null;
 
-  const expired = lastPlotTime ? isDeadlineExpired(lastPlotTime) : false;
+  const expired = sunset || (lastPlotTime ? isDeadlineExpired(lastPlotTime) : false);
 
   if (expired) {
     return (
