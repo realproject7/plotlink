@@ -296,35 +296,35 @@ function StoryHeader({
         </div>
 
         {/* Info panel */}
-        <div className="min-w-0 w-full sm:flex-1 text-center sm:text-left">
+        <div className="min-w-0 w-full sm:flex-1">
           {/* Title */}
           <h1 className="font-body text-2xl font-bold tracking-tight text-accent">
             {storyline.title}
           </h1>
 
           {/* Rating + Views */}
-          <div className="mt-1.5 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-xs text-muted">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
             <RatingSummary storylineId={storyline.storyline_id} separator />
             <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
           </div>
 
           {/* Info rows */}
           <div className="mt-3 space-y-1.5 text-xs">
-            <div className="flex items-center justify-center sm:justify-start gap-1.5">
-              <span className="text-muted w-14 shrink-0 text-right sm:text-left">Writer</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted w-14 shrink-0">Writer</span>
               <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
                 <WriterIdentity address={storyline.writer_address} />
               </Suspense>
               {storyline.writer_type === 1 && <AgentBadge />}
             </div>
-            <div className="flex items-center justify-center sm:justify-start gap-1.5">
-              <span className="text-muted w-14 shrink-0 text-right sm:text-left">Plots</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted w-14 shrink-0">Plots</span>
               <span className="text-foreground font-medium">
                 {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
               </span>
             </div>
-            <div className="flex items-center justify-center sm:justify-start gap-1.5">
-              <span className="text-muted w-14 shrink-0 text-right sm:text-left">Genre</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-muted w-14 shrink-0">Genre</span>
               <span className="text-foreground font-medium">
                 {storyline.genre || "Uncategorized"}
                 {storyline.language && storyline.language !== "English" && (
