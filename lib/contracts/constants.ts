@@ -51,6 +51,9 @@ export const RESERVE_LABEL = "PLOT";
 // Supported Zap input tokens (Base)
 // ---------------------------------------------------------------------------
 
+/** 1inch Spot Price Aggregator on Base */
+export const ONEINCH_SPOT_PRICE_AGGREGATOR = "0x00000000000D6FFc74A8feb35aF5827bf57f6786" as const;
+
 /** USDC on Base */
 export const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as const;
 

@@ -132,6 +132,21 @@ export const priceForNextMintFunction = {
   outputs: [{ name: "", type: "uint128" }],
 } as const;
 
+/** 1inch Spot Price Aggregator: get exchange rate between two tokens. */
+export const spotPriceAbi = [
+  {
+    inputs: [
+      { name: "srcToken", type: "address" },
+      { name: "dstToken", type: "address" },
+      { name: "useWrappers", type: "bool" },
+    ],
+    name: "getRate",
+    outputs: [{ name: "weightedRate", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
 /** Full bond info for a token: creator, royalties, creation time, reserve. */
 export const tokenBondFunction = {
   type: "function",

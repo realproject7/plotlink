@@ -5,6 +5,7 @@ import { createServerClient } from "../../../../../lib/supabase";
 import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
+import { getReserveUsdRate } from "../../../../../lib/reserve-usd-rate";
 import type { Database } from "../../../../../lib/supabase";
 
 const SCAN_BLOCKS = BigInt(200);
@@ -86,6 +87,16 @@ export async function GET(req: Request) {
     toBlock,
   });
 
+  // Fetch current PLOT/USD rate once per batch.
+  // If the oldest block in this batch (fromBlock) is far behind head, the current
+  // rate may not reflect trade-time pricing. Use fromBlock for a conservative check
+  // so the entire batch is labeled consistently — only near-head batches get 'live'.
+  const reserveUsdRate = await getReserveUsdRate();
+  const isCatchUp = currentBlock - fromBlock > BigInt(200);
+  const rateSource = reserveUsdRate !== null
+    ? (isCatchUp ? "backfill_approx" : "live")
+    : null;
+
   let inserted = 0;
   let skipped = 0;
   let errors = 0;
@@ -129,6 +140,8 @@ export async function GET(req: Request) {
         storylineId,
         supabase,
         getTimestamp,
+        reserveUsdRate,
+        rateSource,
       );
       inserted++;
     } catch (err) {
@@ -168,6 +181,8 @@ async function processTradeEvent(
   storylineId: number,
   supabase: SupabaseClient,
   getTimestamp: (blockNumber: bigint) => Promise<string>,
+  reserveUsdRate: number | null,
+  rateSource: string | null,
 ) {
   const args = decoded.args as {
     token: `0x${string}`;
@@ -220,6 +235,8 @@ async function processTradeEvent(
     log_index: log.logIndex!,
     contract_address: MCV2_BOND.toLowerCase(),
     user_address: args.receiver.toLowerCase(),
+    reserve_usd_rate: reserveUsdRate,
+    rate_source: rateSource,
   };
 
   const { error } = await supabase
