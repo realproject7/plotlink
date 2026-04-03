@@ -1579,7 +1579,7 @@ function HoldingRecentTrades({ address, storylineId, plotUsd }: { address: strin
       if (!supabase) return [];
       const { data } = await supabase
         .from("trade_history")
-        .select("event_type, reserve_amount, block_timestamp")
+        .select("event_type, reserve_amount, block_timestamp, tx_hash")
         .eq("user_address", address)
         .eq("storyline_id", storylineId)
         .eq("contract_address", MCV2_BOND.toLowerCase())
@@ -1599,10 +1599,25 @@ function HoldingRecentTrades({ address, storylineId, plotUsd }: { address: strin
         const date = new Date(t.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" });
         const amount = plotUsd != null ? formatUsdValue(t.reserve_amount * plotUsd) : `${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`;
         return (
-          <div key={i} className="flex items-center justify-between text-[10px]">
-            <span className={isBuy ? "text-accent" : "text-error"}>{isBuy ? "Buy" : "Sell"}</span>
+          <div key={i} className="border-border flex items-center gap-2 rounded border px-3 py-1.5 text-xs">
+            <span className={`font-medium shrink-0 w-8 ${isBuy ? "text-green-700" : "text-red-700"}`}>
+              {isBuy ? "Buy" : "Sell"}
+            </span>
             <span className="text-foreground">{amount}</span>
-            <span className="text-muted">{date}</span>
+            <time dateTime={t.block_timestamp} className="text-muted ml-auto whitespace-nowrap text-[10px]">
+              {date}
+            </time>
+            {t.tx_hash && (
+              <a
+                href={`${EXPLORER_URL}/tx/${t.tx_hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted hover:text-accent transition-colors"
+                title="View on Basescan"
+              >
+                &#x2197;
+              </a>
+            )}
           </div>
         );
       })}
