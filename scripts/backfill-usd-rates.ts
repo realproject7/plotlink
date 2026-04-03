@@ -18,8 +18,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { createPublicClient, formatEther, http, type PublicClient } from "viem";
 import { base } from "viem/chains";
-import { MCV2_BOND, PLOT_TOKEN, HUNT } from "../lib/contracts/constants";
-import { priceForNextMintFunction } from "../lib/contracts/abi";
+import {
+  MCV2_BOND,
+  PLOT_TOKEN,
+  HUNT,
+  USDC,
+  ONEINCH_SPOT_PRICE_AGGREGATOR,
+} from "../lib/contracts/constants";
+import { priceForNextMintFunction, spotPriceAbi } from "../lib/contracts/abi";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -38,23 +44,6 @@ const ARCHIVE_RPCS = [
   "https://mainnet.base.org",
   "https://base.drpc.org",
 ];
-
-const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" as const;
-const ONEINCH_SPOT = "0x00000000000D6FFc74A8feb35aF5827bf57f6786" as const;
-
-const SPOT_PRICE_ABI = [
-  {
-    inputs: [
-      { name: "srcToken", type: "address" },
-      { name: "dstToken", type: "address" },
-      { name: "useWrappers", type: "bool" },
-    ],
-    name: "getRate",
-    outputs: [{ name: "weightedRate", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
 
 /**
  * Try to read PLOT/USD at a historical block using archive-capable RPCs.
@@ -77,10 +66,10 @@ async function getExactHistoricalRate(blockNumber: bigint): Promise<number | nul
           blockNumber,
         }),
         client.readContract({
-          address: ONEINCH_SPOT,
-          abi: SPOT_PRICE_ABI,
+          address: ONEINCH_SPOT_PRICE_AGGREGATOR,
+          abi: spotPriceAbi,
           functionName: "getRate",
-          args: [HUNT, USDC_ADDRESS, false],
+          args: [HUNT, USDC, false],
           blockNumber,
         }),
       ]);
@@ -114,10 +103,10 @@ async function getCurrentPlotUsd(): Promise<number | null> {
         args: [PLOT_TOKEN],
       }),
       client.readContract({
-        address: ONEINCH_SPOT,
-        abi: SPOT_PRICE_ABI,
+        address: ONEINCH_SPOT_PRICE_AGGREGATOR,
+        abi: spotPriceAbi,
         functionName: "getRate",
-        args: [HUNT, USDC_ADDRESS, false],
+        args: [HUNT, USDC, false],
       }),
     ]);
     const plotInHunt = Number(formatEther(BigInt(plotInHuntWei)));

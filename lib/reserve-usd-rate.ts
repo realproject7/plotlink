@@ -9,25 +9,14 @@
 
 import { formatEther } from "viem";
 import { publicClient } from "./rpc";
-import { MCV2_BOND, PLOT_TOKEN, HUNT } from "./contracts/constants";
-import { priceForNextMintFunction } from "./contracts/abi";
-
-const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" as const;
-const ONEINCH_SPOT_PRICE_AGGREGATOR = "0x00000000000D6FFc74A8feb35aF5827bf57f6786" as const;
-
-const SPOT_PRICE_ABI = [
-  {
-    inputs: [
-      { name: "srcToken", type: "address" },
-      { name: "dstToken", type: "address" },
-      { name: "useWrappers", type: "bool" },
-    ],
-    name: "getRate",
-    outputs: [{ name: "weightedRate", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
+import {
+  MCV2_BOND,
+  PLOT_TOKEN,
+  HUNT,
+  USDC,
+  ONEINCH_SPOT_PRICE_AGGREGATOR,
+} from "./contracts/constants";
+import { priceForNextMintFunction, spotPriceAbi } from "./contracts/abi";
 
 /**
  * Fetch the current HUNT/USD rate from the 1inch spot price aggregator.
@@ -39,12 +28,12 @@ export async function getHuntPriceUSD(
   const rpc = client ?? publicClient;
   const weightedRate = await rpc.readContract({
     address: ONEINCH_SPOT_PRICE_AGGREGATOR,
-    abi: SPOT_PRICE_ABI,
+    abi: spotPriceAbi,
     functionName: "getRate",
-    args: [HUNT, USDC_ADDRESS, false],
+    args: [HUNT, USDC, false],
   });
-  // USDC has 6 decimals, HUNT has 18 → rate is scaled to 1e18
-  // USD price = weightedRate / 1e6
+  // USDC has 6 decimals on Base (hardcoded — Base USDC is a known constant).
+  // HUNT has 18 → rate is scaled to 1e18. USD price = weightedRate / 1e6.
   return Number(weightedRate) / 1_000_000;
 }
 
