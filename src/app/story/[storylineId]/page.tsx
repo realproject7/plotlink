@@ -262,10 +262,62 @@ function StoryHeader({
     ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
 
+  const statsGrid = priceInfo ? (
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+        <MarketCapBox
+          tokenAddress={storyline.token_address}
+          totalSupply={parseFloat(priceInfo.totalSupply)}
+          pricePerToken={parseFloat(priceInfo.pricePerToken)}
+        />
+      </div>
+      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+        <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
+        <div className="text-muted text-[9px]">Supply Minted</div>
+      </div>
+      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+        {storyline.sunset ? (
+          <>
+            <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
+            <div className="text-muted text-[9px]">Complete</div>
+          </>
+        ) : storyline.has_deadline && storyline.last_plot_time ? (
+          <>
+            <div className="text-foreground text-sm font-bold leading-tight">
+              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-foreground text-sm font-bold" />
+            </div>
+            <div className="text-muted text-[9px]">Deadline</div>
+          </>
+        ) : (
+          <>
+            <div className="text-foreground text-sm font-bold">—</div>
+            <div className="text-muted text-[9px]">Deadline</div>
+          </>
+        )}
+      </div>
+      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+        <div className="text-foreground text-sm font-bold">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</div>
+        <div className="text-muted text-[9px]">Token Price</div>
+      </div>
+      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+        <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
+        <div className="text-muted text-[9px]">{storyline.plot_count === 1 ? "Plot" : "Plots"}</div>
+      </div>
+      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+        <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
+        <div className="text-muted text-[9px]">Created</div>
+      </div>
+    </div>
+  ) : null;
+
+  const ctaButton = (
+    <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
+  );
+
   return (
     <header className="pb-6">
-      <div className="flex flex-row items-start gap-4">
-        {/* Moleskine book cover — left-aligned on all sizes */}
+      <div className="flex flex-row items-start gap-4 sm:gap-6">
+        {/* Moleskine book cover */}
         <div className="shrink-0 w-[100px] sm:w-[160px]">
           <div
             className="relative flex flex-col overflow-hidden border border-[var(--border)]"
@@ -298,7 +350,7 @@ function StoryHeader({
           </div>
         </div>
 
-        {/* Right column: info only */}
+        {/* Right column: info + stats (desktop only) */}
         <div className="min-w-0 flex-1">
           <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
             {storyline.title}
@@ -326,59 +378,19 @@ function StoryHeader({
             </div>
           </div>
 
-          {/* Stats grid — inside right column, next to cover */}
-          {priceInfo && (
-            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-                <MarketCapBox
-                  tokenAddress={storyline.token_address}
-                  totalSupply={parseFloat(priceInfo.totalSupply)}
-                  pricePerToken={parseFloat(priceInfo.pricePerToken)}
-                />
-              </div>
-              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-                <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
-                <div className="text-muted text-[9px]">Supply Minted</div>
-              </div>
-              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-                {storyline.sunset ? (
-                  <>
-                    <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-                    <div className="text-muted text-[9px]">Complete</div>
-                  </>
-                ) : storyline.has_deadline && storyline.last_plot_time ? (
-                  <>
-                    <div className="text-foreground text-sm font-bold leading-tight">
-                      <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-foreground text-sm font-bold" />
-                    </div>
-                    <div className="text-muted text-[9px]">Deadline</div>
-                  </>
-                ) : (
-                  <>
-                    <div className="text-foreground text-sm font-bold">—</div>
-                    <div className="text-muted text-[9px]">Deadline</div>
-                  </>
-                )}
-              </div>
-              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-                <div className="text-foreground text-sm font-bold">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</div>
-                <div className="text-muted text-[9px]">Token Price</div>
-              </div>
-              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-                <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-                <div className="text-muted text-[9px]">{storyline.plot_count === 1 ? "Plot" : "Plots"}</div>
-              </div>
-              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-                <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
-                <div className="text-muted text-[9px]">Created</div>
-              </div>
-            </div>
+          {/* Stats + CTA — desktop only (inside right column) */}
+          {statsGrid && (
+            <div className="hidden sm:block mt-6">{statsGrid}</div>
           )}
-
-          {/* CTA — in right column */}
-          <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} lastPlotTime={storyline.last_plot_time} sunset={storyline.sunset} hasDeadline={storyline.has_deadline} />
+          <div className="hidden sm:block">{ctaButton}</div>
         </div>
       </div>
+
+      {/* Stats + CTA — mobile only (full-width below cover+info row) */}
+      {statsGrid && (
+        <div className="sm:hidden mt-4">{statsGrid}</div>
+      )}
+      <div className="sm:hidden [&_a]:w-full [&_div]:w-full">{ctaButton}</div>
     </header>
   );
 }
