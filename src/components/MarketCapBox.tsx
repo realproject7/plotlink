@@ -33,18 +33,16 @@ export function MarketCapBox({
   const changePercent = priceChange?.changePercent ?? null;
 
   return (
-    <div>
-      <span className="text-muted block text-[10px] uppercase tracking-wider">
-        Market Cap
-      </span>
-      <span className="font-semibold text-accent">
+    <>
+      <div className="text-foreground text-sm font-bold">
         {formatUsdValue(marketCapUsd)}
         {changePercent !== null && (
-          <span className={`ml-1.5 text-[10px] font-medium ${changePercent >= 0 ? "text-accent" : "text-error"}`}>
+          <span className={`ml-1 text-[10px] font-medium ${changePercent >= 0 ? "text-accent" : "text-error"}`}>
             {changePercent >= 0 ? "+" : ""}{changePercent.toFixed(1)}%
           </span>
         )}
-      </span>
-    </div>
+      </div>
+      <div className="text-muted text-[9px]">Market Cap</div>
+    </>
   );
 }
