@@ -341,12 +341,14 @@ function StoryHeader({
         <div className="mt-4 text-xs">
           <div className="border-border bg-surface grid grid-cols-1 sm:grid-cols-2 gap-2 rounded border px-3 py-2">
             <div className="grid grid-cols-2 gap-2">
-              <MarketCapBox
-                tokenAddress={storyline.token_address}
-                totalSupply={parseFloat(priceInfo.totalSupply)}
-                pricePerToken={parseFloat(priceInfo.pricePerToken)}
-              />
-              <div>
+              <div className="min-w-0">
+                <MarketCapBox
+                  tokenAddress={storyline.token_address}
+                  totalSupply={parseFloat(priceInfo.totalSupply)}
+                  pricePerToken={parseFloat(priceInfo.pricePerToken)}
+                />
+              </div>
+              <div className="min-w-0">
                 <span className="text-muted block text-[10px] uppercase tracking-wider">
                   Supply Minted
                 </span>
