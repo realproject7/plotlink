@@ -333,48 +333,45 @@ function StoryHeader({
               </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Market stats */}
-      {priceInfo && (
-        <div className="mt-4 text-xs">
-          <div className="border-border bg-surface grid grid-cols-1 sm:grid-cols-2 gap-2 rounded border px-3 py-2">
-            <div className="grid grid-cols-2 gap-2">
-              <div className="min-w-0">
+          {/* Stat boxes — inside info panel on desktop, below info rows */}
+          {priceInfo && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
                 <MarketCapBox
                   tokenAddress={storyline.token_address}
                   totalSupply={parseFloat(priceInfo.totalSupply)}
                   pricePerToken={parseFloat(priceInfo.pricePerToken)}
                 />
               </div>
-              <div className="min-w-0">
-                <span className="text-muted block text-[10px] uppercase tracking-wider">
-                  Supply Minted
-                </span>
-                <span className="font-semibold text-accent">
-                  {formatSupply(priceInfo.totalSupply)} tokens
-                </span>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
+                <div className="text-muted text-[9px]">Supply Minted</div>
+              </div>
+              <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+                {storyline.sunset ? (
+                  <>
+                    <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
+                    <div className="text-muted text-[9px]">Complete</div>
+                  </>
+                ) : storyline.last_plot_time ? (
+                  <>
+                    <div className="text-foreground text-sm font-bold leading-tight">
+                      <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel />
+                    </div>
+                    <div className="text-muted text-[9px]">Deadline</div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-foreground text-sm font-bold">—</div>
+                    <div className="text-muted text-[9px]">Deadline</div>
+                  </>
+                )}
               </div>
             </div>
-            {storyline.sunset ? (
-              <div>
-                <span className="text-muted">Story complete</span>
-                <span className="text-foreground ml-2">
-                  {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"} total
-                </span>
-              </div>
-            ) : storyline.last_plot_time ? (
-              <div>
-                <span className="text-muted block text-[10px] uppercase tracking-wider mb-1">
-                  Next Plot Publish Deadline
-                </span>
-                <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel />
-              </div>
-            ) : null}
-          </div>
+          )}
         </div>
-      )}
+      </div>
       {!storyline.sunset && (
         <AddPlotButton storylineId={storyline.storyline_id} writerAddress={storyline.writer_address} />
       )}
