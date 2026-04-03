@@ -14,6 +14,7 @@ import { usePublish, type PublishState } from "../../hooks/usePublish";
 import { useChainPlot } from "../../hooks/useChainPlot";
 import { usePublishIntent } from "../../hooks/usePublishIntent";
 import { RecoveryBanner } from "../../components/RecoveryBanner";
+import { DEADLINE_MS } from "../../components/DeadlineCountdown";
 import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
 import { STORY_FACTORY, MCV2_BOND } from "../../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../../lib/supabase";
@@ -56,11 +57,16 @@ async function fetchWriterStorylines(address: string): Promise<Storyline[]> {
     .select("*")
     .eq("writer_address", address.toLowerCase())
     .eq("hidden", false)
-    .eq("sunset", false)
     .eq("contract_address", STORY_FACTORY.toLowerCase())
     .order("block_timestamp", { ascending: false })
     .returns<Storyline[]>();
   return data ?? [];
+}
+
+function isStorylineExpired(s: Storyline): boolean {
+  if (s.sunset) return true;
+  if (!s.last_plot_time) return false;
+  return Date.now() > new Date(s.last_plot_time).getTime() + DEADLINE_MS;
 }
 
 export default function CreatePageWrapper() {
@@ -527,10 +533,14 @@ function CreatePage() {
                   onChange={(v) => setChainStorylineId(v ? Number(v) : null)}
                   disabled={chainBusy}
                   placeholder="Select a storyline"
-                  options={storylines.map((s) => ({
-                    value: String(s.storyline_id),
-                    label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})`,
-                  }))}
+                  options={storylines.map((s) => {
+                    const expired = isStorylineExpired(s);
+                    return {
+                      value: String(s.storyline_id),
+                      label: `${s.title} (${s.plot_count} ${s.plot_count === 1 ? "plot" : "plots"})${expired ? " (expired)" : ""}`,
+                      disabled: expired,
+                    };
+                  })}
                 />
               )}
             </div>
