@@ -357,7 +357,7 @@ function StoryHeader({
                 ) : storyline.last_plot_time ? (
                   <>
                     <div className="text-foreground text-sm font-bold leading-tight">
-                      <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel />
+                      <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-foreground text-sm font-bold" />
                     </div>
                     <div className="text-muted text-[9px]">Deadline</div>
                   </>
