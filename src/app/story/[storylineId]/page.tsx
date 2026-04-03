@@ -390,7 +390,7 @@ function StoryHeader({
       {statsGrid && (
         <div className="sm:hidden mt-4">{statsGrid}</div>
       )}
-      <div className="sm:hidden">{ctaButton}</div>
+      <div className="sm:hidden [&_a]:w-full [&_div]:w-full">{ctaButton}</div>
     </header>
   );
 }
