@@ -28,6 +28,19 @@ function applySlippage(amount: bigint, isBuy: boolean): bigint {
 
 const isZapAvailable = ZAP_PLOTLINK !== "0x0000000000000000000000000000000000000000";
 
+/** Format a raw bigint token amount for display with appropriate precision. */
+function formatTokenAmount(value: bigint, decimals: number): string {
+  const num = Number(formatUnits(value, decimals));
+  if (num === 0) return "0";
+  if (num >= 1) {
+    return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  if (num >= 0.001) {
+    return num.toFixed(4);
+  }
+  return num.toFixed(6);
+}
+
 /** Retry a writeContractAsync call once if it fails with a nonce error. */
 async function retryOnNonceError<T>(fn: () => Promise<T>): Promise<T> {
   try {
@@ -499,7 +512,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           </div>
           {balance !== undefined && (
             <p className="text-muted mt-1 text-[10px]">
-              Balance: {formatUnits(balance, balanceDecimals)} {balanceLabel}
+              Balance: {formatTokenAmount(balance, balanceDecimals)} {balanceLabel}
             </p>
           )}
           {insufficientBalance && (
@@ -548,7 +561,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         {/* Balance for sell tab and non-zap buy (PLOT direct) */}
         {(tab === "sell" || !isZapAvailable) && balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
-            Balance: {formatUnits(balance, balanceDecimals)} {balanceLabel}
+            Balance: {formatTokenAmount(balance, balanceDecimals)} {balanceLabel}
           </p>
         )}
         {(tab === "sell" || !isZapAvailable) && insufficientBalance && (
@@ -561,7 +574,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         <div className="text-muted mt-2 text-xs">
           Est. cost:{" "}
           <span className="font-semibold text-accent">
-            {formatUnits(zapQuote.fromTokenAmount, estimateDecimals)} {payToken}
+            {formatTokenAmount(zapQuote.fromTokenAmount, estimateDecimals)} {payToken}
           </span>
           <span className="ml-2">(incl. 3% slippage)</span>
         </div>
@@ -570,7 +583,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         <div className="text-muted mt-2 text-xs">
           {tab === "buy" ? "Max cost" : "Min return"}:{" "}
           <span className="font-semibold text-accent">
-            {formatUnits(applySlippage(estimate, tab === "buy"), 18)} {RESERVE_LABEL}
+            {formatTokenAmount(applySlippage(estimate, tab === "buy"), 18)} {RESERVE_LABEL}
           </span>
           <span className="ml-2">(incl. 3% slippage)</span>
         </div>
