@@ -134,41 +134,34 @@
 
 ---
 
-## Tonight's Queue — Batch 59: Reader Redesign + Storyline Page Polish
+## Completed — Batch 59
 
-### 1. plotlink#771 — Reader tab: holdings grid full width on mobile
-- 4-box grid under each holdings card doesn't stretch to full width on mobile
-- Fix: ensure grid spans full card width below the Moleskine on small screens
-- Branch: `task/771-reader-grid-fullwidth`
+- Batch 59: Reader grid fullwidth #777, Reader simplify #778, MCap USD #779, Deadline layout #780, Header redesign #781, USD chart #787
 
-### 2. plotlink#772 — Reader tab: simplify holdings + portfolio boxes, add trade history
-- Holdings card: 2 boxes (Value with % from cost basis, Balance) instead of 4
-- Add simple list of recent 5 transactions below each holdings card
-- Portfolio dashboard: 2 boxes (Total Value with % from cost basis, Holdings count) instead of 4
-- Branch: `task/772-reader-cost-pnl`
+---
 
-### 3. plotlink#775 — Storyline page: redesign top info section + Writer label
-- Change "by" prefix to "Writer"
-- Come up with a tidier, mobile-friendly layout for title/author/stats/genre/rating
-- Branch: `task/775-storyline-header-redesign`
+## Completed — Batch 60
 
-### 4. plotlink#773 — Storyline page: Market Cap USD + 24h change instead of Token Price
-- Replace TOKEN PRICE box with MARKET CAP in USD + 24h percent change
-- Keep Supply Minted as-is
-- Branch: `task/773-storyline-mcap`
+- Batch 60: Zap nonce fix #790, Trading format #791, MCap+Deadline grid #792, MCap+Supply mobile #793, Moleskine header #794, Reader trades style #795
 
-### 5. plotlink#774 — Storyline page: restructure deadline + stats into 2-col grid
-- Wrap deadline in proper section box titled "Next Plot Publish Deadline"
-- Desktop: 2-col grid (MCap + Supply), deadline box below
-- Mobile: stack vertically
-- Depends on #773
-- Branch: `task/774-storyline-deadline-layout`
+---
 
-### 6. plotlink#776 — Research: price chart USD feasibility
-- Investigate if we can convert PLOT-based price chart to USD
-- We don't store historical PLOT→USD rates per trade — research if data is available
-- Report findings BEFORE implementing — do not guess
-- Branch: `task/776-chart-usd-research`
+## Tonight's Queue — Batch 61: Post-Review Fixes
+
+### 1. plotlink#796 — DonateWidget: unformatted balance shows raw 18-decimal values
+- Same bug as #789 but in DonateWidget.tsx (lines ~152, 164)
+- Apply same `formatTokenAmount` or extract to shared `src/lib/format.ts`
+- Branch: `task/796-donate-format`
+
+### 2. plotlink#797 — Storyline header: RatingSummaryWithSeparator duplicates RatingSummary
+- Refactor to compose existing `RatingSummary` instead of duplicating query+render
+- Add `aria-hidden="true"` to decorative separator dot
+- Branch: `task/797-rating-summary-dedup`
+
+### 3. plotlink#798 — Storyline stats: add min-w-0 overflow guard on mobile grid
+- MCap + Supply grid children need `min-w-0` for 320px screens
+- Prevents text overflow with large USD values + 24h% badge
+- Branch: `task/798-stats-overflow-guard`
 
 ---
 
