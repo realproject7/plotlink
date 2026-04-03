@@ -14,6 +14,7 @@ import { usePublish, type PublishState } from "../../hooks/usePublish";
 import { useChainPlot } from "../../hooks/useChainPlot";
 import { usePublishIntent } from "../../hooks/usePublishIntent";
 import { RecoveryBanner } from "../../components/RecoveryBanner";
+import { DEADLINE_MS } from "../../components/DeadlineCountdown";
 import { storyFactoryAbi, storylineCreatedEvent } from "../../../lib/contracts/abi";
 import { STORY_FACTORY, MCV2_BOND } from "../../../lib/contracts/constants";
 import { supabase, type Storyline } from "../../../lib/supabase";
@@ -61,8 +62,6 @@ async function fetchWriterStorylines(address: string): Promise<Storyline[]> {
     .returns<Storyline[]>();
   return data ?? [];
 }
-
-const DEADLINE_MS = 168 * 60 * 60 * 1000;
 
 function isStorylineExpired(s: Storyline): boolean {
   if (s.sunset) return true;

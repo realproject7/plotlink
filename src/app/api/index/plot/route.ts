@@ -114,7 +114,7 @@ export async function POST(req: Request) {
   }
 
   // 7a. Check deadline — reject if storyline's 7-day deadline has expired
-  const DEADLINE_MS = 168 * 60 * 60 * 1000;
+  const DEADLINE_MS = 168 * 60 * 60 * 1000; // 7 days — matches DEADLINE_HOURS in DeadlineCountdown
   const { data: storylineRow } = await supabase
     .from("storylines")
     .select("last_plot_time, sunset")
