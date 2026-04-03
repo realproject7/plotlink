@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
+import { formatTokenAmount } from "../../lib/format";
 import { storyFactoryAbi } from "../../lib/contracts/abi";
 import { STORY_FACTORY, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
 import { indexFetch } from "../../lib/index-fetch";
@@ -149,7 +150,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
         </div>
         {balance !== undefined && (
           <p className="text-muted mt-1 text-[10px]">
-            Balance: {formatUnits(balance, 18)} {RESERVE_LABEL}
+            Balance: {formatTokenAmount(balance, 18)} {RESERVE_LABEL}
           </p>
         )}
         {insufficientBalance && (
@@ -161,7 +162,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
         <p className="text-muted mt-2 text-xs">
           Donating{" "}
           <span className="font-semibold text-accent">
-            {formatUnits(parsedAmount, 18)} {RESERVE_LABEL}
+            {formatTokenAmount(parsedAmount, 18)} {RESERVE_LABEL}
           </span>{" "}
           to {writerAddress ? <FarcasterAvatar address={writerAddress} size={12} /> : `story #${storylineId}`}
         </p>

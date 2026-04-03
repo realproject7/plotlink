@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
+import { formatTokenAmount } from "../../lib/format";
 import {
   MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL,
   ZAP_PLOTLINK, SUPPORTED_ZAP_TOKENS, ETH_ADDRESS,
@@ -28,21 +29,6 @@ function applySlippage(amount: bigint, isBuy: boolean): bigint {
 
 const isZapAvailable = ZAP_PLOTLINK !== "0x0000000000000000000000000000000000000000";
 
-/** Format a raw bigint token amount for display with appropriate precision. */
-function formatTokenAmount(value: bigint, decimals: number): string {
-  const num = Number(formatUnits(value, decimals));
-  if (num === 0) return "0";
-  if (num >= 1) {
-    return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  }
-  if (num >= 0.001) {
-    return num.toFixed(4);
-  }
-  if (num >= 0.000001) {
-    return num.toFixed(6);
-  }
-  return num.toExponential(2);
-}
 
 /** Retry a writeContractAsync call once if it fails with a nonce error. */
 async function retryOnNonceError<T>(fn: () => Promise<T>): Promise<T> {
