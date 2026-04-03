@@ -5,7 +5,15 @@ import { useState, useEffect } from "react";
 export const DEADLINE_HOURS = 168;
 export const DEADLINE_MS = DEADLINE_HOURS * 60 * 60 * 1000;
 
-export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: string; hideLabel?: boolean }) {
+export function DeadlineCountdown({
+  lastPlotTime,
+  hideLabel,
+  valueClassName,
+}: {
+  lastPlotTime: string;
+  hideLabel?: boolean;
+  valueClassName?: string;
+}) {
   const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
@@ -17,11 +25,14 @@ export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: s
     return () => clearInterval(interval);
   }, [lastPlotTime]);
 
+  const defaultValueClass = "text-accent font-medium";
+  const activeClass = valueClassName ?? defaultValueClass;
+
   if (remaining === null) {
     return (
       <div className="text-xs">
         {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
-        <span className="text-accent font-medium">--</span>
+        <span className={activeClass}>--</span>
       </div>
     );
   }
@@ -30,7 +41,7 @@ export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: s
     return (
       <div className="text-xs">
         {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
-        <span className="text-error font-medium">expired</span>
+        <span className={valueClassName ? `${valueClassName} text-error` : "text-error font-medium"}>expired</span>
       </div>
     );
   }
@@ -52,7 +63,7 @@ export function DeadlineCountdown({ lastPlotTime, hideLabel }: { lastPlotTime: s
   return (
     <div className="text-xs">
       {!hideLabel && <><span className="text-muted">Deadline:</span>{" "}</>}
-      <span className="text-accent font-medium">{formatted}</span>
+      <span className={activeClass}>{formatted}</span>
     </div>
   );
 }
