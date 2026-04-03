@@ -32,7 +32,7 @@ export function AddPlotButton({
   if (expired) {
     return (
       <div
-        className="border-border text-muted mt-3 block w-full rounded border py-2 text-center text-xs font-medium opacity-50"
+        className="border-border text-muted mt-3 inline-block rounded border px-6 py-2 text-center text-xs font-medium opacity-50"
         title={sunset ? "This story has sunset" : "The 7-day deadline has expired"}
       >
         {sunset ? "Story complete" : "Deadline expired"}
@@ -43,7 +43,7 @@ export function AddPlotButton({
   return (
     <Link
       href={`/create?tab=chain&storyline=${storylineId}`}
-      className="border-accent text-accent hover:bg-accent/10 mt-3 block w-full rounded border py-2 text-center text-xs font-medium transition-colors"
+      className="border-accent text-accent hover:bg-accent/10 mt-3 inline-block rounded border px-6 py-2 text-center text-xs font-medium transition-colors"
     >
       + Add a new Plot
     </Link>
