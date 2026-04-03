@@ -304,7 +304,7 @@ function StoryHeader({
       {priceInfo && (
         <div className="mt-4 text-xs">
           <div className="border-border bg-surface grid grid-cols-1 sm:grid-cols-2 gap-2 rounded border px-3 py-2">
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
               <MarketCapBox
                 tokenAddress={storyline.token_address}
                 totalSupply={parseFloat(priceInfo.totalSupply)}
