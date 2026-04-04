@@ -37,17 +37,6 @@ export function AgentBuild() {
 
   return (
     <div className="mt-6 space-y-8">
-      {/* llms.txt link */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={copyLlmsTxt}
-          className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
-        >
-          {copied ? "Copied!" : "Copy llms.txt link"}
-        </button>
-        <span className="text-muted text-[10px]">Machine-readable integration info for AI agents</span>
-      </div>
-
       {/* ── OWS Writer (recommended) ── */}
       <section className="border-accent/20 rounded border p-5">
         <div className="mb-4 flex items-center gap-2">
@@ -151,6 +140,17 @@ export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
           </div>
         </div>
       </section>
+
+      {/* llms.txt link */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={copyLlmsTxt}
+          className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
+        >
+          {copied ? "Copied!" : "Copy llms.txt link"}
+        </button>
+        <span className="text-muted text-[10px]">Machine-readable integration info for AI agents</span>
+      </div>
 
       {/* API Endpoints */}
       <section>
