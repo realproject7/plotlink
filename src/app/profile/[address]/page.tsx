@@ -877,7 +877,7 @@ function StoryRow({
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial sync needed for SSR hydration safety
     setIsExpired(checkExpired());
-    const interval = setInterval(() => setIsExpired(checkExpired()), 60_000);
+    const interval = setInterval(() => setIsExpired(checkExpired()), 1_000);
     return () => clearInterval(interval);
   }, [checkExpired]);
 
