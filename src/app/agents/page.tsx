@@ -116,53 +116,52 @@ function AgentsPageInner() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      {/* Hero section */}
+      {/* Hero section — OWS Writer */}
       <div className="mb-10">
         <h1 className="font-body text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
           Your AI Writes.{" "}
           <span className="text-accent">You Earn.</span>
         </h1>
         <p className="text-muted mt-3 max-w-md text-sm leading-relaxed">
-          Bring any AI. PlotLink publishes the fiction, handles the trading, and sends you royalties.
-          Anyone can be a writer.
+          Anyone can become a fiction writer with just an idea. The OWS Writer pairs you with an AI co-writer to brainstorm, draft, and publish tokenized stories.
         </p>
 
-        {/* Terminal session — the journey */}
-        <div className="border-border bg-surface mt-6 overflow-hidden rounded-lg border">
-          {/* Terminal title bar */}
-          <div className="border-border flex items-center gap-1.5 border-b px-3 py-1.5">
-            <span className="bg-muted/40 h-2 w-2 rounded-full" />
-            <span className="bg-muted/40 h-2 w-2 rounded-full" />
-            <span className="bg-muted/40 h-2 w-2 rounded-full" />
-            <span className="text-muted ml-2 text-[10px] font-mono">plotlink</span>
+        {/* OWS Writer card */}
+        <div className="border-accent/20 bg-surface mt-6 rounded-lg border p-5">
+          {/* Steps */}
+          <div className="space-y-3 mb-5">
+            {[
+              { n: 1, title: "Install & run", desc: "One command to set up on your computer" },
+              { n: 2, title: "Connect your LLM", desc: "Anthropic, OpenAI, Gemini, or local models (Ollama, LM Studio)" },
+              { n: 3, title: "Chat with your AI writer", desc: "Brainstorm ideas, outline stories, refine drafts collaboratively" },
+              { n: 4, title: "Publish on-chain", desc: "The AI uploads to IPFS and signs the transaction via your OWS wallet" },
+              { n: 5, title: "Earn royalties", desc: "Every trade of your story token earns you 5% royalties automatically" },
+            ].map(({ n, title, desc }) => (
+              <div key={n} className="flex gap-3">
+                <div className="border-accent/30 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold">{n}</div>
+                <div>
+                  <p className="text-foreground text-xs font-semibold">{title}</p>
+                  <p className="text-muted text-xs mt-0.5">{desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          {/* Terminal body */}
-          <div className="space-y-3 px-4 py-4 font-mono text-xs leading-relaxed sm:px-5 sm:text-[13px]">
-            <div>
-              <span className="text-muted">$</span>{" "}
-              <span className="text-foreground">plotlink create</span>{" "}
-              <span className="text-muted">--agent my-ai</span>
-            </div>
-            <div className="text-muted pl-3 sm:pl-4">
-              &#x2713; Agent registered &middot; writing first chapter...
-            </div>
-            <div>
-              <span className="text-muted">$</span>{" "}
-              <span className="text-foreground">plotlink publish</span>
-            </div>
-            <div className="text-muted pl-3 sm:pl-4">
-              &#x2713; Story live on-chain &middot; readers trading
-            </div>
-            <div>
-              <span className="text-muted">$</span>{" "}
-              <span className="text-foreground">plotlink earnings</span>
-            </div>
-            <div className="pl-3 sm:pl-4">
-              <span className="text-accent">+0.042 ETH</span>{" "}
-              <span className="text-muted">royalties earned this week</span>
-              <span className="text-accent ml-0.5 inline-block w-[2px] h-[1em] align-middle bg-current animate-pulse" />
-            </div>
-          </div>
+
+          {/* Quick start */}
+          <p className="text-foreground text-xs font-semibold mb-2">Quick Start</p>
+          <pre className="border-border bg-background text-foreground overflow-x-auto rounded border p-3 text-xs leading-relaxed font-mono">
+{`npx plotlink-ows init    # guided setup
+npx plotlink-ows         # start writing`}
+          </pre>
+
+          <a
+            href="https://github.com/realproject7/plotlink-ows"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline mt-4 inline-block text-xs font-medium"
+          >
+            View full docs &rarr; github.com/realproject7/plotlink-ows
+          </a>
         </div>
       </div>
 
