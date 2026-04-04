@@ -152,28 +152,80 @@
 
 ---
 
-## Tonight's Queue — Batch 62: Storyline Page Polish + Deadline Enforcement
+## Completed — Batch 62
 
-### 1. plotlink#802 — Storyline page: 3-col stats boxes like profile page, beside Moleskine on desktop
-- Redesign Market Cap, Supply Minted, Deadline as bordered stat boxes matching profile page style
-- Desktop: place in the header area next to the Moleskine cover
-- Mobile: full-width row below header
-- Branch: `task/802-storyline-stats-boxes`
+- Batch 62: Stats boxes #805, Mobile left-align #806, Deadline enforcement #807
 
-### 2. plotlink#803 — Storyline page: left-align title and info on mobile
-- Mobile: title, rating, Writer/Plots/Genre rows should be left-aligned, not centered
-- Moleskine cover can stay centered
-- Desktop: no changes (already left-aligned)
-- Branch: `task/803-storyline-mobile-left-align`
+---
 
-### 3. plotlink#804 — Block new plot creation when deadline is expired
-- `sunset` flag is never set to `true` by app code — button stays clickable after countdown expires
-- Front-end: disable "+ Add a new Plot" button (visible but `opacity-50 pointer-events-none`) when `last_plot_time + 168h < now`
-- Create page: show expired storylines in dropdown but disabled with "(expired)" label
-- API: add deadline validation in `src/app/api/index/plot/route.ts`
-- Optional: cron/trigger to set `sunset=true` for expired storylines
-- Contract already enforces (`chainPlot()` reverts), this is UX + defense-in-depth
-- Branch: `task/804-deadline-enforcement`
+## Completed — Batch 63
+
+- Batch 63: Deadline has_deadline fix #810, DeadlineCountdown style fix #811
+
+---
+
+## Completed — Batch 64
+
+- Batch 64: Hide countdown #814, 3-zone header redesign #815
+
+---
+
+## Completed — Batch 65
+
+- Batch 65: Hide countdown #814 (via #812), Unified header #817 (via #816)
+
+---
+
+## Completed — Batch 66
+
+- Batch 66: Stats next to cover #819 (via #818)
+
+---
+
+## Completed — Batch 67
+
+- Batch 67: Mobile restore + spacing #821 (via #820)
+
+---
+
+## Completed — Batch 68
+
+- Batch 68: Header single-render #822, Cover width mobile #823, Writer active badge #824
+
+---
+
+## Completed — Batch 69 (partial)
+
+- Batch 69: App scaffold #11 (PR #16), LLM + wallet UI #12 (PR #17), Chat + AI writer #13 (PR #18), Publish via OWS #14 (PR #19), Dashboard #15 (PR #20), Design fix #21 (PR #22), /agents Build tab plotlink#837 (PR #838)
+
+---
+
+## Tonight's Queue — Batch 70: CLI Wizard
+
+> Work happens in `realproject7/plotlink-ows` (public repo).
+>
+> **Reference repos** (read, don't modify):
+> - `claw-on-chain` — OWS onboarding flow (`scripts/onboard.ts`), passphrase → .env → wallet creation
+> - `quadwork` — CLI packaging pattern (`bin/quadwork.js`), zero-dep, PID management
+
+### 1. plotlink-ows#23 — CLI Wizard: npx plotlink-ows init + start
+- Package as npm CLI with interactive setup wizard (zero external deps, Node builtins only)
+- Follow `quadwork` CLI pattern (`~/Projects/quadwork/bin/quadwork.js`)
+- Follow `claw-on-chain` OWS onboarding (`~/Projects/claw-on-chain/scripts/onboard.ts`)
+- **Seamless 4-step onboarding via `npx plotlink-ows init`**:
+  1. OWS wallet: passphrase (masked) + confirmation (must match) → write to .env → create wallet → show address + security warning
+  2. LLM: choose provider → API key (masked) or local URL → test connection → save to agent.config.json
+  3. AI writer: name, genre, style → save writer profile to config
+  4. Summary: wallet address, LLM, writer info, "run npx plotlink-ows to start"
+- `npx plotlink-ows` — start server + auto-open browser (skip Web UI setup if wizard done)
+- `npx plotlink-ows stop` — clean shutdown via PID file
+- `npx plotlink-ows status` — show config, wallet address, LLM provider, writer profile
+- Config: `~/.plotlink-ows/config.json`, passphrase in `.env` as `OWS_PASSPHRASE`
+- Update package.json: `bin`, `files` fields
+- Update README with `npx plotlink-ows init` as primary install flow
+- **Repo**: `realproject7/plotlink-ows`
+- **Branch**: `task/23-cli-wizard`
+- **PR closes**: `Fixes #23`
 
 ---
 
