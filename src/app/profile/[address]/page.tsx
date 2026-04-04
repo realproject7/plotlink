@@ -868,8 +868,9 @@ function StoryRow({
     enabled: !!storyline.token_address,
   });
 
+  const [now] = useState(() => Date.now());
   const isExpired = !storyline.sunset && storyline.has_deadline && !!storyline.last_plot_time &&
-    Date.now() > new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
+    now > new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
 
   return (
     <>
