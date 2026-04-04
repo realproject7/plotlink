@@ -315,82 +315,76 @@ function StoryHeader({
   );
 
   return (
-    <header className="pb-6">
-      <div className="flex flex-row items-start gap-4 sm:gap-6">
-        {/* Moleskine book cover */}
-        <div className="shrink-0 w-[100px] sm:w-[160px]">
+    <header
+      className="pb-6 grid gap-x-4 sm:gap-x-6 grid-cols-[100px_1fr] sm:grid-cols-[160px_1fr] [grid-template-areas:'cover_info'_'stats_stats'] sm:[grid-template-areas:'cover_info'_'._stats']"
+    >
+      {/* Moleskine book cover */}
+      <div className="[grid-area:cover]">
+        <div
+          className="relative flex flex-col overflow-hidden border border-[var(--border)]"
+          style={{
+            aspectRatio: "2/3",
+            borderRadius: "5px 12px 12px 5px",
+            backgroundColor: "#F5EFE6",
+            boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
+          }}
+        >
           <div
-            className="relative flex flex-col overflow-hidden border border-[var(--border)]"
-            style={{
-              aspectRatio: "2/3",
-              borderRadius: "5px 12px 12px 5px",
-              backgroundColor: "#F5EFE6",
-              boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
-            }}
-          >
-            <div
-              className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
-              style={{ background: "rgba(139, 69, 19, 0.15)" }}
-            />
-            <div className="relative z-10 px-2.5 pt-2.5">
-              <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
-                {storyline.genre || "Uncategorized"}
-              </span>
-            </div>
-            <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
-              <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
-                {storyline.title}
-              </span>
-            </div>
-            <div className="relative z-10 px-2.5 pb-2.5">
-              <span className="text-[8px] text-[var(--text-muted)]">
-                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
-              </span>
-            </div>
+            className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
+            style={{ background: "rgba(139, 69, 19, 0.15)" }}
+          />
+          <div className="relative z-10 px-2.5 pt-2.5">
+            <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+              {storyline.genre || "Uncategorized"}
+            </span>
           </div>
-        </div>
-
-        {/* Right column: info + stats (desktop only) */}
-        <div className="min-w-0 flex-1">
-          <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
-            {storyline.title}
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
-            <RatingSummary storylineId={storyline.storyline_id} separator />
-            <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+          <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
+            <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
+              {storyline.title}
+            </span>
           </div>
-          <div className="mt-2 space-y-1 text-xs">
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted w-12 shrink-0">Writer</span>
-              <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
-                <WriterIdentity address={storyline.writer_address} />
-              </Suspense>
-              {storyline.writer_type === 1 && <AgentBadge />}
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted w-12 shrink-0">Genre</span>
-              <span className="text-foreground font-medium">
-                {storyline.genre || "Uncategorized"}
-                {storyline.language && storyline.language !== "English" && (
-                  <span className="text-muted ml-1.5">· {storyline.language}</span>
-                )}
-              </span>
-            </div>
+          <div className="relative z-10 px-2.5 pb-2.5">
+            <span className="text-[8px] text-[var(--text-muted)]">
+              {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
+            </span>
           </div>
-
-          {/* Stats + CTA — desktop only (inside right column) */}
-          {statsGrid && (
-            <div className="hidden sm:block mt-6">{statsGrid}</div>
-          )}
-          <div className="hidden sm:block">{ctaButton}</div>
         </div>
       </div>
 
-      {/* Stats + CTA — mobile only (full-width below cover+info row) */}
-      {statsGrid && (
-        <div className="sm:hidden mt-4">{statsGrid}</div>
-      )}
-      <div className="sm:hidden [&_a]:w-full [&_div]:w-full">{ctaButton}</div>
+      {/* Info column */}
+      <div className="[grid-area:info] min-w-0">
+        <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
+          {storyline.title}
+        </h1>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+          <RatingSummary storylineId={storyline.storyline_id} separator />
+          <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
+        </div>
+        <div className="mt-2 space-y-1 text-xs">
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted w-12 shrink-0">Writer</span>
+            <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
+              <WriterIdentity address={storyline.writer_address} />
+            </Suspense>
+            {storyline.writer_type === 1 && <AgentBadge />}
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted w-12 shrink-0">Genre</span>
+            <span className="text-foreground font-medium">
+              {storyline.genre || "Uncategorized"}
+              {storyline.language && storyline.language !== "English" && (
+                <span className="text-muted ml-1.5">· {storyline.language}</span>
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats + CTA — rendered once, repositioned via grid areas */}
+      <div className="[grid-area:stats] mt-4 sm:mt-6">
+        {statsGrid}
+        <div className="[&_a]:w-full [&_div]:w-full sm:[&_a]:w-auto sm:[&_div]:w-auto">{ctaButton}</div>
+      </div>
     </header>
   );
 }
