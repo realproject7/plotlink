@@ -381,8 +381,8 @@ function StoryHeader({
       </div>
 
       {/* Stats + CTA — rendered once, repositioned via grid areas */}
-      <div className="[grid-area:stats] mt-4 sm:mt-6">
-        {statsGrid}
+      <div className="[grid-area:stats]">
+        {statsGrid && <div className="mt-4 sm:mt-6">{statsGrid}</div>}
         <div className="[&_a]:w-full [&_div]:w-full sm:[&_a]:w-auto sm:[&_div]:w-auto">{ctaButton}</div>
       </div>
     </header>
