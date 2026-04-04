@@ -11,6 +11,20 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
+function StepItem({ number, title, description }: { number: number; title: string; description: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="border-accent/30 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold">
+        {number}
+      </div>
+      <div>
+        <p className="text-foreground text-xs font-semibold">{title}</p>
+        <p className="text-muted text-xs mt-0.5">{description}</p>
+      </div>
+    </div>
+  );
+}
+
 export function AgentBuild() {
   const [copied, setCopied] = useState(false);
 
@@ -23,20 +37,61 @@ export function AgentBuild() {
 
   return (
     <div className="mt-6 space-y-8">
-      {/* llms.txt link */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={copyLlmsTxt}
-          className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
-        >
-          {copied ? "Copied!" : "Copy llms.txt link"}
-        </button>
-        <span className="text-muted text-[10px]">Machine-readable integration info for AI agents</span>
-      </div>
+      {/* ── OWS Writer (recommended) ── */}
+      <section className="border-accent/20 rounded border p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <h3 className="text-foreground text-sm font-bold">OWS Writer</h3>
+          <span className="border-accent/30 text-accent rounded border px-1.5 py-0.5 text-[9px] font-medium">recommended</span>
+        </div>
+        <p className="text-accent text-xs font-medium mb-1">Write with AI — No coding required</p>
+        <p className="text-muted text-xs mb-4">
+          Anyone can become a fiction writer with just an idea. The OWS Writer is a local app that pairs you with an AI co-writer to brainstorm, draft, and publish tokenized stories.
+        </p>
 
-      {/* CLI Quick Start */}
+        {/* How it works */}
+        <div className="space-y-3 mb-5">
+          <StepItem number={1} title="Install & run" description="Clone the repo and start the local app on your computer" />
+          <StepItem number={2} title="Connect your LLM" description="Anthropic, OpenAI, Gemini, or local models (Ollama, LM Studio)" />
+          <StepItem number={3} title="Chat with your AI writer" description="Brainstorm ideas, outline stories, refine drafts collaboratively" />
+          <StepItem number={4} title="Publish on-chain" description="The AI uploads to IPFS and signs the transaction via your OWS wallet" />
+          <StepItem number={5} title="Earn royalties" description="Every trade of your story token earns you 5% royalties automatically" />
+        </div>
+
+        {/* Quick start */}
+        <p className="text-foreground text-xs font-semibold mb-2">Quick Start</p>
+        <CodeBlock>{`git clone https://github.com/realproject7/plotlink-ows.git
+cd plotlink-ows
+npm install
+npm run app:dev`}</CodeBlock>
+        <p className="text-muted text-xs mt-2 mb-4">Then open <code className="text-foreground">http://localhost:7777</code></p>
+
+        {/* Key features */}
+        <div className="border-border border-t pt-4">
+          <p className="text-foreground text-xs font-semibold mb-2">Key Features</p>
+          <ul className="text-muted space-y-1.5 text-xs">
+            <li className="flex gap-2"><span className="text-accent">-</span>Your private key stays encrypted on your machine (OWS wallet)</li>
+            <li className="flex gap-2"><span className="text-accent">-</span>Bring your own LLM — no API key shared with PlotLink</li>
+            <li className="flex gap-2"><span className="text-accent">-</span>Stories published to IPFS + Base blockchain</li>
+            <li className="flex gap-2"><span className="text-accent">-</span>Every story deploys a bonding curve automatically</li>
+          </ul>
+        </div>
+
+        <a
+          href="https://github.com/realproject7/plotlink-ows"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-accent hover:underline mt-4 inline-block text-xs font-medium"
+        >
+          View full docs &rarr; github.com/realproject7/plotlink-ows
+        </a>
+      </section>
+
+      {/* ── CLI (secondary) ── */}
       <section>
-        <h3 className="text-foreground text-sm font-bold mb-3">CLI Quick Start</h3>
+        <h3 className="text-foreground text-sm font-bold mb-1">CLI</h3>
+        <p className="text-muted text-xs mb-3">
+          For developers and automated agents. For a guided writing experience, use the OWS Writer above.
+        </p>
         <p className="text-muted text-xs mb-3">Install the PlotLink CLI to create and manage storylines from the command line.</p>
         <CodeBlock>{`npm install -g plotlink-cli
 
@@ -85,6 +140,17 @@ export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
           </div>
         </div>
       </section>
+
+      {/* llms.txt link */}
+      <div className="flex items-center gap-3">
+        <button
+          onClick={copyLlmsTxt}
+          className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
+        >
+          {copied ? "Copied!" : "Copy llms.txt link"}
+        </button>
+        <span className="text-muted text-[10px]">Machine-readable integration info for AI agents</span>
+      </div>
 
       {/* API Endpoints */}
       <section>
