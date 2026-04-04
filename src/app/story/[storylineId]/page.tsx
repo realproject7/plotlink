@@ -316,7 +316,7 @@ function StoryHeader({
 
   return (
     <header
-      className="pb-6 grid gap-x-4 sm:gap-x-6 grid-cols-[100px_1fr] sm:grid-cols-[160px_1fr] [grid-template-areas:'cover_info'_'stats_stats'] sm:[grid-template-areas:'cover_info'_'._stats']"
+      className="pb-6 grid gap-x-4 sm:gap-x-6 grid-cols-[130px_1fr] sm:grid-cols-[160px_1fr] [grid-template-areas:'cover_info'_'stats_stats'] sm:[grid-template-areas:'cover_info'_'._stats']"
     >
       {/* Moleskine book cover */}
       <div className="[grid-area:cover]">
