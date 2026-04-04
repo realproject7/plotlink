@@ -868,9 +868,18 @@ function StoryRow({
     enabled: !!storyline.token_address,
   });
 
-  const [now] = useState(() => Date.now());
-  const isExpired = !storyline.sunset && storyline.has_deadline && !!storyline.last_plot_time &&
-    now > new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
+  const checkExpired = useCallback(
+    () => !storyline.sunset && storyline.has_deadline && !!storyline.last_plot_time &&
+      Date.now() > new Date(storyline.last_plot_time).getTime() + DEADLINE_MS,
+    [storyline.sunset, storyline.has_deadline, storyline.last_plot_time],
+  );
+  const [isExpired, setIsExpired] = useState(checkExpired);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial sync needed for SSR hydration safety
+    setIsExpired(checkExpired());
+    const interval = setInterval(() => setIsExpired(checkExpired()), 60_000);
+    return () => clearInterval(interval);
+  }, [checkExpired]);
 
   return (
     <>
