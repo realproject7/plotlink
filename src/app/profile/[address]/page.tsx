@@ -19,7 +19,7 @@ import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../../../lib/usd-price";
 import { DisconnectButton } from "../../../components/ConnectWallet";
 import { GENRES, LANGUAGES } from "../../../../lib/genres";
-import { DeadlineCountdown } from "../../../components/DeadlineCountdown";
+import { DeadlineCountdown, DEADLINE_MS } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import { DropdownSelect } from "../../../components/DropdownSelect";
@@ -952,6 +952,8 @@ function StoryRow({
           )}
           {storyline.sunset ? (
             <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
+          ) : storyline.has_deadline && storyline.last_plot_time && Date.now() > new Date(storyline.last_plot_time).getTime() + DEADLINE_MS ? (
+            <span className="border border-red-700/30 text-red-700 rounded px-1.5 py-0.5 text-[10px]">expired</span>
           ) : (
             <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
           )}
