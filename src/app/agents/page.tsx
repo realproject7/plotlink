@@ -63,12 +63,13 @@ function AgentsPageInner() {
     query: { enabled: needsRpcFallback },
   });
 
+  // Always check balanceOf to detect owned agent NFTs (even for known users without agent_id)
   const { data: rpcBalance, isLoading: rpcBalanceLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: needsRpcFallback },
+    query: { enabled: !!address && !dbDetected },
   });
 
   const rpcHasNft = rpcBalance !== undefined && rpcBalance > BigInt(0);
@@ -98,8 +99,8 @@ function AgentsPageInner() {
     detectedRole = "agentWallet";
   }
 
-  const hasExistingAgent = detectedAgentId !== undefined && detectedRole !== undefined;
-  const detectLoading = dbLoading || (!dbDetected && userExistsLoading) || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
+  const hasExistingAgent = (detectedAgentId !== undefined && detectedRole !== undefined) || rpcHasNft;
+  const detectLoading = dbLoading || (!dbDetected && rpcBalanceLoading) || (needsRpcFallback && (rpcWalletLoading || (rpcHasNft && rpcTokenLoading)));
 
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);
