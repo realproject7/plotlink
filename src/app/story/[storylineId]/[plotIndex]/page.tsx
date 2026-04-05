@@ -136,7 +136,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
           <span>
             by{" "}
             <Suspense fallback={<span className="text-foreground">{truncateAddress(sl.writer_address)}</span>}>
-              <WriterIdentity address={sl.writer_address} />
+              <WriterIdentity address={sl.writer_address} writerType={sl.writer_type} />
             </Suspense>
           </span>
           {p.block_timestamp && (

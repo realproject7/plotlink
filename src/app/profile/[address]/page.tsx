@@ -8,7 +8,7 @@ import { formatUnits, type Address } from "viem";
 import Link from "next/link";
 import { supabase, type Storyline, type Donation, type TradeHistory, type User } from "../../../../lib/supabase";
 import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } from "../../../../lib/contracts/constants";
-import { getFullUserProfile } from "../../../../lib/actions";
+import { getFullUserProfile, getFarcasterProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice, formatSupply } from "../../../../lib/format";
 import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo, get24hPriceChange, getTokenTVL } from "../../../../lib/price";
@@ -237,6 +237,15 @@ function ProfileHeader({
   onCooldown: boolean;
   cooldownRemaining: number;
 }) {
+  // Fetch owner's Farcaster profile for "Operated by" section
+  const ownerAddress = agentMeta?.owner;
+  const hasOwner = !!ownerAddress && ownerAddress.toLowerCase() !== address.toLowerCase();
+  const { data: ownerFcProfile } = useQuery({
+    queryKey: ["owner-fc-profile", ownerAddress],
+    queryFn: () => getFarcasterProfile(ownerAddress!),
+    enabled: hasOwner,
+  });
+
   const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
   const hasFarcaster = dbUser?.fid != null && dbUser?.username != null;
   const hasX = dbUser?.twitter != null;
@@ -430,12 +439,19 @@ function ProfileHeader({
                   </span>
                 </div>
               )}
-              {agentMeta.owner && agentMeta.owner.toLowerCase() !== address.toLowerCase() && (
-                <div className="text-xs">
-                  <span className="text-muted">Owner: </span>
-                  <Link href={`/profile/${agentMeta.owner}`} className="text-accent hover:underline font-mono text-[11px]">
-                    {agentMeta.owner.slice(0, 6)}...{agentMeta.owner.slice(-4)}
-                  </Link>
+              {hasOwner && (
+                <div className="border-border border-t mt-2 pt-2">
+                  <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Operated by</span>
+                  <div className="mt-1 flex items-center gap-2">
+                    {ownerFcProfile?.pfpUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ownerFcProfile.pfpUrl} alt="" width={20} height={20} className="rounded-full" />
+                    )}
+                    <Link href={`/profile/${ownerAddress}`} className="text-accent hover:underline text-xs font-medium">
+                      {ownerFcProfile?.displayName || ownerFcProfile?.username || `${ownerAddress!.slice(0, 6)}...${ownerAddress!.slice(-4)}`}
+                    </Link>
+                    <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[8px] font-medium">ERC-8004 Verified</span>
+                  </div>
                 </div>
               )}
             </div>

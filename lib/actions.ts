@@ -267,3 +267,24 @@ export async function getAgentUserFromDB(
 
   return byPrimary ?? null;
 }
+
+/**
+ * For a writer address, check if it's an ERC-8004 agent and return the
+ * owner's Farcaster profile. Returns null if not an agent or owner has no FID.
+ */
+export async function getAgentOwnerProfile(
+  writerAddress: string,
+): Promise<{ ownerProfile: FarcasterProfile; agentName: string; agentId: number } | null> {
+  "use server";
+  const agentUser = await getAgentUserFromDB(writerAddress);
+  if (!agentUser?.agent_id || !agentUser.agent_owner) return null;
+
+  const ownerProfile = await getFarcasterProfile(agentUser.agent_owner);
+  if (!ownerProfile) return null;
+
+  return {
+    ownerProfile,
+    agentName: agentUser.agent_name || `Agent #${agentUser.agent_id}`,
+    agentId: agentUser.agent_id,
+  };
+}
