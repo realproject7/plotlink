@@ -55,6 +55,13 @@ function LinkAIWriter() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Wallet bind step (after registration)
+  const [walletBindSig, setWalletBindSig] = useState("");
+  const [walletBindDeadline, setWalletBindDeadline] = useState("");
+  const [bindingWallet, setBindingWallet] = useState(false);
+  const [bindTxHash, setBindTxHash] = useState<Hex | undefined>();
+  const [walletBound, setWalletBound] = useState(false);
+
   const validInputs = /^0x[a-fA-F0-9]{40}$/.test(owsWallet) && bindingSignature.startsWith("0x") && bindingSignature.length > 10;
 
   async function handleVerifyAndLink() {
@@ -139,23 +146,86 @@ function LinkAIWriter() {
     }
   }
 
+  async function handleWalletBind() {
+    if (!linkedAgentId || !walletBindSig || !walletBindDeadline || !address) return;
+    try {
+      setError(null);
+      setBindingWallet(true);
+      const hash = await writeContractAsync({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "setAgentWallet",
+        args: [linkedAgentId, owsWallet as `0x${string}`, BigInt(walletBindDeadline), walletBindSig as Hex],
+      });
+      setBindTxHash(hash);
+      await publicClient.waitForTransactionReceipt({ hash });
+      // Persist wallet binding to DB
+      fetch("/api/user/agent-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          fields: { agent_wallet: owsWallet.toLowerCase() },
+        }),
+      }).catch(() => {});
+      setWalletBound(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Wallet binding failed");
+    } finally {
+      setBindingWallet(false);
+    }
+  }
+
   if (done) {
     return (
       <div className="space-y-4 py-6">
         <div className="border-accent/30 bg-accent/5 rounded border px-4 py-4 text-center">
           <p className="text-accent text-sm font-medium">
-            Linked! Your AI writer is now registered.
+            {walletBound ? "Linked! AI writer registered and wallet bound on-chain." : "Registered! Now bind your OWS wallet."}
           </p>
           {linkedAgentId !== undefined && <p className="text-muted mt-1 text-xs">Agent ID: {linkedAgentId.toString()}</p>}
           <p className="text-muted mt-1 text-xs">OWS wallet: {owsWallet.slice(0, 6)}...{owsWallet.slice(-4)}</p>
         </div>
         {linkTxHash && (
           <div className="border-border text-muted rounded border px-3 py-2 text-xs">
-            Tx: <a href={`${EXPLORER_URL}/tx/${linkTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+            Register tx: <a href={`${EXPLORER_URL}/tx/${linkTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
               {linkTxHash.slice(0, 10)}...{linkTxHash.slice(-8)}
             </a>
           </div>
         )}
+
+        {/* Wallet bind step */}
+        {!walletBound && linkedAgentId !== undefined && (
+          <div className="border-border rounded border p-4 space-y-3">
+            <p className="text-foreground text-xs font-medium">Complete wallet binding</p>
+            <p className="text-muted text-xs leading-relaxed">
+              Go to your OWS app &rarr; Settings &rarr; enter Agent ID <code className="text-accent">{linkedAgentId.toString()}</code> &rarr; click &quot;Generate Wallet Bind Code&quot;. Paste the signature and deadline below.
+            </p>
+            <div>
+              <label className="text-foreground mb-1 block text-xs">Wallet Bind Signature</label>
+              <input type="text" value={walletBindSig} onChange={(e) => setWalletBindSig(e.target.value)} placeholder="0x..."
+                className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+            </div>
+            <div>
+              <label className="text-foreground mb-1 block text-xs">Deadline (unix timestamp)</label>
+              <input type="text" value={walletBindDeadline} onChange={(e) => setWalletBindDeadline(e.target.value)} placeholder="e.g. 1712345678"
+                className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+            </div>
+            <button onClick={handleWalletBind} disabled={bindingWallet || !walletBindSig.startsWith("0x") || !walletBindDeadline}
+              className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2 text-xs font-medium transition-colors disabled:opacity-50">
+              {bindingWallet ? "Binding wallet..." : "Submit Wallet Binding"}
+            </button>
+          </div>
+        )}
+
+        {bindTxHash && (
+          <div className="border-border text-muted rounded border px-3 py-2 text-xs">
+            Bind tx: <a href={`${EXPLORER_URL}/tx/${bindTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+              {bindTxHash.slice(0, 10)}...{bindTxHash.slice(-8)}
+            </a>
+          </div>
+        )}
+
         {error && (
           <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
         )}
