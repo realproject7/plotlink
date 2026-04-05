@@ -118,16 +118,16 @@ export function AgentDashboard() {
     (a) => a.agentWallet?.toLowerCase() === address?.toLowerCase() || a.agentId === selfAgentId,
   );
 
-  // Fetch storylines for each agent's writer address
+  // Fetch storylines for each agent's writer address (only bound wallets)
   const writerAddresses = useMemo(() => {
     const addrs: string[] = [];
     for (const agent of agents) {
-      addrs.push(agent.agentWallet || address || "");
+      if (agent.agentWallet) addrs.push(agent.agentWallet);
     }
     if (isSelfAgent && !selfAlreadyInList && address) {
       addrs.push(address);
     }
-    return addrs.filter(Boolean);
+    return [...new Set(addrs.filter(Boolean))];
   }, [agents, isSelfAgent, selfAlreadyInList, address]);
 
   const { data: allStorylines, isLoading: storylinesLoading } = useQuery({
@@ -170,6 +170,15 @@ export function AgentDashboard() {
     },
     enabled: writerAddresses.length > 0,
   });
+
+  // Fetch PLOT token decimals dynamically
+  const { data: plotDecimals } = useReadContract({
+    address: PLOT_TOKEN,
+    abi: [{ type: "function", name: "decimals", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "uint8" }] }] as const,
+    functionName: "decimals",
+    query: { staleTime: Infinity },
+  });
+  const decimals = plotDecimals !== undefined ? Number(plotDecimals) : 18;
 
   const isLoading = balanceLoading || tokensLoading || metadataLoading;
 
@@ -222,7 +231,7 @@ export function AgentDashboard() {
           <p className="text-accent text-sm font-medium">{displayAgents.length} Agents</p>
           <p className="text-muted text-xs mt-1">
             {totalStories} storyline{totalStories !== 1 ? "s" : ""} published
-            {totalEarned > BigInt(0) && <> &middot; {formatUnits(totalEarned, 18)} PLOT earned</>}
+            {totalEarned > BigInt(0) && <> &middot; {formatUnits(totalEarned, decimals)} PLOT earned</>}
           </p>
         </div>
       )}
@@ -255,24 +264,28 @@ export function AgentDashboard() {
                 </Link>
               </div>
 
-              {agent.agentWallet && (
+              {agent.agentWallet ? (
                 <p className="text-muted text-xs font-mono mb-3">
                   Wallet: {agent.agentWallet.slice(0, 6)}...{agent.agentWallet.slice(-4)}
                 </p>
+              ) : (
+                <p className="text-muted text-xs mb-3">
+                  No wallet bound — complete binding in the Manage tab to see activity
+                </p>
               )}
 
-              {(() => {
+              {agent.agentWallet && (() => {
                 const agentRoyalty = royalties?.[writerAddr.toLowerCase()];
                 const earned = agentRoyalty ? agentRoyalty.unclaimed + agentRoyalty.claimed : BigInt(0);
                 return (
                   <div className="flex gap-4 text-muted text-xs mb-2">
                     <span>{storylines.length} storyline{storylines.length !== 1 ? "s" : ""}</span>
-                    {earned > BigInt(0) && <span>{formatUnits(earned, 18)} PLOT earned</span>}
+                    {earned > BigInt(0) && <span>{formatUnits(earned, decimals)} PLOT earned</span>}
                   </div>
                 );
               })()}
 
-              {storylinesLoading ? (
+              {!agent.agentWallet ? null : storylinesLoading ? (
                 <p className="text-muted text-xs py-2">Loading...</p>
               ) : storylines.length === 0 ? (
                 <p className="text-muted text-xs py-2">No storylines yet</p>
