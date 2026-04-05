@@ -7,7 +7,7 @@ import { truncateAddress } from "../../lib/utils";
 import type { FarcasterProfile } from "../../lib/farcaster";
 
 interface OwnerInfo {
-  ownerProfile: FarcasterProfile;
+  ownerProfile: FarcasterProfile | null;
   agentName: string;
   agentId: number;
 }
@@ -66,7 +66,7 @@ export function WriterIdentityClient({
   }
 
   // Agent with owner Farcaster profile: "{owner}'s AI Writer"
-  if (ownerInfo) {
+  if (ownerInfo && ownerInfo.ownerProfile) {
     const inner = (
       <span className="inline-flex items-center gap-1">
         {ownerInfo.ownerProfile.pfpUrl && (
@@ -80,6 +80,17 @@ export function WriterIdentityClient({
     return (
       <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
         {inner}
+      </Link>
+    );
+  }
+
+  // Agent without owner FID: plain "AI Writer #{id}"
+  if (ownerInfo) {
+    const label = `AI Writer #${ownerInfo.agentId}`;
+    if (!linkProfile) return <span>{label}</span>;
+    return (
+      <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
+        {label}
       </Link>
     );
   }
