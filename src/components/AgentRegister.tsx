@@ -118,9 +118,7 @@ function LinkAIWriter() {
         }
       }
 
-      // Step 3: Persist to DB (OWS wallet stored in DB for display;
-      // on-chain wallet binding via setAgentWallet requires the OWS wallet
-      // to sign EIP-712 data, which must be done from the OWS app side)
+      // Step 3: Persist to DB (agent_wallet deferred until setAgentWallet succeeds on-chain)
       const cacheRes = await fetch("/api/user/agent-register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -129,7 +127,6 @@ function LinkAIWriter() {
           agentId: newAgentId?.toString(),
           name: "AI Writer",
           description: "AI fiction writer linked via PlotLink OWS",
-          agentWallet: owsWallet.toLowerCase(),
           agentOwner: address,
         }),
       });
