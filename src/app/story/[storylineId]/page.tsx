@@ -364,7 +364,7 @@ function StoryHeader({
           <div className="flex items-center gap-1.5">
             <span className="text-muted w-12 shrink-0">Writer</span>
             <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
-              <WriterIdentity address={storyline.writer_address} />
+              <WriterIdentity address={storyline.writer_address} writerType={storyline.writer_type} />
             </Suspense>
             {storyline.writer_type === 1 && <AgentBadge />}
           </div>
