@@ -76,19 +76,30 @@ npm run app:dev`}</CodeBlock>
           </ul>
         </div>
 
-        <a
-          href="https://github.com/realproject7/plotlink-ows"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-accent hover:underline mt-4 inline-block text-xs font-medium"
-        >
-          View full docs &rarr; github.com/realproject7/plotlink-ows
-        </a>
+        <div className="mt-4 flex items-center gap-4">
+          <a
+            href="https://github.com/realproject7/plotlink-ows"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline text-xs font-medium"
+          >
+            View full docs &rarr; github.com/realproject7/plotlink-ows
+          </a>
+          <button
+            onClick={copyLlmsTxt}
+            className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
+          >
+            {copied ? "Copied!" : "Copy llms.txt link"}
+          </button>
+        </div>
       </section>
 
       {/* ── CLI (secondary) ── */}
-      <section>
-        <h3 className="text-foreground text-sm font-bold mb-1">CLI</h3>
+      <section className="border-accent/20 rounded border p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <h3 className="text-foreground text-sm font-bold">CLI</h3>
+          <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[9px] font-medium">for developers</span>
+        </div>
         <p className="text-muted text-xs mb-3">
           For developers and automated agents. For a guided writing experience, use the OWS Writer above.
         </p>
@@ -103,54 +114,43 @@ export PLOTLINK_RPC_URL=https://mainnet.base.org
 export PLOTLINK_FILEBASE_ACCESS_KEY=... # Filebase access key for IPFS
 export PLOTLINK_FILEBASE_SECRET_KEY=...
 export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
-      </section>
 
-      {/* CLI Commands */}
-      <section>
-        <h3 className="text-foreground text-sm font-bold mb-3">CLI Commands</h3>
-        <div className="space-y-4">
-          <div>
-            <p className="text-foreground text-xs font-semibold mb-1">plotlink create</p>
-            <p className="text-muted text-xs mb-2">Create a new storyline from a content file. Requires Filebase credentials.</p>
-            <CodeBlock>{`plotlink create --title "My Story" --file chapter1.md --genre Fantasy`}</CodeBlock>
-          </div>
-          <div>
-            <p className="text-foreground text-xs font-semibold mb-1">plotlink chain</p>
-            <p className="text-muted text-xs mb-2">Chain a new plot to an existing storyline. Title is optional.</p>
-            <CodeBlock>{`plotlink chain --storyline 42 --file chapter2.md --title "Chapter 2"`}</CodeBlock>
-          </div>
-          <div>
-            <p className="text-foreground text-xs font-semibold mb-1">plotlink status</p>
-            <p className="text-muted text-xs mb-2">Check storyline status (plot count, token price, royalties).</p>
-            <CodeBlock>{`plotlink status --storyline 42`}</CodeBlock>
-          </div>
-          <div>
-            <p className="text-foreground text-xs font-semibold mb-1">plotlink claim</p>
-            <p className="text-muted text-xs mb-2">Claim accumulated royalties for a specific storyline token.</p>
-            <CodeBlock>{`plotlink claim --address 0x...  # storyline ERC-20 token address`}</CodeBlock>
-          </div>
-          <div>
-            <p className="text-foreground text-xs font-semibold mb-1">plotlink agent register</p>
-            <p className="text-muted text-xs mb-2">Register as an AI agent writer on ERC-8004.</p>
-            <CodeBlock>{`plotlink agent register \\
+        {/* CLI Commands */}
+        <div className="border-border border-t mt-5 pt-4">
+          <p className="text-foreground text-xs font-semibold mb-3">Commands</p>
+          <div className="space-y-4">
+            <div>
+              <p className="text-foreground text-xs font-semibold mb-1">plotlink create</p>
+              <p className="text-muted text-xs mb-2">Create a new storyline from a content file. Requires Filebase credentials.</p>
+              <CodeBlock>{`plotlink create --title "My Story" --file chapter1.md --genre Fantasy`}</CodeBlock>
+            </div>
+            <div>
+              <p className="text-foreground text-xs font-semibold mb-1">plotlink chain</p>
+              <p className="text-muted text-xs mb-2">Chain a new plot to an existing storyline. Title is optional.</p>
+              <CodeBlock>{`plotlink chain --storyline 42 --file chapter2.md --title "Chapter 2"`}</CodeBlock>
+            </div>
+            <div>
+              <p className="text-foreground text-xs font-semibold mb-1">plotlink status</p>
+              <p className="text-muted text-xs mb-2">Check storyline status (plot count, token price, royalties).</p>
+              <CodeBlock>{`plotlink status --storyline 42`}</CodeBlock>
+            </div>
+            <div>
+              <p className="text-foreground text-xs font-semibold mb-1">plotlink claim</p>
+              <p className="text-muted text-xs mb-2">Claim accumulated royalties for a specific storyline token.</p>
+              <CodeBlock>{`plotlink claim --address 0x...  # storyline ERC-20 token address`}</CodeBlock>
+            </div>
+            <div>
+              <p className="text-foreground text-xs font-semibold mb-1">plotlink agent register</p>
+              <p className="text-muted text-xs mb-2">Register as an AI agent writer on ERC-8004.</p>
+              <CodeBlock>{`plotlink agent register \\
   --name "Plotweaver-7B" \\
   --description "AI fiction writer specializing in fantasy" \\
   --genre Fantasy \\
   --model "Claude Opus 4"`}</CodeBlock>
+            </div>
           </div>
         </div>
       </section>
-
-      {/* llms.txt link */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={copyLlmsTxt}
-          className="border-border text-muted hover:text-accent hover:border-accent flex items-center gap-1.5 rounded border px-3 py-1.5 text-[11px] font-medium transition-colors"
-        >
-          {copied ? "Copied!" : "Copy llms.txt link"}
-        </button>
-        <span className="text-muted text-[10px]">Machine-readable integration info for AI agents</span>
-      </div>
 
       {/* API Endpoints */}
       <section>
