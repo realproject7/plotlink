@@ -5,7 +5,10 @@ import { useAccount, useReadContract, useReadContracts } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
-import { ERC8004_REGISTRY } from "../../lib/contracts/constants";
+import { mcv2BondAbi } from "../../lib/price";
+import { ERC8004_REGISTRY, MCV2_BOND, PLOT_TOKEN } from "../../lib/contracts/constants";
+import { browserClient } from "../../lib/rpc";
+import { formatUnits } from "viem";
 
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
@@ -145,6 +148,29 @@ export function AgentDashboard() {
     enabled: writerAddresses.length > 0,
   });
 
+  // Fetch royalties for each agent's writer address
+  const { data: royalties } = useQuery({
+    queryKey: ["agent-royalties", writerAddresses],
+    queryFn: async () => {
+      const results: Record<string, { unclaimed: bigint; claimed: bigint }> = {};
+      await Promise.all(
+        writerAddresses.map(async (addr) => {
+          try {
+            const [balance, claimed] = await browserClient.readContract({
+              address: MCV2_BOND,
+              abi: mcv2BondAbi,
+              functionName: "getRoyaltyInfo",
+              args: [addr as `0x${string}`, PLOT_TOKEN],
+            });
+            results[addr.toLowerCase()] = { unclaimed: balance as bigint, claimed: claimed as bigint };
+          } catch { results[addr.toLowerCase()] = { unclaimed: BigInt(0), claimed: BigInt(0) }; }
+        }),
+      );
+      return results;
+    },
+    enabled: writerAddresses.length > 0,
+  });
+
   const isLoading = balanceLoading || tokensLoading || metadataLoading;
 
   if (isLoading) {
@@ -171,6 +197,11 @@ export function AgentDashboard() {
   // Aggregate stats
   const allAgentStorylines = Object.values(allStorylines || {}).flat();
   const totalStories = allAgentStorylines.length;
+  const totalRoyalties = Object.values(royalties || {}).reduce(
+    (acc, r) => ({ unclaimed: acc.unclaimed + r.unclaimed, claimed: acc.claimed + r.claimed }),
+    { unclaimed: BigInt(0), claimed: BigInt(0) },
+  );
+  const totalEarned = totalRoyalties.unclaimed + totalRoyalties.claimed;
 
   // Build full agent list (owned + self-as-agent-wallet)
   const displayAgents = [...agents];
@@ -190,7 +221,8 @@ export function AgentDashboard() {
         <div className="border-accent/30 bg-accent/5 rounded border px-4 py-3 mb-6">
           <p className="text-accent text-sm font-medium">{displayAgents.length} Agents</p>
           <p className="text-muted text-xs mt-1">
-            {totalStories} storyline{totalStories !== 1 ? "s" : ""} published across all agents
+            {totalStories} storyline{totalStories !== 1 ? "s" : ""} published
+            {totalEarned > BigInt(0) && <> &middot; {formatUnits(totalEarned, 18)} PLOT earned</>}
           </p>
         </div>
       )}
@@ -229,9 +261,16 @@ export function AgentDashboard() {
                 </p>
               )}
 
-              <p className="text-muted text-xs mb-2">
-                {storylines.length} storyline{storylines.length !== 1 ? "s" : ""}
-              </p>
+              {(() => {
+                const agentRoyalty = royalties?.[writerAddr.toLowerCase()];
+                const earned = agentRoyalty ? agentRoyalty.unclaimed + agentRoyalty.claimed : BigInt(0);
+                return (
+                  <div className="flex gap-4 text-muted text-xs mb-2">
+                    <span>{storylines.length} storyline{storylines.length !== 1 ? "s" : ""}</span>
+                    {earned > BigInt(0) && <span>{formatUnits(earned, 18)} PLOT earned</span>}
+                  </div>
+                );
+              })()}
 
               {storylinesLoading ? (
                 <p className="text-muted text-xs py-2">Loading...</p>
