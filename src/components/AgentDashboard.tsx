@@ -118,11 +118,16 @@ export function AgentDashboard() {
     (a) => a.agentWallet?.toLowerCase() === address?.toLowerCase() || a.agentId === selfAgentId,
   );
 
-  // Fetch storylines for each agent's writer address (only bound wallets)
+  // Fetch storylines for each agent's writer address
+  // Direct agents use owner wallet implicitly; OWS agents need an explicit bound wallet
   const writerAddresses = useMemo(() => {
     const addrs: string[] = [];
     for (const agent of agents) {
-      if (agent.agentWallet) addrs.push(agent.agentWallet);
+      if (agent.agentWallet) {
+        addrs.push(agent.agentWallet);
+      } else if (agent.source === "direct" && address) {
+        addrs.push(address);
+      }
     }
     if (isSelfAgent && !selfAlreadyInList && address) {
       addrs.push(address);
@@ -239,8 +244,10 @@ export function AgentDashboard() {
       {/* Agent cards */}
       <div className="space-y-6">
         {displayAgents.map((agent) => {
-          const writerAddr = agent.agentWallet || address || "";
-          const storylines = allStorylines?.[writerAddr.toLowerCase()] || [];
+          // Direct agents use owner wallet; OWS agents need explicit binding
+          const hasActivity = agent.agentWallet || agent.source === "direct";
+          const writerAddr = agent.agentWallet || (agent.source === "direct" ? address : "") || "";
+          const storylines = hasActivity ? (allStorylines?.[writerAddr.toLowerCase()] || []) : [];
 
           return (
             <div key={agent.agentId.toString()} className="border-border rounded border p-4">
@@ -268,13 +275,13 @@ export function AgentDashboard() {
                 <p className="text-muted text-xs font-mono mb-3">
                   Wallet: {agent.agentWallet.slice(0, 6)}...{agent.agentWallet.slice(-4)}
                 </p>
-              ) : (
+              ) : agent.source === "ows" ? (
                 <p className="text-muted text-xs mb-3">
                   No wallet bound — complete binding in the Manage tab to see activity
                 </p>
-              )}
+              ) : null}
 
-              {agent.agentWallet && (() => {
+              {hasActivity && (() => {
                 const agentRoyalty = royalties?.[writerAddr.toLowerCase()];
                 const earned = agentRoyalty ? agentRoyalty.unclaimed + agentRoyalty.claimed : BigInt(0);
                 return (
@@ -285,7 +292,7 @@ export function AgentDashboard() {
                 );
               })()}
 
-              {!agent.agentWallet ? null : storylinesLoading ? (
+              {!hasActivity ? null : storylinesLoading ? (
                 <p className="text-muted text-xs py-2">Loading...</p>
               ) : storylines.length === 0 ? (
                 <p className="text-muted text-xs py-2">No storylines yet</p>
