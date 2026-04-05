@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { useAccount, useWriteContract, useReadContract, useSignTypedData } from "wagmi";
+import { useAccount, useWriteContract, useReadContract, useReadContracts, useSignTypedData } from "wagmi";
 import { type Hex, type Address, zeroAddress } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { erc8004Abi, resolveAgentURI, type AgentMetadata } from "../../lib/contracts/erc8004";
@@ -37,9 +37,10 @@ const SET_WALLET_TYPES = {
 interface AgentManageProps {
   agentId: bigint;
   role: "owner" | "agentWallet";
+  source?: "ows" | "direct";
 }
 
-export function AgentManage({ agentId, role }: AgentManageProps) {
+export function AgentManage({ agentId, role, source }: AgentManageProps) {
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const { signTypedDataAsync } = useSignTypedData();
@@ -316,9 +317,18 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
       <div className="border-accent/30 bg-accent/5 rounded border px-4 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-accent text-sm font-medium">
-              {metadata?.name ?? "Agent"} #{agentId.toString()}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-accent text-sm font-medium">
+                {metadata?.name ?? "Agent"} #{agentId.toString()}
+              </p>
+              {source && (
+                <span className={`rounded border px-1.5 py-0.5 text-[9px] font-medium ${
+                  source === "ows" ? "border-accent/30 text-accent" : "border-border text-muted"
+                }`}>
+                  {source === "ows" ? "OWS Writer" : "Direct"}
+                </span>
+              )}
+            </div>
             <p className="text-muted mt-0.5 text-xs">
               {role === "owner" ? "You own this agent" : "Your wallet is bound to this agent"}
             </p>
@@ -570,6 +580,122 @@ export function AgentManage({ agentId, role }: AgentManageProps) {
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
+
+/** Wrapper that enumerates all agents owned by the connected wallet */
+export function AgentManageAll() {
+  const { address } = useAccount();
+
+  const { data: balance, isLoading: balanceLoading } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "balanceOf",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+
+  const agentCount = balance !== undefined ? Number(balance) : 0;
+
+  const tokenIndexCalls = useMemo(() => {
+    if (!address || agentCount === 0) return [];
+    return Array.from({ length: agentCount }, (_, i) => ({
+      address: ERC8004_REGISTRY,
+      abi: erc8004Abi,
+      functionName: "tokenOfOwnerByIndex" as const,
+      args: [address, BigInt(i)] as const,
+    }));
+  }, [address, agentCount]);
+
+  const { data: tokenResults, isLoading: tokensLoading } = useReadContracts({
+    contracts: tokenIndexCalls,
+    query: { enabled: tokenIndexCalls.length > 0 },
+  });
+
+  const agentIds = useMemo(() => {
+    if (!tokenResults) return [];
+    return tokenResults
+      .filter((r) => r.status === "success" && r.result !== undefined)
+      .map((r) => r.result as bigint);
+  }, [tokenResults]);
+
+  // Fetch agentURI + getAgentWallet for each agent to determine source
+  const metaCalls = useMemo(() => {
+    if (agentIds.length === 0) return [];
+    return agentIds.flatMap((id) => [
+      { address: ERC8004_REGISTRY, abi: erc8004Abi, functionName: "agentURI" as const, args: [id] as const },
+      { address: ERC8004_REGISTRY, abi: erc8004Abi, functionName: "getAgentWallet" as const, args: [id] as const },
+    ]);
+  }, [agentIds]);
+
+  const { data: metaResults, isLoading: metaLoading } = useReadContracts({
+    contracts: metaCalls,
+    query: { enabled: metaCalls.length > 0 },
+  });
+
+  const agents = useMemo(() => {
+    if (agentIds.length === 0 || !metaResults) return [];
+    return agentIds.map((id, i) => {
+      const uriResult = metaResults[i * 2];
+      const walletResult = metaResults[i * 2 + 1];
+      let source: "ows" | "direct" = "direct";
+      if (uriResult?.status === "success" && uriResult.result) {
+        try {
+          const meta = JSON.parse(uriResult.result as string);
+          if (meta.type === "ows-writer" || meta.owsWallet) source = "ows";
+        } catch { /* not JSON */ }
+      }
+      const walletAddr = walletResult?.status === "success" ? (walletResult.result as string) : undefined;
+      if (walletAddr && walletAddr !== ZERO_ADDR) source = "ows";
+      return { agentId: id, source };
+    });
+  }, [agentIds, metaResults]);
+
+  // Also check if connected wallet is an agent wallet
+  const { data: selfAgentId } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "agentIdByWallet",
+    args: address ? [address] : undefined,
+    query: { enabled: !!address },
+  });
+  const isSelfAgent = selfAgentId !== undefined && selfAgentId > BigInt(0);
+  const selfInList = agents.some((a) => a.agentId === selfAgentId);
+
+  const isLoading = balanceLoading || tokensLoading || metaLoading;
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 py-8 text-center">
+        <p className="text-muted text-sm">Loading agents...</p>
+      </div>
+    );
+  }
+
+  const hasAgents = agents.length > 0 || (isSelfAgent && !selfInList);
+
+  if (!hasAgents) {
+    return (
+      <div className="mt-6 py-8 text-center">
+        <p className="text-muted text-sm mb-2">You have no AI agents registered.</p>
+        <p className="text-muted text-xs">
+          Switch to the <span className="text-accent font-medium">Register</span> tab to register an agent.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-6 space-y-8">
+      {agents.map((agent) => (
+        <AgentManage key={agent.agentId.toString()} agentId={agent.agentId} role="owner" source={agent.source} />
+      ))}
+      {isSelfAgent && !selfInList && (
+        <AgentManage agentId={selfAgentId} role="agentWallet" source="direct" />
       )}
     </div>
   );

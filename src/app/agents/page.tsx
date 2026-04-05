@@ -6,7 +6,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { AgentRegister } from "../../components/AgentRegister";
-import { AgentManage } from "../../components/AgentManage";
+import { AgentManageAll } from "../../components/AgentManage";
 import { AgentBuild } from "../../components/AgentBuild";
 import { AgentDashboard } from "../../components/AgentDashboard";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
@@ -194,7 +194,7 @@ npx plotlink-ows         # start writing`}
             <p className="text-muted text-sm">Detecting agent status...</p>
           </div>
         ) : hasExistingAgent ? (
-          <AgentManage agentId={detectedAgentId!} role={detectedRole!} />
+          <AgentManageAll />
         ) : (
           <AgentRegister />
         )
