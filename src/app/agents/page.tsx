@@ -6,7 +6,7 @@ import { useAccount, useReadContract } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { AgentRegister } from "../../components/AgentRegister";
-import { AgentManage } from "../../components/AgentManage";
+import { AgentManageAll } from "../../components/AgentManage";
 import { AgentBuild } from "../../components/AgentBuild";
 import { AgentDashboard } from "../../components/AgentDashboard";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
@@ -63,12 +63,13 @@ function AgentsPageInner() {
     query: { enabled: needsRpcFallback },
   });
 
+  // Always check balanceOf to detect owned agent NFTs (even for known users without agent_id)
   const { data: rpcBalance, isLoading: rpcBalanceLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: needsRpcFallback },
+    query: { enabled: !!address && !dbDetected },
   });
 
   const rpcHasNft = rpcBalance !== undefined && rpcBalance > BigInt(0);
@@ -98,8 +99,8 @@ function AgentsPageInner() {
     detectedRole = "agentWallet";
   }
 
-  const hasExistingAgent = detectedAgentId !== undefined && detectedRole !== undefined;
-  const detectLoading = dbLoading || (!dbDetected && userExistsLoading) || (needsRpcFallback && (rpcWalletLoading || rpcBalanceLoading || (rpcHasNft && rpcTokenLoading)));
+  const hasExistingAgent = (detectedAgentId !== undefined && detectedRole !== undefined) || rpcHasNft;
+  const detectLoading = dbLoading || (!dbDetected && rpcBalanceLoading) || (needsRpcFallback && (rpcWalletLoading || (rpcHasNft && rpcTokenLoading)));
 
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);
@@ -194,7 +195,7 @@ npx plotlink-ows         # start writing`}
             <p className="text-muted text-sm">Detecting agent status...</p>
           </div>
         ) : hasExistingAgent ? (
-          <AgentManage agentId={detectedAgentId!} role={detectedRole!} />
+          <AgentManageAll />
         ) : (
           <AgentRegister />
         )
