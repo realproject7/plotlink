@@ -37,7 +37,253 @@ const SET_WALLET_TYPES = {
   ],
 } as const;
 
-export function AgentRegister() {
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Link AI Writer — OWS binding verification + registration
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+function LinkAIWriter() {
+  const { address } = useAccount();
+  const { writeContractAsync } = useWriteContract();
+
+  const [owsWallet, setOwsWallet] = useState("");
+  const [bindingSignature, setBindingSignature] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [linkTxHash, setLinkTxHash] = useState<Hex | undefined>();
+  const [linkedAgentId, setLinkedAgentId] = useState<bigint | undefined>();
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Wallet bind step (after registration)
+  const [walletBindSig, setWalletBindSig] = useState("");
+  const [walletBindDeadline, setWalletBindDeadline] = useState("");
+  const [bindingWallet, setBindingWallet] = useState(false);
+  const [bindTxHash, setBindTxHash] = useState<Hex | undefined>();
+  const [walletBound, setWalletBound] = useState(false);
+
+  const validInputs = /^0x[a-fA-F0-9]{40}$/.test(owsWallet) && bindingSignature.startsWith("0x") && bindingSignature.length > 10;
+
+  async function handleVerifyAndLink() {
+    if (!address) return;
+    try {
+      setError(null);
+      setVerifying(true);
+
+      // Step 1: Verify binding signature
+      const verifyRes = await fetch("/api/user/verify-ows-binding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owsWallet, humanWallet: address, signature: bindingSignature }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyRes.ok || !verifyData.valid) {
+        throw new Error(verifyData.error || "Invalid binding signature");
+      }
+      setVerified(true);
+      setVerifying(false);
+
+      // Step 2: Register on-chain (human wallet signs as owner)
+      setLinking(true);
+      const agentURI = JSON.stringify({
+        name: `AI Writer`,
+        description: "AI fiction writer linked via PlotLink OWS",
+        type: "ows-writer",
+        owsWallet,
+        linkedBy: address,
+        registeredAt: new Date().toISOString(),
+      });
+
+      const hash = await writeContractAsync({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "register",
+        args: [agentURI],
+      });
+      setLinkTxHash(hash);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+      let newAgentId: bigint | undefined;
+      const registeredLog = receipt.logs.find((log) => {
+        try {
+          const decoded = decodeEventLog({ abi: erc8004Abi, data: log.data, topics: log.topics });
+          return decoded.eventName === "Registered";
+        } catch { return false; }
+      });
+      if (registeredLog) {
+        const decoded = decodeEventLog({ abi: erc8004Abi, data: registeredLog.data, topics: registeredLog.topics });
+        if (decoded.eventName === "Registered") {
+          newAgentId = decoded.args.agentId;
+          setLinkedAgentId(newAgentId);
+        }
+      }
+
+      // Step 3: Persist to DB (agent_wallet deferred until setAgentWallet succeeds on-chain)
+      const cacheRes = await fetch("/api/user/agent-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          agentId: newAgentId?.toString(),
+          name: "AI Writer",
+          description: "AI fiction writer linked via PlotLink OWS",
+          agentOwner: address,
+        }),
+      });
+      if (!cacheRes.ok) {
+        setError("On-chain registration succeeded, but DB cache failed — will sync on next visit");
+      }
+
+      setDone(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Linking failed");
+    } finally {
+      setVerifying(false);
+      setLinking(false);
+    }
+  }
+
+  async function handleWalletBind() {
+    if (!linkedAgentId || !walletBindSig || !walletBindDeadline || !address) return;
+    try {
+      setError(null);
+      setBindingWallet(true);
+      const hash = await writeContractAsync({
+        address: ERC8004_REGISTRY,
+        abi: erc8004Abi,
+        functionName: "setAgentWallet",
+        args: [linkedAgentId, owsWallet as `0x${string}`, BigInt(walletBindDeadline), walletBindSig as Hex],
+      });
+      setBindTxHash(hash);
+      await publicClient.waitForTransactionReceipt({ hash });
+      // Persist wallet binding to DB
+      fetch("/api/user/agent-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          walletAddress: address,
+          fields: { agent_wallet: owsWallet.toLowerCase() },
+        }),
+      }).catch(() => {});
+      setWalletBound(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Wallet binding failed");
+    } finally {
+      setBindingWallet(false);
+    }
+  }
+
+  if (done) {
+    return (
+      <div className="space-y-4 py-6">
+        <div className="border-accent/30 bg-accent/5 rounded border px-4 py-4 text-center">
+          <p className="text-accent text-sm font-medium">
+            {walletBound ? "Linked! AI writer registered and wallet bound on-chain." : "Registered! Now bind your OWS wallet."}
+          </p>
+          {linkedAgentId !== undefined && <p className="text-muted mt-1 text-xs">Agent ID: {linkedAgentId.toString()}</p>}
+          <p className="text-muted mt-1 text-xs">OWS wallet: {owsWallet.slice(0, 6)}...{owsWallet.slice(-4)}</p>
+        </div>
+        {linkTxHash && (
+          <div className="border-border text-muted rounded border px-3 py-2 text-xs">
+            Register tx: <a href={`${EXPLORER_URL}/tx/${linkTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+              {linkTxHash.slice(0, 10)}...{linkTxHash.slice(-8)}
+            </a>
+          </div>
+        )}
+
+        {/* Wallet bind step */}
+        {!walletBound && linkedAgentId !== undefined && (
+          <div className="border-border rounded border p-4 space-y-3">
+            <p className="text-foreground text-xs font-medium">Complete wallet binding</p>
+            <p className="text-muted text-xs leading-relaxed">
+              Go to your OWS app &rarr; Settings &rarr; enter Agent ID <code className="text-accent">{linkedAgentId.toString()}</code> &rarr; click &quot;Generate Wallet Bind Code&quot;. Paste the signature and deadline below.
+            </p>
+            <div>
+              <label className="text-foreground mb-1 block text-xs">Wallet Bind Signature</label>
+              <input type="text" value={walletBindSig} onChange={(e) => setWalletBindSig(e.target.value)} placeholder="0x..."
+                className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+            </div>
+            <div>
+              <label className="text-foreground mb-1 block text-xs">Deadline (unix timestamp)</label>
+              <input type="text" value={walletBindDeadline} onChange={(e) => setWalletBindDeadline(e.target.value)} placeholder="e.g. 1712345678"
+                className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+            </div>
+            <button onClick={handleWalletBind} disabled={bindingWallet || !walletBindSig.startsWith("0x") || !walletBindDeadline}
+              className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2 text-xs font-medium transition-colors disabled:opacity-50">
+              {bindingWallet ? "Binding wallet..." : "Submit Wallet Binding"}
+            </button>
+          </div>
+        )}
+
+        {bindTxHash && (
+          <div className="border-border text-muted rounded border px-3 py-2 text-xs">
+            Bind tx: <a href={`${EXPLORER_URL}/tx/${bindTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+              {bindTxHash.slice(0, 10)}...{bindTxHash.slice(-8)}
+            </a>
+          </div>
+        )}
+
+        {error && (
+          <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-muted text-xs leading-relaxed">
+        Connect your local PlotLink OWS Writer app to your PlotLink account.
+        Your AI writer will appear as &quot;{address ? `${address.slice(0, 6)}...` : "your"}&apos;s AI Writer&quot; on PlotLink.
+      </p>
+      <div className="text-muted text-xs space-y-1 pl-3">
+        <p>1. Open PlotLink OWS app &rarr; Settings &rarr; &quot;Link to PlotLink&quot;</p>
+        <p>2. Enter your PlotLink wallet address &rarr; app generates a binding code</p>
+        <p>3. Paste the binding code below</p>
+      </div>
+
+      <div>
+        <label className="text-foreground mb-2 block text-sm">OWS Wallet Address</label>
+        <input type="text" value={owsWallet} onChange={(e) => setOwsWallet(e.target.value)} placeholder="0x..."
+          className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+      </div>
+      <div>
+        <label className="text-foreground mb-2 block text-sm">Binding Signature</label>
+        <input type="text" value={bindingSignature} onChange={(e) => setBindingSignature(e.target.value)} placeholder="0x..."
+          className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+      </div>
+
+      {error && (
+        <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
+      )}
+
+      {verified && !linking && (
+        <div className="border-accent/30 bg-accent/5 rounded border px-3 py-2 text-xs text-accent">
+          Signature verified. Registering on-chain...
+        </div>
+      )}
+
+      {linkTxHash && !done && (
+        <div className="border-border text-muted rounded border px-3 py-2 text-xs">
+          Tx: <a href={`${EXPLORER_URL}/tx/${linkTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
+            {linkTxHash.slice(0, 10)}...{linkTxHash.slice(-8)}
+          </a>
+        </div>
+      )}
+
+      <button onClick={handleVerifyAndLink} disabled={!validInputs || verifying || linking}
+        className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50">
+        {verifying ? "Verifying signature..." : linking ? "Registering on-chain..." : "Link AI Writer"}
+      </button>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * Direct Registration — existing flow (owner wallet = agent wallet)
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+function DirectRegister() {
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const { signTypedDataAsync } = useSignTypedData();
@@ -192,7 +438,7 @@ export function AgentRegister() {
   const stepNum = typeof step === "number" ? step : 3;
 
   return (
-    <div className="mt-6">
+    <div>
       {/* Step indicator */}
       <div className="flex items-center gap-2">
         {([1, 2] as const).map((s) => (
@@ -383,6 +629,37 @@ export function AgentRegister() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+ * AgentRegister — combines both sections
+ * ───────────────────────────────────────────────────────────────────────────── */
+
+export function AgentRegister() {
+  return (
+    <div className="mt-6 space-y-8">
+      {/* Section 1: Link AI Writer */}
+      <div className="border-border rounded border p-5">
+        <h3 className="text-accent mb-1 text-sm font-bold">Link AI Writer (PlotLink OWS App)</h3>
+        <p className="text-muted mb-4 text-xs">No coding required — paste the binding code from your OWS app</p>
+        <LinkAIWriter />
+      </div>
+
+      {/* Separator */}
+      <div className="flex items-center gap-3">
+        <div className="bg-border h-px flex-1" />
+        <span className="text-muted text-xs">or</span>
+        <div className="bg-border h-px flex-1" />
+      </div>
+
+      {/* Section 2: Direct Registration */}
+      <div className="border-border rounded border p-5">
+        <h3 className="text-foreground mb-1 text-sm font-bold">Register New AI Agent</h3>
+        <p className="text-muted mb-4 text-xs">For developers building custom agent integrations</p>
+        <DirectRegister />
+      </div>
     </div>
   );
 }
