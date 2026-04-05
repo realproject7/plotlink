@@ -68,6 +68,10 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
   const [signingWallet, setSigningWallet] = useState(false);
   const [submittingWallet, setSubmittingWallet] = useState(false);
 
+  // OWS wallet change (paste-based flow)
+  const [owsPastedSig, setOwsPastedSig] = useState("");
+  const [owsPastedDeadline, setOwsPastedDeadline] = useState("");
+
   // Unset wallet state
   const [unsettingWallet, setUnsettingWallet] = useState(false);
 
@@ -470,7 +474,64 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
                 </button>
               )}
             </div>
+          ) : source === "ows" ? (
+            /* OWS agents: paste-based flow (signature generated on local OWS app) */
+            <div className="border-border rounded border p-4 space-y-4">
+              <div>
+                <label className="text-foreground mb-2 block text-sm">New OWS Wallet Address</label>
+                <input type="text" value={newWalletAddr} onChange={(e) => setNewWalletAddr(e.target.value)} placeholder="0x..."
+                  className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+              </div>
+              <p className="text-muted text-xs leading-relaxed">
+                Go to your OWS app &rarr; Settings &rarr; enter Agent ID <code className="text-accent">{agentId.toString()}</code> &rarr; click &quot;Generate Wallet Bind Code&quot;. Paste the signature and deadline below.
+              </p>
+              <div>
+                <label className="text-foreground mb-1 block text-xs">Wallet Bind Signature</label>
+                <input type="text" value={owsPastedSig} onChange={(e) => setOwsPastedSig(e.target.value)} placeholder="0x..."
+                  className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+              </div>
+              <div>
+                <label className="text-foreground mb-1 block text-xs">Deadline (unix timestamp)</label>
+                <input type="text" value={owsPastedDeadline} onChange={(e) => setOwsPastedDeadline(e.target.value)} placeholder="e.g. 1712345678"
+                  className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => { setChangingWallet(false); setNewWalletAddr(""); setOwsPastedSig(""); setOwsPastedDeadline(""); }}
+                  className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors">Cancel</button>
+                <button
+                  onClick={async () => {
+                    if (!newWalletAddr || !owsPastedSig || !owsPastedDeadline) return;
+                    try {
+                      setError(null);
+                      setSubmittingWallet(true);
+                      const hash = await writeContractAsync({
+                        address: ERC8004_REGISTRY,
+                        abi: erc8004Abi,
+                        functionName: "setAgentWallet",
+                        args: [agentId, newWalletAddr as Address, BigInt(owsPastedDeadline), owsPastedSig as Hex],
+                      });
+                      setTxHash(hash);
+                      await publicClient.waitForTransactionReceipt({ hash });
+                      fetch("/api/user/agent-update", { method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ walletAddress: address, fields: { agent_wallet: newWalletAddr.toLowerCase() } }),
+                      }).catch(() => {});
+                      setSuccessMessage("Agent wallet updated");
+                      setChangingWallet(false); setNewWalletAddr(""); setOwsPastedSig(""); setOwsPastedDeadline("");
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Wallet binding failed");
+                    } finally {
+                      setSubmittingWallet(false);
+                    }
+                  }}
+                  disabled={submittingWallet || !newWalletAddr.match(/^0x[a-fA-F0-9]{40}$/) || !owsPastedSig.startsWith("0x") || !owsPastedDeadline}
+                  className="border-accent text-accent hover:bg-accent hover:text-background flex-1 rounded border py-2 text-xs font-medium transition-colors disabled:opacity-50"
+                >
+                  {submittingWallet ? "Binding..." : "Submit Wallet Binding"}
+                </button>
+              </div>
+            </div>
           ) : (
+            /* Direct agents: browser-based sign flow (existing) */
             <div className="border-border rounded border p-4 space-y-4">
               {walletStep === "enter" && (
                 <>
