@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits } from "viem";
 import { supabase } from "../../lib/supabase";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
+import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 
 const CHART_W = 320;
 const CHART_H = 140;
@@ -74,6 +75,7 @@ function formatUsdPrice(v: number): string {
 export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   const [mode, setMode] = useState<PriceMode>("usd");
   const currentPrice = Number(formatUnits(currentPriceRaw, 18));
+  const { data: plotUsd } = usePlotUsdPrice();
 
   const { data: tradePoints } = useQuery({
     queryKey: ["price-history", tokenAddress],
@@ -144,15 +146,27 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
       price: effectiveMode === "usd" && usdPrice !== null ? usdPrice : reservePrice,
       hasUsd: usdPrice !== null,
       isApprox: t.rate_source === "backfill_approx",
+      isLive: false as const,
     };
   });
 
   // For USD mode, filter to only points with USD data
-  const chartPoints = effectiveMode === "usd"
+  const historicalPoints = effectiveMode === "usd"
     ? points.filter((p) => p.hasUsd)
     : points;
 
-  if (chartPoints.length === 0) {
+  // Append live current price as the rightmost chart point.
+  // In USD mode, only append when the live USD rate is available to avoid unit mixing.
+  const currentUsdPrice = plotUsd ? currentPrice * plotUsd : null;
+  const livePrice = effectiveMode === "usd" ? currentUsdPrice : currentPrice;
+  const chartPoints = livePrice !== null
+    ? [
+        ...historicalPoints,
+        { time: new Date().toISOString(), price: livePrice, hasUsd: currentUsdPrice !== null, isApprox: false, isLive: true as const },
+      ]
+    : historicalPoints.map((p) => ({ ...p, isLive: false as const }));
+
+  if (historicalPoints.length === 0) {
     // All points filtered out — shouldn't happen, but fallback
     return (
       <section className="border-border mt-4 rounded border px-4 py-4">
@@ -181,7 +195,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   let currentSegment: { indices: number[]; isApprox: boolean } | null = null;
 
   for (let i = 0; i < chartPoints.length; i++) {
-    const isApprox = chartPoints[i].isApprox;
+    const isApprox = chartPoints[i].isApprox || chartPoints[i].isLive;
     if (!currentSegment || currentSegment.isApprox !== isApprox) {
       // Overlap with previous segment's last point for continuity
       if (currentSegment && currentSegment.indices.length > 0) {
@@ -233,12 +247,6 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   );
 
   const priceLabel = effectiveMode === "usd" ? "USD" : RESERVE_LABEL;
-
-  // In USD mode, check if the last charted point is actually the most recent trade.
-  // If newer trades exist without USD data, label accordingly.
-  const lastChartTime = new Date(chartPoints[lastIdx].time).getTime();
-  const lastTradeTime = new Date(tradePoints[tradePoints.length - 1].block_timestamp).getTime();
-  const isLatest = effectiveMode === "reserve" || lastChartTime >= lastTradeTime;
 
   return (
     <section className="border-border mt-4 rounded border px-4 py-4">
@@ -340,8 +348,8 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
             stroke="var(--accent)"
             strokeWidth={1.5}
             strokeLinejoin="round"
-            strokeDasharray={seg.isApprox && effectiveMode === "usd" ? "4 2" : undefined}
-            opacity={seg.isApprox && effectiveMode === "usd" ? 0.6 : 1}
+            strokeDasharray={seg.isApprox ? "4 2" : undefined}
+            opacity={seg.isApprox ? 0.6 : 1}
           />
         ))}
 
@@ -361,14 +369,15 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
         <circle cx={lastX} cy={lastY} r={3} fill="var(--accent)" />
       </svg>
       <p className="text-muted mt-1 text-[10px]">
-        Price per token ({priceLabel})
+        Current price
         <span className="text-accent-dim">
-          {" "}&middot; {isLatest ? "latest" : "last USD"}: {formatPrice(chartPoints[lastIdx].price)} {priceLabel}
+          {" "}&middot; {livePrice !== null ? `${formatPrice(livePrice)} ${priceLabel}` : "loading…"}
         </span>
       </p>
-      {effectiveMode === "usd" && hasApproxData && (
+      {livePrice !== null && (
         <p className="text-muted mt-0.5 text-[9px] opacity-60">
-          Dashed segments use approximate USD conversion
+          Dashed line = current live price
+          {effectiveMode === "usd" && hasApproxData && " · approx. USD segments also dashed"}
         </p>
       )}
     </section>
