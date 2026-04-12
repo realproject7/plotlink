@@ -316,10 +316,10 @@ function StoryHeader({
 
   return (
     <header
-      className="pb-6 grid gap-x-4 sm:gap-x-6 grid-cols-[130px_1fr] sm:grid-cols-[160px_1fr] [grid-template-areas:'cover_info'_'stats_stats'] sm:[grid-template-areas:'cover_info'_'cover_stats']"
+      className="pb-6 grid gap-x-4 sm:gap-x-6 grid-cols-[130px_1fr] sm:grid-cols-[160px_1fr]"
     >
       {/* Moleskine book cover */}
-      <div className="[grid-area:cover]">
+      <div className="sm:row-span-2">
         <div
           className="relative flex flex-col overflow-hidden border border-[var(--border)]"
           style={{
@@ -352,7 +352,7 @@ function StoryHeader({
       </div>
 
       {/* Info column */}
-      <div className="[grid-area:info] min-w-0">
+      <div className="min-w-0">
         <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
           {storyline.title}
         </h1>
@@ -380,8 +380,8 @@ function StoryHeader({
         </div>
       </div>
 
-      {/* Stats + CTA — rendered once, repositioned via grid areas */}
-      <div className="[grid-area:stats]">
+      {/* Stats + CTA */}
+      <div className="col-span-2 sm:col-span-1 sm:col-start-2">
         {statsGrid && <div className="mt-4 sm:mt-6">{statsGrid}</div>}
         <div className="[&_a]:w-full [&_div]:w-full sm:[&_a]:w-auto sm:[&_div]:w-auto">{ctaButton}</div>
       </div>
