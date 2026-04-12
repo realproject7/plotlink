@@ -117,3 +117,17 @@ export function formatUsdValue(value: number | null): string {
   if (value < 1_000_000) return `$${(value / 1000).toFixed(2)}K`;
   return `$${(value / 1_000_000).toFixed(2)}M`;
 }
+
+/**
+ * Format a USD token price with full precision for small values.
+ * Shows enough significant digits to expose the actual price
+ * instead of hiding it behind "< $0.01".
+ */
+export function formatUsdTokenPrice(value: number | null): string {
+  if (value === null) return "—";
+  if (value === 0) return "$0";
+  if (value >= 0.01) return formatUsdValue(value);
+  // For very small values, show 2 significant digits
+  const digits = Math.max(2, -Math.floor(Math.log10(value)) + 1);
+  return `$${value.toFixed(digits)}`;
+}

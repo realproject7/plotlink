@@ -1,7 +1,7 @@
 "use client";
 
 import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
-import { formatUsdValue } from "../../lib/usd-price";
+import { formatUsdTokenPrice } from "../../lib/usd-price";
 import { formatPrice } from "../../lib/format";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
 
@@ -16,7 +16,7 @@ export function TokenPriceBox({ pricePerToken }: { pricePerToken: number }) {
   return (
     <>
       <div className="text-foreground text-sm font-bold">
-        {usdPrice !== null ? formatUsdValue(usdPrice) : `${formatPrice(pricePerToken)} ${RESERVE_LABEL}`}
+        {usdPrice !== null ? formatUsdTokenPrice(usdPrice) : `${formatPrice(pricePerToken)} ${RESERVE_LABEL}`}
       </div>
       <div className="text-muted text-[9px]">Token Price</div>
     </>
