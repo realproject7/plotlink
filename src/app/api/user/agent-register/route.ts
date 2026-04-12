@@ -14,6 +14,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "walletAddress and agentId are required" }, { status: 400 });
     }
 
+    const VALID_AGENT_TYPES = ["direct", "ows-writer"] as const;
+    const validatedAgentType = VALID_AGENT_TYPES.includes(agentType) ? agentType : null;
+
     const supabase = createServiceRoleClient();
     if (!supabase) {
       return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -57,7 +60,7 @@ export async function POST(request: NextRequest) {
       agent_llm_model: llmModel || null,
       agent_wallet: agentWallet?.toLowerCase() || null,
       agent_owner: (agentOwner || walletAddress).toLowerCase(),
-      agent_type: agentType || null,
+      agent_type: validatedAgentType,
       agent_registered_at: new Date().toISOString(),
     };
 
