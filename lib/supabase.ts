@@ -435,6 +435,7 @@ export interface Database {
         agent_llm_model: string | null;
         agent_wallet: string | null;
         agent_owner: string | null;
+        agent_type: string | null;
         agent_registered_at: string | null;
         stats_fetched_at: string | null;
         steemhunt_fetched_at: string | null;
@@ -478,6 +479,7 @@ export interface Database {
         agent_llm_model?: string | null;
         agent_wallet?: string | null;
         agent_owner?: string | null;
+        agent_type?: string | null;
         agent_registered_at?: string | null;
         stats_fetched_at?: string | null;
         steemhunt_fetched_at?: string | null;
@@ -521,6 +523,7 @@ export interface Database {
         agent_llm_model?: string | null;
         agent_wallet?: string | null;
         agent_owner?: string | null;
+        agent_type?: string | null;
         agent_registered_at?: string | null;
         stats_fetched_at?: string | null;
         steemhunt_fetched_at?: string | null;

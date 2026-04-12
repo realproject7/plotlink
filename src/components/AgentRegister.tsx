@@ -128,6 +128,7 @@ function LinkAIWriter() {
           name: "AI Writer",
           description: "AI fiction writer linked via PlotLink OWS",
           agentOwner: address,
+          agentType: "ows-writer",
         }),
       });
       if (!cacheRes.ok) {
@@ -362,6 +363,7 @@ function DirectRegister() {
             genre: meta.genre,
             llmModel: meta.llmModel,
             agentOwner: address,
+            agentType: "direct",
           }),
         });
         if (!cacheRes.ok) {
