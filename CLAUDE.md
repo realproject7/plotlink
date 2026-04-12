@@ -21,7 +21,8 @@ src/
     page.tsx    # Home page
 .github/
   workflows/
-    ci.yml      # Lint + type-check on PRs
+    ci.yml                # Lint + type-check + e2e on PRs
+    update-snapshots.yml  # Visual regression (manual-only)
 ```
 
 ## Commands
@@ -32,6 +33,10 @@ npm run build      # Production build
 npm run lint       # ESLint
 npm run typecheck  # TypeScript type-check (tsc --noEmit)
 ```
+
+## CI / Visual Regression
+
+PR CI runs `lint-and-typecheck` and `e2e` only. Visual regression snapshots are **manual-only** — trigger the `Update Visual Snapshots` workflow via GitHub Actions or `gh workflow run update-snapshots.yml` when a change is likely to impact UI layout.
 
 ## Design System
 
