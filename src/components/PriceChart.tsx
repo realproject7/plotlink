@@ -113,7 +113,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   if (!hasData) {
     return (
       <section className="border-border mt-4 rounded border px-4 py-4">
-        <h2 className="text-foreground text-sm font-medium">Price</h2>
+        <h2 className="text-foreground text-sm font-medium">Price History</h2>
         <div className="mt-3 flex flex-col items-center justify-center py-6">
           <svg width="40" height="40" viewBox="0 0 40 40">
             <circle cx="20" cy="20" r="3" fill="var(--accent)" />
@@ -156,7 +156,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
     // All points filtered out — shouldn't happen, but fallback
     return (
       <section className="border-border mt-4 rounded border px-4 py-4">
-        <h2 className="text-foreground text-sm font-medium">Price</h2>
+        <h2 className="text-foreground text-sm font-medium">Price History</h2>
         <p className="text-muted mt-2 text-[10px]">USD pricing data not yet available</p>
       </section>
     );
@@ -243,7 +243,7 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   return (
     <section className="border-border mt-4 rounded border px-4 py-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-foreground text-sm font-medium">Price</h2>
+        <h2 className="text-foreground text-sm font-medium">Price History</h2>
         {hasUsdData && (
           <div className="border-border flex rounded border text-[10px]">
             <button
