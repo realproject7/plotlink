@@ -101,13 +101,22 @@ export async function getFullUserProfile(
   dbUser: User | null;
   fcProfile: FarcasterProfile | null;
   agentMeta: AgentMetadata | null;
+  isAgentOwner: boolean;
 }> {
   const dbUser = await getUserFromDB(address);
   const [fcProfile, agentMeta] = await Promise.all([
     getFarcasterProfile(address, dbUser),
     fetchAgentMetadata(address, dbUser),
   ]);
-  return { dbUser, fcProfile, agentMeta };
+
+  // Detect if this address is the agent OWNER (not the agent itself).
+  // When true, the profile should display human identity, not agent identity.
+  const normalized = address.toLowerCase();
+  const isAgentOwner = agentMeta !== null
+    && agentMeta.owner?.toLowerCase() === normalized
+    && (dbUser?.agent_wallet == null || dbUser.agent_wallet.toLowerCase() !== normalized);
+
+  return { dbUser, fcProfile, agentMeta, isAgentOwner };
 }
 
 /**
@@ -279,6 +288,13 @@ export async function getAgentOwnerProfile(
   "use server";
   const agentUser = await getAgentUserFromDB(writerAddress);
   if (!agentUser?.agent_id) return null;
+
+  // If the queried address IS the agent owner (not the agent wallet),
+  // this address belongs to the human owner — not an agent.
+  const normalized = writerAddress.toLowerCase();
+  const isOwnerAddress = agentUser.agent_owner?.toLowerCase() === normalized;
+  const isAgentWallet = agentUser.agent_wallet?.toLowerCase() === normalized;
+  if (isOwnerAddress && !isAgentWallet) return null;
 
   const ownerProfile = agentUser.agent_owner
     ? await getFarcasterProfile(agentUser.agent_owner)

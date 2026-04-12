@@ -51,7 +51,9 @@ export default function ProfilePage() {
   const fcLoading = profileLoading;
   const agentMeta = fullProfile?.agentMeta ?? null;
   const agentLoading = profileLoading;
-  const isAgent = !profileLoading && agentMeta !== null && agentMeta !== undefined;
+  // Owner of an agent is not an agent themselves — show human identity
+  const isAgentOwner = fullProfile?.isAgentOwner ?? false;
+  const isAgent = !profileLoading && agentMeta !== null && !isAgentOwner;
 
   // Cumulative claimed royalties (on-chain)
   const { data: claimedRoyalties } = useQuery({
@@ -146,6 +148,7 @@ export default function ProfilePage() {
         agentMeta={agentMeta ?? null}
         agentLoading={agentLoading}
         isAgent={isAgent}
+        isAgentOwner={isAgentOwner}
         claimedRoyalties={claimedRoyalties ?? null}
         plotBalance={plotBalance ?? null}
         plotUsdPrice={plotUsdPrice ?? null}
@@ -209,6 +212,7 @@ function ProfileHeader({
   agentMeta,
   agentLoading,
   isAgent,
+  isAgentOwner,
   claimedRoyalties,
   plotBalance,
   plotUsdPrice,
@@ -226,6 +230,7 @@ function ProfileHeader({
   agentMeta: AgentMetadata | null;
   agentLoading: boolean;
   isAgent: boolean;
+  isAgentOwner: boolean;
   claimedRoyalties: bigint | null;
   plotBalance: bigint | null;
   plotUsdPrice: number | null;
@@ -246,7 +251,10 @@ function ProfileHeader({
     enabled: hasOwner,
   });
 
-  const displayName = agentMeta?.name ?? fcProfile?.displayName ?? null;
+  // Agent owners should show their own FC name, not the agent name
+  const displayName = isAgentOwner
+    ? fcProfile?.displayName ?? null
+    : agentMeta?.name ?? fcProfile?.displayName ?? null;
   const hasFarcaster = dbUser?.fid != null && dbUser?.username != null;
   const hasX = dbUser?.twitter != null;
   const hasQuotient = dbUser?.quotient_score != null;
@@ -293,8 +301,10 @@ function ProfileHeader({
             {isOwnProfile && <DisconnectButton />}
           </div>
 
-          {/* Bio */}
-          {agentMeta?.description ? (
+          {/* Bio — agent owners show their own FC bio, not the agent description */}
+          {isAgentOwner ? (
+            fcProfile?.bio ? <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p> : null
+          ) : agentMeta?.description ? (
             <p className="text-muted mt-1 text-xs">{agentMeta.description}</p>
           ) : fcProfile?.bio ? (
             <p className="text-muted mt-1 text-xs">{fcProfile.bio}</p>
@@ -401,11 +411,13 @@ function ProfileHeader({
           </div>
         )}
 
-        {/* Agent Identity card — shown for registered agents */}
-        {isAgent && agentMeta && (
+        {/* Agent Identity card — shown for registered agents and agent owners */}
+        {(isAgent || isAgentOwner) && agentMeta && (
           <div className="border-border rounded border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Agent Identity</span>
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">
+                {isAgentOwner ? "Linked AI Writer" : "Agent Identity"}
+              </span>
               <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[9px] font-medium">ERC-8004</span>
             </div>
             <div className="mt-1.5 space-y-1.5">

@@ -128,6 +128,7 @@ function LinkAIWriter() {
           name: "AI Writer",
           description: "AI fiction writer linked via PlotLink OWS",
           agentOwner: address,
+          agentWallet: owsWallet.toLowerCase(),
         }),
       });
       if (!cacheRes.ok) {
