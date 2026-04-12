@@ -155,15 +155,16 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
     ? points.filter((p) => p.hasUsd)
     : points;
 
-  // Append live current price as the rightmost chart point
+  // Append live current price as the rightmost chart point.
+  // In USD mode, only append when the live USD rate is available to avoid unit mixing.
   const currentUsdPrice = plotUsd ? currentPrice * plotUsd : null;
-  const livePrice = effectiveMode === "usd" && currentUsdPrice !== null
-    ? currentUsdPrice
-    : currentPrice;
-  const chartPoints = [
-    ...historicalPoints,
-    { time: new Date().toISOString(), price: livePrice, hasUsd: currentUsdPrice !== null, isApprox: false, isLive: true as const },
-  ];
+  const livePrice = effectiveMode === "usd" ? currentUsdPrice : currentPrice;
+  const chartPoints = livePrice !== null
+    ? [
+        ...historicalPoints,
+        { time: new Date().toISOString(), price: livePrice, hasUsd: currentUsdPrice !== null, isApprox: false, isLive: true as const },
+      ]
+    : historicalPoints.map((p) => ({ ...p, isLive: false as const }));
 
   if (historicalPoints.length === 0) {
     // All points filtered out — shouldn't happen, but fallback
@@ -370,13 +371,15 @@ export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
       <p className="text-muted mt-1 text-[10px]">
         Current price
         <span className="text-accent-dim">
-          {" "}&middot; {formatPrice(livePrice)} {priceLabel}
+          {" "}&middot; {livePrice !== null ? `${formatPrice(livePrice)} ${priceLabel}` : "loading…"}
         </span>
       </p>
-      <p className="text-muted mt-0.5 text-[9px] opacity-60">
-        Dashed line = current live price
-        {effectiveMode === "usd" && hasApproxData && " · approx. USD segments also dashed"}
-      </p>
+      {livePrice !== null && (
+        <p className="text-muted mt-0.5 text-[9px] opacity-60">
+          Dashed line = current live price
+          {effectiveMode === "usd" && hasApproxData && " · approx. USD segments also dashed"}
+        </p>
+      )}
     </section>
   );
 }
