@@ -53,6 +53,24 @@ function formatUsdPrice(v: number): string {
   return `$${v.toExponential(2)}`;
 }
 
+/**
+ * Price chart with historical USD conversion (resolves #776 / #852).
+ *
+ * USD pricing approach:
+ *   USD price = price_per_token (in PLOT) × reserve_usd_rate
+ *   where reserve_usd_rate = priceForNextMint(PLOT→HUNT) × HUNT/USD (1inch oracle)
+ *
+ * Data accuracy tiers (stored in trade_history.rate_source):
+ *   - "live"             — rate captured at indexing time, within ~200 blocks of head
+ *   - "backfill_exact"   — both PLOT/HUNT and HUNT/USD read from archive RPC at trade block
+ *   - "backfill_approx"  — current PLOT/HUNT × historical HUNT/USD (less accurate for older trades)
+ *
+ * Chart behavior:
+ *   - USD/PLOT toggle shown only when at least one trade has a rate
+ *   - In USD mode, only points with a rate are plotted (gaps are acceptable)
+ *   - Approximate data rendered as dashed lines to signal lower confidence
+ *   - Falls back to PLOT-only view if no USD data exists
+ */
 export function PriceChart({ tokenAddress, currentPriceRaw }: PriceChartProps) {
   const [mode, setMode] = useState<PriceMode>("usd");
   const currentPrice = Number(formatUnits(currentPriceRaw, 18));
