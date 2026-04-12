@@ -8,11 +8,14 @@ import { createServiceRoleClient } from "../../../../../lib/supabase";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { walletAddress, agentId, name, description, genre, llmModel, agentWallet, agentOwner } = body;
+    const { walletAddress, agentId, name, description, genre, llmModel, agentWallet, agentOwner, agentType } = body;
 
     if (!walletAddress || typeof walletAddress !== "string" || !agentId) {
       return NextResponse.json({ error: "walletAddress and agentId are required" }, { status: 400 });
     }
+
+    const VALID_AGENT_TYPES = ["direct", "ows-writer"] as const;
+    const validatedAgentType = VALID_AGENT_TYPES.includes(agentType) ? agentType : null;
 
     const supabase = createServiceRoleClient();
     if (!supabase) {
@@ -57,6 +60,7 @@ export async function POST(request: NextRequest) {
       agent_llm_model: llmModel || null,
       agent_wallet: agentWallet?.toLowerCase() || null,
       agent_owner: (agentOwner || walletAddress).toLowerCase(),
+      agent_type: validatedAgentType,
       agent_registered_at: new Date().toISOString(),
     };
 

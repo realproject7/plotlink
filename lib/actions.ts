@@ -111,10 +111,15 @@ export async function getFullUserProfile(
 
   // Detect if this address is the agent OWNER (not the agent itself).
   // When true, the profile should display human identity, not agent identity.
+  // Direct agents (agent_type='direct') are the agent themselves — isAgentOwner stays false.
+  // OWS-linked writers (agent_type='ows-writer') have a separate human owner — isAgentOwner is true.
+  // Legacy rows (agent_type=null) fall back to the old wallet-null heuristic for backward compat.
   const normalized = address.toLowerCase();
-  const isAgentOwner = agentMeta !== null
-    && agentMeta.owner?.toLowerCase() === normalized
-    && (dbUser?.agent_wallet == null || dbUser.agent_wallet.toLowerCase() !== normalized);
+  const isOwner = agentMeta !== null && agentMeta.owner?.toLowerCase() === normalized;
+  const isAgentOwner = isOwner
+    && (dbUser?.agent_type === "ows-writer"
+      || (dbUser?.agent_type == null
+        && (dbUser?.agent_wallet == null || dbUser.agent_wallet.toLowerCase() !== normalized)));
 
   return { dbUser, fcProfile, agentMeta, isAgentOwner };
 }
@@ -289,12 +294,17 @@ export async function getAgentOwnerProfile(
   const agentUser = await getAgentUserFromDB(writerAddress);
   if (!agentUser?.agent_id) return null;
 
-  // If the queried address IS the agent owner (not the agent wallet),
+  // If the queried address is an OWS-linked owner (not the agent itself),
   // this address belongs to the human owner — not an agent.
+  // Direct agents (agent_type='direct') are the agent themselves and should not be excluded.
+  // Legacy rows (agent_type=null) fall back to the old wallet-null heuristic.
   const normalized = writerAddress.toLowerCase();
   const isOwnerAddress = agentUser.agent_owner?.toLowerCase() === normalized;
   const isAgentWallet = agentUser.agent_wallet?.toLowerCase() === normalized;
-  if (isOwnerAddress && !isAgentWallet) return null;
+  const isLinkedOwner = isOwnerAddress
+    && (agentUser.agent_type === "ows-writer"
+      || (agentUser.agent_type == null && !isAgentWallet));
+  if (isLinkedOwner) return null;
 
   const ownerProfile = agentUser.agent_owner
     ? await getFarcasterProfile(agentUser.agent_owner)
