@@ -23,6 +23,7 @@ import { ViewCount, ViewTracker } from "../../../components/ViewCount";
 import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
 import { MarketCapBox } from "../../../components/MarketCapBox";
+import { TokenPriceBox } from "../../../components/TokenPriceBox";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
 function deduplicateByPlotIndex(plots: Plot[]) {
@@ -296,8 +297,7 @@ function StoryHeader({
         )}
       </div>
       <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
-        <div className="text-foreground text-sm font-bold">{formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}</div>
-        <div className="text-muted text-[9px]">Token Price</div>
+        <TokenPriceBox pricePerToken={parseFloat(priceInfo.pricePerToken)} />
       </div>
       <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
         <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
