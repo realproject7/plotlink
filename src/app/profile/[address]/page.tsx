@@ -330,7 +330,7 @@ function ProfileHeader({
               </div>
             </div>
             <a
-              href={`https://farcaster.com/${dbUser!.username}`}
+              href={`https://farcaster.xyz/${dbUser!.username}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground hover:text-accent text-sm font-medium transition-colors"
