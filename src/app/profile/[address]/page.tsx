@@ -884,18 +884,25 @@ function StoryRow({
     enabled: !!storyline.token_address,
   });
 
-  const checkExpired = useCallback(
-    () => !storyline.sunset && storyline.has_deadline && !!storyline.last_plot_time &&
-      Date.now() > new Date(storyline.last_plot_time).getTime() + DEADLINE_MS,
-    [storyline.sunset, storyline.has_deadline, storyline.last_plot_time],
-  );
-  const [isExpired, setIsExpired] = useState(checkExpired);
+  const [isExpired, setIsExpired] = useState(false);
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial sync needed for SSR hydration safety
-    setIsExpired(checkExpired());
-    const interval = setInterval(() => setIsExpired(checkExpired()), 1_000);
-    return () => clearInterval(interval);
-  }, [checkExpired]);
+    if (storyline.sunset || !storyline.has_deadline || !storyline.last_plot_time) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when props change (e.g. deadline extension)
+      setIsExpired(false);
+      return;
+    }
+    const expiryTime = new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
+    const remaining = expiryTime - Date.now();
+    if (remaining <= 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync for already-expired storylines
+      setIsExpired(true);
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset in case props changed from expired to active
+    setIsExpired(false);
+    const timeout = setTimeout(() => setIsExpired(true), remaining);
+    return () => clearTimeout(timeout);
+  }, [storyline.sunset, storyline.has_deadline, storyline.last_plot_time]);
 
   return (
     <>
