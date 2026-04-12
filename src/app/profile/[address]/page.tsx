@@ -886,7 +886,11 @@ function StoryRow({
 
   const [isExpired, setIsExpired] = useState(false);
   useEffect(() => {
-    if (storyline.sunset || !storyline.has_deadline || !storyline.last_plot_time) return;
+    if (storyline.sunset || !storyline.has_deadline || !storyline.last_plot_time) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when props change (e.g. deadline extension)
+      setIsExpired(false);
+      return;
+    }
     const expiryTime = new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
     const remaining = expiryTime - Date.now();
     if (remaining <= 0) {
@@ -894,6 +898,8 @@ function StoryRow({
       setIsExpired(true);
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset in case props changed from expired to active
+    setIsExpired(false);
     const timeout = setTimeout(() => setIsExpired(true), remaining);
     return () => clearTimeout(timeout);
   }, [storyline.sunset, storyline.has_deadline, storyline.last_plot_time]);
