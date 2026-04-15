@@ -7,6 +7,7 @@ import { browserClient as publicClient } from "../../lib/rpc";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY, BASE_CHAIN_ID, EXPLORER_URL } from "../../lib/contracts/constants";
 import { Select } from "./Select";
+import { truncateAddress } from "../../lib/utils";
 
 const GENRES = [
   "Fantasy", "Sci-Fi", "Mystery", "Romance", "Horror",
@@ -38,139 +39,47 @@ const SET_WALLET_TYPES = {
 } as const;
 
 /* ─────────────────────────────────────────────────────────────────────────────
- * Link AI Writer — OWS binding verification + registration
+ * Link AI Writer — DB-only OWS binding (no on-chain registration on human side)
+ * ERC-8004 registration happens on the OWS wallet via plotlink-ows.
  * ───────────────────────────────────────────────────────────────────────────── */
 
 function LinkAIWriter() {
   const { address } = useAccount();
-  const { writeContractAsync } = useWriteContract();
 
   const [owsWallet, setOwsWallet] = useState("");
   const [bindingSignature, setBindingSignature] = useState("");
-  const [verifying, setVerifying] = useState(false);
-  const [verified, setVerified] = useState(false);
   const [linking, setLinking] = useState(false);
-  const [linkTxHash, setLinkTxHash] = useState<Hex | undefined>();
-  const [linkedAgentId, setLinkedAgentId] = useState<bigint | undefined>();
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Wallet bind step (after registration)
-  const [walletBindSig, setWalletBindSig] = useState("");
-  const [walletBindDeadline, setWalletBindDeadline] = useState("");
-  const [bindingWallet, setBindingWallet] = useState(false);
-  const [bindTxHash, setBindTxHash] = useState<Hex | undefined>();
-  const [walletBound, setWalletBound] = useState(false);
-
   const validInputs = /^0x[a-fA-F0-9]{40}$/.test(owsWallet) && bindingSignature.startsWith("0x") && bindingSignature.length > 10;
 
-  async function handleVerifyAndLink() {
+  async function handleLink() {
     if (!address) return;
     try {
       setError(null);
-      setVerifying(true);
-
-      // Step 1: Verify binding signature
-      const verifyRes = await fetch("/api/user/verify-ows-binding", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ owsWallet, humanWallet: address, signature: bindingSignature }),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyRes.ok || !verifyData.valid) {
-        throw new Error(verifyData.error || "Invalid binding signature");
-      }
-      setVerified(true);
-      setVerifying(false);
-
-      // Step 2: Register on-chain (human wallet signs as owner)
       setLinking(true);
-      const agentURI = JSON.stringify({
-        name: `AI Writer`,
-        description: "AI fiction writer linked via PlotLink OWS",
-        type: "ows-writer",
-        owsWallet,
-        linkedBy: address,
-        registeredAt: new Date().toISOString(),
-      });
 
-      const hash = await writeContractAsync({
-        address: ERC8004_REGISTRY,
-        abi: erc8004Abi,
-        functionName: "register",
-        args: [agentURI],
-      });
-      setLinkTxHash(hash);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-      let newAgentId: bigint | undefined;
-      const registeredLog = receipt.logs.find((log) => {
-        try {
-          const decoded = decodeEventLog({ abi: erc8004Abi, data: log.data, topics: log.topics });
-          return decoded.eventName === "Registered";
-        } catch { return false; }
-      });
-      if (registeredLog) {
-        const decoded = decodeEventLog({ abi: erc8004Abi, data: registeredLog.data, topics: registeredLog.topics });
-        if (decoded.eventName === "Registered") {
-          newAgentId = decoded.args.agentId;
-          setLinkedAgentId(newAgentId);
-        }
-      }
-
-      // Step 3: Persist to DB (agent_wallet deferred until setAgentWallet succeeds on-chain)
-      const cacheRes = await fetch("/api/user/agent-register", {
+      // Verify binding proof and save DB link in one call
+      const res = await fetch("/api/user/link-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          walletAddress: address,
-          agentId: newAgentId?.toString(),
-          name: "AI Writer",
-          description: "AI fiction writer linked via PlotLink OWS",
-          agentOwner: address,
-          agentType: "ows-writer",
+          humanWallet: address,
+          owsWallet,
+          signature: bindingSignature,
         }),
       });
-      if (!cacheRes.ok) {
-        setError("On-chain registration succeeded, but DB cache failed — will sync on next visit");
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Linking failed");
       }
 
       setDone(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Linking failed");
     } finally {
-      setVerifying(false);
       setLinking(false);
-    }
-  }
-
-  async function handleWalletBind() {
-    if (!linkedAgentId || !walletBindSig || !walletBindDeadline || !address) return;
-    try {
-      setError(null);
-      setBindingWallet(true);
-      const hash = await writeContractAsync({
-        address: ERC8004_REGISTRY,
-        abi: erc8004Abi,
-        functionName: "setAgentWallet",
-        args: [linkedAgentId, owsWallet as `0x${string}`, BigInt(walletBindDeadline), walletBindSig as Hex],
-      });
-      setBindTxHash(hash);
-      await publicClient.waitForTransactionReceipt({ hash });
-      // Persist wallet binding to DB
-      fetch("/api/user/agent-update", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress: address,
-          fields: { agent_wallet: owsWallet.toLowerCase() },
-        }),
-      }).catch(() => {});
-      setWalletBound(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Wallet binding failed");
-    } finally {
-      setBindingWallet(false);
     }
   }
 
@@ -178,55 +87,13 @@ function LinkAIWriter() {
     return (
       <div className="space-y-4 py-6">
         <div className="border-accent/30 bg-accent/5 rounded border px-4 py-4 text-center">
-          <p className="text-accent text-sm font-medium">
-            {walletBound ? "Linked! AI writer registered and wallet bound on-chain." : "Registered! Now bind your OWS wallet."}
-          </p>
-          {linkedAgentId !== undefined && <p className="text-muted mt-1 text-xs">Agent ID: {linkedAgentId.toString()}</p>}
-          <p className="text-muted mt-1 text-xs">OWS wallet: {owsWallet.slice(0, 6)}...{owsWallet.slice(-4)}</p>
+          <p className="text-accent text-sm font-medium">Linked! Your AI writer is connected to your account.</p>
+          <p className="text-muted mt-1 text-xs">OWS wallet: {truncateAddress(owsWallet)}</p>
         </div>
-        {linkTxHash && (
-          <div className="border-border text-muted rounded border px-3 py-2 text-xs">
-            Register tx: <a href={`${EXPLORER_URL}/tx/${linkTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-              {linkTxHash.slice(0, 10)}...{linkTxHash.slice(-8)}
-            </a>
-          </div>
-        )}
-
-        {/* Wallet bind step */}
-        {!walletBound && linkedAgentId !== undefined && (
-          <div className="border-border rounded border p-4 space-y-3">
-            <p className="text-foreground text-xs font-medium">Complete wallet binding</p>
-            <p className="text-muted text-xs leading-relaxed">
-              Go to your OWS app &rarr; Settings &rarr; enter Agent ID <code className="text-accent">{linkedAgentId.toString()}</code> &rarr; click &quot;Generate Wallet Bind Code&quot;. Paste the signature and deadline below.
-            </p>
-            <div>
-              <label className="text-foreground mb-1 block text-xs">Wallet Bind Signature</label>
-              <input type="text" value={walletBindSig} onChange={(e) => setWalletBindSig(e.target.value)} placeholder="0x..."
-                className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
-            </div>
-            <div>
-              <label className="text-foreground mb-1 block text-xs">Deadline (unix timestamp)</label>
-              <input type="text" value={walletBindDeadline} onChange={(e) => setWalletBindDeadline(e.target.value)} placeholder="e.g. 1712345678"
-                className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
-            </div>
-            <button onClick={handleWalletBind} disabled={bindingWallet || !walletBindSig.startsWith("0x") || !walletBindDeadline}
-              className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2 text-xs font-medium transition-colors disabled:opacity-50">
-              {bindingWallet ? "Binding wallet..." : "Submit Wallet Binding"}
-            </button>
-          </div>
-        )}
-
-        {bindTxHash && (
-          <div className="border-border text-muted rounded border px-3 py-2 text-xs">
-            Bind tx: <a href={`${EXPLORER_URL}/tx/${bindTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-              {bindTxHash.slice(0, 10)}...{bindTxHash.slice(-8)}
-            </a>
-          </div>
-        )}
-
-        {error && (
-          <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
-        )}
+        <p className="text-muted text-xs leading-relaxed text-center">
+          Your OWS writer will register itself on-chain via ERC-8004 automatically.
+          Your profile will show &quot;Operates: AI Writer&quot; once the agent is registered.
+        </p>
       </div>
     );
   }
@@ -240,7 +107,7 @@ function LinkAIWriter() {
       <div className="text-muted text-xs space-y-1 pl-3">
         <p>1. Open PlotLink OWS app &rarr; Settings &rarr; &quot;Link to PlotLink&quot;</p>
         <p>2. Enter your PlotLink wallet address &rarr; app generates a binding code</p>
-        <p>3. Paste the binding code below</p>
+        <p>3. Paste the OWS wallet address and binding code below</p>
       </div>
 
       <div>
@@ -258,23 +125,9 @@ function LinkAIWriter() {
         <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
       )}
 
-      {verified && !linking && (
-        <div className="border-accent/30 bg-accent/5 rounded border px-3 py-2 text-xs text-accent">
-          Signature verified. Registering on-chain...
-        </div>
-      )}
-
-      {linkTxHash && !done && (
-        <div className="border-border text-muted rounded border px-3 py-2 text-xs">
-          Tx: <a href={`${EXPLORER_URL}/tx/${linkTxHash}`} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
-            {linkTxHash.slice(0, 10)}...{linkTxHash.slice(-8)}
-          </a>
-        </div>
-      )}
-
-      <button onClick={handleVerifyAndLink} disabled={!validInputs || verifying || linking}
+      <button onClick={handleLink} disabled={!validInputs || linking}
         className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50">
-        {verifying ? "Verifying signature..." : linking ? "Registering on-chain..." : "Link AI Writer"}
+        {linking ? "Verifying & linking..." : "Link AI Writer"}
       </button>
     </div>
   );
