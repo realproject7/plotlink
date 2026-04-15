@@ -184,14 +184,15 @@ export async function detectWriterType(
   writerAddress: Address
 ): Promise<number> {
   try {
-    // DB-first: check if this address is a cached agent wallet
+    // DB-first: check if this address is a cached agent wallet.
+    // Only check agent_wallet — human wallets with linked_agent_wallet are NOT agents.
     const supabase = createServiceRoleClient();
     if (supabase) {
       const normalized = writerAddress.toLowerCase();
       const { data } = await supabase
         .from("users")
         .select("agent_id")
-        .or(`agent_wallet.eq.${normalized},primary_address.eq.${normalized}`)
+        .eq("agent_wallet", normalized)
         .not("agent_id", "is", null)
         .limit(1)
         .single();

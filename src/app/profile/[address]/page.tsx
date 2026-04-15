@@ -53,6 +53,7 @@ export default function ProfilePage() {
   const agentLoading = profileLoading;
   // Owner of an agent is not an agent themselves — show human identity
   const isAgentOwner = fullProfile?.isAgentOwner ?? false;
+  const linkedAgentMeta = fullProfile?.linkedAgentMeta ?? null;
   const isAgent = !profileLoading && agentMeta !== null && !isAgentOwner;
 
   // Cumulative claimed royalties (on-chain)
@@ -149,6 +150,7 @@ export default function ProfilePage() {
         agentLoading={agentLoading}
         isAgent={isAgent}
         isAgentOwner={isAgentOwner}
+        linkedAgentMeta={linkedAgentMeta}
         claimedRoyalties={claimedRoyalties ?? null}
         plotBalance={plotBalance ?? null}
         plotUsdPrice={plotUsdPrice ?? null}
@@ -213,6 +215,7 @@ function ProfileHeader({
   agentLoading,
   isAgent,
   isAgentOwner,
+  linkedAgentMeta,
   claimedRoyalties,
   plotBalance,
   plotUsdPrice,
@@ -231,6 +234,7 @@ function ProfileHeader({
   agentLoading: boolean;
   isAgent: boolean;
   isAgentOwner: boolean;
+  linkedAgentMeta: AgentMetadata | null;
   claimedRoyalties: bigint | null;
   plotBalance: bigint | null;
   plotUsdPrice: number | null;
@@ -411,13 +415,11 @@ function ProfileHeader({
           </div>
         )}
 
-        {/* Agent Identity card — shown for registered agents and agent owners */}
-        {(isAgent || isAgentOwner) && agentMeta && (
+        {/* Agent Identity card — shown for registered agents */}
+        {isAgent && agentMeta && (
           <div className="border-border rounded border p-3">
             <div className="flex items-center justify-between">
-              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">
-                {isAgentOwner ? "Linked AI Writer" : "Agent Identity"}
-              </span>
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Agent Identity</span>
               <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[9px] font-medium">ERC-8004</span>
             </div>
             <div className="mt-1.5 space-y-1.5">
@@ -464,6 +466,52 @@ function ProfileHeader({
                     </Link>
                     <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[8px] font-medium">ERC-8004 Verified</span>
                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Linked AI Writer card — shown for human agent owners */}
+        {isAgentOwner && (
+          <div className="border-border rounded border p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Linked AI Writer</span>
+              {linkedAgentMeta?.agentId && (
+                <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[9px] font-medium">ERC-8004</span>
+              )}
+            </div>
+            <div className="mt-1.5 space-y-1.5">
+              {linkedAgentMeta ? (
+                <>
+                  {linkedAgentMeta.agentId && (
+                    <div className="text-xs">
+                      <span className="text-muted">Agent ID: </span>
+                      <span className="text-foreground font-mono font-medium">{linkedAgentMeta.agentId}</span>
+                    </div>
+                  )}
+                  <div className="text-xs">
+                    <span className="text-muted">Name: </span>
+                    <span className="text-foreground font-medium">{linkedAgentMeta.name}</span>
+                  </div>
+                  {linkedAgentMeta.llmModel && (
+                    <div className="text-xs">
+                      <span className="text-muted">Model: </span>
+                      <span className="text-foreground font-medium">{linkedAgentMeta.llmModel}</span>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-xs">
+                  <span className="text-muted">OWS wallet linked. Agent will appear here once registered on-chain.</span>
+                </div>
+              )}
+              {dbUser?.linked_agent_wallet && (
+                <div className="text-xs">
+                  <span className="text-muted">Wallet: </span>
+                  <Link href={`/profile/${dbUser.linked_agent_wallet}`} className="text-accent hover:underline font-mono">
+                    {truncateAddress(dbUser.linked_agent_wallet)}
+                  </Link>
                 </div>
               )}
             </div>

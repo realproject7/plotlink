@@ -102,6 +102,7 @@ export async function getFullUserProfile(
   fcProfile: FarcasterProfile | null;
   agentMeta: AgentMetadata | null;
   isAgentOwner: boolean;
+  linkedAgentMeta: AgentMetadata | null;
 }> {
   const dbUser = await getUserFromDB(address);
   const [fcProfile, agentMeta] = await Promise.all([
@@ -111,17 +112,25 @@ export async function getFullUserProfile(
 
   // Detect if this address is the agent OWNER (not the agent itself).
   // When true, the profile should display human identity, not agent identity.
+  // A human with linked_agent_wallet is an agent owner (DB-only OWS link).
   // Direct agents (agent_type='direct') are the agent themselves — isAgentOwner stays false.
-  // OWS-linked writers (agent_type='ows-writer') have a separate human owner — isAgentOwner is true.
-  // Legacy rows (agent_type=null) fall back to the old wallet-null heuristic for backward compat.
+  // Legacy rows with agent_type='ows-writer' also count as agent owners (backward compat).
   const normalized = address.toLowerCase();
+  const hasLinkedAgent = dbUser?.linked_agent_wallet != null;
   const isOwner = agentMeta !== null && agentMeta.owner?.toLowerCase() === normalized;
-  const isAgentOwner = isOwner
-    && (dbUser?.agent_type === "ows-writer"
-      || (dbUser?.agent_type == null
-        && (dbUser?.agent_wallet == null || dbUser.agent_wallet.toLowerCase() !== normalized)));
+  const isAgentOwner = hasLinkedAgent
+    || (isOwner
+      && (dbUser?.agent_type === "ows-writer"
+        || (dbUser?.agent_type == null
+          && (dbUser?.agent_wallet == null || dbUser.agent_wallet.toLowerCase() !== normalized))));
 
-  return { dbUser, fcProfile, agentMeta, isAgentOwner };
+  // For agent owners with linked_agent_wallet, fetch the linked agent's metadata
+  let linkedAgentMeta: AgentMetadata | null = null;
+  if (hasLinkedAgent) {
+    linkedAgentMeta = await fetchAgentMetadata(dbUser!.linked_agent_wallet!);
+  }
+
+  return { dbUser, fcProfile, agentMeta, isAgentOwner, linkedAgentMeta };
 }
 
 /**
@@ -286,11 +295,44 @@ export async function getAgentUserFromDB(
  * For a writer address, check if it's an ERC-8004 agent and return agent info
  * plus the owner's Farcaster profile (if available).
  * Returns null only if the address is NOT an agent.
+ *
+ * Also checks linked_agent_wallet reverse lookup: if a human has
+ * linked_agent_wallet pointing to this address, returns the human as owner.
  */
 export async function getAgentOwnerProfile(
   writerAddress: string,
 ): Promise<{ ownerProfile: FarcasterProfile | null; agentName: string; agentId: number } | null> {
   "use server";
+  const normalized = writerAddress.toLowerCase();
+
+  // Check if this address is someone's linked_agent_wallet (DB-only OWS link)
+  const supabase = createServiceRoleClient();
+  if (supabase) {
+    const { data: linkedOwner } = await supabase
+      .from("users")
+      .select("*")
+      .eq("linked_agent_wallet", normalized)
+      .single();
+
+    if (linkedOwner) {
+      // This address IS an OWS agent wallet — look up the agent's own row for metadata.
+      // Only return if the agent is actually registered (has agent_id).
+      const agentUser = await getAgentUserFromDB(writerAddress);
+      if (agentUser?.agent_id) {
+        const ownerProfile = await getFarcasterProfile(
+          linkedOwner.primary_address || linkedOwner.verified_addresses?.[0] || "",
+          linkedOwner,
+        );
+        return {
+          ownerProfile,
+          agentName: agentUser.agent_name || "AI Writer",
+          agentId: agentUser.agent_id,
+        };
+      }
+    }
+  }
+
+  // Legacy path: check agent columns directly
   const agentUser = await getAgentUserFromDB(writerAddress);
   if (!agentUser?.agent_id) return null;
 
@@ -298,7 +340,6 @@ export async function getAgentOwnerProfile(
   // this address belongs to the human owner — not an agent.
   // Direct agents (agent_type='direct') are the agent themselves and should not be excluded.
   // Legacy rows (agent_type=null) fall back to the old wallet-null heuristic.
-  const normalized = writerAddress.toLowerCase();
   const isOwnerAddress = agentUser.agent_owner?.toLowerCase() === normalized;
   const isAgentWallet = agentUser.agent_wallet?.toLowerCase() === normalized;
   const isLinkedOwner = isOwnerAddress
