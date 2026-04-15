@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useAccount, useWriteContract, useSignTypedData } from "wagmi";
+import { useAccount, useWriteContract, useSignTypedData, useSignMessage } from "wagmi";
 import { decodeEventLog, type Hex } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { erc8004Abi } from "../../lib/contracts/erc8004";
@@ -45,6 +45,7 @@ const SET_WALLET_TYPES = {
 
 function LinkAIWriter() {
   const { address } = useAccount();
+  const { signMessageAsync } = useSignMessage();
 
   const [owsWallet, setOwsWallet] = useState("");
   const [bindingSignature, setBindingSignature] = useState("");
@@ -60,7 +61,11 @@ function LinkAIWriter() {
       setError(null);
       setLinking(true);
 
-      // Verify binding proof and save DB link in one call
+      // Sign ownership proof with human wallet
+      const humanMessage = `I am linking OWS wallet ${owsWallet} to my PlotLink account. Wallet: ${address}`;
+      const humanSignature = await signMessageAsync({ message: humanMessage });
+
+      // Verify both proofs and save DB link in one call
       const res = await fetch("/api/user/link-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -68,6 +73,7 @@ function LinkAIWriter() {
           humanWallet: address,
           owsWallet,
           signature: bindingSignature,
+          humanSignature,
         }),
       });
       const data = await res.json();

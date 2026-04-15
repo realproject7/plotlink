@@ -8,16 +8,19 @@ import { createServiceRoleClient } from "../../../../../lib/supabase";
  * linked_agent_wallet on the human's user row. No ERC-8004 involvement
  * on the human side.
  *
- * Body: { humanWallet, owsWallet, signature }
+ * Body: { humanWallet, owsWallet, signature, humanSignature }
+ *   - signature: OWS wallet proves it authorized this human as owner
+ *   - humanSignature: Human wallet proves it owns the address (prevents
+ *     anyone with the OWS binding sig from linking to an arbitrary wallet)
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { humanWallet, owsWallet, signature } = body;
+    const { humanWallet, owsWallet, signature, humanSignature } = body;
 
-    if (!humanWallet || !owsWallet || !signature) {
+    if (!humanWallet || !owsWallet || !signature || !humanSignature) {
       return NextResponse.json(
-        { error: "humanWallet, owsWallet, and signature are required" },
+        { error: "humanWallet, owsWallet, signature, and humanSignature are required" },
         { status: 400 },
       );
     }
@@ -30,16 +33,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify binding proof: OWS wallet signed "I authorize {humanWallet} as my PlotLink owner"
-    const message = `I authorize ${humanWallet} as my PlotLink owner. Wallet: ${owsWallet}`;
-    const valid = await verifyMessage({
+    const owsMessage = `I authorize ${humanWallet} as my PlotLink owner. Wallet: ${owsWallet}`;
+    const owsValid = await verifyMessage({
       address: owsWallet as `0x${string}`,
-      message,
+      message: owsMessage,
       signature: signature as `0x${string}`,
     });
 
-    if (!valid) {
+    if (!owsValid) {
       return NextResponse.json(
-        { error: "Signature does not match the OWS wallet address" },
+        { error: "OWS binding signature is invalid" },
+        { status: 400 },
+      );
+    }
+
+    // Verify caller owns humanWallet
+    const humanMessage = `I am linking OWS wallet ${owsWallet} to my PlotLink account. Wallet: ${humanWallet}`;
+    const humanValid = await verifyMessage({
+      address: humanWallet as `0x${string}`,
+      message: humanMessage,
+      signature: humanSignature as `0x${string}`,
+    });
+
+    if (!humanValid) {
+      return NextResponse.json(
+        { error: "Human wallet ownership signature is invalid" },
         { status: 400 },
       );
     }
