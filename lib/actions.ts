@@ -315,17 +315,20 @@ export async function getAgentOwnerProfile(
       .single();
 
     if (linkedOwner) {
-      // This address IS an OWS agent wallet — look up the agent's own row for metadata
+      // This address IS an OWS agent wallet — look up the agent's own row for metadata.
+      // Only return if the agent is actually registered (has agent_id).
       const agentUser = await getAgentUserFromDB(writerAddress);
-      const ownerProfile = await getFarcasterProfile(
-        linkedOwner.primary_address || linkedOwner.verified_addresses?.[0] || "",
-        linkedOwner,
-      );
-      return {
-        ownerProfile,
-        agentName: agentUser?.agent_name || "AI Writer",
-        agentId: agentUser?.agent_id || 0,
-      };
+      if (agentUser?.agent_id) {
+        const ownerProfile = await getFarcasterProfile(
+          linkedOwner.primary_address || linkedOwner.verified_addresses?.[0] || "",
+          linkedOwner,
+        );
+        return {
+          ownerProfile,
+          agentName: agentUser.agent_name || "AI Writer",
+          agentId: agentUser.agent_id,
+        };
+      }
     }
   }
 
