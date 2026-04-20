@@ -80,19 +80,28 @@ async function fetchPlotUsdPrice(): Promise<number | null> {
   return null;
 }
 
-/** Mint Club SDK — on-chain RPC call */
+/** Mint Club SDK — on-chain RPC call (with 3s timeout to match other sources) */
 async function fetchFromMintClub(): Promise<number> {
   const start = Date.now();
   try {
-    const { mintclub } = await import(/* webpackIgnore: true */ "mint.club-v2-sdk" as string) as { mintclub: { network: (n: string) => { token: (a: `0x${string}`) => { getUsdRate: () => Promise<{ usdRate: number }> } } } };
-    const token = mintclub.network("base").token(PLOT_TOKEN);
-    const { usdRate } = await token.getUsdRate();
-    if (usdRate && usdRate > 0) {
+    const result = await Promise.race([
+      (async () => {
+        const { mintclub } = await import(/* webpackIgnore: true */ "mint.club-v2-sdk" as string) as { mintclub: { network: (n: string) => { token: (a: `0x${string}`) => { getUsdRate: () => Promise<{ usdRate: number }> } } } };
+        const token = mintclub.network("base").token(PLOT_TOKEN);
+        return token.getUsdRate();
+      })(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("timeout")), 3000),
+      ),
+    ]);
+    if (result.usdRate && result.usdRate > 0) {
       console.info(`[USD Price] source=mint_club result=hit elapsed=${Date.now() - start}ms`);
-      return usdRate;
+      return result.usdRate;
     }
-  } catch {
-    console.info(`[USD Price] source=mint_club result=miss elapsed=${Date.now() - start}ms`);
+    throw new Error("invalid rate");
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : "unknown";
+    console.info(`[USD Price] source=mint_club result=miss reason=${reason} elapsed=${Date.now() - start}ms`);
   }
   throw new Error("mint_club failed");
 }
@@ -106,19 +115,20 @@ async function fetchFromGeckoTerminal(): Promise<number> {
       headers: { Accept: "application/json" },
       signal: AbortSignal.timeout(3000),
     });
-    if (response.ok) {
-      const data = await response.json();
-      const priceUsd = data?.data?.attributes?.price_usd;
-      if (priceUsd) {
-        const price = parseFloat(priceUsd);
-        if (!isNaN(price) && price > 0) {
-          console.info(`[USD Price] source=geckoterminal result=hit elapsed=${Date.now() - start}ms`);
-          return price;
-        }
+    if (!response.ok) throw new Error(`http_${response.status}`);
+    const data = await response.json();
+    const priceUsd = data?.data?.attributes?.price_usd;
+    if (priceUsd) {
+      const price = parseFloat(priceUsd);
+      if (!isNaN(price) && price > 0) {
+        console.info(`[USD Price] source=geckoterminal result=hit elapsed=${Date.now() - start}ms`);
+        return price;
       }
     }
-  } catch {
-    console.info(`[USD Price] source=geckoterminal result=miss elapsed=${Date.now() - start}ms`);
+    throw new Error("no_price_data");
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : "unknown";
+    console.info(`[USD Price] source=geckoterminal result=miss reason=${reason} elapsed=${Date.now() - start}ms`);
   }
   throw new Error("geckoterminal failed");
 }
@@ -136,16 +146,17 @@ async function fetchFromCoinGecko(): Promise<number> {
       headers,
       signal: AbortSignal.timeout(3000),
     });
-    if (response.ok) {
-      const data = await response.json();
-      const tokenData = data[PLOT_ADDRESS];
-      if (tokenData?.usd && tokenData.usd > 0) {
-        console.info(`[USD Price] source=coingecko result=hit elapsed=${Date.now() - start}ms`);
-        return tokenData.usd;
-      }
+    if (!response.ok) throw new Error(`http_${response.status}`);
+    const data = await response.json();
+    const tokenData = data[PLOT_ADDRESS];
+    if (tokenData?.usd && tokenData.usd > 0) {
+      console.info(`[USD Price] source=coingecko result=hit elapsed=${Date.now() - start}ms`);
+      return tokenData.usd;
     }
-  } catch {
-    console.info(`[USD Price] source=coingecko result=miss elapsed=${Date.now() - start}ms`);
+    throw new Error("no_price_data");
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : "unknown";
+    console.info(`[USD Price] source=coingecko result=miss reason=${reason} elapsed=${Date.now() - start}ms`);
   }
   throw new Error("coingecko failed");
 }
