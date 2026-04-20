@@ -1,7 +1,8 @@
 /**
  * USD Price for PLOT token (server-side)
  *
- * Fallback chain: Mint Club SDK → GeckoTerminal → CoinGecko → DB cache
+ * Parallel fetch: Mint Club SDK | GeckoTerminal | CoinGecko (Promise.any)
+ * Fallback: in-memory cache → DB cache (trade_history.reserve_usd_rate)
  *
  * Only tracks PLOT USD price — storyline token USD values are derived from it:
  *   storyline_token_USD = storyline_token_price_in_PLOT × PLOT_USD_price
@@ -10,6 +11,7 @@
  */
 
 import { PLOT_TOKEN } from "./contracts/constants";
+import { createServiceRoleClient } from "./supabase";
 
 // In-memory cache
 let cachedPrice: number | null = null;
@@ -22,7 +24,7 @@ let inflightRequest: Promise<number | null> | null = null;
 const PLOT_ADDRESS = PLOT_TOKEN.toLowerCase();
 
 /**
- * Get PLOT token USD price with fallback chain
+ * Get PLOT token USD price with parallel sources + DB fallback
  */
 export async function getPlotUsdPrice(
   forceRefresh = false,
@@ -51,19 +53,53 @@ export async function getPlotUsdPrice(
 }
 
 async function fetchPlotUsdPrice(): Promise<number | null> {
-  // Source 1: Mint Club SDK (optional dependency — skipped if not installed)
+  const start = Date.now();
+
+  // Try all external sources in parallel — use whichever responds first
+  try {
+    const price = await Promise.any([
+      fetchFromMintClub(),
+      fetchFromGeckoTerminal(),
+      fetchFromCoinGecko(),
+    ]);
+    console.info(`[USD Price] result=hit price=${price} elapsed=${Date.now() - start}ms`);
+    return price;
+  } catch {
+    // All sources failed — AggregateError
+    console.warn(`[USD Price] All external sources failed, elapsed=${Date.now() - start}ms`);
+  }
+
+  // Fallback: last known price from trade_history DB
+  const dbPrice = await fetchFromDb();
+  if (dbPrice !== null) {
+    console.info(`[USD Price] result=db_fallback price=${dbPrice}`);
+    return dbPrice;
+  }
+
+  console.warn(`[USD Price] All sources exhausted for PLOT token`);
+  return null;
+}
+
+/** Mint Club SDK — on-chain RPC call */
+async function fetchFromMintClub(): Promise<number> {
+  const start = Date.now();
   try {
     const { mintclub } = await import(/* webpackIgnore: true */ "mint.club-v2-sdk" as string) as { mintclub: { network: (n: string) => { token: (a: `0x${string}`) => { getUsdRate: () => Promise<{ usdRate: number }> } } } };
     const token = mintclub.network("base").token(PLOT_TOKEN);
     const { usdRate } = await token.getUsdRate();
     if (usdRate && usdRate > 0) {
+      console.info(`[USD Price] source=mint_club result=hit elapsed=${Date.now() - start}ms`);
       return usdRate;
     }
   } catch {
-    console.info(`[USD Price] source=mint_club result=miss token=${PLOT_ADDRESS}`);
+    console.info(`[USD Price] source=mint_club result=miss elapsed=${Date.now() - start}ms`);
   }
+  throw new Error("mint_club failed");
+}
 
-  // Source 2: GeckoTerminal (free, no key required)
+/** GeckoTerminal — free HTTP API */
+async function fetchFromGeckoTerminal(): Promise<number> {
+  const start = Date.now();
   try {
     const url = `https://api.geckoterminal.com/api/v2/networks/base/tokens/${PLOT_ADDRESS}`;
     const response = await fetch(url, {
@@ -75,14 +111,21 @@ async function fetchPlotUsdPrice(): Promise<number | null> {
       const priceUsd = data?.data?.attributes?.price_usd;
       if (priceUsd) {
         const price = parseFloat(priceUsd);
-        if (!isNaN(price) && price > 0) return price;
+        if (!isNaN(price) && price > 0) {
+          console.info(`[USD Price] source=geckoterminal result=hit elapsed=${Date.now() - start}ms`);
+          return price;
+        }
       }
     }
   } catch {
-    console.info(`[USD Price] source=geckoterminal result=miss token=${PLOT_ADDRESS}`);
+    console.info(`[USD Price] source=geckoterminal result=miss elapsed=${Date.now() - start}ms`);
   }
+  throw new Error("geckoterminal failed");
+}
 
-  // Source 3: CoinGecko
+/** CoinGecko — HTTP API (optional key) */
+async function fetchFromCoinGecko(): Promise<number> {
+  const start = Date.now();
   try {
     const apiKey = process.env.COINGECKO_API_KEY;
     const url = `https://api.coingecko.com/api/v3/simple/token_price/base?contract_addresses=${PLOT_ADDRESS}&vs_currencies=usd`;
@@ -96,13 +139,37 @@ async function fetchPlotUsdPrice(): Promise<number | null> {
     if (response.ok) {
       const data = await response.json();
       const tokenData = data[PLOT_ADDRESS];
-      if (tokenData?.usd && tokenData.usd > 0) return tokenData.usd;
+      if (tokenData?.usd && tokenData.usd > 0) {
+        console.info(`[USD Price] source=coingecko result=hit elapsed=${Date.now() - start}ms`);
+        return tokenData.usd;
+      }
     }
   } catch {
-    console.info(`[USD Price] source=coingecko result=miss token=${PLOT_ADDRESS}`);
+    console.info(`[USD Price] source=coingecko result=miss elapsed=${Date.now() - start}ms`);
   }
+  throw new Error("coingecko failed");
+}
 
-  console.warn(`[USD Price] All sources exhausted for PLOT token`);
+/** DB fallback: latest reserve_usd_rate from trade_history (survives cold starts) */
+async function fetchFromDb(): Promise<number | null> {
+  try {
+    const supabase = createServiceRoleClient();
+    if (!supabase) return null;
+
+    const { data } = await supabase
+      .from("trade_history")
+      .select("reserve_usd_rate")
+      .not("reserve_usd_rate", "is", null)
+      .order("block_timestamp", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (data?.reserve_usd_rate && data.reserve_usd_rate > 0) {
+      return data.reserve_usd_rate;
+    }
+  } catch {
+    console.info(`[USD Price] source=db result=miss`);
+  }
   return null;
 }
 

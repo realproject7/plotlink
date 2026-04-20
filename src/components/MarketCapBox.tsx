@@ -27,7 +27,14 @@ export function MarketCapBox({
     staleTime: 60000,
   });
 
-  if (!plotUsd) return null;
+  if (!plotUsd) {
+    return (
+      <>
+        <div className="text-foreground text-sm font-bold">—</div>
+        <div className="text-muted text-[9px]">Market Cap</div>
+      </>
+    );
+  }
 
   const marketCapUsd = totalSupply * pricePerToken * plotUsd;
   const changePercent = priceChange?.changePercent ?? null;
