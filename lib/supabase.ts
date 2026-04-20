@@ -343,6 +343,159 @@ export interface Database {
         };
         Relationships: [];
       };
+      pl_points: {
+        Row: {
+          id: string;
+          address: string;
+          action: string;
+          points: number;
+          metadata: Record<string, unknown> | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          address: string;
+          action: string;
+          points: number;
+          metadata?: Record<string, unknown> | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          address?: string;
+          action?: string;
+          points?: number;
+          metadata?: Record<string, unknown> | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      pl_referrals: {
+        Row: {
+          id: string;
+          referrer_address: string;
+          referred_address: string;
+          referral_code: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          referrer_address: string;
+          referred_address: string;
+          referral_code: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          referrer_address?: string;
+          referred_address?: string;
+          referral_code?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      pl_referral_codes: {
+        Row: {
+          address: string;
+          code: string;
+          is_farcaster_username: boolean;
+        };
+        Insert: {
+          address: string;
+          code: string;
+          is_farcaster_username?: boolean;
+        };
+        Update: {
+          address?: string;
+          code?: string;
+          is_farcaster_username?: boolean;
+        };
+        Relationships: [];
+      };
+      pl_streaks: {
+        Row: {
+          address: string;
+          current_streak: number;
+          last_checkin: string | null;
+          longest_streak: number;
+        };
+        Insert: {
+          address: string;
+          current_streak?: number;
+          last_checkin?: string | null;
+          longest_streak?: number;
+        };
+        Update: {
+          address?: string;
+          current_streak?: number;
+          last_checkin?: string | null;
+          longest_streak?: number;
+        };
+        Relationships: [];
+      };
+      pl_daily_prices: {
+        Row: {
+          id: number;
+          price_usd: number;
+          supply: number;
+          mcap_usd: number;
+          recorded_at: string;
+        };
+        Insert: {
+          id?: never;
+          price_usd: number;
+          supply: number;
+          mcap_usd: number;
+          recorded_at?: string;
+        };
+        Update: {
+          id?: never;
+          price_usd?: number;
+          supply?: number;
+          mcap_usd?: number;
+          recorded_at?: string;
+        };
+        Relationships: [];
+      };
+      pl_weekly_snapshots: {
+        Row: {
+          id: number;
+          week_number: number;
+          week_start: string;
+          new_stories: number;
+          token_buys: number;
+          new_referrals: number;
+          mcap_start: number | null;
+          mcap_end: number | null;
+          total_pl_earned: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          week_number: number;
+          week_start: string;
+          new_stories?: number;
+          token_buys?: number;
+          new_referrals?: number;
+          mcap_start?: number | null;
+          mcap_end?: number | null;
+          total_pl_earned?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: never;
+          week_number?: number;
+          week_start?: string;
+          new_stories?: number;
+          token_buys?: number;
+          new_referrals?: number;
+          mcap_start?: number | null;
+          mcap_end?: number | null;
+          total_pl_earned?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       trade_history: {
         Row: {
           id: number;
@@ -562,3 +715,9 @@ export type Rating = Database["public"]["Tables"]["ratings"]["Row"];
 export type Comment = Database["public"]["Tables"]["comments"]["Row"];
 export type TradeHistory = Database["public"]["Tables"]["trade_history"]["Row"];
 export type User = Database["public"]["Tables"]["users"]["Row"];
+export type PlPoint = Database["public"]["Tables"]["pl_points"]["Row"];
+export type PlReferral = Database["public"]["Tables"]["pl_referrals"]["Row"];
+export type PlReferralCode = Database["public"]["Tables"]["pl_referral_codes"]["Row"];
+export type PlStreak = Database["public"]["Tables"]["pl_streaks"]["Row"];
+export type PlDailyPrice = Database["public"]["Tables"]["pl_daily_prices"]["Row"];
+export type PlWeeklySnapshot = Database["public"]["Tables"]["pl_weekly_snapshots"]["Row"];
