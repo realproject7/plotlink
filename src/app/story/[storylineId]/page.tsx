@@ -289,6 +289,11 @@ function StoryHeader({
             </div>
             <div className="text-muted text-[9px]">Deadline</div>
           </>
+        ) : !storyline.has_deadline ? (
+          <>
+            <div className="text-foreground text-sm font-bold">Open</div>
+            <div className="text-muted text-[9px]">Deadline</div>
+          </>
         ) : (
           <>
             <div className="text-foreground text-sm font-bold">—</div>
