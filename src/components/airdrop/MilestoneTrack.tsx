@@ -6,6 +6,7 @@ import { formatUsdValue } from "../../../lib/usd-price";
 interface StatusData {
   poolAmount: number;
   currentMcap: number;
+  latestPriceUsd: number | null;
   milestones: {
     bronze: { mcap: number; pct: number; reached: boolean };
     silver: { mcap: number; pct: number; reached: boolean };
@@ -100,6 +101,11 @@ export function MilestoneTrack() {
               <div className="text-foreground text-xs font-medium mt-1">
                 {milestone.pct}% &middot; {poolValue.toLocaleString()} PLOT
               </div>
+              {data.latestPriceUsd != null && data.latestPriceUsd > 0 && (
+                <div className="text-accent text-[10px] font-medium mt-0.5">
+                  Pool: {formatUsdValue(poolValue * data.latestPriceUsd)}
+                </div>
+              )}
             </div>
           );
         })}

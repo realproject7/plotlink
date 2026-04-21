@@ -99,6 +99,37 @@ export function CampaignHero() {
         </div>
       </div>
 
+      {/* Pool value at next milestone */}
+      {data.latestPriceUsd != null && data.latestPriceUsd > 0 && (
+        <div className="text-center text-xs">
+          {nextMilestone ? (
+            <span className="text-muted">
+              Pool value if {nextMilestone.name}:{" "}
+              <span className="text-foreground font-medium">
+                {formatUsdValue(
+                  data.poolAmount *
+                    (data.milestones[
+                      nextMilestone.name.toLowerCase() as keyof typeof data.milestones
+                    ].pct / 100) *
+                    data.latestPriceUsd
+                )}
+              </span>
+            </span>
+          ) : (
+            <span className="text-muted">
+              Pool value at Gold:{" "}
+              <span className="text-foreground font-medium">
+                {formatUsdValue(
+                  data.poolAmount *
+                    (data.milestones.gold.pct / 100) *
+                    data.latestPriceUsd
+                )}
+              </span>
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="border-border rounded border px-2 py-1.5">
