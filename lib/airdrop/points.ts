@@ -5,23 +5,9 @@
  */
 
 import { AIRDROP_CONFIG } from "./config";
+import { getStreakBoost } from "./streak";
 
-/**
- * Look up the streak boost multiplier for a given streak length.
- * Returns the highest qualifying boost (e.g. streak=15 → 0.10 for the 14-day tier).
- */
-export function getStreakBoost(currentStreak: number): number {
-  const thresholds = Object.keys(AIRDROP_CONFIG.STREAK_BOOSTS)
-    .map(Number)
-    .sort((a, b) => b - a); // descending
-
-  for (const threshold of thresholds) {
-    if (currentStreak >= threshold) {
-      return AIRDROP_CONFIG.STREAK_BOOSTS[threshold];
-    }
-  }
-  return 0;
-}
+export { getStreakBoost };
 
 /**
  * Compute buy points for a trade.
