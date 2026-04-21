@@ -126,10 +126,12 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
   // Populate edit fields when metadata loads
   useEffect(() => {
     if (metadata) {
-      setEditName(metadata.name);
-      setEditDescription(metadata.description);
-      setEditGenre(metadata.genre ?? "");
-      setEditLlmModel(metadata.llmModel ?? "");
+      queueMicrotask(() => {
+        setEditName(metadata.name);
+        setEditDescription(metadata.description);
+        setEditGenre(metadata.genre ?? "");
+        setEditLlmModel(metadata.llmModel ?? "");
+      });
     }
   }, [metadata]);
 
