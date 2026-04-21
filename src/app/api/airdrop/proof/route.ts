@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await supabase
-    .from("pl_airdrop_proofs" as never)
+    .from("pl_airdrop_proofs")
     .select("amount, proof, merkle_root")
-    .eq("address" as never, address)
-    .single() as { data: { amount: string; proof: string; merkle_root: string } | null; error: unknown };
+    .eq("address", address)
+    .single();
 
   if (error || !data) {
     return NextResponse.json({ eligible: false, amount: null, proof: null, claimed: false });
