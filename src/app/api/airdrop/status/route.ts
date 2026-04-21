@@ -65,7 +65,7 @@ export async function GET() {
     campaignStart: start.toISOString().slice(0, 10),
     campaignEnd: end.toISOString().slice(0, 10),
     timeRemainingDays: Math.ceil(remainingMs / (1000 * 60 * 60 * 24)),
-    timeElapsedPercent: totalMs > 0 ? Math.round((elapsedMs / totalMs) * 100) : 0,
+    timeElapsedPercent: totalMs > 0 ? Math.min(100, Math.round((elapsedMs / totalMs) * 100)) : 0,
     poolAmount: AIRDROP_CONFIG.POOL_AMOUNT,
     currentMcap,
     latestPriceUsd: latestPrice?.price_usd ?? null,
