@@ -18,7 +18,7 @@ export function ReferralInput() {
   const [submitting, setSubmitting] = useState(false);
 
   // Check if user already has a referrer
-  const { data: referrer, isLoading } = useQuery({
+  const { data: referrerData, isLoading } = useQuery({
     queryKey: ["my-referrer", address],
     queryFn: async () => {
       const res = await fetch(
@@ -26,7 +26,8 @@ export function ReferralInput() {
       );
       if (!res.ok) return null;
       const data = await res.json();
-      return (data.referrer as string) ?? null;
+      if (!data.referrer) return null;
+      return { referrer: data.referrer as string, displayName: data.displayName as string };
     },
     enabled: isConnected && !!address,
     staleTime: Infinity,
@@ -43,12 +44,12 @@ export function ReferralInput() {
   if (!isConnected || isLoading) return null;
 
   // Already has a referrer — show read-only
-  if (referrer) {
+  if (referrerData) {
     return (
       <div className="border-border rounded border px-4 py-3">
         <div className="text-muted text-xs">Referred by</div>
         <div className="text-foreground text-sm font-mono mt-1">
-          {referrer.slice(0, 6)}...{referrer.slice(-4)}
+          {referrerData.displayName}
         </div>
       </div>
     );

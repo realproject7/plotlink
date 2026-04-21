@@ -26,11 +26,29 @@ export async function GET(req: NextRequest) {
 
   const { data } = await supabase
     .from("pl_referrals")
-    .select("referrer_address")
+    .select("referrer_address, referral_code")
     .eq("referred_address", address)
     .single();
 
-  return NextResponse.json({ referrer: data?.referrer_address ?? null });
+  if (!data) {
+    return NextResponse.json({ referrer: null });
+  }
+
+  // Look up referrer's display name from referral code table
+  const { data: codeData } = await supabase
+    .from("pl_referral_codes")
+    .select("code, is_farcaster_username")
+    .eq("address", data.referrer_address)
+    .single();
+
+  const displayName = codeData?.is_farcaster_username
+    ? `@${codeData.code}`
+    : data.referral_code;
+
+  return NextResponse.json({
+    referrer: data.referrer_address,
+    displayName,
+  });
 }
 
 export async function POST(req: Request) {
