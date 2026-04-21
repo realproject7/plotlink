@@ -457,6 +457,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      pl_airdrop_proofs: {
+        Row: {
+          address: string;
+          amount: string;
+          proof: string;
+          merkle_root: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          address: string;
+          amount: string;
+          proof: string;
+          merkle_root: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          address?: string;
+          amount?: string;
+          proof?: string;
+          merkle_root?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       pl_weekly_snapshots: {
         Row: {
           id: number;
@@ -721,3 +748,4 @@ export type PlReferralCode = Database["public"]["Tables"]["pl_referral_codes"]["
 export type PlStreak = Database["public"]["Tables"]["pl_streaks"]["Row"];
 export type PlDailyPrice = Database["public"]["Tables"]["pl_daily_prices"]["Row"];
 export type PlWeeklySnapshot = Database["public"]["Tables"]["pl_weekly_snapshots"]["Row"];
+export type PlAirdropProof = Database["public"]["Tables"]["pl_airdrop_proofs"]["Row"];

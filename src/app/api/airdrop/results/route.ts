@@ -18,8 +18,8 @@ export async function GET() {
 
   // Read all finalized proof amounts
   const { data, error } = await supabase
-    .from("pl_airdrop_proofs" as never)
-    .select("amount") as { data: { amount: string }[] | null; error: unknown };
+    .from("pl_airdrop_proofs")
+    .select("amount");
 
   if (error || !data || data.length === 0) {
     return NextResponse.json({ finalized: false });
