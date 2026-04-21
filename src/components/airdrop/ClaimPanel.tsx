@@ -29,6 +29,77 @@ const MERKLE_CLAIM_ABI = [
   },
 ] as const;
 
+interface StatusDataFull {
+  poolAmount: number;
+  milestones: {
+    bronze: { mcap: number; pct: number; reached: boolean };
+    silver: { mcap: number; pct: number; reached: boolean };
+    gold: { mcap: number; pct: number; reached: boolean };
+  };
+  latestPriceUsd: number | null;
+}
+
+const BURN_TX = process.env.NEXT_PUBLIC_BURN_TX ?? null;
+
+function CampaignResults() {
+  const { data } = useQuery<StatusDataFull>({
+    queryKey: ["airdrop-status"],
+    queryFn: async () => {
+      const res = await fetch("/api/airdrop/status");
+      if (!res.ok) throw new Error("Failed to fetch status");
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  if (!data) return null;
+
+  const milestone = data.milestones.gold.reached
+    ? { tier: "Gold", pct: data.milestones.gold.pct }
+    : data.milestones.silver.reached
+      ? { tier: "Silver", pct: data.milestones.silver.pct }
+      : data.milestones.bronze.reached
+        ? { tier: "Bronze", pct: data.milestones.bronze.pct }
+        : { tier: "None", pct: 0 };
+
+  const distributed = data.poolAmount * (milestone.pct / 100);
+  const burned = data.poolAmount - distributed;
+
+  return (
+    <div className="border-border rounded border p-4 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="bg-accent text-bg rounded px-2 py-0.5 text-[10px] font-bold">CAMPAIGN COMPLETE</span>
+      </div>
+      <div className="text-xs space-y-1">
+        <div className="text-muted">
+          Milestone achieved:{" "}
+          <span className="text-foreground font-medium">
+            {milestone.tier === "None" ? "None — full burn" : `${milestone.tier} (${milestone.pct}%)`}
+          </span>
+        </div>
+        <div className="text-muted">
+          Distributed:{" "}
+          <span className="text-foreground font-medium">{distributed.toLocaleString()} PLOT</span>
+        </div>
+        <div className="text-muted">
+          Burned:{" "}
+          <span className="text-foreground font-medium">{burned.toLocaleString()} PLOT</span>
+        </div>
+        {BURN_TX && (
+          <a
+            href={`${EXPLORER_URL}/tx/${BURN_TX}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent text-xs hover:underline"
+          >
+            View burn transaction
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 interface ProofData {
   eligible: boolean;
   amount: string | null;
@@ -43,15 +114,18 @@ interface StatusData {
 export function ClaimPanel() {
   const { address, isConnected } = useAccount();
 
-  if (!isConnected || !address) {
-    return (
-      <div className="border-border rounded border p-4 text-center">
-        <p className="text-muted text-sm">Connect your wallet to check your claim.</p>
-      </div>
-    );
-  }
-
-  return <ClaimPanelInner address={address} />;
+  return (
+    <>
+      <CampaignResults />
+      {!isConnected || !address ? (
+        <div className="border-border rounded border p-4 text-center">
+          <p className="text-muted text-sm">Connect your wallet to check your claim.</p>
+        </div>
+      ) : (
+        <ClaimPanelInner address={address} />
+      )}
+    </>
+  );
 }
 
 function ClaimPanelInner({ address }: { address: string }) {
@@ -151,16 +225,14 @@ function ClaimPanelInner({ address }: { address: string }) {
         {alreadyClaimed ? (
           <div className="space-y-1">
             <div className="text-accent text-sm font-medium">Claimed</div>
-            {txHash && (
-              <a
-                href={`${EXPLORER_URL}/tx/${txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-accent text-xs hover:underline"
-              >
-                View transaction
-              </a>
-            )}
+            <a
+              href={txHash ? `${EXPLORER_URL}/tx/${txHash}` : `${EXPLORER_URL}/address/${MERKLE_CLAIM_ADDRESS}#events`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent text-xs hover:underline"
+            >
+              {txHash ? "View transaction" : "View on explorer"}
+            </a>
           </div>
         ) : (
           <button
