@@ -5,10 +5,6 @@
       "schedule": "*/5 * * * *"
     },
     {
-      "path": "/api/cron/airdrop-points",
-      "schedule": "*/5 * * * *"
-    },
-    {
       "path": "/api/cron/airdrop-price",
       "schedule": "0 0 * * *"
     },
