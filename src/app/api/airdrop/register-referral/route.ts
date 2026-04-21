@@ -1,16 +1,37 @@
 /**
  * Referral registration endpoint (#883)
  *
- * POST /api/airdrop/register-referral
+ * GET  /api/airdrop/register-referral?address=0x...  — check existing referrer
+ * POST /api/airdrop/register-referral                — register referral (SIWE)
  * Body: { message: string, signature: string, referralCode: string }
  *
  * Records a referral relationship. One referrer per wallet, first-come.
  * No retroactive points — only applies to future buy-points.
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "../../../../../lib/supabase";
 import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
+
+export async function GET(req: NextRequest) {
+  const supabase = createServerClient();
+  if (!supabase) {
+    return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
+  }
+
+  const address = req.nextUrl.searchParams.get("address")?.toLowerCase();
+  if (!address) {
+    return NextResponse.json({ error: "Missing address param" }, { status: 400 });
+  }
+
+  const { data } = await supabase
+    .from("pl_referrals")
+    .select("referrer_address")
+    .eq("referred_address", address)
+    .single();
+
+  return NextResponse.json({ referrer: data?.referrer_address ?? null });
+}
 
 export async function POST(req: Request) {
   const supabase = createServerClient();
