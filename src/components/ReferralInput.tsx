@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { REFERRAL_STORAGE_KEY } from "../hooks/useReferralCapture";
@@ -13,7 +13,12 @@ export function ReferralInput() {
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const queryClient = useQueryClient();
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(REFERRAL_STORAGE_KEY) ?? "";
+    }
+    return "";
+  });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,14 +37,6 @@ export function ReferralInput() {
     enabled: isConnected && !!address,
     staleTime: Infinity,
   });
-
-  // Pre-fill from localStorage capture
-  useEffect(() => {
-    const stored = localStorage.getItem(REFERRAL_STORAGE_KEY);
-    if (stored && !code) {
-      setCode(stored);
-    }
-  }, [code]);
 
   if (!isConnected || isLoading) return null;
 
