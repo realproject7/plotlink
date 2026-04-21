@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   description: "Earn PL points through trading, writing, and referrals.",
 };
 
-const campaignEnded = new Date() > AIRDROP_CONFIG.CAMPAIGN_END;
-
 export default function AirdropPage() {
+  const campaignEnded = new Date() > AIRDROP_CONFIG.CAMPAIGN_END;
+
   return (
     <main className="mx-auto max-w-xl px-4 py-8 space-y-6">
       <CampaignHero />
