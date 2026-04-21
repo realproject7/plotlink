@@ -184,8 +184,8 @@ export async function POST(req: Request) {
   // Reconcile plot_count from actual plots rows (prevents genesis double-count)
   await reconcileStorylinePlotCount(supabase, Number(storylineId));
 
-  // Award airdrop write points (non-blocking)
-  awardWritePoints(writer, Number(storylineId)).catch(() => {});
+  // Award airdrop write points (non-blocking, using on-chain timestamp)
+  awardWritePoints(writer, Number(storylineId), new Date(Number(blockTimestamp) * 1000)).catch(() => {});
 
   return NextResponse.json({ success: true });
 }
