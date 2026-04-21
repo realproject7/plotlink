@@ -237,7 +237,7 @@ function ReferralSection({
       const res = await fetch("/api/airdrop/referral-code", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, signature, useFarcaster: true }),
+        body: JSON.stringify({ message, signature, useFarcasterUsername: true }),
       });
 
       if (!res.ok) {
