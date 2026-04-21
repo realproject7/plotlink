@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CampaignHero } from "../../components/airdrop/CampaignHero";
 import { UserPoints } from "../../components/airdrop/UserPoints";
+import { Leaderboard } from "../../components/airdrop/Leaderboard";
 import { MilestoneTrack } from "../../components/airdrop/MilestoneTrack";
 
 export const metadata: Metadata = {
@@ -13,6 +14,7 @@ export default function AirdropPage() {
     <main className="mx-auto max-w-xl px-4 py-8 space-y-6">
       <CampaignHero />
       <UserPoints />
+      <Leaderboard />
       <MilestoneTrack />
     </main>
   );
