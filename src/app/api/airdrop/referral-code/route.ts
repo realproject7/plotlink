@@ -3,12 +3,13 @@
  *
  * GET  /api/airdrop/referral-code?address=0x...  — fetch existing code (no creation)
  * POST /api/airdrop/referral-code                — generate or retrieve code
- * Body: { address: string, useFarcasterUsername?: boolean }
+ * Body: { message: string, signature: string, useFarcasterUsername?: boolean }
  */
 
 import { NextResponse, type NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import { createServerClient } from "../../../../../lib/supabase";
+import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient();
@@ -40,15 +41,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
   }
 
-  let address: string;
+  let message: string;
+  let signature: `0x${string}`;
   let useFarcasterUsername: boolean;
   try {
     const body = await req.json();
-    address = body.address?.toLowerCase();
+    message = body.message;
+    signature = body.signature;
     useFarcasterUsername = body.useFarcasterUsername === true;
-    if (!address) throw new Error("missing address");
+    if (!message || !signature) throw new Error("missing fields");
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const address = await verifyWalletOwnership(message, signature);
+  if (!address) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   // Check for existing code (immutable once set)

@@ -8,10 +8,10 @@
  */
 
 import { NextResponse } from "next/server";
-import { verifyMessage } from "viem";
 import { createServerClient } from "../../../../../lib/supabase";
 import { AIRDROP_CONFIG } from "../../../../../lib/airdrop/config";
 import { getStreakBoost, dropOneTier, getNextTier } from "../../../../../lib/airdrop/streak";
+import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
 
 export async function POST(req: Request) {
   const supabase = createServerClient();
@@ -30,26 +30,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  // Parse SIWE message to extract address
-  const addressMatch = message.match(/^(0x[a-fA-F0-9]{40})/m) ??
-    message.match(/wants you to sign in with your Ethereum account:\n(0x[a-fA-F0-9]{40})/);
-  if (!addressMatch) {
-    return NextResponse.json({ error: "Invalid SIWE message" }, { status: 400 });
-  }
-  const claimedAddress = addressMatch[1].toLowerCase();
-
-  // Verify signature
-  let valid: boolean;
-  try {
-    valid = await verifyMessage({
-      address: claimedAddress as `0x${string}`,
-      message,
-      signature,
-    });
-  } catch {
-    valid = false;
-  }
-  if (!valid) {
+  // Verify wallet ownership via SIWE signature
+  const claimedAddress = await verifyWalletOwnership(message, signature);
+  if (!claimedAddress) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 

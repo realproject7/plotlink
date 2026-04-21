@@ -2,7 +2,7 @@
  * Referral registration endpoint (#883)
  *
  * POST /api/airdrop/register-referral
- * Body: { address: string, referralCode: string }
+ * Body: { message: string, signature: string, referralCode: string }
  *
  * Records a referral relationship. One referrer per wallet, first-come.
  * No retroactive points — only applies to future buy-points.
@@ -10,6 +10,7 @@
 
 import { NextResponse } from "next/server";
 import { createServerClient } from "../../../../../lib/supabase";
+import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
 
 export async function POST(req: Request) {
   const supabase = createServerClient();
@@ -17,15 +18,22 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
   }
 
-  let address: string;
+  let message: string;
+  let signature: `0x${string}`;
   let referralCode: string;
   try {
     const body = await req.json();
-    address = body.address?.toLowerCase();
+    message = body.message;
+    signature = body.signature;
     referralCode = body.referralCode?.trim();
-    if (!address || !referralCode) throw new Error("missing fields");
+    if (!message || !signature || !referralCode) throw new Error("missing fields");
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const address = await verifyWalletOwnership(message, signature);
+  if (!address) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
   // Check if already referred
