@@ -28,18 +28,18 @@ export async function GET() {
     .limit(1)
     .single();
 
-  // Total points earned across all users
-  const { data: totalPointsData } = await supabase
+  // Total points earned + unique participants
+  const { data: allPoints } = await supabase
     .from("pl_points")
-    .select("points")
-    .then(({ data }) => ({
-      data: data?.reduce((sum, r) => sum + r.points, 0) ?? 0,
-    }));
+    .select("address, points");
 
-  // Total unique participants
-  const { count: totalParticipants } = await supabase
-    .from("pl_points")
-    .select("address", { count: "exact", head: true });
+  let totalPointsEarned = 0;
+  const uniqueAddresses = new Set<string>();
+  for (const row of allPoints ?? []) {
+    totalPointsEarned += row.points;
+    uniqueAddresses.add(row.address);
+  }
+  const totalParticipants = uniqueAddresses.size;
 
   // Milestone status
   const currentMcap = latestPrice?.mcap_usd ?? 0;
@@ -70,8 +70,8 @@ export async function GET() {
     currentMcap,
     latestPriceUsd: latestPrice?.price_usd ?? null,
     milestones,
-    totalPointsEarned: totalPointsData ?? 0,
-    totalParticipants: totalParticipants ?? 0,
+    totalPointsEarned,
+    totalParticipants,
     lockerId: AIRDROP_CONFIG.LOCKER_ID,
   });
 }
