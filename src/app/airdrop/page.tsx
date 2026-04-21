@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { CampaignHero } from "../../components/airdrop/CampaignHero";
 import { UserPoints } from "../../components/airdrop/UserPoints";
 import { Leaderboard } from "../../components/airdrop/Leaderboard";
+import { WeeklySnapshots } from "../../components/airdrop/WeeklySnapshots";
 import { MilestoneTrack } from "../../components/airdrop/MilestoneTrack";
 
 export const metadata: Metadata = {
@@ -15,6 +16,7 @@ export default function AirdropPage() {
       <CampaignHero />
       <UserPoints />
       <Leaderboard />
+      <WeeklySnapshots />
       <MilestoneTrack />
     </main>
   );
