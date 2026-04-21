@@ -61,7 +61,7 @@ export function WeeklySnapshots() {
       <h3 className="text-foreground text-sm font-bold mb-3">Weekly Recaps</h3>
 
       <div className="space-y-2">
-        {data.snapshots.map((snap) => {
+        {[...data.snapshots].sort((a, b) => b.weekNumber - a.weekNumber).map((snap) => {
           const mcapChange = snap.mcapEnd - snap.mcapStart;
           const mcapPct =
             snap.mcapStart > 0
