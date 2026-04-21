@@ -37,17 +37,14 @@ export function computeBuyPoints(
 }
 
 /**
- * Compute referral points (percentage of buyer's buy points).
+ * Compute referral points (percentage of buyer's boosted buy points).
  * Also boosted by the referrer's own streak.
  */
 export function computeReferralPoints(
-  buyerPlotSpent: number,
+  buyerBoostedPoints: number,
   referrerStreak: number,
 ): number {
-  const base =
-    buyerPlotSpent *
-    AIRDROP_CONFIG.POINTS.BUY_PER_PLOT *
-    (AIRDROP_CONFIG.POINTS.REFERRAL_PCT / 100);
+  const base = buyerBoostedPoints * (AIRDROP_CONFIG.POINTS.REFERRAL_PCT / 100);
   const boost = getStreakBoost(referrerStreak);
   return base * (1 + boost);
 }

@@ -146,7 +146,7 @@ export async function POST(req: Request) {
     const referrer = referralMap.get(address);
     if (referrer) {
       const referrerStreak = referrerStreakMap.get(referrer) ?? 0;
-      const refPoints = computeReferralPoints(plotSpent, referrerStreak);
+      const refPoints = computeReferralPoints(buyPoints, referrerStreak);
       inserts.push({
         address: referrer,
         action: "referral",
