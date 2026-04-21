@@ -22,7 +22,7 @@ function verifyCron(req: Request): boolean {
   return authHeader === `Bearer ${secret}`;
 }
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
