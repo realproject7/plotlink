@@ -56,6 +56,17 @@ export function MilestoneTrack() {
           />
         </div>
 
+        {/* Current mcap marker */}
+        <div
+          className="absolute top-0 -translate-x-1/2"
+          style={{ left: `${overallProgress}%` }}
+        >
+          <div className="bg-foreground w-1.5 h-3 rounded-sm" />
+          <div className="text-foreground text-[8px] font-bold mt-0.5 whitespace-nowrap -translate-x-1/4">
+            {formatUsdValue(data.currentMcap)}
+          </div>
+        </div>
+
         {/* Milestone markers */}
         {TIERS.map((tier) => {
           const milestone = data.milestones[tier.key];
