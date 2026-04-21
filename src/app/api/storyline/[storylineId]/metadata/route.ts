@@ -99,7 +99,7 @@ export async function PATCH(
   }
 
   // Build update payload
-  const update: Record<string, string> = {};
+  const update: { genre?: string; language?: string } = {};
   if (genre) update.genre = genre;
   if (language) update.language = language;
 
