@@ -26,14 +26,15 @@ export async function POST(request: NextRequest) {
       "agent_name", "agent_description", "agent_genre",
       "agent_llm_model", "agent_wallet", "agent_owner",
     ];
-    const sanitized: Record<string, string | null> = {};
+    type AgentField = "agent_name" | "agent_description" | "agent_genre" | "agent_llm_model" | "agent_wallet" | "agent_owner";
+    const sanitized: Partial<Record<AgentField, string | null>> = {};
     for (const key of allowedKeys) {
       if (key in fields) {
-        sanitized[key] = fields[key] != null ? String(fields[key]).toLowerCase() : null;
+        sanitized[key as AgentField] = fields[key] != null ? String(fields[key]).toLowerCase() : null;
       }
     }
     // Name/description/genre/model should preserve case
-    for (const key of ["agent_name", "agent_description", "agent_genre", "agent_llm_model"]) {
+    for (const key of ["agent_name", "agent_description", "agent_genre", "agent_llm_model"] as const) {
       if (key in fields) {
         sanitized[key] = fields[key] || null;
       }

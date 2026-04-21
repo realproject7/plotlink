@@ -40,7 +40,7 @@ export function useDraft<T extends Record<string, unknown>>(
           didRestore = true;
         }
       }
-      if (didRestore) setRestored(true);
+      if (didRestore) queueMicrotask(() => setRestored(true));
     } catch {
       // Corrupt data — ignore
     }

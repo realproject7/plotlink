@@ -122,21 +122,21 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!dbUser?.steemhunt_fetched_at) {
-      setCooldownRemaining(0);
+      queueMicrotask(() => setCooldownRemaining(0));
       return;
     }
     const computeRemaining = () => {
       const age = Date.now() - new Date(dbUser.steemhunt_fetched_at!).getTime();
       return Math.max(0, COOLDOWN_MS - age);
     };
-    setCooldownRemaining(computeRemaining());
+    queueMicrotask(() => setCooldownRemaining(computeRemaining()));
     const interval = setInterval(() => {
       const r = computeRemaining();
       setCooldownRemaining(r);
       if (r <= 0) clearInterval(interval);
     }, 1000);
     return () => clearInterval(interval);
-  }, [dbUser?.steemhunt_fetched_at]);
+  }, [dbUser?.steemhunt_fetched_at, COOLDOWN_MS]);
 
   const onCooldown = cooldownRemaining > 0;
 
