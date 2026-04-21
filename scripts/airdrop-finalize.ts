@@ -122,21 +122,24 @@ async function computeDistribution(
   const totalWei = parseUnits(distributablePlot.toString(), 18);
 
   // Compute floor amounts and track remainders for largest-remainder allocation
-  const entries: { address: string; floor: bigint; remainder: number }[] = [];
+  // Pure bigint arithmetic to avoid Number precision loss
+  const totalPointsBig = BigInt(Math.round(totalPoints * 1e6));
+  const entries: { address: string; floor: bigint; remainderBig: bigint }[] = [];
   let floorSum = BigInt(0);
 
   for (const [addr, pts] of pointsByAddress) {
-    const share = pts / totalPoints;
-    const exactWei = Number(totalWei) * share;
-    const floor = BigInt(Math.floor(exactWei));
-    const remainder = exactWei - Math.floor(exactWei);
-    entries.push({ address: addr, floor, remainder });
+    const ptsBig = BigInt(Math.round(pts * 1e6));
+    // floor = (totalWei * pts) / totalPoints  (integer division)
+    const floor = (totalWei * ptsBig) / totalPointsBig;
+    // remainder = (totalWei * pts) % totalPoints  (for sorting)
+    const remainderBig = (totalWei * ptsBig) % totalPointsBig;
+    entries.push({ address: addr, floor, remainderBig });
     floorSum += floor;
   }
 
   // Distribute leftover wei to entries with largest remainders
   let leftover = totalWei - floorSum;
-  entries.sort((a, b) => b.remainder - a.remainder);
+  entries.sort((a, b) => (b.remainderBig > a.remainderBig ? 1 : b.remainderBig < a.remainderBig ? -1 : 0));
   for (const entry of entries) {
     if (leftover <= BigInt(0)) break;
     entry.floor += BigInt(1);
