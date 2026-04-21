@@ -118,17 +118,34 @@ async function computeDistribution(
   console.log(`Pool: ${poolAmount} PLOT, Milestone: ${milestonePct}%, Distributable: ${distributablePlot} PLOT`);
   console.log(`Participants: ${pointsByAddress.size}, Total points: ${totalPoints}`);
 
-  const distribution: { address: string; amount: bigint }[] = [];
+  // Exact total in wei
+  const totalWei = parseUnits(distributablePlot.toString(), 18);
+
+  // Compute floor amounts and track remainders for largest-remainder allocation
+  const entries: { address: string; floor: bigint; remainder: number }[] = [];
+  let floorSum = BigInt(0);
 
   for (const [addr, pts] of pointsByAddress) {
     const share = pts / totalPoints;
-    const plotAmount = share * distributablePlot;
-    // Convert to 18-decimal bigint
-    const amountWei = parseUnits(plotAmount.toFixed(18), 18);
-    if (amountWei > BigInt(0)) {
-      distribution.push({ address: addr, amount: amountWei });
-    }
+    const exactWei = Number(totalWei) * share;
+    const floor = BigInt(Math.floor(exactWei));
+    const remainder = exactWei - Math.floor(exactWei);
+    entries.push({ address: addr, floor, remainder });
+    floorSum += floor;
   }
+
+  // Distribute leftover wei to entries with largest remainders
+  let leftover = totalWei - floorSum;
+  entries.sort((a, b) => b.remainder - a.remainder);
+  for (const entry of entries) {
+    if (leftover <= BigInt(0)) break;
+    entry.floor += BigInt(1);
+    leftover -= BigInt(1);
+  }
+
+  const distribution: { address: string; amount: bigint }[] = entries
+    .filter((e) => e.floor > BigInt(0))
+    .map((e) => ({ address: e.address, amount: e.floor }));
 
   // Sort by amount descending for easier verification
   distribution.sort((a, b) => (b.amount > a.amount ? 1 : b.amount < a.amount ? -1 : 0));
