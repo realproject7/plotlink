@@ -8,7 +8,7 @@ import { formatPrice } from "../../../../../lib/format";
 import { truncateAddress } from "../../../../../lib/utils";
 import { getPlotUsdPrice, formatUsdValue } from "../../../../../lib/usd-price";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 async function loadFont(): Promise<ArrayBuffer | null> {
   try {
