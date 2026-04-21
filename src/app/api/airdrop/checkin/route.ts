@@ -102,7 +102,7 @@ export async function POST(req: Request) {
         // Consecutive day — increment streak
         newStreak = existing.current_streak + 1;
       } else {
-        // Missed 2+ days — snap to current tier threshold
+        // Missed 2+ days — drop to previous tier threshold
         newStreak = dropOneTier(existing.current_streak);
       }
     } else {
