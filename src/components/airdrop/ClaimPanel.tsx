@@ -29,41 +29,29 @@ const MERKLE_CLAIM_ABI = [
   },
 ] as const;
 
-interface StatusDataFull {
-  poolAmount: number;
-  milestones: {
-    bronze: { mcap: number; pct: number; reached: boolean };
-    silver: { mcap: number; pct: number; reached: boolean };
-    gold: { mcap: number; pct: number; reached: boolean };
-  };
-  latestPriceUsd: number | null;
+interface ResultsData {
+  finalized: boolean;
+  milestone: string;
+  distributedPct: number;
+  distributedPlot: number;
+  burnedPlot: number;
+  recipients: number;
 }
 
 const BURN_TX = process.env.NEXT_PUBLIC_BURN_TX ?? null;
 
 function CampaignResults() {
-  const { data } = useQuery<StatusDataFull>({
-    queryKey: ["airdrop-status"],
+  const { data } = useQuery<ResultsData>({
+    queryKey: ["airdrop-results"],
     queryFn: async () => {
-      const res = await fetch("/api/airdrop/status");
-      if (!res.ok) throw new Error("Failed to fetch status");
+      const res = await fetch("/api/airdrop/results");
+      if (!res.ok) throw new Error("Failed to fetch results");
       return res.json();
     },
-    staleTime: 60_000,
+    staleTime: Infinity,
   });
 
-  if (!data) return null;
-
-  const milestone = data.milestones.gold.reached
-    ? { tier: "Gold", pct: data.milestones.gold.pct }
-    : data.milestones.silver.reached
-      ? { tier: "Silver", pct: data.milestones.silver.pct }
-      : data.milestones.bronze.reached
-        ? { tier: "Bronze", pct: data.milestones.bronze.pct }
-        : { tier: "None", pct: 0 };
-
-  const distributed = data.poolAmount * (milestone.pct / 100);
-  const burned = data.poolAmount - distributed;
+  if (!data || !data.finalized) return null;
 
   return (
     <div className="border-border rounded border p-4 space-y-2">
@@ -74,16 +62,17 @@ function CampaignResults() {
         <div className="text-muted">
           Milestone achieved:{" "}
           <span className="text-foreground font-medium">
-            {milestone.tier === "None" ? "None — full burn" : `${milestone.tier} (${milestone.pct}%)`}
+            {data.milestone === "None" ? "None — full burn" : `${data.milestone} (${data.distributedPct}%)`}
           </span>
         </div>
         <div className="text-muted">
           Distributed:{" "}
-          <span className="text-foreground font-medium">{distributed.toLocaleString()} PLOT</span>
+          <span className="text-foreground font-medium">{data.distributedPlot.toLocaleString()} PLOT</span>
+          <span className="text-muted"> to {data.recipients} recipients</span>
         </div>
         <div className="text-muted">
           Burned:{" "}
-          <span className="text-foreground font-medium">{burned.toLocaleString()} PLOT</span>
+          <span className="text-foreground font-medium">{data.burnedPlot.toLocaleString()} PLOT</span>
         </div>
         {BURN_TX && (
           <a
