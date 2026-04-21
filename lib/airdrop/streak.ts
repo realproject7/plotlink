@@ -25,21 +25,14 @@ export function getStreakBoost(currentStreak: number): number {
 
 /**
  * Drop one tier after a missed day. Returns the new streak value.
- * E.g. streak 45 (in 30-49 range) → drops to 30.
- *      streak 120 → drops to 100.
- *      streak 5 → drops to 0.
+ * Per spec: streak snaps down to the current tier's threshold.
+ *   100+ → 100, 50-99 → 50, 30-49 → 30, 14-29 → 14, 7-13 → 7, 1-6 → 0
  */
 export function dropOneTier(streak: number): number {
-  // Find the current tier threshold
+  // Find the current tier and snap to its threshold
   for (let i = TIER_THRESHOLDS.length - 1; i >= 0; i--) {
     if (streak >= TIER_THRESHOLDS[i]) {
-      // If at or above this tier, drop to this tier's threshold
-      // But if already exactly at the threshold, drop to the tier below
-      if (streak > TIER_THRESHOLDS[i]) {
-        return TIER_THRESHOLDS[i];
-      }
-      // Exactly at the threshold — drop to previous tier
-      return i > 0 ? TIER_THRESHOLDS[i - 1] : 0;
+      return TIER_THRESHOLDS[i];
     }
   }
   return 0;

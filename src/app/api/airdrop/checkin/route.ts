@@ -119,10 +119,8 @@ export async function POST(req: Request) {
         // Consecutive day — increment streak
         newStreak = existing.current_streak + 1;
       } else {
-        // Missed 2+ days — drop one tier
-        newStreak = dropOneTier(existing.current_streak);
-        // Then add today's check-in
-        newStreak = Math.max(newStreak, 1);
+        // Missed 2+ days — drop one tier, then add today's check-in
+        newStreak = dropOneTier(existing.current_streak) + 1;
       }
     } else {
       newStreak = 1;
