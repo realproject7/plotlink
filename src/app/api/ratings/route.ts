@@ -4,6 +4,7 @@ import { publicClient } from "../../../../lib/rpc";
 import { createServerClient, supabase } from "../../../../lib/supabase";
 import { erc20Abi } from "../../../../lib/price";
 import { STORY_FACTORY } from "../../../../lib/contracts/constants";
+import { awardRatePoints } from "../../../../lib/airdrop/award";
 
 const MAX_COMMENT_LENGTH = 500;
 
@@ -188,6 +189,9 @@ export async function POST(req: NextRequest) {
   if (upsertError) {
     return error(`Database error: ${upsertError.message}`, 500);
   }
+
+  // Award airdrop rate points (non-blocking)
+  awardRatePoints(raterAddress, storylineId).catch(() => {});
 
   return NextResponse.json({ success: true });
 }

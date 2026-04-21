@@ -8,6 +8,7 @@ import { hashContent } from "../../../../../lib/content";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 import { notifyNewPlot, notifyNewStoryline } from "../../../../../lib/notifications.server";
+import { awardWritePoints } from "../../../../../lib/airdrop/award";
 import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
@@ -167,6 +168,9 @@ export async function GET(req: Request) {
           // Notify users about the new storyline
           const args = decoded.args as { storylineId: bigint; title: string; writer: `0x${string}` };
           notifyNewStoryline(Number(args.storylineId), args.title, args.writer).catch(() => {});
+          // Award airdrop write points (non-blocking)
+          const scBlockTs = await getCachedBlockTimestamp(log.blockNumber!);
+          awardWritePoints(args.writer, Number(args.storylineId), scBlockTs ? new Date(Number(scBlockTs) * 1000) : undefined).catch(() => {});
         }
       } else if (decoded.eventName === "PlotChained") {
         const failed = await processPlotChained(
