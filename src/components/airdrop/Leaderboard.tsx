@@ -53,7 +53,7 @@ export function Leaderboard() {
   }
 
   const userAddr = address?.toLowerCase();
-  const inTop50 = userAddr && data.entries.some((e) => e.address === userAddr);
+  const inTop50 = userAddr && data.entries.some((e) => e.address.toLowerCase() === userAddr);
 
   return (
     <div className="border-border rounded border p-4">
@@ -71,7 +71,7 @@ export function Leaderboard() {
           </thead>
           <tbody>
             {data.entries.map((entry) => {
-              const isUser = isConnected && userAddr === entry.address;
+              const isUser = isConnected && userAddr === entry.address.toLowerCase();
               return (
                 <tr
                   key={entry.address}
