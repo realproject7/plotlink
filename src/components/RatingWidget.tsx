@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 import { browserClient as publicClient } from "../../lib/rpc";
@@ -69,22 +69,14 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
     enabled: isConnected && !!address,
   });
 
-  // Pre-fill existing rating or reset when wallet changes
-  useEffect(() => {
-    if (ratingsData && address) {
-      const existing = ratingsData.myRating;
-      if (existing) {
-        setSelectedRating(existing.rating);
-        setComment(existing.comment ?? "");
-      } else {
-        setSelectedRating(0);
-        setComment("");
-      }
-    } else if (!address) {
-      setSelectedRating(0);
-      setComment("");
-    }
-  }, [ratingsData, address]);
+  // Pre-fill existing rating or reset when data changes
+  const myRating = ratingsData?.myRating;
+  const prevMyRatingRef = useRef(myRating);
+  if (myRating !== prevMyRatingRef.current) {
+    prevMyRatingRef.current = myRating;
+    setSelectedRating(myRating?.rating ?? 0);
+    setComment(myRating?.comment ?? "");
+  }
 
   const submitRating = useCallback(async () => {
     if (!address || selectedRating === 0) return;

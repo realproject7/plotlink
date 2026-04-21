@@ -19,6 +19,7 @@ interface ReadingModeProps {
 }
 
 export function ReadingMode({
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   storylineId,
   storylineTitle,
   chapters,
