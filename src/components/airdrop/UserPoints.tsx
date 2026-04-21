@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { StreakCard } from "./StreakCard";
+import { useConnectedIdentity } from "../../hooks/useConnectedIdentity";
 import { formatUsdValue } from "../../../lib/usd-price";
 import { REFERRAL_STORAGE_KEY } from "../../hooks/useReferralCapture";
 
@@ -68,6 +69,7 @@ export function UserPoints() {
 
 function UserPointsInner({ address }: { address: string }) {
   const { data, isLoading } = useAirdropPoints(address);
+  const { profile: farcasterProfile } = useConnectedIdentity();
 
   // Fetch latest price for USD estimates
   const { data: statusData } = useQuery<StatusData>({
@@ -150,7 +152,7 @@ function UserPointsInner({ address }: { address: string }) {
       </div>
 
       {/* Referral section */}
-      <ReferralSection referral={data.referral} address={address} />
+      <ReferralSection referral={data.referral} address={address} hasFarcaster={!!farcasterProfile} />
     </div>
   );
 }
@@ -158,9 +160,11 @@ function UserPointsInner({ address }: { address: string }) {
 function ReferralSection({
   referral,
   address,
+  hasFarcaster,
 }: {
   referral: PointsData["referral"];
   address: string;
+  hasFarcaster: boolean;
 }) {
   const { signMessageAsync } = useSignMessage();
   const queryClient = useQueryClient();
@@ -307,7 +311,7 @@ function ReferralSection({
             </button>
           </div>
         </div>
-      ) : (
+      ) : hasFarcaster ? (
         <div>
           <button
             type="button"
@@ -318,7 +322,7 @@ function ReferralSection({
             Use Farcaster username as referral code
           </button>
         </div>
-      )}
+      ) : null}
 
       {/* Referred users count */}
       <div className="text-xs">
