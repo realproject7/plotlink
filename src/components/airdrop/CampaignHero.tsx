@@ -9,7 +9,7 @@ interface StatusData {
   timeRemainingDays: number;
   timeElapsedPercent: number;
   poolAmount: number;
-  currentMcap: number;
+  currentFdv: number;
   latestPriceUsd: number | null;
   milestones: {
     bronze: { mcap: number; pct: number; reached: boolean };

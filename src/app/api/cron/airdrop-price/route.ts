@@ -10,7 +10,7 @@ import { formatUnits } from "viem";
 import { createServerClient } from "../../../../../lib/supabase";
 import { getPlotUsdPrice } from "../../../../../lib/usd-price";
 import { publicClient } from "../../../../../lib/rpc";
-import { PLOT_TOKEN } from "../../../../../lib/contracts/constants";
+import { PLOT_TOKEN, PLOT_MAX_SUPPLY } from "../../../../../lib/contracts/constants";
 import { erc20Abi } from "../../../../../lib/price";
 
 function verifyCron(req: Request): boolean {
@@ -67,13 +67,14 @@ export async function GET(req: Request) {
     return NextResponse.json({ skipped: true, reason: "Supply fetch failed" }, { status: 200 });
   }
 
-  const mcapUsd = priceUsd * supplyFormatted;
+  // Store FDV (price × max supply) instead of MCap for milestone tracking
+  const fdvUsd = priceUsd * PLOT_MAX_SUPPLY;
 
   const { error } = await supabase.from("pl_daily_prices").insert({
     recorded_at: todayUtc,
     price_usd: priceUsd,
     supply: supplyFormatted,
-    mcap_usd: mcapUsd,
+    mcap_usd: fdvUsd, // column stores FDV (price × max supply)
   });
 
   if (error) {
@@ -81,6 +82,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Insert failed" }, { status: 500 });
   }
 
-  console.info(`[airdrop-price] Snapshot recorded: date=${todayUtc} price=${priceUsd} supply=${supplyFormatted} mcap=${mcapUsd}`);
-  return NextResponse.json({ recorded: true, date: todayUtc, priceUsd, supply: supplyFormatted, mcapUsd });
+  console.info(`[airdrop-price] Snapshot recorded: date=${todayUtc} price=${priceUsd} supply=${supplyFormatted} fdv=${fdvUsd}`);
+  return NextResponse.json({ recorded: true, date: todayUtc, priceUsd, supply: supplyFormatted, fdvUsd });
 }
