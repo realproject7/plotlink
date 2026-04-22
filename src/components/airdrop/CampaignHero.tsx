@@ -137,7 +137,6 @@ function useCountdown(endDateStr: string) {
 /* ─── Pure chart helpers (outside component to avoid unstable refs) ─── */
 
 const FDV_LOG_MIN = Math.log10(100);
-const FDV_LOG_MAX = Math.log10(200_000_000);
 
 function timeToX(ms: number, startMs: number, totalMs: number): number {
   return PAD.left + ((ms - startMs) / totalMs) * CW;
@@ -147,9 +146,9 @@ function poolToY(usd: number, yLeftMax: number): number {
   return PAD.top + CH * (1 - usd / yLeftMax);
 }
 
-function fdvToY(fdv: number): number {
+function fdvToY(fdv: number, logMax: number): number {
   if (fdv <= 0) return PAD.top + CH;
-  const t = (Math.log10(Math.max(fdv, 100)) - FDV_LOG_MIN) / (FDV_LOG_MAX - FDV_LOG_MIN);
+  const t = (Math.log10(Math.max(fdv, 100)) - FDV_LOG_MIN) / (logMax - FDV_LOG_MIN);
   return PAD.top + CH * (1 - t);
 }
 
@@ -184,6 +183,7 @@ function TimelineChart({
   const nowX = timeToX(Math.min(nowMs, endMs), startMs, totalMs);
 
   const diamondFdv = tiers[tiers.length - 1].fdv;
+  const fdvLogMax = Math.log10(diamondFdv * 2); // 2x headroom above diamond
   const diamondPoolUsd = poolAmount * (diamondFdv / MAX_SUPPLY);
   const yLeftMax = diamondPoolUsd * 1.1;
 
@@ -242,29 +242,28 @@ function TimelineChart({
       const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
       if (dpMs < startMs || dpMs > endMs) continue;
       const x = timeToX(dpMs, startMs, totalMs);
-      const y = fdvToY(dp.fdv);
+      const y = fdvToY(dp.fdv, fdvLogMax);
       parts.push(`${parts.length === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`);
     }
     if (parts.length > 0 && currentFdv > 0) {
-      parts.push(`L ${nowX.toFixed(1)} ${fdvToY(currentFdv).toFixed(1)}`);
+      parts.push(`L ${nowX.toFixed(1)} ${fdvToY(currentFdv, fdvLogMax).toFixed(1)}`);
     }
     return parts.join(" ");
-  }, [dailyPrices, startMs, endMs, totalMs, currentFdv, nowX]);
+  }, [dailyPrices, startMs, endMs, totalMs, currentFdv, nowX, fdvLogMax]);
 
-  // Linear projection: current FDV → Diamond at campaign end
   // Linear projection: from current position (nowX) → Diamond at campaign end
   const projectionPath = useMemo(() => {
     const toX = PAD.left + CW;
-    const fromY = fdvToY(currentFdv > 0 ? currentFdv : 100);
-    const toY = fdvToY(diamondFdv);
+    const fromY = fdvToY(currentFdv > 0 ? currentFdv : 100, fdvLogMax);
+    const toY = fdvToY(diamondFdv, fdvLogMax);
     return `M ${nowX} ${fromY} L ${toX} ${toY}`;
-  }, [currentFdv, nowX, diamondFdv]);
+  }, [currentFdv, nowX, diamondFdv, fdvLogMax]);
 
-  const dotY = fdvToY(currentFdv > 0 ? currentFdv : 100);
+  const dotY = fdvToY(currentFdv > 0 ? currentFdv : 100, fdvLogMax);
 
   const milestoneLines = tiers.map((t) => ({
     ...t,
-    y: fdvToY(t.fdv),
+    y: fdvToY(t.fdv, fdvLogMax),
   }));
 
   const yLeftTicks = [0, diamondPoolUsd * 0.25, diamondPoolUsd * 0.5, diamondPoolUsd];
