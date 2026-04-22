@@ -307,23 +307,32 @@ export function MilestoneTrack() {
             Pool Value
           </text>
 
-          {/* Current FDV indicator */}
+          {/* Current FDV indicator — dot on x-axis, dashed line up to area */}
           {currentFdv > 0 && (
             <g>
+              {/* Vertical dashed line from x-axis up to the step level */}
               <line
                 x1={dotX}
-                y1={dotY}
+                y1={PAD.top + CHART_H}
                 x2={dotX}
-                y2={PAD.top + CHART_H}
+                y2={dotY}
                 stroke="#8B4513"
                 strokeWidth={1}
                 strokeDasharray="3,3"
                 opacity={0.6}
               />
-              {/* Pulse ring */}
+              {/* Small marker at the step intersection */}
               <circle
                 cx={dotX}
                 cy={dotY}
+                r={2.5}
+                fill="#8B4513"
+                opacity={0.5}
+              />
+              {/* Pulse ring on x-axis */}
+              <circle
+                cx={dotX}
+                cy={PAD.top + CHART_H}
                 r={6}
                 fill="none"
                 stroke="#8B4513"
@@ -343,8 +352,8 @@ export function MilestoneTrack() {
                   repeatCount="indefinite"
                 />
               </circle>
-              {/* Heartbeat dot */}
-              <circle cx={dotX} cy={dotY} r={4} fill="#8B4513">
+              {/* Heartbeat dot on x-axis */}
+              <circle cx={dotX} cy={PAD.top + CHART_H} r={4} fill="#8B4513">
                 <animate
                   attributeName="r"
                   values="4;5.6;4"
