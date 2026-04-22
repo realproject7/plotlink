@@ -34,6 +34,29 @@ function useAirdropStatus() {
   });
 }
 
+function CountdownDisplay({ days }: { days: number }) {
+  const weeks = Math.floor(days / 7);
+  const remainingDays = days % 7;
+
+  return (
+    <div className="flex items-center gap-3 justify-center mt-3">
+      {weeks > 0 && (
+        <div className="text-center">
+          <div className="text-foreground text-2xl font-bold font-mono">{weeks}</div>
+          <div className="text-muted text-[9px] uppercase tracking-wider">weeks</div>
+        </div>
+      )}
+      {weeks > 0 && (
+        <div className="text-muted text-lg">:</div>
+      )}
+      <div className="text-center">
+        <div className="text-foreground text-2xl font-bold font-mono">{weeks > 0 ? remainingDays : days}</div>
+        <div className="text-muted text-[9px] uppercase tracking-wider">days</div>
+      </div>
+    </div>
+  );
+}
+
 export function CampaignHero() {
   const { data, isLoading } = useAirdropStatus();
 
@@ -45,88 +68,33 @@ export function CampaignHero() {
     );
   }
 
-  // Find the next milestone target
-  const nextMilestone = !data.milestones.bronze.reached
-    ? { name: "Bronze", mcap: data.milestones.bronze.mcap }
-    : !data.milestones.silver.reached
-      ? { name: "Silver", mcap: data.milestones.silver.mcap }
-      : !data.milestones.gold.reached
-        ? { name: "Gold", mcap: data.milestones.gold.mcap }
-        : null;
-
-  const mcapProgress = nextMilestone
-    ? Math.min(100, (data.currentMcap / nextMilestone.mcap) * 100)
-    : 100;
-
   return (
-    <div className="border-border rounded border p-4 space-y-4">
-      <div>
-        <h2 className="text-foreground text-lg font-bold">PLOT 10x Airdrop</h2>
-        <p className="text-muted text-xs mt-1">
-          {data.poolAmount.toLocaleString()} PLOT locked. Big or nothing.
+    <div className="border-border rounded border p-5 space-y-4">
+      {/* Title + Tagline */}
+      <div className="text-center">
+        <h2 className="text-foreground text-xl font-bold leading-tight">
+          PLOT Big or Nothing Airdrop
+        </h2>
+        <p className="text-accent text-sm font-medium mt-1">
+          {data.poolAmount.toLocaleString()} PLOT locked. Earn or burn.
         </p>
       </div>
 
-      {/* Time progress */}
-      <div>
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-muted">Time remaining</span>
-          <span className="text-foreground font-medium">{data.timeRemainingDays} days</span>
-        </div>
-        <div className="bg-surface border-border h-2 rounded border overflow-hidden">
-          <div
-            className="bg-accent h-full transition-all"
-            style={{ width: `${data.timeElapsedPercent}%` }}
-          />
-        </div>
-        <div className="text-muted text-[10px] mt-0.5 text-right">{data.timeElapsedPercent}% elapsed</div>
-      </div>
-
-      {/* Market Cap progress */}
-      <div>
-        <div className="flex justify-between text-xs mb-1">
-          <span className="text-muted">Market Cap</span>
-          <span className="text-foreground font-medium">{formatUsdValue(data.currentMcap)}</span>
-        </div>
-        <div className="bg-surface border-border h-2 rounded border overflow-hidden">
-          <div
-            className="bg-accent h-full transition-all"
-            style={{ width: `${mcapProgress}%` }}
-          />
-        </div>
-        <div className="text-muted text-[10px] mt-0.5 text-right">
-          {nextMilestone ? `< ${nextMilestone.name} (${formatUsdValue(nextMilestone.mcap)})` : "Gold reached"}
-        </div>
-      </div>
-
-      {/* Pool value at next milestone */}
-      {data.latestPriceUsd != null && data.latestPriceUsd > 0 && (
-        <div className="text-center text-xs">
-          {nextMilestone ? (
-            <span className="text-muted">
-              Pool value if {nextMilestone.name}:{" "}
-              <span className="text-foreground font-medium">
-                {formatUsdValue(
-                  data.poolAmount *
-                    (data.milestones[
-                      nextMilestone.name.toLowerCase() as keyof typeof data.milestones
-                    ].pct / 100) *
-                    data.latestPriceUsd
-                )}
-              </span>
-            </span>
-          ) : (
-            <span className="text-muted">
-              Pool value at Gold:{" "}
-              <span className="text-foreground font-medium">
-                {formatUsdValue(
-                  data.poolAmount *
-                    (data.milestones.gold.pct / 100) *
-                    data.latestPriceUsd
-                )}
-              </span>
-            </span>
-          )}
+      {/* Countdown */}
+      {data.timeRemainingDays > 0 && (
+        <div>
+          <CountdownDisplay days={data.timeRemainingDays} />
+          <div className="mt-2">
+            <div className="bg-surface border-border h-1.5 rounded border overflow-hidden">
+              <div
+                className="bg-accent h-full transition-all"
+                style={{ width: `${data.timeElapsedPercent}%` }}
+              />
+            </div>
+            <div className="text-muted text-[10px] mt-0.5 text-right">
+              {data.timeElapsedPercent}% elapsed
+            </div>
+          </div>
         </div>
       )}
 
@@ -142,7 +110,7 @@ export function CampaignHero() {
         </div>
         <div className="border-border rounded border px-2 py-1.5">
           <div className="text-foreground text-sm font-bold">
-            {data.latestPriceUsd ? formatUsdValue(data.latestPriceUsd) : "—"}
+            {data.latestPriceUsd ? formatUsdValue(data.latestPriceUsd) : "\u2014"}
           </div>
           <div className="text-muted text-[9px]">PLOT Price</div>
         </div>

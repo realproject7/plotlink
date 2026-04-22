@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatUsdValue } from "../../../lib/usd-price";
 
@@ -14,11 +15,89 @@ interface StatusData {
   };
 }
 
-const TIERS = [
-  { key: "bronze" as const, label: "Bronze", color: "text-[#cd7f32]" },
-  { key: "silver" as const, label: "Silver", color: "text-[#c0c0c0]" },
-  { key: "gold" as const, label: "Gold", color: "text-[#ffd700]" },
-];
+/* ─── Chart tier definitions (presentation layer) ─── */
+
+const MAX_SUPPLY = 1_000_000;
+const CHART_TIERS = [
+  { label: "Bronze", emoji: "\uD83E\uDD49", fdv: 1_000_000, poolPct: 10 },
+  { label: "Silver", emoji: "\uD83E\uDD48", fdv: 10_000_000, poolPct: 30 },
+  { label: "Gold", emoji: "\uD83E\uDD47", fdv: 50_000_000, poolPct: 50 },
+  { label: "Diamond", emoji: "\uD83D\uDC8E", fdv: 100_000_000, poolPct: 100 },
+] as const;
+
+/** Pool USD value at a given FDV milestone: poolAmount * (pct/100) * (fdv / maxSupply) */
+function poolUsdAt(fdv: number, poolPct: number, poolAmount: number): number {
+  return poolAmount * (poolPct / 100) * (fdv / MAX_SUPPLY);
+}
+
+type ChartMilestone = {
+  fdv: number;
+  poolUsd: number;
+  label: string;
+  emoji: string;
+  poolPct: number;
+};
+
+/* ─── SVG layout constants ─── */
+
+const SVG_W = 600;
+const SVG_H = 300;
+const PAD = { top: 40, right: 20, bottom: 50, left: 65 };
+const CHART_W = SVG_W - PAD.left - PAD.right;
+const CHART_H = SVG_H - PAD.top - PAD.bottom;
+
+// Log scale helpers — FDV axis from 10k to 200M
+const LOG_MIN = Math.log10(10_000);
+const LOG_MAX = Math.log10(200_000_000);
+
+function fdvToX(fdv: number): number {
+  if (fdv <= 0) return PAD.left;
+  const logVal = Math.log10(Math.max(fdv, 10_000));
+  const t = (logVal - LOG_MIN) / (LOG_MAX - LOG_MIN);
+  return PAD.left + t * CHART_W;
+}
+
+function usdToY(usd: number, yMax: number): number {
+  const t = usd / yMax;
+  return PAD.top + CHART_H * (1 - t);
+}
+
+/* ─── Path builders ─── */
+
+function buildAreaPath(milestones: ChartMilestone[], yMax: number): string {
+  const baseline = usdToY(0, yMax);
+  let path = `M ${fdvToX(10_000)} ${baseline}`;
+  let prevY = baseline;
+  for (const m of milestones) {
+    const x = fdvToX(m.fdv);
+    const y = usdToY(m.poolUsd, yMax);
+    path += ` L ${x} ${prevY} L ${x} ${y}`;
+    prevY = y;
+  }
+  path += ` L ${PAD.left + CHART_W} ${prevY}`;
+  path += ` L ${PAD.left + CHART_W} ${baseline} Z`;
+  return path;
+}
+
+function buildLinePath(milestones: ChartMilestone[], yMax: number): string {
+  let path = "";
+  let prevY = usdToY(0, yMax);
+  for (let i = 0; i < milestones.length; i++) {
+    const m = milestones[i];
+    const x = fdvToX(m.fdv);
+    const y = usdToY(m.poolUsd, yMax);
+    if (i === 0) {
+      path = `M ${fdvToX(10_000)} ${prevY} L ${x} ${prevY} L ${x} ${y}`;
+    } else {
+      path += ` L ${x} ${prevY} L ${x} ${y}`;
+    }
+    prevY = y;
+  }
+  path += ` L ${PAD.left + CHART_W} ${prevY}`;
+  return path;
+}
+
+/* ─── Component ─── */
 
 export function MilestoneTrack() {
   const { data, isLoading } = useQuery<StatusData>({
@@ -31,6 +110,15 @@ export function MilestoneTrack() {
     staleTime: 60_000,
   });
 
+  const milestones: ChartMilestone[] = useMemo(
+    () =>
+      CHART_TIERS.map((t) => ({
+        ...t,
+        poolUsd: poolUsdAt(t.fdv, t.poolPct, data?.poolAmount ?? 50_000),
+      })),
+    [data?.poolAmount],
+  );
+
   if (isLoading || !data) {
     return (
       <div className="border-border rounded border p-4">
@@ -39,94 +127,286 @@ export function MilestoneTrack() {
     );
   }
 
-  // Progress across all three tiers (0–100 mapped to full track)
-  const goldMcap = data.milestones.gold.mcap;
-  const overallProgress = Math.min(100, (data.currentMcap / goldMcap) * 100);
+  // Y-axis max with 10% headroom above Diamond
+  const yMax = milestones[milestones.length - 1].poolUsd * 1.1;
+
+  // Y-axis ticks: evenly space 4 ticks from 0 to Diamond poolUsd
+  const diamondUsd = milestones[milestones.length - 1].poolUsd;
+  const yTicks = [0, diamondUsd * 0.2, diamondUsd * 0.5, diamondUsd];
+
+  // FDV = price * max supply
+  const currentFdv =
+    data.latestPriceUsd != null && data.latestPriceUsd > 0
+      ? data.latestPriceUsd * MAX_SUPPLY
+      : 0;
+
+  // Determine current zone
+  const currentZone = milestones.reduce(
+    (zone, m, i) => (currentFdv >= m.fdv ? i + 1 : zone),
+    0,
+  );
+  const currentZoneLabel =
+    currentZone === 0 ? "Pre-Bronze" : milestones[currentZone - 1].label;
+
+  const currentPoolUsd =
+    currentZone > 0 ? milestones[currentZone - 1].poolUsd : 0;
+
+  const dotX = fdvToX(Math.max(currentFdv, 10_000));
+  const dotY = usdToY(currentPoolUsd, yMax);
+
+  const areaPath = buildAreaPath(milestones, yMax);
+  const linePath = buildLinePath(milestones, yMax);
 
   return (
     <div className="border-border rounded border p-4">
-      <h3 className="text-foreground text-sm font-bold mb-4">Milestone Progress</h3>
+      <h3 className="text-foreground text-sm font-bold mb-1">
+        FDV Milestone Chart
+      </h3>
+      <p className="text-muted text-[10px] mb-3">
+        Pool unlock curve across FDV milestones &middot; FDV = PLOT price
+        &times; {MAX_SUPPLY.toLocaleString()} max supply
+      </p>
 
-      {/* Track bar */}
-      <div className="relative mb-6">
-        <div className="bg-surface border-border h-3 rounded-full border overflow-hidden">
-          <div
-            className="bg-accent h-full rounded-full transition-all"
-            style={{ width: `${overallProgress}%` }}
-          />
-        </div>
-
-        {/* Current mcap marker */}
-        <div
-          className="absolute top-0 -translate-x-1/2"
-          style={{ left: `${overallProgress}%` }}
+      <div className="w-full overflow-x-auto -mx-1 px-1">
+        <svg
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+          className="w-full h-auto"
+          style={{ minWidth: 320 }}
+          role="img"
+          aria-label="FDV milestone chart showing pool value unlock curve across Bronze, Silver, Gold, and Diamond tiers"
         >
-          <div className="bg-foreground w-1.5 h-3 rounded-sm" />
-          <div className="text-foreground text-[8px] font-bold mt-0.5 whitespace-nowrap -translate-x-1/4">
-            {formatUsdValue(data.currentMcap)}
-          </div>
-        </div>
+          <defs>
+            <linearGradient id="area-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#8B4513" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#8B4513" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
 
-        {/* Milestone markers */}
-        {TIERS.map((tier) => {
-          const milestone = data.milestones[tier.key];
-          const position = (milestone.mcap / goldMcap) * 100;
-          return (
-            <div
-              key={tier.key}
-              className="absolute top-0 -translate-x-1/2"
-              style={{ left: `${position}%` }}
-            >
-              <div
-                className={`w-3 h-3 rounded-full border-2 ${
-                  milestone.reached
-                    ? "bg-accent border-accent"
-                    : "bg-surface border-border"
-                }`}
+          {/* Y-axis grid lines */}
+          {yTicks.map((val) => (
+            <g key={val}>
+              <line
+                x1={PAD.left}
+                y1={usdToY(val, yMax)}
+                x2={PAD.left + CHART_W}
+                y2={usdToY(val, yMax)}
+                stroke="#D4C5B0"
+                strokeWidth={0.5}
+                strokeDasharray={val === 0 ? "0" : "3,3"}
               />
-            </div>
-          );
-        })}
-      </div>
+              <text
+                x={PAD.left - 6}
+                y={usdToY(val, yMax) + 3}
+                textAnchor="end"
+                fill="#8B7355"
+                fontSize={9}
+                fontFamily="Inter, system-ui, sans-serif"
+              >
+                {val === 0
+                  ? "$0"
+                  : val >= 1_000_000
+                    ? `$${(val / 1_000_000).toFixed(1)}M`
+                    : `$${(val / 1_000).toFixed(0)}K`}
+              </text>
+            </g>
+          ))}
 
-      {/* Tier details */}
-      <div className="grid grid-cols-3 gap-2">
-        {TIERS.map((tier) => {
-          const milestone = data.milestones[tier.key];
-          const poolValue = data.poolAmount * (milestone.pct / 100);
-          return (
-            <div
-              key={tier.key}
-              className={`border-border rounded border px-2 py-2 text-center ${
-                milestone.reached ? "border-accent" : ""
-              }`}
+          {/* Filled area */}
+          <path d={areaPath} fill="url(#area-grad)" />
+
+          {/* Step line */}
+          <path d={linePath} fill="none" stroke="#8B4513" strokeWidth={2} />
+
+          {/* Vertical zone dividers + annotations */}
+          {milestones.map((m) => {
+            const x = fdvToX(m.fdv);
+            const y = usdToY(m.poolUsd, yMax);
+            return (
+              <g key={m.label}>
+                <line
+                  x1={x}
+                  y1={PAD.top}
+                  x2={x}
+                  y2={PAD.top + CHART_H}
+                  stroke="#D4C5B0"
+                  strokeWidth={0.5}
+                  strokeDasharray="4,3"
+                />
+                <text
+                  x={x}
+                  y={PAD.top - 6}
+                  textAnchor="middle"
+                  fill="#2C1810"
+                  fontSize={10}
+                  fontFamily="Inter, system-ui, sans-serif"
+                  fontWeight="600"
+                >
+                  {m.emoji} {m.label}
+                </text>
+                <text
+                  x={x}
+                  y={PAD.top - 18}
+                  textAnchor="middle"
+                  fill="#8B7355"
+                  fontSize={8}
+                  fontFamily="Inter, system-ui, sans-serif"
+                >
+                  {m.poolPct}% ($
+                  {m.poolUsd >= 1_000_000
+                    ? `${(m.poolUsd / 1_000_000).toFixed(1)}M`
+                    : `${(m.poolUsd / 1_000).toFixed(0)}K`}
+                  )
+                </text>
+                <circle
+                  cx={x}
+                  cy={y}
+                  r={3}
+                  fill="#8B4513"
+                  stroke="#F0EBE1"
+                  strokeWidth={1.5}
+                />
+              </g>
+            );
+          })}
+
+          {/* X-axis labels */}
+          {milestones.map((m) => (
+            <text
+              key={m.label}
+              x={fdvToX(m.fdv)}
+              y={PAD.top + CHART_H + 14}
+              textAnchor="middle"
+              fill="#8B7355"
+              fontSize={9}
+              fontFamily="Inter, system-ui, sans-serif"
             >
-              <div className={`text-xs font-bold ${tier.color}`}>
-                {tier.label}
-                {milestone.reached && " \u2713"}
-              </div>
-              <div className="text-foreground text-sm font-bold mt-1">
-                {formatUsdValue(milestone.mcap)}
-              </div>
-              <div className="text-muted text-[9px]">MCap target</div>
-              <div className="text-foreground text-xs font-medium mt-1">
-                {milestone.pct}% &middot; {poolValue.toLocaleString()} PLOT
-              </div>
-              {data.latestPriceUsd != null && data.latestPriceUsd > 0 && (
-                <div className="text-accent text-[10px] font-medium mt-0.5">
-                  Pool: {formatUsdValue(poolValue * data.latestPriceUsd)}
-                </div>
-              )}
-            </div>
-          );
-        })}
+              ${m.fdv >= 1_000_000 ? `${m.fdv / 1_000_000}M` : `${m.fdv / 1_000}K`}
+            </text>
+          ))}
+
+          {/* Axis labels */}
+          <text
+            x={PAD.left + CHART_W / 2}
+            y={SVG_H - 4}
+            textAnchor="middle"
+            fill="#8B7355"
+            fontSize={10}
+            fontFamily="Inter, system-ui, sans-serif"
+          >
+            FDV &rarr;
+          </text>
+          <text
+            x={12}
+            y={PAD.top + CHART_H / 2}
+            textAnchor="middle"
+            fill="#8B7355"
+            fontSize={10}
+            fontFamily="Inter, system-ui, sans-serif"
+            transform={`rotate(-90, 12, ${PAD.top + CHART_H / 2})`}
+          >
+            Pool Value
+          </text>
+
+          {/* Current FDV indicator — dot on x-axis, dashed line up to area */}
+          {currentFdv > 0 && (
+            <g>
+              {/* Vertical dashed line from x-axis up to the step level */}
+              <line
+                x1={dotX}
+                y1={PAD.top + CHART_H}
+                x2={dotX}
+                y2={dotY}
+                stroke="#8B4513"
+                strokeWidth={1}
+                strokeDasharray="3,3"
+                opacity={0.6}
+              />
+              {/* Small marker at the step intersection */}
+              <circle
+                cx={dotX}
+                cy={dotY}
+                r={2.5}
+                fill="#8B4513"
+                opacity={0.5}
+              />
+              {/* Pulse ring on x-axis */}
+              <circle
+                cx={dotX}
+                cy={PAD.top + CHART_H}
+                r={6}
+                fill="none"
+                stroke="#8B4513"
+                strokeWidth={1.5}
+                opacity={0.4}
+              >
+                <animate
+                  attributeName="r"
+                  values="6;12;6"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="0.4;0;0.4"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              {/* Heartbeat dot on x-axis */}
+              <circle cx={dotX} cy={PAD.top + CHART_H} r={4} fill="#8B4513">
+                <animate
+                  attributeName="r"
+                  values="4;5.6;4"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+                <animate
+                  attributeName="opacity"
+                  values="1;0.7;1"
+                  dur="1.5s"
+                  repeatCount="indefinite"
+                />
+              </circle>
+              {/* FDV label below axis */}
+              <text
+                x={dotX}
+                y={PAD.top + CHART_H + 28}
+                textAnchor="middle"
+                fill="#8B4513"
+                fontSize={9}
+                fontWeight="bold"
+                fontFamily="Inter, system-ui, sans-serif"
+              >
+                {formatUsdValue(currentFdv)}
+              </text>
+              <text
+                x={dotX}
+                y={PAD.top + CHART_H + 39}
+                textAnchor="middle"
+                fill="#8B4513"
+                fontSize={7}
+                fontFamily="Inter, system-ui, sans-serif"
+              >
+                Current
+              </text>
+            </g>
+          )}
+        </svg>
       </div>
 
-      {/* Current position label */}
-      <div className="text-center mt-3">
-        <span className="text-muted text-[10px]">
-          Current: {formatUsdValue(data.currentMcap)} / {formatUsdValue(goldMcap)}
-        </span>
+      {/* Current position summary */}
+      <div className="text-center mt-3 space-y-0.5">
+        <div className="text-foreground text-xs font-medium">
+          Current FDV: {currentFdv > 0 ? formatUsdValue(currentFdv) : "\u2014"}
+          <span className="text-muted"> &middot; Zone: {currentZoneLabel}</span>
+        </div>
+        {currentFdv > 0 && currentZone < milestones.length && (
+          <div className="text-muted text-[10px]">
+            Next: {milestones[currentZone].emoji}{" "}
+            {milestones[currentZone].label} at{" "}
+            {formatUsdValue(milestones[currentZone].fdv)} FDV
+          </div>
+        )}
       </div>
     </div>
   );
