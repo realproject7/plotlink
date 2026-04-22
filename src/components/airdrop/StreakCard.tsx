@@ -132,14 +132,17 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
 
   return (
     <div className="border-border rounded border px-3 py-3 space-y-3">
-      {/* Header: streak count + boost */}
+      {/* Header: streak count + boost tier */}
       <div className="text-center">
         <div className="text-foreground text-lg font-bold">
           &#x26A1; {streak.currentStreak} Day{streak.currentStreak !== 1 ? "s" : ""} Streak
+          {streak.boostPercent > 0 && (
+            <span className="text-accent"> &middot; +{streak.boostPercent}% Boost</span>
+          )}
         </div>
-        {streak.boostPercent > 0 && (
-          <div className="text-accent text-xs font-medium">
-            Current boost: +{streak.boostPercent}%
+        {streak.boostPercent === 0 && streak.nextTier && (
+          <div className="text-muted text-xs">
+            Next: {streak.nextTier.days} days &rarr; +{streak.nextTier.boost * 100}%
           </div>
         )}
       </div>
@@ -166,7 +169,7 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
           type="button"
           onClick={handleCheckIn}
           disabled={streak.checkedInToday || checking}
-          className="bg-accent text-bg rounded px-4 py-1.5 text-xs font-medium disabled:opacity-50 cursor-pointer"
+          className="bg-accent text-white rounded px-4 py-1.5 text-xs font-medium disabled:opacity-50 cursor-pointer"
         >
           {streak.checkedInToday
             ? "Checked in today \u2713"
@@ -179,8 +182,8 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
       {error && <div className="text-error text-xs text-center">{error}</div>}
 
       {/* Boost tiers table */}
-      <div>
-        <div className="text-muted text-[10px] font-medium uppercase tracking-wider mb-1">
+      <div className="border-border rounded border px-2 py-2">
+        <div className="text-muted text-[10px] font-medium uppercase tracking-wider mb-1.5">
           Boost Tiers
         </div>
         <div className="space-y-0.5">
@@ -190,26 +193,34 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
             return (
               <div
                 key={tier.days}
-                className={`flex items-center justify-between text-xs px-2 py-0.5 rounded ${
-                  isCurrent ? "bg-accent/10 text-foreground font-medium" : "text-muted"
+                className={`grid grid-cols-[1fr_auto_auto] items-center text-xs px-2 py-0.5 rounded gap-x-3 ${
+                  isCurrent
+                    ? "bg-accent/10 text-foreground font-medium"
+                    : unlocked
+                      ? "text-foreground"
+                      : "text-muted opacity-60"
                 }`}
               >
                 <span>{tier.days}+ days</span>
                 <span>+{tier.boost}%</span>
-                <span className="w-16 text-right text-[10px]">
+                <span className="w-14 text-right text-[10px]">
                   {isCurrent ? (
-                    <span className="text-accent">&larr; current</span>
+                    <span className="text-accent font-medium">&larr; active</span>
                   ) : unlocked ? (
-                    <span className="text-foreground">&check; unlocked</span>
-                  ) : null}
+                    <span>&check;</span>
+                  ) : (
+                    <span>&#x1F512;</span>
+                  )}
                 </span>
               </div>
             );
           })}
         </div>
-        <p className="text-muted text-[9px] mt-1.5 leading-relaxed">
-          Boost applies to all PL point earnings. Miss a day? Drop one tier (not full reset).
-        </p>
+        <div className="border-border border-t mt-1.5 pt-1.5">
+          <p className="text-muted text-[9px]">
+            Miss a day &rarr; drop one tier
+          </p>
+        </div>
       </div>
     </div>
   );
