@@ -240,13 +240,13 @@ function TimelineChart({
   }, [dailyPrices, startMs, endMs, totalMs, currentFdv, nowX]);
 
   // Linear projection: current FDV → Diamond at campaign end
+  // Linear projection: from current position (nowX) → Diamond at campaign end
   const projectionPath = useMemo(() => {
-    const fromX = PAD.left;
     const toX = PAD.left + CW;
     const fromY = fdvToY(currentFdv > 0 ? currentFdv : 100);
     const toY = fdvToY(DIAMOND_FDV);
-    return `M ${fromX} ${fromY} L ${toX} ${toY}`;
-  }, [currentFdv]);
+    return `M ${nowX} ${fromY} L ${toX} ${toY}`;
+  }, [currentFdv, nowX]);
 
   const dotY = fdvToY(currentFdv > 0 ? currentFdv : 100);
 
@@ -256,7 +256,7 @@ function TimelineChart({
   }));
 
   const yLeftTicks = [0, diamondPoolUsd * 0.25, diamondPoolUsd * 0.5, diamondPoolUsd];
-  const yRightTicks = [1_000, 100_000, 1_000_000, 10_000_000, 100_000_000];
+  // Right-axis ticks omitted — milestone emoji labels already show FDV values
 
   return (
     <div className="w-full overflow-x-auto -mx-1 px-1">
@@ -309,21 +309,6 @@ function TimelineChart({
             fill="#8B7355"
             fontSize={8}
             fontFamily="Inter, system-ui, sans-serif"
-          >
-            {formatCompact(val)}
-          </text>
-        ))}
-
-        {/* Y-right axis ticks (FDV) */}
-        {yRightTicks.map((val) => (
-          <text
-            key={val}
-            x={PAD.left + CW + 4}
-            y={fdvToY(val) + 3}
-            fill="#8B7355"
-            fontSize={7}
-            fontFamily="Inter, system-ui, sans-serif"
-            opacity={0.5}
           >
             {formatCompact(val)}
           </text>
