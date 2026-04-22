@@ -18,6 +18,7 @@ interface PointsData {
     boostPercent: number;
     nextTier: { days: number; boost: number } | null;
     checkedInToday: boolean;
+    lastCheckin: string | null;
   };
   referral: {
     code: string | null;
