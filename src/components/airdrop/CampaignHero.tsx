@@ -477,6 +477,57 @@ function TimelineChart({
   );
 }
 
+/* ─── Stats row sub-component ─── */
+
+function StatsRow({
+  participants,
+  currentFdv,
+  tiers,
+}: {
+  participants: number;
+  currentFdv: number;
+  tiers: Tier[];
+}) {
+  // Find next milestone
+  const nextTierIdx = tiers.findIndex((t) => currentFdv < t.fdv);
+  const allReached = nextTierIdx === -1;
+  const nextTier = allReached ? null : tiers[nextTierIdx];
+  const progressPct = allReached
+    ? 100
+    : nextTier
+      ? Math.min(100, Math.round((currentFdv / nextTier.fdv) * 100))
+      : 0;
+
+  const progressLabel = allReached
+    ? `${tiers[tiers.length - 1].emoji} ${tiers[tiers.length - 1].label} Achieved!`
+    : `Progress to ${nextTier!.emoji} ${nextTier!.label}`;
+
+  return (
+    <div className="grid grid-cols-3 gap-2 text-center">
+      <div className="border-border rounded border px-2 py-1.5">
+        <div className="text-foreground text-sm font-bold">{participants}</div>
+        <div className="text-muted text-[9px]">Participants</div>
+      </div>
+      <div className="border-border rounded border px-2 py-1.5">
+        <div className="text-foreground text-sm font-bold">
+          {currentFdv > 0 ? formatUsdValue(currentFdv) : "\u2014"}
+        </div>
+        <div className="text-muted text-[9px]">FDV</div>
+      </div>
+      <div className="border-border rounded border px-2 py-1.5">
+        <div className="text-foreground text-sm font-bold">{progressPct}%</div>
+        <div className="text-muted text-[9px] leading-tight">{progressLabel}</div>
+        <div className="bg-surface border-border mt-1 h-1 rounded border overflow-hidden">
+          <div
+            className="bg-accent h-full transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main component ─── */
 
 export function CampaignHero() {
@@ -551,22 +602,11 @@ export function CampaignHero() {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div className="border-border rounded border px-2 py-1.5">
-          <div className="text-foreground text-sm font-bold">{data.totalParticipants}</div>
-          <div className="text-muted text-[9px]">Participants</div>
-        </div>
-        <div className="border-border rounded border px-2 py-1.5">
-          <div className="text-foreground text-sm font-bold">{Math.round(data.totalPointsEarned).toLocaleString()}</div>
-          <div className="text-muted text-[9px]">PL Earned</div>
-        </div>
-        <div className="border-border rounded border px-2 py-1.5">
-          <div className="text-foreground text-sm font-bold">
-            {data.latestPriceUsd ? formatUsdValue(data.latestPriceUsd) : "\u2014"}
-          </div>
-          <div className="text-muted text-[9px]">PLOT Price</div>
-        </div>
-      </div>
+      <StatsRow
+        participants={data.totalParticipants}
+        currentFdv={data.currentFdv}
+        tiers={tiers}
+      />
 
       {/* 6-Month Timeline Chart */}
       <TimelineChart
