@@ -41,28 +41,28 @@ export async function GET() {
   }
   const totalParticipants = uniqueAddresses.size;
 
-  // Milestone status
-  const currentMcap = latestPrice?.mcap_usd ?? 0;
+  // Milestone status — mcap_usd column now stores FDV (price × max supply)
+  const currentFdv = latestPrice?.mcap_usd ?? 0;
   const milestones = {
     bronze: {
       mcap: AIRDROP_CONFIG.MILESTONES.BRONZE.mcap,
       pct: AIRDROP_CONFIG.MILESTONES.BRONZE.pct,
-      reached: currentMcap >= AIRDROP_CONFIG.MILESTONES.BRONZE.mcap,
+      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.BRONZE.mcap,
     },
     silver: {
       mcap: AIRDROP_CONFIG.MILESTONES.SILVER.mcap,
       pct: AIRDROP_CONFIG.MILESTONES.SILVER.pct,
-      reached: currentMcap >= AIRDROP_CONFIG.MILESTONES.SILVER.mcap,
+      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.SILVER.mcap,
     },
     gold: {
       mcap: AIRDROP_CONFIG.MILESTONES.GOLD.mcap,
       pct: AIRDROP_CONFIG.MILESTONES.GOLD.pct,
-      reached: currentMcap >= AIRDROP_CONFIG.MILESTONES.GOLD.mcap,
+      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.GOLD.mcap,
     },
     diamond: {
       mcap: AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
       pct: AIRDROP_CONFIG.MILESTONES.DIAMOND.pct,
-      reached: currentMcap >= AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
+      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
     },
   };
 
@@ -72,7 +72,7 @@ export async function GET() {
     timeRemainingDays: Math.ceil(remainingMs / (1000 * 60 * 60 * 24)),
     timeElapsedPercent: totalMs > 0 ? Math.min(100, Math.round((elapsedMs / totalMs) * 100)) : 0,
     poolAmount: AIRDROP_CONFIG.POOL_AMOUNT,
-    currentMcap,
+    currentFdv,
     latestPriceUsd: latestPrice?.price_usd ?? null,
     milestones,
     totalPointsEarned,

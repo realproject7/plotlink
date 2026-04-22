@@ -119,7 +119,7 @@ export default function TokenPage() {
       <div className="border-border rounded border p-5">
         <h3 className="text-foreground text-sm font-bold mb-4">Token Information</h3>
 
-        {/* Stats Grid — Price + Market Cap */}
+        {/* Stats Grid — Price + FDV */}
         <div className="grid grid-cols-2 gap-3 mb-4">
           <div className="border-border bg-surface rounded border p-3">
             <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Price</div>
@@ -142,12 +142,12 @@ export default function TokenPage() {
             )}
           </div>
           <div className="border-border bg-surface rounded border p-3">
-            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Market Cap</div>
+            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">FDV</div>
             {tokenInfoLoading ? (
               <div className="bg-border h-6 animate-pulse rounded" />
             ) : tokenInfo ? (
               <div className="text-foreground text-sm font-bold">
-                ${formatNumber(tokenInfo.marketCap)}
+                ${formatNumber(tokenInfo.fdv)}
               </div>
             ) : (
               <div className="text-muted text-sm">—</div>

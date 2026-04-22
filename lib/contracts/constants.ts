@@ -47,6 +47,9 @@ export const PLOT_TOKEN = (IS_TESTNET
 /** Human-readable label for the reserve token */
 export const RESERVE_LABEL = "PLOT";
 
+/** PLOT max supply (bonding curve cap) — used for FDV calculation */
+export const PLOT_MAX_SUPPLY = 1_000_000;
+
 // ---------------------------------------------------------------------------
 // Supported Zap input tokens (Base)
 // ---------------------------------------------------------------------------

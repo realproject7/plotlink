@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { formatEther } from "viem";
 import { browserClient } from "../../lib/rpc";
-import { PLOT_TOKEN, MCV2_BOND, HUNT } from "../../lib/contracts/constants";
+import { PLOT_TOKEN, MCV2_BOND, HUNT, PLOT_MAX_SUPPLY } from "../../lib/contracts/constants";
 
 const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913" as const;
 const ONEINCH_SPOT_PRICE_AGGREGATOR = "0x00000000000D6FFc74A8feb35aF5827bf57f6786" as const;
@@ -44,7 +44,7 @@ const ERC20_SUPPLY_ABI = [
 
 export interface TokenInfo {
   price: number;
-  marketCap: number;
+  fdv: number;
   totalSupply: number;
   priceChange24h: number | null;
 }
@@ -88,7 +88,7 @@ export function useTokenInfo() {
       ]);
 
       const totalSupply = Number(formatEther(supply));
-      const marketCap = price * totalSupply;
+      const fdv = price * PLOT_MAX_SUPPLY;
 
       // 24h price change via block diff (~43200 blocks = 1 day on Base @ 2s)
       let priceChange24h: number | null = null;
@@ -115,7 +115,7 @@ export function useTokenInfo() {
         // Token may not have existed 24h ago
       }
 
-      return { price, marketCap, totalSupply, priceChange24h } satisfies TokenInfo;
+      return { price, fdv, totalSupply, priceChange24h } satisfies TokenInfo;
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 5 * 60 * 1000,
