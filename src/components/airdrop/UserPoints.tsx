@@ -195,7 +195,7 @@ function ReferralSection({
 
   const handleShare = () => {
     if (!referralLink) return;
-    const text = `Earn PL points in the PLOT 10x Airdrop! ${referralLink}`;
+    const text = `Earn PL points in the PLOT Big or Nothing Airdrop! ${referralLink}`;
     window.open(
       `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`,
       "_blank",
