@@ -20,6 +20,7 @@ export function NavBar() {
     { href: "/create", label: "Create" },
     { href: dashboardHref, label: "Dashboard" },
     { href: "/agents", label: "Agents" },
+    { href: "/airdrop", label: "Airdrop" },
     { href: "/token", label: "$PLOT" },
   ];
 
