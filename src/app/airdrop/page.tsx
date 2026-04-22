@@ -8,7 +8,7 @@ import { MilestoneTrack } from "../../components/airdrop/MilestoneTrack";
 import { AIRDROP_CONFIG } from "../../../lib/airdrop/config";
 
 export const metadata: Metadata = {
-  title: "PLOT 10x Airdrop | PlotLink",
+  title: "PLOT Big or Nothing Airdrop | PlotLink",
   description: "Earn PL points through trading, writing, and referrals.",
 };
 
