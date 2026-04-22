@@ -34,12 +34,22 @@ interface DailyPrice {
 
 const MAX_SUPPLY = 1_000_000;
 
-const TIERS = [
-  { key: "bronze", emoji: "\uD83E\uDD49", label: "Bronze", fdv: 1_000_000, pct: 10 },
-  { key: "silver", emoji: "\uD83E\uDD48", label: "Silver", fdv: 10_000_000, pct: 30 },
-  { key: "gold", emoji: "\uD83E\uDD47", label: "Gold", fdv: 50_000_000, pct: 50 },
-  { key: "diamond", emoji: "\uD83D\uDC8E", label: "Diamond", fdv: 100_000_000, pct: 100 },
-] as const;
+const TIER_META = [
+  { key: "bronze" as const, emoji: "\uD83E\uDD49", label: "Bronze" },
+  { key: "silver" as const, emoji: "\uD83E\uDD48", label: "Silver" },
+  { key: "gold" as const, emoji: "\uD83E\uDD47", label: "Gold" },
+  { key: "diamond" as const, emoji: "\uD83D\uDC8E", label: "Diamond" },
+];
+
+type Tier = { key: string; emoji: string; label: string; fdv: number; pct: number };
+
+/** Build tier array from API milestones so test/prod config is respected */
+function buildTiers(milestones: StatusData["milestones"]): Tier[] {
+  return TIER_META.map((m) => {
+    const ms = milestones[m.key];
+    return { ...m, fdv: ms.mcap, pct: ms.pct };
+  });
+}
 
 /* ─── SVG layout ─── */
 
@@ -77,21 +87,20 @@ function useDailyPrices() {
 }
 
 /** Pool value at current FDV: highest reached tier pct * pool * price */
-function poolValueAtFdv(fdv: number, poolAmount: number): number {
+function poolValueAtFdv(fdv: number, poolAmount: number, tiers: Tier[]): number {
   const price = fdv / MAX_SUPPLY;
-  if (fdv >= 100_000_000) return poolAmount * 1.0 * price;
-  if (fdv >= 50_000_000) return poolAmount * 0.5 * price;
-  if (fdv >= 10_000_000) return poolAmount * 0.3 * price;
-  if (fdv >= 1_000_000) return poolAmount * 0.1 * price;
+  // Walk tiers in reverse to find highest reached
+  for (let i = tiers.length - 1; i >= 0; i--) {
+    if (fdv >= tiers[i].fdv) return poolAmount * (tiers[i].pct / 100) * price;
+  }
   return 0;
 }
 
-function currentZoneLabel(fdv: number): string {
-  if (fdv >= 100_000_000) return "Diamond";
-  if (fdv >= 50_000_000) return "Gold";
-  if (fdv >= 10_000_000) return "Silver";
-  if (fdv >= 1_000_000) return "Bronze";
-  return "Pre-Bronze";
+function currentZoneLabel(fdv: number, tiers: Tier[]): string {
+  for (let i = tiers.length - 1; i >= 0; i--) {
+    if (fdv >= tiers[i].fdv) return tiers[i].label;
+  }
+  return "Pre-" + tiers[0].label;
 }
 
 function formatCompact(val: number): string {
@@ -127,7 +136,6 @@ function useCountdown(endDateStr: string) {
 
 /* ─── Pure chart helpers (outside component to avoid unstable refs) ─── */
 
-const DIAMOND_FDV = 100_000_000;
 const FDV_LOG_MIN = Math.log10(100);
 const FDV_LOG_MAX = Math.log10(200_000_000);
 
@@ -152,11 +160,13 @@ function TimelineChart({
   campaignEnd,
   currentFdv,
   poolAmount,
+  tiers,
 }: {
   campaignStart: string;
   campaignEnd: string;
   currentFdv: number;
   poolAmount: number;
+  tiers: Tier[];
 }) {
   const { data: dailyPrices } = useDailyPrices();
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -173,7 +183,8 @@ function TimelineChart({
 
   const nowX = timeToX(Math.min(nowMs, endMs), startMs, totalMs);
 
-  const diamondPoolUsd = poolAmount * (DIAMOND_FDV / MAX_SUPPLY);
+  const diamondFdv = tiers[tiers.length - 1].fdv;
+  const diamondPoolUsd = poolAmount * (diamondFdv / MAX_SUPPLY);
   const yLeftMax = diamondPoolUsd * 1.1;
 
   // Month labels for x-axis
@@ -199,7 +210,7 @@ function TimelineChart({
       const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
       if (dpMs < startMs || dpMs > endMs) continue;
       const x = timeToX(dpMs, startMs, totalMs);
-      const pv = poolValueAtFdv(dp.fdv, poolAmount);
+      const pv = poolValueAtFdv(dp.fdv, poolAmount, tiers);
       if (pv !== lastPoolVal && parts.length > 0) {
         parts.push(`L ${x.toFixed(1)} ${poolToY(lastPoolVal, yLeftMax).toFixed(1)}`);
       }
@@ -210,14 +221,15 @@ function TimelineChart({
       parts.push(`L ${nowX.toFixed(1)} ${poolToY(lastPoolVal, yLeftMax).toFixed(1)}`);
     }
     return parts.join(" ");
-  }, [dailyPrices, startMs, endMs, totalMs, poolAmount, nowX, yLeftMax]);
+  }, [dailyPrices, startMs, endMs, totalMs, poolAmount, nowX, yLeftMax, tiers]);
 
   // Pool value area fill
   const poolAreaPath = useMemo(() => {
     if (!poolStepPath) return "";
     const baseline = poolToY(0, yLeftMax);
+    // Clamp area fill start to campaign start (daily prices may predate campaign)
     const firstX = dailyPrices?.length
-      ? timeToX(new Date(dailyPrices[0].date + "T00:00:00Z").getTime(), startMs, totalMs)
+      ? timeToX(Math.max(new Date(dailyPrices[0].date + "T00:00:00Z").getTime(), startMs), startMs, totalMs)
       : PAD.left;
     return `M ${firstX.toFixed(1)} ${baseline.toFixed(1)} ${poolStepPath.replace(/^M/, "L")} L ${nowX.toFixed(1)} ${baseline.toFixed(1)} Z`;
   }, [poolStepPath, dailyPrices, startMs, totalMs, nowX, yLeftMax]);
@@ -244,13 +256,13 @@ function TimelineChart({
   const projectionPath = useMemo(() => {
     const toX = PAD.left + CW;
     const fromY = fdvToY(currentFdv > 0 ? currentFdv : 100);
-    const toY = fdvToY(DIAMOND_FDV);
+    const toY = fdvToY(diamondFdv);
     return `M ${nowX} ${fromY} L ${toX} ${toY}`;
-  }, [currentFdv, nowX]);
+  }, [currentFdv, nowX, diamondFdv]);
 
   const dotY = fdvToY(currentFdv > 0 ? currentFdv : 100);
 
-  const milestoneLines = TIERS.map((t) => ({
+  const milestoneLines = tiers.map((t) => ({
     ...t,
     y: fdvToY(t.fdv),
   }));
@@ -448,6 +460,11 @@ export function CampaignHero() {
   const { data, isLoading } = useAirdropStatus();
   const countdown = useCountdown(data?.campaignEnd ?? "2027-01-01");
 
+  const tiers = useMemo(
+    () => (data ? buildTiers(data.milestones) : []),
+    [data],
+  );
+
   if (isLoading || !data) {
     return (
       <div className="border-border rounded border p-4">
@@ -534,16 +551,17 @@ export function CampaignHero() {
         campaignEnd={data.campaignEnd}
         currentFdv={data.currentFdv}
         poolAmount={data.poolAmount}
+        tiers={tiers}
       />
 
       {/* Current position summary */}
       <div className="text-center space-y-0.5">
         <div className="text-foreground text-xs font-medium">
           Current FDV: {data.currentFdv > 0 ? formatUsdValue(data.currentFdv) : "\u2014"}
-          <span className="text-muted"> &middot; Zone: {currentZoneLabel(data.currentFdv)}</span>
+          <span className="text-muted"> &middot; Zone: {currentZoneLabel(data.currentFdv, tiers)}</span>
         </div>
         <div className="text-muted text-[10px]">
-          Pool value: {data.currentFdv > 0 ? formatUsdValue(poolValueAtFdv(data.currentFdv, data.poolAmount)) : "$0"}
+          Pool value: {data.currentFdv > 0 ? formatUsdValue(poolValueAtFdv(data.currentFdv, data.poolAmount, tiers)) : "$0"}
         </div>
       </div>
     </div>
