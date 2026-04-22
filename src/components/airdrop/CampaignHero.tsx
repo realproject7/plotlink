@@ -180,7 +180,7 @@ function TimelineChart({
   const endMs = new Date(campaignEnd + "T00:00:00Z").getTime();
   const totalMs = endMs - startMs;
 
-  const nowX = timeToX(Math.min(nowMs, endMs), startMs, totalMs);
+  const nowX = timeToX(Math.max(startMs, Math.min(nowMs, endMs)), startMs, totalMs);
 
   const diamondFdv = tiers[tiers.length - 1].fdv;
   const fdvLogMax = Math.log10(diamondFdv * 2); // 2x headroom above diamond
