@@ -18,6 +18,7 @@ export interface AirdropConfig {
     readonly BRONZE: Milestone;
     readonly SILVER: Milestone;
     readonly GOLD: Milestone;
+    readonly DIAMOND: Milestone;
   };
   readonly LOCKER_ID: string | null;
   readonly POINTS: {
@@ -58,7 +59,8 @@ const TEST_CONFIG: AirdropConfig = {
   MILESTONES: {
     BRONZE: { mcap: 7_000, pct: 10 },
     SILVER: { mcap: 10_000, pct: 30 },
-    GOLD: { mcap: 50_000, pct: 100 },
+    GOLD: { mcap: 35_000, pct: 50 },
+    DIAMOND: { mcap: 50_000, pct: 100 },
   },
   LOCKER_ID: null,
   POINTS,
@@ -73,7 +75,8 @@ const PROD_CONFIG: AirdropConfig = {
   MILESTONES: {
     BRONZE: { mcap: 1_000_000, pct: 10 },
     SILVER: { mcap: 10_000_000, pct: 30 },
-    GOLD: { mcap: 70_000_000, pct: 100 },
+    GOLD: { mcap: 50_000_000, pct: 50 },
+    DIAMOND: { mcap: 100_000_000, pct: 100 },
   },
   LOCKER_ID: null,
   POINTS,

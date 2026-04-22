@@ -15,6 +15,7 @@ interface StatusData {
     bronze: { mcap: number; pct: number; reached: boolean };
     silver: { mcap: number; pct: number; reached: boolean };
     gold: { mcap: number; pct: number; reached: boolean };
+    diamond: { mcap: number; pct: number; reached: boolean };
   };
   totalPointsEarned: number;
   totalParticipants: number;

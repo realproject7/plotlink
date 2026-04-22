@@ -38,12 +38,14 @@ export async function GET() {
   // Determine milestone from distributed percentage
   const distributedPct = (distributedPlot / poolAmount) * 100;
   let milestone: string;
-  if (distributedPct >= AIRDROP_CONFIG.MILESTONES.GOLD.pct - 0.1) {
-    milestone = "Gold";
+  if (distributedPct >= AIRDROP_CONFIG.MILESTONES.DIAMOND.pct - 0.1) {
+    milestone = "\uD83D\uDC8E Diamond";
+  } else if (distributedPct >= AIRDROP_CONFIG.MILESTONES.GOLD.pct - 0.1) {
+    milestone = "\uD83E\uDD47 Gold";
   } else if (distributedPct >= AIRDROP_CONFIG.MILESTONES.SILVER.pct - 0.1) {
-    milestone = "Silver";
+    milestone = "\uD83E\uDD48 Silver";
   } else if (distributedPct >= AIRDROP_CONFIG.MILESTONES.BRONZE.pct - 0.1) {
-    milestone = "Bronze";
+    milestone = "\uD83E\uDD49 Bronze";
   } else {
     milestone = "None";
   }

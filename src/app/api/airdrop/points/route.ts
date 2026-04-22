@@ -82,8 +82,9 @@ export async function GET(req: NextRequest) {
         bronze: Math.round((sharePercent / 100) * AIRDROP_CONFIG.POOL_AMOUNT * (AIRDROP_CONFIG.MILESTONES.BRONZE.pct / 100)),
         silver: Math.round((sharePercent / 100) * AIRDROP_CONFIG.POOL_AMOUNT * (AIRDROP_CONFIG.MILESTONES.SILVER.pct / 100)),
         gold: Math.round((sharePercent / 100) * AIRDROP_CONFIG.POOL_AMOUNT * (AIRDROP_CONFIG.MILESTONES.GOLD.pct / 100)),
+        diamond: Math.round((sharePercent / 100) * AIRDROP_CONFIG.POOL_AMOUNT * (AIRDROP_CONFIG.MILESTONES.DIAMOND.pct / 100)),
       }
-    : { bronze: 0, silver: 0, gold: 0 };
+    : { bronze: 0, silver: 0, gold: 0, diamond: 0 };
 
   return NextResponse.json({
     address,
