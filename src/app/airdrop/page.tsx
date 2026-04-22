@@ -4,7 +4,6 @@ import { UserPoints } from "../../components/airdrop/UserPoints";
 import { ClaimPanel } from "../../components/airdrop/ClaimPanel";
 import { Leaderboard } from "../../components/airdrop/Leaderboard";
 import { WeeklySnapshots } from "../../components/airdrop/WeeklySnapshots";
-import { MilestoneTrack } from "../../components/airdrop/MilestoneTrack";
 import { AIRDROP_CONFIG } from "../../../lib/airdrop/config";
 
 export const metadata: Metadata = {
@@ -29,7 +28,6 @@ export default function AirdropPage() {
 
         {/* Right column: global sections */}
         <div className="space-y-6">
-          <MilestoneTrack />
           <Leaderboard />
           <WeeklySnapshots />
         </div>
