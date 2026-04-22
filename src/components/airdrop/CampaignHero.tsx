@@ -55,7 +55,7 @@ function buildTiers(milestones: StatusData["milestones"]): Tier[] {
 
 const SVG_W = 700;
 const SVG_H = 340;
-const PAD = { top: 30, right: 70, bottom: 40, left: 70 };
+const PAD = { top: 30, right: 80, bottom: 40, left: 70 };
 const CW = SVG_W - PAD.left - PAD.right;
 const CH = SVG_H - PAD.top - PAD.bottom;
 
@@ -322,7 +322,7 @@ function TimelineChart({
               x={PAD.left + CW + 4}
               y={m.y + 3}
               fill="#8B7355"
-              fontSize={8}
+              fontSize={11}
               fontFamily="Inter, system-ui, sans-serif"
             >
               {m.emoji} {formatCompact(m.fdv)}
@@ -339,7 +339,7 @@ function TimelineChart({
               y={poolToY(val, yLeftMax) + 3}
               textAnchor="end"
               fill="#8B7355"
-              fontSize={8}
+              fontSize={11}
               fontFamily="Inter, system-ui, sans-serif"
             >
               {formatCompact(val)}
@@ -363,7 +363,7 @@ function TimelineChart({
               y={PAD.top + CH + 14}
               textAnchor="middle"
               fill="#8B7355"
-              fontSize={9}
+              fontSize={12}
               fontFamily="Inter, system-ui, sans-serif"
             >
               {m.label}
@@ -377,7 +377,7 @@ function TimelineChart({
           y={PAD.top + CH / 2}
           textAnchor="middle"
           fill="#8B7355"
-          fontSize={9}
+          fontSize={11}
           fontFamily="Inter, system-ui, sans-serif"
           transform={`rotate(-90, 12, ${PAD.top + CH / 2})`}
           className="hidden sm:block"
@@ -389,7 +389,7 @@ function TimelineChart({
           y={PAD.top + CH / 2}
           textAnchor="middle"
           fill="#8B7355"
-          fontSize={9}
+          fontSize={11}
           fontFamily="Inter, system-ui, sans-serif"
           transform={`rotate(90, ${SVG_W - 8}, ${PAD.top + CH / 2})`}
           className="hidden sm:block"
