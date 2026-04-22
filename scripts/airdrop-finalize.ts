@@ -66,14 +66,17 @@ async function computeTwap(): Promise<number> {
 function determineMilestone(twapMcap: number): { tier: string; pct: number } {
   const { MILESTONES } = AIRDROP_CONFIG;
 
+  if (twapMcap >= MILESTONES.DIAMOND.mcap) {
+    return { tier: "\uD83D\uDC8E Diamond", pct: MILESTONES.DIAMOND.pct };
+  }
   if (twapMcap >= MILESTONES.GOLD.mcap) {
-    return { tier: "Gold", pct: MILESTONES.GOLD.pct };
+    return { tier: "\uD83E\uDD47 Gold", pct: MILESTONES.GOLD.pct };
   }
   if (twapMcap >= MILESTONES.SILVER.mcap) {
-    return { tier: "Silver", pct: MILESTONES.SILVER.pct };
+    return { tier: "\uD83E\uDD48 Silver", pct: MILESTONES.SILVER.pct };
   }
   if (twapMcap >= MILESTONES.BRONZE.mcap) {
-    return { tier: "Bronze", pct: MILESTONES.BRONZE.pct };
+    return { tier: "\uD83E\uDD49 Bronze", pct: MILESTONES.BRONZE.pct };
   }
   return { tier: "None", pct: 0 };
 }

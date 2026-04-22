@@ -25,7 +25,7 @@ interface PointsData {
     referredBy: string | null;
     referredUsersCount: number;
   };
-  estimatedAirdrop: { bronze: number; silver: number; gold: number };
+  estimatedAirdrop: { bronze: number; silver: number; gold: number; diamond: number };
 }
 
 interface StatusData {
@@ -109,12 +109,17 @@ function UserPointsInner({ address }: { address: string }) {
 
         {/* Estimated airdrop */}
         <div className="text-muted text-[10px] mt-2 space-y-0.5">
-          {(["bronze", "silver", "gold"] as const).map((tier) => {
-            const amount = data.estimatedAirdrop[tier];
+          {([
+            { key: "bronze", label: "\uD83E\uDD49 Bronze" },
+            { key: "silver", label: "\uD83E\uDD48 Silver" },
+            { key: "gold", label: "\uD83E\uDD47 Gold" },
+            { key: "diamond", label: "\uD83D\uDC8E Diamond" },
+          ] as const).map(({ key, label }) => {
+            const amount = data.estimatedAirdrop[key];
             const usdVal = price && amount > 0 ? formatUsdValue(amount * price) : null;
             return (
-              <div key={tier}>
-                Est. if {tier.charAt(0).toUpperCase() + tier.slice(1)}:{" "}
+              <div key={key}>
+                Est. if {label}:{" "}
                 <span className="text-foreground font-medium">
                   {amount.toLocaleString()} PLOT
                 </span>

@@ -59,6 +59,11 @@ export async function GET() {
       pct: AIRDROP_CONFIG.MILESTONES.GOLD.pct,
       reached: currentMcap >= AIRDROP_CONFIG.MILESTONES.GOLD.mcap,
     },
+    diamond: {
+      mcap: AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
+      pct: AIRDROP_CONFIG.MILESTONES.DIAMOND.pct,
+      reached: currentMcap >= AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
+    },
   };
 
   return NextResponse.json({
