@@ -201,12 +201,24 @@ function TimelineChart({
     return result;
   }, [campaignStart, endMs]);
 
-  // Pool value step line from daily price data
+  // Effective data points: use daily prices if available, else synthesize from current FDV
+  const hasHistory = !!(dailyPrices?.length && dailyPrices.some((dp) => {
+    const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
+    return dpMs >= startMs && dpMs <= endMs;
+  }));
+
+  // Pool value step line from daily price data (or $0 flat line if no data)
   const poolStepPath = useMemo(() => {
-    if (!dailyPrices?.length) return "";
+    const baseline = poolToY(0, yLeftMax);
+    if (!hasHistory) {
+      // No data: flat $0 line from campaign start to now
+      const currentPv = poolValueAtFdv(currentFdv, poolAmount, tiers);
+      const pvY = currentPv > 0 ? poolToY(currentPv, yLeftMax) : baseline;
+      return `M ${PAD.left.toFixed(1)} ${baseline.toFixed(1)} L ${nowX.toFixed(1)} ${pvY.toFixed(1)}`;
+    }
     const parts: string[] = [];
     let lastPoolVal = 0;
-    for (const dp of dailyPrices) {
+    for (const dp of dailyPrices!) {
       const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
       if (dpMs < startMs || dpMs > endMs) continue;
       const x = timeToX(dpMs, startMs, totalMs);
@@ -221,24 +233,33 @@ function TimelineChart({
       parts.push(`L ${nowX.toFixed(1)} ${poolToY(lastPoolVal, yLeftMax).toFixed(1)}`);
     }
     return parts.join(" ");
-  }, [dailyPrices, startMs, endMs, totalMs, poolAmount, nowX, yLeftMax, tiers]);
+  }, [hasHistory, dailyPrices, startMs, endMs, totalMs, poolAmount, nowX, yLeftMax, tiers, currentFdv]);
 
   // Pool value area fill
   const poolAreaPath = useMemo(() => {
     if (!poolStepPath) return "";
     const baseline = poolToY(0, yLeftMax);
+    if (!hasHistory) {
+      // Area from campaign start baseline → pool step → back to baseline
+      return `M ${PAD.left.toFixed(1)} ${baseline.toFixed(1)} ${poolStepPath.replace(/^M/, "L")} L ${nowX.toFixed(1)} ${baseline.toFixed(1)} Z`;
+    }
     // Clamp area fill start to campaign start (daily prices may predate campaign)
     const firstX = dailyPrices?.length
       ? timeToX(Math.max(new Date(dailyPrices[0].date + "T00:00:00Z").getTime(), startMs), startMs, totalMs)
       : PAD.left;
     return `M ${firstX.toFixed(1)} ${baseline.toFixed(1)} ${poolStepPath.replace(/^M/, "L")} L ${nowX.toFixed(1)} ${baseline.toFixed(1)} Z`;
-  }, [poolStepPath, dailyPrices, startMs, totalMs, nowX, yLeftMax]);
+  }, [poolStepPath, hasHistory, dailyPrices, startMs, totalMs, nowX, yLeftMax]);
 
-  // Actual FDV line
+  // Actual FDV line (or single point if no history)
   const actualFdvPath = useMemo(() => {
-    if (!dailyPrices?.length) return "";
+    if (!hasHistory) {
+      // No history: just draw a point at current position (will be rendered as dot)
+      if (currentFdv <= 0) return "";
+      const y = fdvToY(currentFdv, fdvLogMax);
+      return `M ${nowX.toFixed(1)} ${y.toFixed(1)} L ${nowX.toFixed(1)} ${y.toFixed(1)}`;
+    }
     const parts: string[] = [];
-    for (const dp of dailyPrices) {
+    for (const dp of dailyPrices!) {
       const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
       if (dpMs < startMs || dpMs > endMs) continue;
       const x = timeToX(dpMs, startMs, totalMs);
@@ -249,7 +270,7 @@ function TimelineChart({
       parts.push(`L ${nowX.toFixed(1)} ${fdvToY(currentFdv, fdvLogMax).toFixed(1)}`);
     }
     return parts.join(" ");
-  }, [dailyPrices, startMs, endMs, totalMs, currentFdv, nowX, fdvLogMax]);
+  }, [hasHistory, dailyPrices, startMs, endMs, totalMs, currentFdv, nowX, fdvLogMax]);
 
   // Linear projection: from current position (nowX) → Diamond at campaign end
   const projectionPath = useMemo(() => {
@@ -270,11 +291,10 @@ function TimelineChart({
   // Right-axis ticks omitted — milestone emoji labels already show FDV values
 
   return (
-    <div className="w-full overflow-x-auto -mx-1 px-1">
+    <div className="w-full">
       <svg
         viewBox={`0 0 ${SVG_W} ${SVG_H}`}
         className="w-full h-auto"
-        style={{ minWidth: 320 }}
         role="img"
         aria-label="6-month timeline chart showing actual FDV, linear projection to Diamond, and airdrop pool value"
       >
@@ -310,20 +330,22 @@ function TimelineChart({
           </g>
         ))}
 
-        {/* Y-left axis ticks (pool value) */}
-        {yLeftTicks.map((val) => (
-          <text
-            key={val}
-            x={PAD.left - 6}
-            y={poolToY(val, yLeftMax) + 3}
-            textAnchor="end"
-            fill="#8B7355"
-            fontSize={8}
-            fontFamily="Inter, system-ui, sans-serif"
-          >
-            {formatCompact(val)}
-          </text>
-        ))}
+        {/* Y-left axis ticks (pool value) — hidden on mobile */}
+        <g className="hidden sm:block">
+          {yLeftTicks.map((val) => (
+            <text
+              key={val}
+              x={PAD.left - 6}
+              y={poolToY(val, yLeftMax) + 3}
+              textAnchor="end"
+              fill="#8B7355"
+              fontSize={8}
+              fontFamily="Inter, system-ui, sans-serif"
+            >
+              {formatCompact(val)}
+            </text>
+          ))}
+        </g>
 
         {/* X-axis month labels */}
         {months.map((m) => (
@@ -349,7 +371,7 @@ function TimelineChart({
           </g>
         ))}
 
-        {/* Axis labels */}
+        {/* Axis labels — hidden on mobile via CSS media query */}
         <text
           x={12}
           y={PAD.top + CH / 2}
@@ -358,6 +380,7 @@ function TimelineChart({
           fontSize={9}
           fontFamily="Inter, system-ui, sans-serif"
           transform={`rotate(-90, 12, ${PAD.top + CH / 2})`}
+          className="hidden sm:block"
         >
           Pool Value (USD)
         </text>
@@ -369,6 +392,7 @@ function TimelineChart({
           fontSize={9}
           fontFamily="Inter, system-ui, sans-serif"
           transform={`rotate(90, ${SVG_W - 8}, ${PAD.top + CH / 2})`}
+          className="hidden sm:block"
         >
           FDV (USD)
         </text>
