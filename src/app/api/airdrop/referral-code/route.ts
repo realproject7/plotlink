@@ -10,6 +10,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import { createServerClient } from "../../../../../lib/supabase";
 import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
+import { checkRateLimit, getClientIp } from "../../../../../lib/rate-limit";
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient();
@@ -36,6 +37,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  if (!(await checkRateLimit(ip, "airdrop/referral-code"))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const supabase = createServerClient();
   if (!supabase) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });

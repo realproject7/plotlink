@@ -523,6 +523,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      rate_limits: {
+        Row: {
+          id: number;
+          key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          key: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: never;
+          key?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       trade_history: {
         Row: {
           id: number;
