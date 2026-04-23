@@ -97,7 +97,7 @@ export async function POST(req: Request) {
     const cl = ipfsRes.headers.get("content-length");
     if (cl && parseInt(cl) > IPFS_MAX_BYTES) throw new Error("IPFS content too large");
     const ipfsContent = await ipfsRes.text();
-    if (ipfsContent.length > IPFS_MAX_BYTES) throw new Error("IPFS content too large");
+    if (new TextEncoder().encode(ipfsContent).byteLength > IPFS_MAX_BYTES) throw new Error("IPFS content too large");
     // Verify IPFS content hash matches on-chain hash
     if (hashContent(ipfsContent) === contentHash) {
       content = ipfsContent;

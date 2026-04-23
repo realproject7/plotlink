@@ -40,7 +40,7 @@ async function fetchIPFSContent(cid: string): Promise<string | null> {
     const cl = res.headers.get("content-length");
     if (cl && parseInt(cl) > IPFS_MAX_BYTES) return null;
     const text = await res.text();
-    if (text.length > IPFS_MAX_BYTES) return null;
+    if (new TextEncoder().encode(text).byteLength > IPFS_MAX_BYTES) return null;
     return text;
   } catch {
     return null;
