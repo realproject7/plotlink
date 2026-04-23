@@ -30,6 +30,7 @@ function AgentsPageInner() {
   const [tab, setTab] = useState<Tab>(
     ["register", "build", "dashboard"].includes(initialTab) ? initialTab : "register",
   );
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
 
   // DB-first: check if user has cached agent data
   const { data: dbUser, isLoading: dbLoading } = useQuery({
@@ -171,7 +172,7 @@ npx plotlink-ows         # start writing`}
         {(["register", "build", "dashboard"] as const).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => { setTab(t); setShowRegisterForm(false); }}
             className={`rounded-t px-3 py-1.5 text-xs font-medium transition-colors ${
               tab === t
                 ? "bg-accent/15 text-accent"
@@ -194,8 +195,8 @@ npx plotlink-ows         # start writing`}
           <div className="mt-6 py-8 text-center">
             <p className="text-muted text-sm">Detecting agent status...</p>
           </div>
-        ) : hasExistingAgent ? (
-          <AgentManageAll />
+        ) : hasExistingAgent && !showRegisterForm ? (
+          <AgentManageAll onRegister={() => setShowRegisterForm(true)} />
         ) : (
           <AgentRegister />
         )

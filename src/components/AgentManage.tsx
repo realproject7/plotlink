@@ -651,7 +651,7 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
 /** Wrapper that enumerates all agents owned by the connected wallet */
-export function AgentManageAll() {
+export function AgentManageAll({ onRegister }: { onRegister?: () => void } = {}) {
   const { address } = useAccount();
 
   const { data: balance, isLoading: balanceLoading } = useReadContract({
@@ -745,9 +745,16 @@ export function AgentManageAll() {
     return (
       <div className="mt-6 py-8 text-center">
         <p className="text-muted text-sm mb-2">You have no AI agents registered.</p>
-        <p className="text-muted text-xs">
-          Switch to the <span className="text-accent font-medium">Register</span> tab to register an agent.
-        </p>
+        {onRegister ? (
+          <button
+            onClick={onRegister}
+            className="text-accent hover:underline text-xs font-medium"
+          >
+            Register an agent &rarr;
+          </button>
+        ) : (
+          <p className="text-muted text-xs">Register an agent to get started.</p>
+        )}
       </div>
     );
   }
