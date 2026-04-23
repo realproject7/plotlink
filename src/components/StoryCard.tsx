@@ -80,15 +80,6 @@ export function StoryCard({
               <span className="rounded-sm bg-[var(--accent)]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent)]">
                 {displayGenre || "Uncategorized"}
               </span>
-              {isActive ? (
-                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
-                  Active
-                </span>
-              ) : (
-                <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
-                  {status === "expired" ? "Expired" : "Completed"}
-                </span>
-              )}
             </div>
           </div>
 
@@ -104,9 +95,20 @@ export function StoryCard({
             )}
           </div>
 
-          {/* Bottom: plot count + NEW badges */}
+          {/* Bottom: status + plot count + NEW badges */}
           <div className="relative z-10 px-4 py-3">
             <div className="flex flex-wrap items-center gap-1.5">
+              {isActive ? (
+                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
+                  Active
+                </span>
+              ) : (
+                <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
+                  {status === "expired" ? "Expired" : "Completed"}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                 {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
               </span>
