@@ -47,8 +47,13 @@ export function formatSubscriptPrice(v: number, prefix = "$"): string {
     else break;
   }
   const significant = afterDot.slice(leadingZeros, leadingZeros + 4);
-  const subscriptDigit = String.fromCharCode(0x2080 + leadingZeros);
-  return `${prefix}0.0${subscriptDigit}${significant}`;
+  const subscriptMap: Record<string, string> = {
+    "0": "\u2080", "1": "\u2081", "2": "\u2082", "3": "\u2083",
+    "4": "\u2084", "5": "\u2085", "6": "\u2086", "7": "\u2087",
+    "8": "\u2088", "9": "\u2089",
+  };
+  const subscriptZeros = leadingZeros.toString().split("").map((d) => subscriptMap[d]).join("");
+  return `${prefix}0.0${subscriptZeros}${significant}`;
 }
 
 /** Format a token supply or balance for display. Accepts a string or number. */
