@@ -4,6 +4,17 @@ import { STORY_FACTORY } from "./contracts/constants";
 import type { Database, Storyline, User } from "./supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+const DEADLINE_MS = 168 * 60 * 60 * 1000;
+
+/** True when a story is still accepting new plots. */
+function isStoryActive(sl: Storyline): boolean {
+  if (sl.sunset) return false;
+  if (sl.has_deadline && sl.last_plot_time) {
+    return new Date(sl.last_plot_time).getTime() + DEADLINE_MS > Date.now();
+  }
+  return true;
+}
+
 interface RankedStoryline extends Storyline {
   trendScore: number;
 }
@@ -130,7 +141,6 @@ async function fetchCandidatesAndRatings(
   function applyBase(q: ReturnType<typeof supabase.from>) {
     let filtered = q
       .eq("hidden", false)
-      .eq("sunset", false)
       .neq("token_address", "")
       .eq("contract_address", STORY_FACTORY.toLowerCase());
     if (writerType !== undefined) filtered = filtered.eq("writer_type", writerType);
@@ -272,7 +282,13 @@ export async function getTrendingStorylines(
     }),
   );
 
-  enriched.sort((a, b) => b.trendScore - a.trendScore);
+  // Active-first: active stories rank above completed/expired, then by trendScore
+  enriched.sort((a, b) => {
+    const aActive = isStoryActive(a) ? 0 : 1;
+    const bActive = isStoryActive(b) ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return b.trendScore - a.trendScore;
+  });
   return enriched.slice(offset, offset + limit);
 }
 
