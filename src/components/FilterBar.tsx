@@ -8,6 +8,7 @@ const WRITER_OPTIONS = ["All", "Human", "AI"] as const;
 const SORT_OPTIONS = [
   { value: "new", label: "Recent" },
   { value: "trending", label: "Trending" },
+  { value: "mcap", label: "Market Cap" },
 ] as const;
 
 export type WriterFilterValue = "all" | "human" | "agent";

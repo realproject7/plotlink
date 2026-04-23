@@ -1,5 +1,6 @@
 import { type Address, formatUnits } from "viem";
-import { get24hPriceChange, getTokenTVL } from "./price";
+import { get24hPriceChange, getTokenTVL, getBatchTokenData } from "./price";
+import { getPlotUsdPrice } from "./usd-price";
 import { STORY_FACTORY } from "./contracts/constants";
 import type { Database, Storyline, User } from "./supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -280,5 +281,53 @@ export async function getTrendingStorylines(
     return b.trendScore - a.trendScore;
   });
   return enriched.slice(offset, offset + limit);
+}
+
+/**
+ * Fetch storylines sorted by market cap (descending), active-first.
+ * MCap = totalSupply × pricePerToken × PLOT/USD rate.
+ */
+export async function getMcapStorylines(
+  supabase: SupabaseClient<Database>,
+  limit = 20,
+  writerType?: number,
+  offset = 0,
+  genre?: string,
+  lang?: string,
+): Promise<Storyline[]> {
+  const { storylines } = await fetchCandidatesAndRatings(supabase, writerType, genre, lang);
+  if (storylines.length === 0) return [];
+
+  const tokenAddresses = storylines
+    .map((sl) => sl.token_address)
+    .filter((addr): addr is string => !!addr) as Address[];
+
+  const [batchData, plotUsd] = await Promise.all([
+    getBatchTokenData(tokenAddresses),
+    getPlotUsdPrice(),
+  ]);
+
+  const usdRate = plotUsd ?? 0;
+
+  const withMcap = storylines.map((sl) => {
+    const data = batchData.get(sl.token_address?.toLowerCase() ?? "");
+    let mcap = 0;
+    if (data?.price) {
+      const supply = Number(data.price.totalSupply);
+      const price = Number(data.price.pricePerToken);
+      mcap = supply * price * usdRate;
+    }
+    return { ...sl, mcap };
+  });
+
+  // Active-first, then by MCap descending
+  withMcap.sort((a, b) => {
+    const aActive = getStoryStatus(a) === "active" ? 0 : 1;
+    const bActive = getStoryStatus(b) === "active" ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return b.mcap - a.mcap;
+  });
+
+  return withMcap.slice(offset, offset + limit);
 }
 

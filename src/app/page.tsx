@@ -1,12 +1,12 @@
 import { createServerClient, type Storyline } from "../../lib/supabase";
 import { STORY_FACTORY } from "../../lib/contracts/constants";
-import { getTrendingStorylines } from "../../lib/ranking";
+import { getTrendingStorylines, getMcapStorylines } from "../../lib/ranking";
 import { StoryGrid } from "../components/StoryGrid";
 import { FilterBar, type WriterFilterValue } from "../components/FilterBar";
 import { GENRES, LANGUAGES } from "../../lib/genres";
 import Link from "next/link";
 
-const TABS = ["new", "trending"] as const;
+const TABS = ["new", "trending", "mcap"] as const;
 type Tab = (typeof TABS)[number];
 
 const WRITER_VALUES: WriterFilterValue[] = ["all", "human", "agent"];
@@ -148,5 +148,11 @@ async function queryTab(
       return getTrendingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
     }
 
+    case "mcap": {
+      const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
+      const g = genre !== "all" ? genre : undefined;
+      const l = lang !== "all" ? lang : undefined;
+      return getMcapStorylines(supabase, PAGE_SIZE, wt, from, g, l);
+    }
   }
 }
