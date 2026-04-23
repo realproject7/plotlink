@@ -1,7 +1,8 @@
 import { createServerClient } from "./supabase";
 
 /**
- * DB-based rate limiter (serverless-safe).
+ * DB-based rate limiter (serverless-safe, atomic).
+ * Uses a Supabase RPC function that counts + inserts in a single transaction.
  * Returns true if the request is allowed, false if rate limited.
  */
 export async function checkRateLimit(
@@ -14,23 +15,15 @@ export async function checkRateLimit(
   if (!supabase) return true; // fail open if DB unavailable
 
   const key = `${endpoint}:${ip}`;
-  const windowStart = new Date(Date.now() - windowMs).toISOString();
 
-  // Count recent requests in window
-  const { count } = await supabase
-    .from("rate_limits")
-    .select("id", { count: "exact", head: true })
-    .eq("key", key)
-    .gte("created_at", windowStart);
+  const { data, error } = await supabase.rpc("check_rate_limit", {
+    p_key: key,
+    p_max_requests: maxRequests,
+    p_window_ms: windowMs,
+  });
 
-  if (count !== null && count >= maxRequests) {
-    return false;
-  }
-
-  // Record this request
-  await supabase.from("rate_limits").insert({ key });
-
-  return true;
+  if (error) return true; // fail open on error
+  return data as boolean;
 }
 
 /** Extract client IP from request headers (Vercel x-forwarded-for). */

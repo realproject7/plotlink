@@ -20,3 +20,27 @@ CREATE TRIGGER trg_purge_rate_limits
   AFTER INSERT ON rate_limits
   FOR EACH STATEMENT
   EXECUTE FUNCTION purge_old_rate_limits();
+
+-- Atomic rate limit check: counts recent requests, inserts if under limit.
+-- Returns true if allowed, false if rate limited.
+CREATE OR REPLACE FUNCTION check_rate_limit(
+  p_key TEXT,
+  p_max_requests INT DEFAULT 5,
+  p_window_ms INT DEFAULT 60000
+) RETURNS BOOLEAN AS $$
+DECLARE
+  v_count INT;
+  v_window_start TIMESTAMPTZ;
+BEGIN
+  v_window_start := now() - (p_window_ms || ' milliseconds')::interval;
+  SELECT count(*) INTO v_count
+    FROM rate_limits
+    WHERE key = p_key AND created_at >= v_window_start
+    FOR UPDATE;
+  IF v_count >= p_max_requests THEN
+    RETURN false;
+  END IF;
+  INSERT INTO rate_limits (key) VALUES (p_key);
+  RETURN true;
+END;
+$$ LANGUAGE plpgsql;

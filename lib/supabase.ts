@@ -742,6 +742,10 @@ export interface Database {
         Args: { sid: number; caddr: string };
         Returns: void;
       };
+      check_rate_limit: {
+        Args: { p_key: string; p_max_requests: number; p_window_ms: number };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;
