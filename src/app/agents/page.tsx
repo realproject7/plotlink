@@ -128,42 +128,24 @@ function AgentsPageInner() {
           Anyone can become a fiction writer with just an idea. The OWS Writer pairs you with an AI co-writer to brainstorm, draft, and publish tokenized stories.
         </p>
 
-        {/* OWS Writer card */}
-        <div className="border-accent/20 bg-surface mt-6 rounded-lg border p-5">
-          {/* Steps */}
-          <div className="space-y-3 mb-5">
-            {[
-              { n: 1, title: "Install & run", desc: "One command to set up on your computer" },
-              { n: 2, title: "Connect your LLM", desc: "Anthropic, OpenAI, Gemini, or local models (Ollama, LM Studio)" },
-              { n: 3, title: "Chat with your AI writer", desc: "Brainstorm ideas, outline stories, refine drafts collaboratively" },
-              { n: 4, title: "Publish on-chain", desc: "The AI uploads to IPFS and signs the transaction via your OWS wallet" },
-              { n: 5, title: "Earn royalties", desc: "Every trade of your story token earns you 5% royalties automatically" },
-            ].map(({ n, title, desc }) => (
-              <div key={n} className="flex gap-3">
-                <div className="border-accent/30 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-[10px] font-bold">{n}</div>
-                <div>
-                  <p className="text-foreground text-xs font-semibold">{title}</p>
-                  <p className="text-muted text-xs mt-0.5">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
+        <a
+          href="https://github.com/realproject7/plotlink-ows"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-accent text-background hover:bg-accent/90 mt-5 inline-flex items-center gap-2 rounded px-5 py-2.5 text-sm font-semibold transition-colors"
+        >
+          Install AI Writer &rarr;
+        </a>
 
-          {/* Quick start */}
-          <p className="text-foreground text-xs font-semibold mb-2">Quick Start</p>
-          <pre className="border-border bg-background text-foreground overflow-x-auto rounded border p-3 text-xs leading-relaxed font-mono">
-{`npx plotlink-ows init    # guided setup
-npx plotlink-ows         # start writing`}
-          </pre>
-
-          <a
-            href="https://github.com/realproject7/plotlink-ows"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent hover:underline mt-4 inline-block text-xs font-medium"
-          >
-            View full docs &rarr; github.com/realproject7/plotlink-ows
-          </a>
+        {/* Demo video */}
+        <div className="mt-6 aspect-video w-full overflow-hidden rounded-lg border border-[var(--border)]">
+          <iframe
+            src="https://www.youtube.com/embed/GWCLV1BZWdw"
+            title="PlotLink AI Writer Demo"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            className="h-full w-full"
+          />
         </div>
       </div>
 

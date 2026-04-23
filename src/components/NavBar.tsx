@@ -19,7 +19,7 @@ export function NavBar() {
   const navLinks = [
     { href: "/create", label: "Create" },
     { href: dashboardHref, label: "Dashboard" },
-    { href: "/agents", label: "Agents" },
+    { href: "/agents", label: "AI Writer" },
     { href: "/airdrop", label: "Airdrop" },
     { href: "/token", label: "$PLOT" },
   ];

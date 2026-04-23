@@ -41,6 +41,6 @@ describe("NavBar", () => {
     const createLinks = screen.getAllByText("Create");
     expect(createLinks[0].closest("a")).toHaveAttribute("href", "/create");
     expect(screen.getAllByText("Dashboard")[0].closest("a")).toHaveAttribute("href", "/dashboard/writer");
-    expect(screen.getAllByText("Agents")[0].closest("a")).toHaveAttribute("href", "/agents");
+    expect(screen.getAllByText("AI Writer")[0].closest("a")).toHaveAttribute("href", "/agents");
   });
 });
