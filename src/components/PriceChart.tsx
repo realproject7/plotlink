@@ -6,6 +6,7 @@ import { type Address, formatUnits } from "viem";
 import { supabase } from "../../lib/supabase";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
 import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
+import { formatSubscriptPrice } from "../../lib/format";
 
 const CHART_W = 320;
 const CHART_H = 140;
@@ -41,7 +42,7 @@ function formatTime(iso: string): string {
 
 function formatReservePrice(v: number): string {
   if (v === 0) return "0";
-  if (v < 0.001) return v.toExponential(0);
+  if (v < 0.001) return formatSubscriptPrice(v, "");
   if (v < 1) return v.toFixed(4);
   return v.toFixed(2);
 }
@@ -50,8 +51,7 @@ function formatUsdPrice(v: number): string {
   if (v === 0) return "$0";
   if (v >= 1) return `$${v.toFixed(2)}`;
   if (v >= 0.01) return `$${v.toFixed(4)}`;
-  if (v >= 0.0001) return `$${v.toFixed(6)}`;
-  return `$${v.toExponential(2)}`;
+  return formatSubscriptPrice(v);
 }
 
 /**

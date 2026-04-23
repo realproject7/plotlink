@@ -33,6 +33,24 @@ export function formatTokenAmount(value: bigint, decimals: number): string {
   return num.toExponential(2);
 }
 
+/**
+ * Format a small decimal using subscript-zero notation: $0.0₄6262
+ * Counts leading zeros after the decimal and renders the count as a
+ * Unicode subscript digit, followed by 4 significant digits.
+ */
+export function formatSubscriptPrice(v: number, prefix = "$"): string {
+  const str = v.toFixed(20);
+  const afterDot = str.split(".")[1];
+  let leadingZeros = 0;
+  for (const c of afterDot) {
+    if (c === "0") leadingZeros++;
+    else break;
+  }
+  const significant = afterDot.slice(leadingZeros, leadingZeros + 4);
+  const subscriptDigit = String.fromCharCode(0x2080 + leadingZeros);
+  return `${prefix}0.0${subscriptDigit}${significant}`;
+}
+
 /** Format a token supply or balance for display. Accepts a string or number. */
 export function formatSupply(value: string | number): string {
   const v = typeof value === "string" ? parseFloat(value) : value;

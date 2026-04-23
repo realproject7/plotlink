@@ -12,6 +12,7 @@
 
 import { PLOT_TOKEN } from "./contracts/constants";
 import { createServiceRoleClient } from "./supabase";
+import { formatSubscriptPrice } from "./format";
 
 // In-memory cache
 let cachedPrice: number | null = null;
@@ -212,7 +213,5 @@ export function formatUsdTokenPrice(value: number | null): string {
   if (value === null) return "—";
   if (value === 0) return "$0";
   if (value >= 0.01) return formatUsdValue(value);
-  // For very small values, show 2 significant digits
-  const digits = Math.max(2, -Math.floor(Math.log10(value)) + 1);
-  return `$${value.toFixed(digits)}`;
+  return formatSubscriptPrice(value);
 }
