@@ -17,6 +17,7 @@ import { awardWritePoints } from "../../../../../lib/airdrop/award";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
 const IPFS_TIMEOUT_MS = 10_000;
+const IPFS_MAX_BYTES = 1_000_000;
 
 /** StorylineCreated event topic0 */
 const STORYLINE_CREATED_TOPIC = encodeEventTopics({
@@ -121,7 +122,10 @@ export async function POST(req: Request) {
       signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
     });
     if (!ipfsRes.ok) throw new Error(`IPFS status ${ipfsRes.status}`);
+    const cl = ipfsRes.headers.get("content-length");
+    if (cl && parseInt(cl) > IPFS_MAX_BYTES) throw new Error("IPFS content too large");
     const ipfsContent = await ipfsRes.text();
+    if (new TextEncoder().encode(ipfsContent).byteLength > IPFS_MAX_BYTES) throw new Error("IPFS content too large");
     // Verify IPFS content hash matches on-chain hash
     if (hashContent(ipfsContent) === openingHash) {
       genesisContent = ipfsContent;
