@@ -13,6 +13,7 @@ import type { Database } from "../../../../../lib/supabase";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
 const IPFS_TIMEOUT_MS = 10_000;
+const IPFS_MAX_BYTES = 1_000_000;
 
 /**
  * How many blocks to scan per cron run (~5 min on Base = ~150 blocks at 2s/block).
@@ -36,7 +37,11 @@ async function fetchIPFSContent(cid: string): Promise<string | null> {
       signal: AbortSignal.timeout(IPFS_TIMEOUT_MS),
     });
     if (!res.ok) return null;
-    return await res.text();
+    const cl = res.headers.get("content-length");
+    if (cl && parseInt(cl) > IPFS_MAX_BYTES) return null;
+    const text = await res.text();
+    if (text.length > IPFS_MAX_BYTES) return null;
+    return text;
   } catch {
     return null;
   }
