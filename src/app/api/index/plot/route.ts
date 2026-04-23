@@ -30,6 +30,9 @@ export async function POST(req: Request) {
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const fallbackContent = body.content as string | undefined;
+  if (fallbackContent && new TextEncoder().encode(fallbackContent).byteLength > 50_000) {
+    return error("Fallback content too large", 400);
+  }
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");

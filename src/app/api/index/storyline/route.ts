@@ -33,6 +33,9 @@ export async function POST(req: Request) {
   const body = await req.json();
   const txHash = body.txHash as Hex | undefined;
   const fallbackContent = body.content as string | undefined;
+  if (fallbackContent && new TextEncoder().encode(fallbackContent).byteLength > 50_000) {
+    return error("Fallback content too large", 400);
+  }
   const rawGenre = body.genre as string | undefined;
   const rawLanguage = body.language as string | undefined;
   const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : null;
