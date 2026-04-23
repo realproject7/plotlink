@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { DEADLINE_HOURS, DEADLINE_MS } from "../../lib/story-status";
 
-export const DEADLINE_HOURS = 168;
-export const DEADLINE_MS = DEADLINE_HOURS * 60 * 60 * 1000;
+export { DEADLINE_HOURS, DEADLINE_MS };
 
 export function DeadlineCountdown({
   lastPlotTime,
