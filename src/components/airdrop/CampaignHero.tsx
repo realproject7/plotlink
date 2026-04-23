@@ -148,7 +148,7 @@ function poolToY(usd: number, yLeftMax: number): number {
 
 function fdvToY(fdv: number, logMax: number): number {
   if (fdv <= 0) return PAD.top + CH;
-  const t = (Math.log10(Math.max(fdv, 100)) - FDV_LOG_MIN) / (logMax - FDV_LOG_MIN);
+  const t = Math.max(0, Math.min(1, (Math.log10(Math.max(fdv, 100)) - FDV_LOG_MIN) / (logMax - FDV_LOG_MIN)));
   return PAD.top + CH * (1 - t);
 }
 
@@ -521,7 +521,7 @@ function TimelineChart({
         <div className="space-y-1.5">
           {tiers.map((t) => {
             const reached = currentFdv >= t.fdv;
-            const tierPct = diamondFdv > 0 ? Math.round((t.fdv / diamondFdv) * 100) : 0;
+            const tierPct = t.pct;
             return (
               <div key={t.key} className="flex items-center justify-between text-[12px]">
                 <span className={reached ? "text-foreground" : "text-muted"}>
