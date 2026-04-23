@@ -55,17 +55,24 @@ export async function getPlotUsdPrice(
 async function fetchPlotUsdPrice(): Promise<number | null> {
   const start = Date.now();
 
-  // Try all external sources in parallel — use whichever responds first
+  // Prefer Mint Club SDK (on-chain read, matches /token page price source)
+  // Only fall back to API aggregators if on-chain fails
   try {
-    const price = await Promise.any([
-      fetchFromMintClub(),
-      fetchFromGeckoTerminal(),
-      fetchFromCoinGecko(),
-    ]);
+    const price = await fetchFromMintClub();
     console.info(`[USD Price] result=hit price=${price} elapsed=${Date.now() - start}ms`);
     return price;
   } catch {
-    // All sources failed — AggregateError
+    // Mint Club SDK failed — try API aggregators
+  }
+
+  try {
+    const price = await Promise.any([
+      fetchFromGeckoTerminal(),
+      fetchFromCoinGecko(),
+    ]);
+    console.info(`[USD Price] result=hit price=${price} elapsed=${Date.now() - start}ms (api fallback)`);
+    return price;
+  } catch {
     console.warn(`[USD Price] All external sources failed, elapsed=${Date.now() - start}ms`);
   }
 
