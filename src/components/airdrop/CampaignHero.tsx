@@ -272,13 +272,26 @@ function TimelineChart({
     return parts.join(" ");
   }, [hasHistory, dailyPrices, startMs, endMs, totalMs, currentFdv, nowX, fdvLogMax]);
 
-  // Linear projection: from current position (nowX) → Diamond at campaign end
+  // Linear projection: from campaign start → Diamond at campaign end
+  // Represents "constant growth needed from day 1 to hit Diamond"
+  const startFdv = useMemo(() => {
+    if (hasHistory && dailyPrices?.length) {
+      // Use first daily price within campaign period
+      for (const dp of dailyPrices) {
+        const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
+        if (dpMs >= startMs && dpMs <= endMs) return dp.fdv;
+      }
+    }
+    return currentFdv > 0 ? currentFdv : 100;
+  }, [hasHistory, dailyPrices, startMs, endMs, currentFdv]);
+
   const projectionPath = useMemo(() => {
+    const fromX = PAD.left;
     const toX = PAD.left + CW;
-    const fromY = fdvToY(currentFdv > 0 ? currentFdv : 100, fdvLogMax);
+    const fromY = fdvToY(startFdv, fdvLogMax);
     const toY = fdvToY(diamondFdv, fdvLogMax);
-    return `M ${nowX} ${fromY} L ${toX} ${toY}`;
-  }, [currentFdv, nowX, diamondFdv, fdvLogMax]);
+    return `M ${fromX} ${fromY} L ${toX} ${toY}`;
+  }, [startFdv, diamondFdv, fdvLogMax]);
 
   const dotY = fdvToY(currentFdv > 0 ? currentFdv : 100, fdvLogMax);
 
@@ -290,188 +303,246 @@ function TimelineChart({
   const yLeftTicks = [0, diamondPoolUsd * 0.25, diamondPoolUsd * 0.5, diamondPoolUsd];
   // Right-axis ticks omitted — milestone emoji labels already show FDV values
 
+  // Linear target today: where FDV should be if growing linearly from start to Diamond
+  const linearTargetToday = useMemo(() => {
+    const elapsed = Math.max(0, nowMs - startMs);
+    const progress = Math.min(1, elapsed / totalMs);
+    return startFdv + (diamondFdv - startFdv) * progress;
+  }, [nowMs, startMs, totalMs, startFdv, diamondFdv]);
+
   return (
     <div className="w-full">
-      <svg
-        viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-        className="w-full h-auto"
-        role="img"
-        aria-label="6-month timeline chart showing actual FDV, linear projection to Diamond, and airdrop pool value"
-      >
-        <defs>
-          <linearGradient id="pool-area-grad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#8B4513" stopOpacity="0.25" />
-            <stop offset="100%" stopColor="#8B4513" stopOpacity="0.03" />
-          </linearGradient>
-        </defs>
+      {/* Desktop: full SVG chart */}
+      <div className="hidden sm:block">
+        <svg
+          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
+          className="w-full h-auto"
+          role="img"
+          aria-label="6-month timeline chart showing actual FDV, linear projection to Diamond, and airdrop pool value"
+        >
+          <defs>
+            <linearGradient id="pool-area-grad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#8B4513" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#8B4513" stopOpacity="0.03" />
+            </linearGradient>
+          </defs>
 
-        {/* Grid lines (horizontal at each milestone FDV) */}
-        {milestoneLines.map((m) => (
-          <g key={m.key}>
-            <line
-              x1={PAD.left}
-              y1={m.y}
-              x2={PAD.left + CW}
-              y2={m.y}
-              stroke="#D4C5B0"
-              strokeWidth={0.5}
-              strokeDasharray="4,4"
-            />
-            {/* Right-side label */}
-            <text
-              x={PAD.left + CW + 4}
-              y={m.y + 3}
-              fill="#8B7355"
-              fontSize={11}
-              fontFamily="Inter, system-ui, sans-serif"
-            >
-              {m.emoji} {formatCompact(m.fdv)}
-            </text>
-          </g>
-        ))}
-
-        {/* Y-left axis ticks (pool value) — hidden on mobile */}
-        <g className="hidden sm:block">
-          {yLeftTicks.map((val) => (
-            <text
-              key={val}
-              x={PAD.left - 6}
-              y={poolToY(val, yLeftMax) + 3}
-              textAnchor="end"
-              fill="#8B7355"
-              fontSize={11}
-              fontFamily="Inter, system-ui, sans-serif"
-            >
-              {formatCompact(val)}
-            </text>
+          {/* Grid lines (horizontal at each milestone FDV) */}
+          {milestoneLines.map((m) => (
+            <g key={m.key}>
+              <line
+                x1={PAD.left}
+                y1={m.y}
+                x2={PAD.left + CW}
+                y2={m.y}
+                stroke="#D4C5B0"
+                strokeWidth={0.5}
+                strokeDasharray="4,4"
+              />
+              {/* Right-side label */}
+              <text
+                x={PAD.left + CW + 4}
+                y={m.y + 3}
+                fill="#8B7355"
+                fontSize={11}
+                fontFamily="Inter, system-ui, sans-serif"
+              >
+                {m.emoji} {formatCompact(m.fdv)}
+              </text>
+            </g>
           ))}
-        </g>
 
-        {/* X-axis month labels */}
-        {months.map((m) => (
-          <g key={m.label}>
-            <line
-              x1={timeToX(m.ms, startMs, totalMs)}
-              y1={PAD.top}
-              x2={timeToX(m.ms, startMs, totalMs)}
-              y2={PAD.top + CH}
-              stroke="#D4C5B0"
-              strokeWidth={0.3}
-            />
-            <text
-              x={timeToX(m.ms, startMs, totalMs)}
-              y={PAD.top + CH + 14}
-              textAnchor="middle"
-              fill="#8B7355"
-              fontSize={12}
-              fontFamily="Inter, system-ui, sans-serif"
-            >
-              {m.label}
-            </text>
-          </g>
-        ))}
-
-        {/* Axis labels — hidden on mobile via CSS media query */}
-        <text
-          x={12}
-          y={PAD.top + CH / 2}
-          textAnchor="middle"
-          fill="#8B7355"
-          fontSize={11}
-          fontFamily="Inter, system-ui, sans-serif"
-          transform={`rotate(-90, 12, ${PAD.top + CH / 2})`}
-          className="hidden sm:block"
-        >
-          Pool Value (USD)
-        </text>
-        <text
-          x={SVG_W - 8}
-          y={PAD.top + CH / 2}
-          textAnchor="middle"
-          fill="#8B7355"
-          fontSize={11}
-          fontFamily="Inter, system-ui, sans-serif"
-          transform={`rotate(90, ${SVG_W - 8}, ${PAD.top + CH / 2})`}
-          className="hidden sm:block"
-        >
-          FDV (USD)
-        </text>
-
-        {/* 1. Pool value area fill */}
-        {poolAreaPath && (
-          <path d={poolAreaPath} fill="url(#pool-area-grad)" />
-        )}
-
-        {/* 2. Pool value step line */}
-        {poolStepPath && (
-          <path
-            d={poolStepPath}
-            fill="none"
-            stroke="#8B4513"
-            strokeWidth={2}
-            opacity={0.6}
-          />
-        )}
-
-        {/* 3. Linear FDV projection (dashed) */}
-        <path
-          d={projectionPath}
-          fill="none"
-          stroke="#8B7355"
-          strokeWidth={1.5}
-          strokeDasharray="6,4"
-          opacity={0.5}
-        />
-
-        {/* 4. Actual FDV line (solid) */}
-        {actualFdvPath && (
-          <path
-            d={actualFdvPath}
-            fill="none"
-            stroke="#2C1810"
-            strokeWidth={2}
-          />
-        )}
-
-        {/* Heartbeat dot on current FDV position */}
-        {currentFdv > 0 && (
+          {/* Y-left axis ticks (pool value) */}
           <g>
-            {/* Pulse ring */}
-            <circle cx={nowX} cy={dotY} r={6} fill="none" stroke="#8B4513" strokeWidth={1.5} opacity={0.4}>
-              <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite" />
-            </circle>
-            {/* Solid dot */}
-            <circle cx={nowX} cy={dotY} r={4} fill="#8B4513">
-              <animate attributeName="r" values="4;5.6;4" dur="1.5s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite" />
-            </circle>
+            {yLeftTicks.map((val) => (
+              <text
+                key={val}
+                x={PAD.left - 6}
+                y={poolToY(val, yLeftMax) + 3}
+                textAnchor="end"
+                fill="#8B7355"
+                fontSize={11}
+                fontFamily="Inter, system-ui, sans-serif"
+              >
+                {formatCompact(val)}
+              </text>
+            ))}
           </g>
-        )}
 
-        {/* Chart border */}
-        <rect
-          x={PAD.left}
-          y={PAD.top}
-          width={CW}
-          height={CH}
-          fill="none"
-          stroke="#D4C5B0"
-          strokeWidth={0.5}
-        />
-      </svg>
+          {/* X-axis month labels */}
+          {months.map((m) => (
+            <g key={m.label}>
+              <line
+                x1={timeToX(m.ms, startMs, totalMs)}
+                y1={PAD.top}
+                x2={timeToX(m.ms, startMs, totalMs)}
+                y2={PAD.top + CH}
+                stroke="#D4C5B0"
+                strokeWidth={0.3}
+              />
+              <text
+                x={timeToX(m.ms, startMs, totalMs)}
+                y={PAD.top + CH + 14}
+                textAnchor="middle"
+                fill="#8B7355"
+                fontSize={12}
+                fontFamily="Inter, system-ui, sans-serif"
+              >
+                {m.label}
+              </text>
+            </g>
+          ))}
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 text-[10px]">
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-4 h-0.5 bg-[#2C1810]" /> Actual FDV
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-4 h-0.5 border-t border-dashed border-[#8B7355]" /> Linear projection
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="inline-block w-4 h-0.5 bg-[#8B4513] opacity-60" /> Pool value
-        </span>
+          {/* Axis labels */}
+          <text
+            x={12}
+            y={PAD.top + CH / 2}
+            textAnchor="middle"
+            fill="#8B7355"
+            fontSize={11}
+            fontFamily="Inter, system-ui, sans-serif"
+            transform={`rotate(-90, 12, ${PAD.top + CH / 2})`}
+          >
+            Pool Value (USD)
+          </text>
+          <text
+            x={SVG_W - 8}
+            y={PAD.top + CH / 2}
+            textAnchor="middle"
+            fill="#8B7355"
+            fontSize={11}
+            fontFamily="Inter, system-ui, sans-serif"
+            transform={`rotate(90, ${SVG_W - 8}, ${PAD.top + CH / 2})`}
+          >
+            FDV (USD)
+          </text>
+
+          {/* 1. Pool value area fill */}
+          {poolAreaPath && (
+            <path d={poolAreaPath} fill="url(#pool-area-grad)" />
+          )}
+
+          {/* 2. Pool value step line */}
+          {poolStepPath && (
+            <path
+              d={poolStepPath}
+              fill="none"
+              stroke="#8B4513"
+              strokeWidth={2}
+              opacity={0.6}
+            />
+          )}
+
+          {/* 3. Linear FDV projection (dashed) */}
+          <path
+            d={projectionPath}
+            fill="none"
+            stroke="#8B7355"
+            strokeWidth={1.5}
+            strokeDasharray="6,4"
+            opacity={0.5}
+          />
+
+          {/* 4. Actual FDV line (solid) */}
+          {actualFdvPath && (
+            <path
+              d={actualFdvPath}
+              fill="none"
+              stroke="#2C1810"
+              strokeWidth={2}
+            />
+          )}
+
+          {/* Heartbeat dot on current FDV position */}
+          {currentFdv > 0 && (
+            <g>
+              {/* Pulse ring */}
+              <circle cx={nowX} cy={dotY} r={6} fill="none" stroke="#8B4513" strokeWidth={1.5} opacity={0.4}>
+                <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+              {/* Solid dot */}
+              <circle cx={nowX} cy={dotY} r={4} fill="#8B4513">
+                <animate attributeName="r" values="4;5.6;4" dur="1.5s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite" />
+              </circle>
+            </g>
+          )}
+
+          {/* Chart border */}
+          <rect
+            x={PAD.left}
+            y={PAD.top}
+            width={CW}
+            height={CH}
+            fill="none"
+            stroke="#D4C5B0"
+            strokeWidth={0.5}
+          />
+        </svg>
+
+        {/* Legend */}
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 text-[10px]">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-4 h-0.5 bg-[#2C1810]" /> Actual FDV
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-4 h-0.5 border-t border-dashed border-[#8B7355]" /> Linear projection
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-4 h-0.5 bg-[#8B4513] opacity-60" /> Pool value
+          </span>
+        </div>
+      </div>
+
+      {/* Mobile: simplified milestone progress view */}
+      <div className="sm:hidden space-y-3">
+        <div className="text-foreground text-xs font-medium">FDV Progress</div>
+
+        {/* Current FDV + overall progress bar */}
+        <div>
+          <div className="flex items-baseline justify-between mb-1">
+            <span className="text-foreground text-sm font-bold">
+              Current: {currentFdv > 0 ? formatCompact(currentFdv) : "\u2014"}
+            </span>
+            <span className="text-muted text-[11px]">
+              {diamondFdv > 0 ? Math.min(100, Math.round((currentFdv / diamondFdv) * 100)) : 0}%
+            </span>
+          </div>
+          <div className="bg-surface border-border h-2 rounded border overflow-hidden">
+            <div
+              className="bg-accent h-full transition-all"
+              style={{ width: `${diamondFdv > 0 ? Math.min(100, (currentFdv / diamondFdv) * 100) : 0}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Milestone list */}
+        <div className="space-y-1.5">
+          {tiers.map((t) => {
+            const reached = currentFdv >= t.fdv;
+            const tierPct = diamondFdv > 0 ? Math.round((t.fdv / diamondFdv) * 100) : 0;
+            return (
+              <div key={t.key} className="flex items-center justify-between text-[12px]">
+                <span className={reached ? "text-foreground" : "text-muted"}>
+                  {t.emoji} {t.label}
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="text-muted">{formatCompact(t.fdv)}</span>
+                  <span className={`font-mono text-[11px] ${reached ? "text-accent" : "text-muted"}`}>
+                    {tierPct}%
+                  </span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Linear target comparison */}
+        <div className="border-border rounded border px-3 py-2 text-[12px]">
+          <div className="text-muted">Linear target today</div>
+          <div className="text-foreground font-bold">{formatCompact(linearTargetToday)}</div>
+        </div>
       </div>
     </div>
   );
