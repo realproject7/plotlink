@@ -55,6 +55,14 @@ export async function POST(req: Request) {
     }
   }
 
+  // Fail fast if no logs from MCV2_BOND in this receipt
+  const hasBondLog = receipt.logs.some(
+    (log) => log.address.toLowerCase() === MCV2_BOND.toLowerCase()
+  );
+  if (!hasBondLog) {
+    return error("Event not from MCV2_Bond", 400);
+  }
+
   // Fetch current PLOT/USD rate for this trade batch
   const reserveUsdRate = await getReserveUsdRate();
 

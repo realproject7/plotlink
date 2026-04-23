@@ -43,6 +43,10 @@ export async function POST(req: Request) {
     return error("Donation event not found in receipt");
   }
 
+  if (donationLog.address.toLowerCase() !== STORY_FACTORY.toLowerCase()) {
+    return error("Event not from StoryFactory", 400);
+  }
+
   // 3. Decode event
   let decoded;
   try {
