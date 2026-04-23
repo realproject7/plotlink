@@ -23,6 +23,9 @@ CREATE TRIGGER trg_purge_rate_limits
 
 -- Atomic rate limit check: counts recent requests, inserts if under limit.
 -- Returns true if allowed, false if rate limited.
+-- Atomic rate limit check: uses advisory lock to serialize per key,
+-- counts recent requests, inserts if under limit.
+-- Returns true if allowed, false if rate limited.
 CREATE OR REPLACE FUNCTION check_rate_limit(
   p_key TEXT,
   p_max_requests INT DEFAULT 5,
@@ -31,12 +34,14 @@ CREATE OR REPLACE FUNCTION check_rate_limit(
 DECLARE
   v_count INT;
   v_window_start TIMESTAMPTZ;
+  v_lock_id BIGINT;
 BEGIN
+  v_lock_id := hashtext(p_key);
+  PERFORM pg_advisory_xact_lock(v_lock_id);
   v_window_start := now() - (p_window_ms || ' milliseconds')::interval;
   SELECT count(*) INTO v_count
     FROM rate_limits
-    WHERE key = p_key AND created_at >= v_window_start
-    FOR UPDATE;
+    WHERE key = p_key AND created_at >= v_window_start;
   IF v_count >= p_max_requests THEN
     RETURN false;
   END IF;
