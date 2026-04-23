@@ -12,8 +12,14 @@ import { createServerClient } from "../../../../../lib/supabase";
 import { AIRDROP_CONFIG } from "../../../../../lib/airdrop/config";
 import { getStreakBoost, dropOneTier, getNextTier } from "../../../../../lib/airdrop/streak";
 import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
+import { checkRateLimit, getClientIp } from "../../../../../lib/rate-limit";
 
 export async function POST(req: Request) {
+  const ip = getClientIp(req);
+  if (!(await checkRateLimit(ip, "airdrop/checkin"))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const supabase = createServerClient();
   if (!supabase) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });

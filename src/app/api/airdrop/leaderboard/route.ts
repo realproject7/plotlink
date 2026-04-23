@@ -63,5 +63,7 @@ export async function GET(req: NextRequest) {
     userRank = idx >= 0 ? idx + 1 : null;
   }
 
-  return NextResponse.json({ entries, userRank });
+  return NextResponse.json({ entries, userRank }, {
+    headers: { "Cache-Control": "public, s-maxage=30, stale-while-revalidate=15" },
+  });
 }

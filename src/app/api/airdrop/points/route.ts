@@ -110,5 +110,7 @@ export async function GET(req: NextRequest) {
       referredUsersCount: referredUsersCount ?? 0,
     },
     estimatedAirdrop,
+  }, {
+    headers: { "Cache-Control": "public, s-maxage=10, stale-while-revalidate=5" },
   });
 }

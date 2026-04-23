@@ -33,5 +33,7 @@ export async function GET() {
       mcapEnd: s.mcap_end,
       totalPlEarned: s.total_pl_earned,
     })),
+  }, {
+    headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=60" },
   });
 }

@@ -523,6 +523,24 @@ export interface Database {
         };
         Relationships: [];
       };
+      rate_limits: {
+        Row: {
+          id: number;
+          key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: never;
+          key: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: never;
+          key?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       trade_history: {
         Row: {
           id: number;
@@ -723,6 +741,10 @@ export interface Database {
       increment_view_count: {
         Args: { sid: number; caddr: string };
         Returns: void;
+      };
+      check_rate_limit: {
+        Args: { p_key: string; p_max_requests: number; p_window_ms: number };
+        Returns: boolean;
       };
     };
     Enums: {
