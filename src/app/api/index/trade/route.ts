@@ -23,6 +23,10 @@ export async function POST(req: Request) {
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) return error("Missing or invalid txHash");
   if (!tokenAddress) return error("tokenAddress required");
 
+  // Trade route skips early dedup: a single tx can produce multiple trade logs,
+  // and partial indexing on a previous attempt must not block retries.
+  // Per-log upserts handle duplicates safely without IPFS cost.
+
   // Validate tx exists and is recent (< 5 min) — prevents spam with fake hashes
   const validatedReceipt = await validateRecentTx(txHash);
   if (!validatedReceipt) return error("Transaction not found, failed, or too old", 400);

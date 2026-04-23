@@ -41,6 +41,20 @@ export async function POST(req: Request) {
     return error("Missing or invalid txHash");
   }
 
+  // 0. DB dedup — skip RPC/IPFS if already indexed
+  const supabaseDedup = createServerClient();
+  if (supabaseDedup) {
+    const { data: existing } = await supabaseDedup
+      .from("storylines")
+      .select("id")
+      .eq("tx_hash", txHash)
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      return NextResponse.json({ ok: true, cached: true });
+    }
+  }
+
   // 1. Validate tx exists and is recent (< 5 min) — prevents spam
   const receipt = await validateRecentTx(txHash);
   if (!receipt) {
