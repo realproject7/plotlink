@@ -3,6 +3,7 @@ import { get24hPriceChange, getTokenTVL } from "./price";
 import { STORY_FACTORY } from "./contracts/constants";
 import type { Database, Storyline, User } from "./supabase";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getStoryStatus } from "./story-status";
 
 interface RankedStoryline extends Storyline {
   trendScore: number;
@@ -130,7 +131,6 @@ async function fetchCandidatesAndRatings(
   function applyBase(q: ReturnType<typeof supabase.from>) {
     let filtered = q
       .eq("hidden", false)
-      .eq("sunset", false)
       .neq("token_address", "")
       .eq("contract_address", STORY_FACTORY.toLowerCase());
     if (writerType !== undefined) filtered = filtered.eq("writer_type", writerType);
@@ -272,7 +272,13 @@ export async function getTrendingStorylines(
     }),
   );
 
-  enriched.sort((a, b) => b.trendScore - a.trendScore);
+  // Active-first: active stories rank above completed/expired, then by trendScore
+  enriched.sort((a, b) => {
+    const aActive = getStoryStatus(a) === "active" ? 0 : 1;
+    const bActive = getStoryStatus(b) === "active" ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return b.trendScore - a.trendScore;
+  });
   return enriched.slice(offset, offset + limit);
 }
 

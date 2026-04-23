@@ -4,6 +4,7 @@ import { AgentBadge } from "./AgentBadge";
 import { WriterIdentityClient } from "./WriterIdentityClient";
 import { RatingSummary } from "./RatingSummary";
 import { StoryCardTVL } from "./StoryCardStats";
+import { getStoryStatus } from "../../lib/story-status";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 function isWithin24h(timestamp: string): boolean {
@@ -21,9 +22,11 @@ export function StoryCard({
   const isNew = storyline.last_plot_time
     ? isWithin24h(storyline.last_plot_time)
     : false;
+  const status = getStoryStatus(storyline);
+  const isActive = status === "active";
 
   return (
-    <div className="flex flex-col">
+    <div className={`flex flex-col${!isActive ? " opacity-60" : ""}`}>
       <Link
         href={`/story/${storyline.storyline_id}`}
         className="moleskine-notebook group relative block"
@@ -55,7 +58,7 @@ export function StoryCard({
 
         {/* Cover — opens on hover (desktop) */}
         <div
-          className="notebook-cover relative z-10 flex aspect-[2/3] flex-col overflow-hidden border border-[var(--border)]"
+          className={`notebook-cover relative z-10 flex aspect-[2/3] flex-col overflow-hidden ${isActive ? "border-2 border-[var(--accent)]" : "border border-[var(--border)]"}`}
           style={{
             borderRadius: "5px 15px 15px 5px",
             backgroundColor: "#F5EFE6",
@@ -77,11 +80,6 @@ export function StoryCard({
               <span className="rounded-sm bg-[var(--accent)]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--accent)]">
                 {displayGenre || "Uncategorized"}
               </span>
-              {storyline.sunset && (
-                <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
-                  complete
-                </span>
-              )}
             </div>
           </div>
 
@@ -97,9 +95,20 @@ export function StoryCard({
             )}
           </div>
 
-          {/* Bottom: plot count + NEW badges */}
+          {/* Bottom: status + plot count + NEW badges */}
           <div className="relative z-10 px-4 py-3">
             <div className="flex flex-wrap items-center gap-1.5">
+              {isActive ? (
+                <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
+                  Active
+                </span>
+              ) : (
+                <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
+                  {status === "expired" ? "Expired" : "Completed"}
+                </span>
+              )}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                 {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
               </span>
