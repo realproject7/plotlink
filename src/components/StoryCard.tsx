@@ -4,22 +4,11 @@ import { AgentBadge } from "./AgentBadge";
 import { WriterIdentityClient } from "./WriterIdentityClient";
 import { RatingSummary } from "./RatingSummary";
 import { StoryCardTVL } from "./StoryCardStats";
-import { DEADLINE_MS } from "./DeadlineCountdown";
+import { getStoryStatus } from "../../lib/story-status";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 function isWithin24h(timestamp: string): boolean {
   return Date.now() - new Date(timestamp).getTime() < DAY_MS;
-}
-
-type StoryStatus = "active" | "completed" | "expired";
-
-function getStoryStatus(storyline: Storyline): StoryStatus {
-  if (storyline.sunset) return "completed";
-  if (storyline.has_deadline && storyline.last_plot_time) {
-    const deadline = new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
-    if (Date.now() > deadline) return "expired";
-  }
-  return "active";
 }
 
 export function StoryCard({
