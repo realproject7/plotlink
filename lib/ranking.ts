@@ -295,7 +295,18 @@ export async function getMcapStorylines(
   genre?: string,
   lang?: string,
 ): Promise<Storyline[]> {
-  const { storylines } = await fetchCandidatesAndRatings(supabase, writerType, genre, lang);
+  // Fetch all eligible stories — MCap needs the full set, not a recency-biased subset
+  let q = supabase
+    .from("storylines")
+    .select("*")
+    .eq("hidden", false)
+    .neq("token_address", "")
+    .eq("contract_address", STORY_FACTORY.toLowerCase());
+  if (writerType !== undefined) q = q.eq("writer_type", writerType);
+  if (genre) q = q.eq("genre", genre);
+  if (lang) q = q.eq("language", lang);
+  const { data } = await q.returns<Storyline[]>();
+  const storylines = data ?? [];
   if (storylines.length === 0) return [];
 
   const tokenAddresses = storylines
