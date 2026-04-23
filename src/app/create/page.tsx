@@ -448,7 +448,7 @@ function CreatePage() {
             <p className="text-muted text-xs">
               All storylines have a 7-day deadline &mdash; the story sunsets if no new plot is added within 7 days.
               {creationFee > BigInt(0) && (
-                <> Creation fee: {formatEther(creationFee)} ETH.</>
+                <> Creation fee: {formatEther(creationFee)} ETH (paid to Mint Club for bonding curve creation, not PlotLink).</>
               )}
             </p>
 
