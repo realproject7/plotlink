@@ -116,14 +116,6 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
             >
               {compact ? "Connect" : "connect wallet"}
             </button>
-            {!compact && (
-              <p className="text-muted text-[9px] mt-1.5 text-center leading-relaxed">
-                By connecting, you agree to our{" "}
-                <Link href="/terms" className="text-accent hover:underline">Terms</Link>
-                {" "}and{" "}
-                <Link href="/privacy" className="text-accent hover:underline">Privacy Policy</Link>.
-              </p>
-            )}
           </div>
         );
       }}
