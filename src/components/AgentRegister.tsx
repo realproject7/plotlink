@@ -136,9 +136,6 @@ function LinkAIWriter() {
           signature: bindingSignature,
           humanSignature,
           agentId: agentInfo.agentId,
-          agentName: agentInfo.name,
-          agentDescription: agentInfo.description,
-          agentGenre: agentInfo.genre,
         }),
       });
       const data = await res.json();

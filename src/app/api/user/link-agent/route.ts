@@ -1,23 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyMessage } from "viem";
+import { verifyMessage, type Address } from "viem";
 import { createServiceRoleClient } from "../../../../../lib/supabase";
+import { publicClient } from "../../../../../lib/rpc";
+import { erc8004Abi, fetchTokenOrAgentURI, resolveAgentURI } from "../../../../../lib/contracts/erc8004";
+import { ERC8004_REGISTRY } from "../../../../../lib/contracts/constants";
 
 /**
  * POST /api/user/link-agent
  * DB-only OWS agent linking: verifies the binding proof and sets
  * linked_agent_wallet on the human's user row.
  *
- * Body: { humanWallet, owsWallet, signature, humanSignature, agentId?, agentName?, agentDescription?, agentGenre? }
+ * Body: { humanWallet, owsWallet, signature, humanSignature, agentId }
  *   - signature: OWS wallet proves it authorized this human as owner
  *   - humanSignature: Human wallet proves it owns the address
- *   - agentId/agentName/agentDescription/agentGenre: pre-fetched from lookup-agent endpoint
+ *   - agentId: from the lookup-agent step (server-verified against chain)
  *
- * No RPC calls — all agent data comes pre-fetched from the frontend.
+ * Agent metadata is fetched server-side via tokenURI to prevent poisoning.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { humanWallet, owsWallet, signature, humanSignature, agentId, agentName, agentDescription, agentGenre } = body;
+    const { humanWallet, owsWallet, signature, humanSignature, agentId } = body;
 
     if (!humanWallet || !owsWallet || !signature || !humanSignature) {
       return NextResponse.json(
@@ -118,6 +121,53 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Server-side agent metadata verification:
+    // If agentId provided, verify ownership on-chain and fetch canonical metadata
+    // from tokenURI. Never trust client-supplied name/description/genre.
+    const agentFields: {
+      agent_owner: string;
+      agent_type: string;
+      agent_id?: number;
+      agent_name?: string;
+      agent_description?: string;
+      agent_genre?: string;
+      agent_llm_model?: string;
+      agent_registered_at?: string;
+    } = {
+      agent_owner: normalizedHuman,
+      agent_type: "ows-writer",
+    };
+
+    if (agentId) {
+      const numericId = BigInt(String(agentId));
+      try {
+        const owner = await publicClient.readContract({
+          address: ERC8004_REGISTRY,
+          abi: erc8004Abi,
+          functionName: "ownerOf",
+          args: [numericId],
+        });
+
+        if ((owner as string).toLowerCase() === normalizedOws) {
+          agentFields.agent_id = Number(numericId);
+
+          // Fetch canonical metadata from tokenURI
+          const uri = await fetchTokenOrAgentURI(numericId);
+          if (uri) {
+            const parsed = await resolveAgentURI(uri);
+            if (parsed.name) agentFields.agent_name = parsed.name as string;
+            if (parsed.description) agentFields.agent_description = parsed.description as string;
+            if (parsed.genre) agentFields.agent_genre = parsed.genre as string;
+            if (parsed.llmModel || parsed.model) agentFields.agent_llm_model = (parsed.llmModel || parsed.model) as string;
+            if (parsed.registeredAt) agentFields.agent_registered_at = parsed.registeredAt as string;
+          }
+        }
+        // If owner doesn't match, skip — don't trust unverified agentId
+      } catch {
+        // RPC failed — link still works, just without agent metadata
+      }
+    }
+
     // Ensure the OWS wallet has a user row with agent metadata
     const { data: owsUser } = await supabase
       .from("users")
@@ -125,15 +175,6 @@ export async function POST(request: NextRequest) {
       .or(`primary_address.eq.${normalizedOws},agent_wallet.eq.${normalizedOws}`)
       .limit(1)
       .single();
-
-    const agentFields = {
-      agent_owner: normalizedHuman,
-      agent_type: "ows-writer" as const,
-      ...(agentId ? { agent_id: Number(agentId) } : {}),
-      ...(agentName ? { agent_name: agentName as string } : {}),
-      ...(agentDescription ? { agent_description: agentDescription as string } : {}),
-      ...(agentGenre ? { agent_genre: agentGenre as string } : {}),
-    };
 
     try {
       if (owsUser) {
