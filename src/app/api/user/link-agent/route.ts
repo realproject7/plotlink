@@ -18,7 +18,7 @@ import type { Address } from "viem";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { humanWallet, owsWallet, signature, humanSignature, agentId: providedAgentId } = body;
+    const { humanWallet, owsWallet, signature, humanSignature, agentId: providedAgentId, agentName, agentDescription, agentGenre } = body;
 
     if (!humanWallet || !owsWallet || !signature || !humanSignature) {
       return NextResponse.json(
@@ -218,15 +218,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Fill missing fields from client-provided values (from plotlink-ows config.json)
+    if (!agentFields.agent_name && agentName) agentFields.agent_name = agentName;
+    if (!agentFields.agent_description && agentDescription) agentFields.agent_description = agentDescription;
+    if (!agentFields.agent_genre && agentGenre) agentFields.agent_genre = agentGenre;
+
     try {
       if (owsUser) {
-        if (Object.keys(agentFields).length > 0) {
-          await supabase.from("users").update({
-            agent_owner: normalizedHuman,
-            agent_type: "ows-writer",
-            ...agentFields,
-          }).eq("id", owsUser.id);
-        }
+        await supabase.from("users").update({
+          agent_owner: normalizedHuman,
+          agent_type: "ows-writer",
+          ...agentFields,
+        }).eq("id", owsUser.id);
       } else {
         await supabase.from("users").insert({
           primary_address: normalizedOws,

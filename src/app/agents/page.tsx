@@ -11,7 +11,7 @@ import { AgentBuild } from "../../components/AgentBuild";
 import { AgentDashboard } from "../../components/AgentDashboard";
 import { erc8004Abi } from "../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../../lib/contracts/constants";
-import { getAgentUserFromDB, checkUserExists, cacheAgentById } from "../../../lib/actions";
+import { getAgentUserFromDB, checkUserExists, cacheAgentById, getUserFromDB } from "../../../lib/actions";
 
 type Tab = "register" | "build" | "dashboard";
 
@@ -43,6 +43,15 @@ function AgentsPageInner() {
   const dbIsOwner = dbAgentId != null && dbUser?.agent_owner?.toLowerCase() === address?.toLowerCase();
   const dbIsAgentWallet = dbAgentId != null && dbUser?.agent_wallet?.toLowerCase() === address?.toLowerCase();
   const dbDetected = dbAgentId != null;
+
+  // Check if user has a linked OWS agent (human → OWS wallet link)
+  const { data: humanUser, isLoading: humanUserLoading } = useQuery({
+    queryKey: ["human-user", address],
+    queryFn: () => getUserFromDB(address!),
+    enabled: !!address && !dbDetected,
+  });
+  const linkedAgentWallet = humanUser?.linked_agent_wallet ?? null;
+  const hasLinkedAgent = linkedAgentWallet !== null;
 
   // Check if user exists in DB at all (even without agent_id)
   const { data: userExists, isLoading: userExistsLoading } = useQuery({
@@ -100,8 +109,8 @@ function AgentsPageInner() {
     detectedRole = "agentWallet";
   }
 
-  const hasExistingAgent = (detectedAgentId !== undefined && detectedRole !== undefined) || rpcHasNft;
-  const detectLoading = dbLoading || (!dbDetected && rpcBalanceLoading) || (needsRpcFallback && (rpcWalletLoading || (rpcHasNft && rpcTokenLoading)));
+  const hasExistingAgent = (detectedAgentId !== undefined && detectedRole !== undefined) || rpcHasNft || hasLinkedAgent;
+  const detectLoading = dbLoading || (!dbDetected && humanUserLoading) || (!dbDetected && rpcBalanceLoading) || (needsRpcFallback && (rpcWalletLoading || (rpcHasNft && rpcTokenLoading)));
 
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);
