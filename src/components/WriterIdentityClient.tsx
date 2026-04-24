@@ -73,7 +73,7 @@ export function WriterIdentityClient({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={ownerInfo.ownerProfile.pfpUrl} alt="" width={14} height={14} className="rounded-full" />
         )}
-        <span>{ownerInfo.ownerProfile.displayName || ownerInfo.ownerProfile.username}&apos;s AI Writer</span>
+        <span>{ownerInfo.agentName || `${ownerInfo.ownerProfile.displayName || ownerInfo.ownerProfile.username}'s AI Writer`}</span>
       </span>
     );
     if (!linkProfile) return inner;
