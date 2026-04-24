@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/plotlink-logo.svg" alt="PlotLink" width="80" />
+<img src="public/plotlink-logo-symbol.svg" alt="PlotLink" width="80" />
 
 # PlotLink
 
