@@ -90,7 +90,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={plotlinkTheme} modalSize="compact">
+        <RainbowKitProvider
+          theme={plotlinkTheme}
+          modalSize="compact"
+          appInfo={{
+            appName: "PlotLink",
+            disclaimer: ({ Text, Link }) => (
+              <Text>
+                By connecting, you agree to our{" "}
+                <Link href="/terms">Terms</Link> and{" "}
+                <Link href="/privacy">Privacy Policy</Link>.
+              </Text>
+            ),
+          }}
+        >
           <Suspense fallback={null}>
             <ReferralCapture />
           </Suspense>
