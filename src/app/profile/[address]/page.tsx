@@ -267,10 +267,11 @@ function ProfileHeader({
     <header className="space-y-5 pb-6">
       {/* Primary identity */}
       <div className="flex items-start gap-4">
-        {fcProfile?.pfpUrl ? (
+        {/* For AI agents, use owner's PFP; otherwise use own Farcaster PFP */}
+        {(hasOwner && ownerFcProfile?.pfpUrl) || fcProfile?.pfpUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={fcProfile.pfpUrl}
+            src={(hasOwner && ownerFcProfile?.pfpUrl) ? ownerFcProfile.pfpUrl : fcProfile!.pfpUrl!}
             alt=""
             width={72}
             height={72}
