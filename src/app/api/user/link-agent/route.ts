@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMessage } from "viem";
 import { createServiceRoleClient } from "../../../../../lib/supabase";
-import { getAgentMetadata } from "../../../../../lib/contracts/erc8004";
-import type { Address } from "viem";
 
 /**
  * POST /api/user/link-agent
  * DB-only OWS agent linking: verifies the binding proof and sets
- * linked_agent_wallet on the human's user row. No ERC-8004 involvement
- * on the human side.
+ * linked_agent_wallet on the human's user row.
  *
- * Body: { humanWallet, owsWallet, signature, humanSignature }
+ * Body: { humanWallet, owsWallet, signature, humanSignature, agentId?, agentName?, agentDescription?, agentGenre? }
  *   - signature: OWS wallet proves it authorized this human as owner
- *   - humanSignature: Human wallet proves it owns the address (prevents
- *     anyone with the OWS binding sig from linking to an arbitrary wallet)
+ *   - humanSignature: Human wallet proves it owns the address
+ *   - agentId/agentName/agentDescription/agentGenre: pre-fetched from lookup-agent endpoint
+ *
+ * No RPC calls — all agent data comes pre-fetched from the frontend.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { humanWallet, owsWallet, signature, humanSignature, agentId: providedAgentId, agentName, agentDescription, agentGenre } = body;
+    const { humanWallet, owsWallet, signature, humanSignature, agentId, agentName, agentDescription, agentGenre } = body;
 
     if (!humanWallet || !owsWallet || !signature || !humanSignature) {
       return NextResponse.json(
@@ -109,7 +108,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: updateError.message }, { status: 500 });
       }
     } else {
-      // Create minimal user row with the link
       const { error: insertError } = await supabase.from("users").insert({
         primary_address: normalizedHuman,
         linked_agent_wallet: normalizedOws,
@@ -120,8 +118,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Ensure the OWS wallet has a user row so its profile page works.
-    // If it already registered via ERC-8004, this will find it; otherwise create a minimal row.
+    // Ensure the OWS wallet has a user row with agent metadata
     const { data: owsUser } = await supabase
       .from("users")
       .select("id")
@@ -129,113 +126,22 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    // Build agent fields — use provided agentId if available, try RPC as fallback
-    let agentFields: Record<string, unknown> = {};
-    const agentId = providedAgentId ? Number(providedAgentId) : null;
-
-    if (agentId) {
-      // Agent ID provided by client — verify on-chain that the OWS wallet owns this NFT
-      try {
-        const { publicClient } = await import("../../../../../lib/rpc");
-        const owner = await publicClient.readContract({
-          address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
-          abi: [{ type: "function", name: "ownerOf", stateMutability: "view", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "address" }] }] as const,
-          functionName: "ownerOf",
-          args: [BigInt(agentId)],
-        }) as string;
-
-        if (owner.toLowerCase() === normalizedOws) {
-          agentFields = { agent_id: agentId };
-          // Fetch metadata (best effort)
-          try {
-            const { getAgentMetadataById } = await import("../../../../../lib/contracts/erc8004");
-            const meta = await getAgentMetadataById(BigInt(agentId));
-            if (meta) {
-              agentFields.agent_name = meta.name || null;
-              agentFields.agent_description = meta.description || null;
-              agentFields.agent_genre = meta.genre || null;
-              agentFields.agent_registered_at = meta.registeredAt || new Date().toISOString();
-            }
-          } catch { /* metadata fetch failed — agent_id is still set */ }
-        }
-        // If owner doesn't match, ignore the provided agentId (don't trust it)
-      } catch { /* ownerOf RPC failed — ignore provided agentId */ }
-    } else {
-      // No agentId provided — try agentIdByWallet first, then balanceOf fallback
-      try {
-        const meta = await getAgentMetadata(normalizedOws as Address);
-        if (meta?.agentId) {
-          agentFields = {
-            agent_id: Number(meta.agentId),
-            agent_name: meta.name || null,
-            agent_description: meta.description || null,
-            agent_genre: meta.genre || null,
-            agent_registered_at: meta.registeredAt || new Date().toISOString(),
-          };
-        }
-      } catch { /* agentIdByWallet may revert for unbound wallets */ }
-
-      // balanceOf fallback: wallet owns an NFT but isn't bound
-      if (!agentFields.agent_id) {
-        try {
-          const { publicClient } = await import("../../../../../lib/rpc");
-          const balance = await publicClient.readContract({
-            address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
-            abi: [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "", type: "uint256" }] }] as const,
-            functionName: "balanceOf",
-            args: [normalizedOws as `0x${string}`],
-          }) as bigint;
-
-          if (balance > BigInt(0)) {
-            // Get the token ID via tokenOfOwnerByIndex (may not be supported)
-            try {
-              const tokenId = await publicClient.readContract({
-                address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
-                abi: [{ type: "function", name: "tokenOfOwnerByIndex", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "index", type: "uint256" }], outputs: [{ name: "", type: "uint256" }] }] as const,
-                functionName: "tokenOfOwnerByIndex",
-                args: [normalizedOws as `0x${string}`, BigInt(0)],
-              }) as bigint;
-              agentFields.agent_id = Number(tokenId);
-
-              // Fetch metadata by ID
-              try {
-                const { getAgentMetadataById } = await import("../../../../../lib/contracts/erc8004");
-                const meta = await getAgentMetadataById(tokenId);
-                if (meta) {
-                  agentFields.agent_name = meta.name || null;
-                  agentFields.agent_description = meta.description || null;
-                  agentFields.agent_genre = meta.genre || null;
-                }
-              } catch { /* metadata lookup failed */ }
-            } catch { /* tokenOfOwnerByIndex not supported — set flag without ID */ }
-
-            // Even without token ID, mark as registered (has NFT)
-            if (!agentFields.agent_id) {
-              agentFields.agent_name = "AI Writer";
-            }
-          }
-        } catch { /* balanceOf RPC failed */ }
-      }
-    }
-
-    // Fill missing fields from client-provided values (from plotlink-ows config.json)
-    if (!agentFields.agent_name && agentName) agentFields.agent_name = agentName;
-    if (!agentFields.agent_description && agentDescription) agentFields.agent_description = agentDescription;
-    if (!agentFields.agent_genre && agentGenre) agentFields.agent_genre = agentGenre;
+    const agentFields = {
+      agent_owner: normalizedHuman,
+      agent_type: "ows-writer" as const,
+      ...(agentId ? { agent_id: Number(agentId) } : {}),
+      ...(agentName ? { agent_name: agentName as string } : {}),
+      ...(agentDescription ? { agent_description: agentDescription as string } : {}),
+      ...(agentGenre ? { agent_genre: agentGenre as string } : {}),
+    };
 
     try {
       if (owsUser) {
-        await supabase.from("users").update({
-          agent_owner: normalizedHuman,
-          agent_type: "ows-writer",
-          ...agentFields,
-        }).eq("id", owsUser.id);
+        await supabase.from("users").update(agentFields).eq("id", owsUser.id);
       } else {
         await supabase.from("users").insert({
           primary_address: normalizedOws,
           agent_wallet: normalizedOws,
-          agent_owner: normalizedHuman,
-          agent_type: "ows-writer",
           ...agentFields,
         });
       }

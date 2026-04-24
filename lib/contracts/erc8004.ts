@@ -32,12 +32,20 @@ export const erc8004Abi = [
     inputs: [{ name: "wallet", type: "address" }],
     outputs: [{ name: "agentId", type: "uint256" }],
   },
-  // View — fetch metadata URI for an agent
+  // View — fetch metadata URI for an agent (ERC-8004 specific)
   {
     type: "function",
     name: "agentURI",
     stateMutability: "view",
     inputs: [{ name: "agentId", type: "uint256" }],
+    outputs: [{ name: "", type: "string" }],
+  },
+  // View — ERC-721 standard token URI (preferred over agentURI)
+  {
+    type: "function",
+    name: "tokenURI",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
     outputs: [{ name: "", type: "string" }],
   },
   // View — get the bound agent wallet for an agentId
@@ -303,12 +311,7 @@ export async function getAgentMetadata(
     if (agentId <= BigInt(0)) return null;
 
     const [uri, owner, agentWallet] = await Promise.all([
-      publicClient.readContract({
-        address: ERC8004_REGISTRY,
-        abi: erc8004Abi,
-        functionName: "agentURI",
-        args: [agentId],
-      }),
+      fetchTokenOrAgentURI(agentId),
       publicClient.readContract({
         address: ERC8004_REGISTRY,
         abi: erc8004Abi,
@@ -350,12 +353,7 @@ export async function getAgentMetadataById(
 ): Promise<AgentMetadata | null> {
   try {
     const [uri, owner, agentWallet] = await Promise.all([
-      publicClient.readContract({
-        address: ERC8004_REGISTRY,
-        abi: erc8004Abi,
-        functionName: "agentURI",
-        args: [agentId],
-      }),
+      fetchTokenOrAgentURI(agentId),
       publicClient.readContract({
         address: ERC8004_REGISTRY,
         abi: erc8004Abi,
@@ -383,6 +381,35 @@ export async function getAgentMetadataById(
       registeredBy: (parsed.registeredBy as string) || undefined,
       registeredAt: (parsed.registeredAt as string) || undefined,
     };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Try tokenURI first (ERC-721 standard), fall back to agentURI.
+ * The ERC-8004 contract stores metadata via tokenURI; agentURI may revert.
+ */
+async function fetchTokenOrAgentURI(agentId: bigint): Promise<string | null> {
+  try {
+    const uri = await publicClient.readContract({
+      address: ERC8004_REGISTRY,
+      abi: erc8004Abi,
+      functionName: "tokenURI",
+      args: [agentId],
+    });
+    if (uri) return uri as string;
+  } catch {
+    // tokenURI not available, try agentURI
+  }
+  try {
+    const uri = await publicClient.readContract({
+      address: ERC8004_REGISTRY,
+      abi: erc8004Abi,
+      functionName: "agentURI",
+      args: [agentId],
+    });
+    return (uri as string) || null;
   } catch {
     return null;
   }
