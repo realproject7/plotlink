@@ -43,30 +43,90 @@ const SET_WALLET_TYPES = {
  * ERC-8004 registration happens on the OWS wallet via plotlink-ows.
  * ───────────────────────────────────────────────────────────────────────────── */
 
+interface AgentInfo {
+  agentId: string;
+  name: string;
+  description: string;
+  genre?: string;
+  llmModel?: string;
+  registeredAt?: string;
+}
+
 function LinkAIWriter() {
   const { address } = useAccount();
   const { signMessageAsync } = useSignMessage();
 
   const [owsWallet, setOwsWallet] = useState("");
+  const [lookingUp, setLookingUp] = useState(false);
+  const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
+  const [needsManualId, setNeedsManualId] = useState(false);
+  const [manualAgentId, setManualAgentId] = useState("");
   const [bindingSignature, setBindingSignature] = useState("");
-  const [agentIdInput, setAgentIdInput] = useState("");
   const [linking, setLinking] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const validInputs = /^0x[a-fA-F0-9]{40}$/.test(owsWallet) && bindingSignature.startsWith("0x") && bindingSignature.length > 10 && /^\d+$/.test(agentIdInput.trim());
+  const validWallet = /^0x[a-fA-F0-9]{40}$/.test(owsWallet);
+  const validSignature = bindingSignature.startsWith("0x") && bindingSignature.length > 10;
+
+  async function handleLookup() {
+    if (!validWallet) return;
+    try {
+      setError(null);
+      setLookingUp(true);
+      setAgentInfo(null);
+      setNeedsManualId(false);
+
+      const params = new URLSearchParams({ wallet: owsWallet });
+      const res = await fetch(`/api/user/lookup-agent?${params}`);
+      const data = await res.json();
+
+      if (data.found) {
+        setAgentInfo(data);
+      } else if (data.needsManualId) {
+        setNeedsManualId(true);
+      } else {
+        setError(data.error || "No agent found for this wallet");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lookup failed");
+    } finally {
+      setLookingUp(false);
+    }
+  }
+
+  async function handleManualLookup() {
+    if (!validWallet || !manualAgentId) return;
+    try {
+      setError(null);
+      setLookingUp(true);
+
+      const params = new URLSearchParams({ wallet: owsWallet, agentId: manualAgentId });
+      const res = await fetch(`/api/user/lookup-agent?${params}`);
+      const data = await res.json();
+
+      if (data.found) {
+        setAgentInfo(data);
+        setNeedsManualId(false);
+      } else {
+        setError(data.error || "Agent not found or not owned by this wallet");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lookup failed");
+    } finally {
+      setLookingUp(false);
+    }
+  }
 
   async function handleLink() {
-    if (!address) return;
+    if (!address || !agentInfo) return;
     try {
       setError(null);
       setLinking(true);
 
-      // Sign ownership proof with human wallet
       const humanMessage = `I am linking OWS wallet ${owsWallet} to my PlotLink account. Wallet: ${address}`;
       const humanSignature = await signMessageAsync({ message: humanMessage });
 
-      // Verify both proofs and save DB link in one call
       const res = await fetch("/api/user/link-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -75,7 +135,7 @@ function LinkAIWriter() {
           owsWallet,
           signature: bindingSignature,
           humanSignature,
-          ...(agentIdInput.trim() && { agentId: Number(agentIdInput.trim()) }),
+          agentId: agentInfo.agentId,
         }),
       });
       const data = await res.json();
@@ -97,11 +157,8 @@ function LinkAIWriter() {
         <div className="border-accent/30 bg-accent/5 rounded border px-4 py-4 text-center">
           <p className="text-accent text-sm font-medium">Linked! Your AI writer is connected to your account.</p>
           <p className="text-muted mt-1 text-xs">OWS wallet: {truncateAddress(owsWallet)}</p>
+          {agentInfo && <p className="text-muted mt-1 text-xs">Agent: {agentInfo.name} (ID: {agentInfo.agentId})</p>}
         </div>
-        <p className="text-muted text-xs leading-relaxed text-center">
-          Your OWS writer will register itself on-chain via ERC-8004 automatically.
-          Your profile will show &quot;Operates: AI Writer&quot; once the agent is registered.
-        </p>
       </div>
     );
   }
@@ -112,36 +169,67 @@ function LinkAIWriter() {
         Connect your local PlotLink OWS Writer app to your PlotLink account.
         Your AI writer will appear as &quot;{address ? `${address.slice(0, 6)}...` : "your"}&apos;s AI Writer&quot; on PlotLink.
       </p>
-      <div className="text-muted text-xs space-y-1 pl-3">
-        <p>1. Open PlotLink OWS app &rarr; Settings &rarr; &quot;Link to PlotLink&quot;</p>
-        <p>2. Enter your PlotLink wallet address &rarr; app generates a binding code</p>
-        <p>3. Paste the OWS wallet address and binding code below</p>
-      </div>
 
+      {/* Step 1: OWS Wallet Address + Lookup */}
       <div>
         <label className="text-foreground mb-2 block text-sm">OWS Wallet Address</label>
-        <input type="text" value={owsWallet} onChange={(e) => setOwsWallet(e.target.value)} placeholder="0x..."
-          className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+        <div className="flex gap-2">
+          <input type="text" value={owsWallet} onChange={(e) => { setOwsWallet(e.target.value); setAgentInfo(null); setNeedsManualId(false); setError(null); }} placeholder="0x..."
+            className="border-border bg-surface text-foreground placeholder:text-muted min-w-0 flex-1 rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+          <button onClick={handleLookup} disabled={!validWallet || lookingUp}
+            className="border-accent text-accent hover:bg-accent hover:text-background shrink-0 rounded border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50">
+            {lookingUp ? "..." : "Lookup"}
+          </button>
+        </div>
       </div>
-      <div>
-        <label className="text-foreground mb-2 block text-sm">Binding Signature</label>
-        <input type="text" value={bindingSignature} onChange={(e) => setBindingSignature(e.target.value)} placeholder="0x..."
-          className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
-      </div>
-      <div>
-        <label className="text-foreground mb-2 block text-sm">Agent ID</label>
-        <input type="text" value={agentIdInput} onChange={(e) => setAgentIdInput(e.target.value)} placeholder="e.g. 17777"
-          className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
-      </div>
+
+      {/* Manual Agent ID fallback */}
+      {needsManualId && (
+        <div>
+          <label className="text-foreground mb-2 block text-sm">Agent ID</label>
+          <p className="text-muted mb-2 text-xs">Could not auto-detect agent ID. Enter it manually.</p>
+          <div className="flex gap-2">
+            <input type="text" value={manualAgentId} onChange={(e) => setManualAgentId(e.target.value.replace(/\D/g, ""))} placeholder="e.g. 45557"
+              className="border-border bg-surface text-foreground placeholder:text-muted min-w-0 flex-1 rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+            <button onClick={handleManualLookup} disabled={!manualAgentId || lookingUp}
+              className="border-accent text-accent hover:bg-accent hover:text-background shrink-0 rounded border px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50">
+              {lookingUp ? "..." : "Verify"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Agent Info Card */}
+      {agentInfo && (
+        <div className="border-accent/30 bg-accent/5 rounded border px-4 py-3 space-y-1">
+          <p className="text-accent text-sm font-medium">Found: {agentInfo.name}</p>
+          <p className="text-muted text-xs">Agent ID: {agentInfo.agentId}</p>
+          {agentInfo.description && <p className="text-muted text-xs">{agentInfo.description}</p>}
+          {agentInfo.genre && <p className="text-muted text-xs">Genre: {agentInfo.genre}</p>}
+        </div>
+      )}
+
+      {/* Step 3: Binding Signature (only shown after agent found) */}
+      {agentInfo && (
+        <div>
+          <label className="text-foreground mb-2 block text-sm">Binding Signature</label>
+          <p className="text-muted mb-2 text-xs">Paste the binding code from your OWS app (Settings &rarr; &quot;Link to PlotLink&quot;)</p>
+          <input type="text" value={bindingSignature} onChange={(e) => setBindingSignature(e.target.value)} placeholder="0x..."
+            className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+        </div>
+      )}
 
       {error && (
         <div className="border-error/30 text-error rounded border px-3 py-2 text-xs">{error}</div>
       )}
 
-      <button onClick={handleLink} disabled={!validInputs || linking}
-        className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50">
-        {linking ? "Verifying & linking..." : "Link AI Writer"}
-      </button>
+      {/* Step 4: Link button */}
+      {agentInfo && (
+        <button onClick={handleLink} disabled={!validSignature || linking}
+          className="border-accent text-accent hover:bg-accent hover:text-background w-full rounded border py-2.5 text-sm font-medium transition-colors disabled:opacity-50">
+          {linking ? "Verifying & linking..." : "Link AI Writer"}
+        </button>
+      )}
     </div>
   );
 }
