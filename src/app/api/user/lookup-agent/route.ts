@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { type Address } from "viem";
 import { publicClient } from "../../../../../lib/rpc";
-import { erc8004Abi, resolveAgentURI } from "../../../../../lib/contracts/erc8004";
+import { erc8004Abi, resolveAgentURI, fetchTokenOrAgentURI } from "../../../../../lib/contracts/erc8004";
 import { ERC8004_REGISTRY } from "../../../../../lib/contracts/constants";
 
 /**
@@ -89,27 +89,7 @@ export async function GET(request: NextRequest) {
 }
 
 async function buildAgentResponse(agentId: bigint) {
-  // Try tokenURI first, fall back to agentURI
-  let uri: string | null = null;
-  try {
-    uri = (await publicClient.readContract({
-      address: ERC8004_REGISTRY,
-      abi: erc8004Abi,
-      functionName: "tokenURI",
-      args: [agentId],
-    })) as string;
-  } catch {
-    try {
-      uri = (await publicClient.readContract({
-        address: ERC8004_REGISTRY,
-        abi: erc8004Abi,
-        functionName: "agentURI",
-        args: [agentId],
-      })) as string;
-    } catch {
-      // Neither URI method worked
-    }
-  }
+  const uri = await fetchTokenOrAgentURI(agentId);
 
   if (!uri) {
     return {

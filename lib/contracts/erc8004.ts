@@ -390,7 +390,7 @@ export async function getAgentMetadataById(
  * Try tokenURI first (ERC-721 standard), fall back to agentURI.
  * The ERC-8004 contract stores metadata via tokenURI; agentURI may revert.
  */
-async function fetchTokenOrAgentURI(agentId: bigint): Promise<string | null> {
+export async function fetchTokenOrAgentURI(agentId: bigint): Promise<string | null> {
   try {
     const uri = await publicClient.readContract({
       address: ERC8004_REGISTRY,
