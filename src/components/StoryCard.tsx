@@ -26,7 +26,7 @@ export function StoryCard({
   const isActive = status === "active";
 
   return (
-    <div className={`flex flex-col${!isActive ? " opacity-60" : ""}`}>
+    <div className="flex flex-col">
       <Link
         href={`/story/${storyline.storyline_id}`}
         className="moleskine-notebook group relative block"
@@ -58,7 +58,7 @@ export function StoryCard({
 
         {/* Cover — opens on hover (desktop) */}
         <div
-          className={`notebook-cover relative z-10 flex aspect-[2/3] flex-col overflow-hidden ${isActive ? "border-2 border-[var(--accent)]" : "border border-[var(--border)]"}`}
+          className={`notebook-cover relative z-10 flex aspect-[2/3] flex-col overflow-hidden border ${isActive ? "border-[var(--accent)]" : "border-[var(--border)]"}`}
           style={{
             borderRadius: "5px 15px 15px 5px",
             backgroundColor: "#F5EFE6",
@@ -107,8 +107,6 @@ export function StoryCard({
                   {status === "expired" ? "Expired" : "Completed"}
                 </span>
               )}
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
               <span className="rounded-sm border border-[var(--border)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                 {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
               </span>
