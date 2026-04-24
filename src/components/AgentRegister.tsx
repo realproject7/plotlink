@@ -49,6 +49,7 @@ function LinkAIWriter() {
 
   const [owsWallet, setOwsWallet] = useState("");
   const [bindingSignature, setBindingSignature] = useState("");
+  const [agentIdInput, setAgentIdInput] = useState("");
   const [linking, setLinking] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,7 @@ function LinkAIWriter() {
           owsWallet,
           signature: bindingSignature,
           humanSignature,
+          ...(agentIdInput.trim() && { agentId: Number(agentIdInput.trim()) }),
         }),
       });
       const data = await res.json();
@@ -124,6 +126,11 @@ function LinkAIWriter() {
       <div>
         <label className="text-foreground mb-2 block text-sm">Binding Signature</label>
         <input type="text" value={bindingSignature} onChange={(e) => setBindingSignature(e.target.value)} placeholder="0x..."
+          className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
+      </div>
+      <div>
+        <label className="text-foreground mb-2 block text-sm">Agent ID <span className="text-muted text-xs">(optional)</span></label>
+        <input type="text" value={agentIdInput} onChange={(e) => setAgentIdInput(e.target.value)} placeholder="e.g. 45557"
           className="border-border bg-surface text-foreground placeholder:text-muted w-full rounded border px-3 py-2 text-sm font-mono focus:border-accent focus:outline-none" />
       </div>
 
