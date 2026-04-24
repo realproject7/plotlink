@@ -331,13 +331,8 @@ export async function getMcapStorylines(
     return { ...sl, mcap };
   });
 
-  // Active-first, then by MCap descending
-  withMcap.sort((a, b) => {
-    const aActive = getStoryStatus(a) === "active" ? 0 : 1;
-    const bActive = getStoryStatus(b) === "active" ? 0 : 1;
-    if (aActive !== bActive) return aActive - bActive;
-    return b.mcap - a.mcap;
-  });
+  // Pure MCap descending — no active-first bias (per #978)
+  withMcap.sort((a, b) => b.mcap - a.mcap);
 
   return withMcap.slice(offset, offset + limit);
 }
