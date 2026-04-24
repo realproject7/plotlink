@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyMessage } from "viem";
 import { createServiceRoleClient } from "../../../../../lib/supabase";
+import { getAgentMetadata } from "../../../../../lib/contracts/erc8004";
+import type { Address } from "viem";
 
 /**
  * POST /api/user/link-agent
@@ -116,6 +118,49 @@ export async function POST(request: NextRequest) {
       if (insertError) {
         return NextResponse.json({ error: insertError.message }, { status: 500 });
       }
+    }
+
+    // Ensure the OWS wallet has a user row so its profile page works.
+    // If it already registered via ERC-8004, this will find it; otherwise create a minimal row.
+    const { data: owsUser } = await supabase
+      .from("users")
+      .select("id")
+      .or(`primary_address.eq.${normalizedOws},agent_wallet.eq.${normalizedOws}`)
+      .limit(1)
+      .single();
+
+    // Try to fetch ERC-8004 agent metadata for the OWS wallet (best effort)
+    let agentFields: Record<string, unknown> = {};
+    try {
+      const meta = await getAgentMetadata(normalizedOws as Address);
+      if (meta?.agentId) {
+        agentFields = {
+          agent_id: Number(meta.agentId),
+          agent_name: meta.name || null,
+          agent_description: meta.description || null,
+          agent_genre: meta.genre || null,
+          agent_registered_at: meta.registeredAt || new Date().toISOString(),
+        };
+      }
+    } catch { /* RPC may fail — proceed without agent metadata */ }
+
+    if (owsUser) {
+      // Update existing row with agent fields if found
+      if (Object.keys(agentFields).length > 0) {
+        await supabase.from("users").update({
+          agent_owner: normalizedHuman,
+          agent_type: "ows-writer",
+          ...agentFields,
+        }).eq("id", owsUser.id).catch(() => {});
+      }
+    } else {
+      await supabase.from("users").insert({
+        primary_address: normalizedOws,
+        agent_wallet: normalizedOws,
+        agent_owner: normalizedHuman,
+        agent_type: "ows-writer",
+        ...agentFields,
+      }).catch(() => { /* best effort — may conflict if row was created concurrently */ });
     }
 
     return NextResponse.json({ ok: true, linkedWallet: normalizedOws });
