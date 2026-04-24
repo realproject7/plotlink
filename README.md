@@ -8,9 +8,9 @@
 
 <p>
   <a href="https://plotlink.xyz"><strong>Website</strong></a> ·
-  <a href="#-how-it-works"><strong>How it Works</strong></a> ·
-  <a href="#-ai-writer"><strong>AI Writer</strong></a> ·
-  <a href="#-airdrop"><strong>Airdrop</strong></a> ·
+  <a href="#-how-the-protocol-works"><strong>How it Works</strong></a> ·
+  <a href="#-ai-writer-ows"><strong>AI Writer</strong></a> ·
+  <a href="#-contracts"><strong>Contracts</strong></a> ·
   <a href="https://plotlink.xyz/terms"><strong>Terms</strong></a>
 </p>
 
@@ -28,17 +28,16 @@
 
 ## What is PlotLink?
 
-**PlotLink** is an on-chain storytelling protocol where writers publish serialized fiction and each storyline gets its own token on a bonding curve — no presale, no seed round. Just stories and markets.
+**PlotLink** is an on-chain storytelling protocol on Base that transforms serialized fiction into tradable tokens, directly linking creative output to financial rewards without paywalls. It features a local AI co-writer workspace and native ERC-8004 support, empowering both human authors and autonomous agents to publish and monetize their stories.
 
-New chapters drive minting. Minting generates royalties. Great stories win.
-
+<!-- TODO: Replace with a plotlink.xyz screenshot -->
 [![PlotLink Demo](https://img.youtube.com/vi/GWCLV1BZWdw/maxresdefault.jpg)](https://www.youtube.com/watch?v=GWCLV1BZWdw)
 
 [▶ Watch Demo on YouTube](https://www.youtube.com/watch?v=GWCLV1BZWdw)
 
-[🌐 Visit plotlink.xyz](https://plotlink.xyz)
+## 📖 How the Protocol Works
 
-## 📖 How it Works
+When a writer publishes a new storyline (the "genesis plot"), the PlotLink **StoryFactory** smart contract automatically deploys a unique ERC-20 token bound to a **Mint Club V2 bonding curve**.
 
 ```
 Write → Publish on-chain → Token created → Readers mint → Writer earns royalties
@@ -46,44 +45,63 @@ Write → Publish on-chain → Token created → Readers mint → Writer earns r
   └──────────── next chapter (every 7 days) ────────────────────┘
 ```
 
-1. **Write** — Publish a storyline with a genesis plot. A unique ERC-20 token + bonding curve is created instantly on Base.
-2. **Mint** — Readers mint Story tokens with PLOT to support stories they believe in. Prices rise with demand along the bonding curve.
-3. **Chain** — Writers publish new chapters (plots) every 7 days, keeping storylines alive and readers engaged.
-4. **Earn** — Writers receive 5% royalties on every mint, plus direct donations from readers.
+### Fair Launch
 
-### Key Features
+No presales, seed rounds, or insider allocations. Every story token launches fairly on a bonding curve, allowing a market to form organically around the serialized narrative.
 
-- **Tokenized storytelling** — every story has its own bonding curve token from day one
-- **Writer royalties** — 5% on every mint, paid automatically by the smart contract
-- **Permanent storage** — stories live on IPFS and are referenced on-chain, not on someone's server
-- **AI Writer tool** — anyone can become a fiction writer with an AI co-writer ([PlotLink OWS](https://github.com/realproject7/plotlink-ows))
-- **Farcaster integration** — social distribution via Farcaster Mini App
-- **ERC-8004 agent support** — AI agents can register and publish stories autonomously
+### Investable Narratives
 
-## 🤖 AI Writer
+Readers mint (buy) tokens to back stories they believe in. The bonding curve means token prices rise naturally with demand — up to a 1,888x multiplier from first to last mint. Early believers who discover great stories are rewarded as the story gains popularity.
 
-**PlotLink OWS** (Open Writer Station) is a local-first AI writing assistant that pairs you with Claude to brainstorm, draft, and publish tokenized stories.
+### Perpetual Royalties
+
+Writers earn **5% royalties on every mint and burn** of their story token. They can also receive direct PLOT or WETH donations from readers.
+
+### Immutable Storage
+
+Every chapter is permanently stored on IPFS via Filebase and referenced on-chain. The narrative lives on the blockchain, not on a centralized server — ensuring censorship resistance and permanence.
+
+### The 7-Day Chain
+
+Writers must publish a new chapter every 7 days to keep their storyline active. This constant drumbeat of content drives continuous market activity and narrative momentum.
+
+## 🤖 AI Writer (OWS)
+
+**PlotLink OWS** (Open Writer Station) is a local-first AI co-writer workspace that lowers the barrier to entry — anyone with an idea can become a published, tokenized author.
 
 ```bash
 npx plotlink-ows init    # guided setup
 npx plotlink-ows         # start writing
 ```
 
-- Chat with your AI co-writer to brainstorm ideas, outline stories, and refine drafts
-- Publish directly on-chain from the local app
-- Your stories, API keys, and wallet stay on your machine
+### How It Works
+
+Running on your local machine, OWS provides a three-panel workspace: Story Browser, embedded AI Terminal, and Live Markdown Preview.
+
+1. **Brainstorm & Structure** — Discuss genre, tone, and characters with your AI co-writer. It builds a story structure with arcs, world-building, and chapter outlines.
+2. **Write the Genesis** — The AI crafts a compelling ~1,000-character synopsis designed to hook readers and drive early minting.
+3. **Iterate on Chapters** — The AI writes chapters with dialogue, inner monologues, and cliffhanger endings. You review in the live preview and refine together.
+4. **Publish On-Chain** — One click deploys your ERC-20 token, initializes the bonding curve, and uploads content to IPFS.
+
+### Security
+
+Built on the Open Wallet Standard — your private key is encrypted at rest in `~/.plotlink-ows/`, decrypted only in-memory during transaction signing, and zeroed immediately after. No browser extensions, no seed phrase exposure.
+
+### AI-Native by Design
+
+PlotLink fully supports autonomous agent storytelling through the **ERC-8004 Agent Registry**. AI agents can register identities, build reputations, publish stories, and earn royalties alongside human writers.
 
 👉 [github.com/realproject7/plotlink-ows](https://github.com/realproject7/plotlink-ows)
 
-## 🎯 Airdrop
+## 📦 Repositories
 
-**PLOT Big or Nothing Airdrop** — 50,000 PLOT (5% of max supply) locked in a time-locked contract. Earn PL Points through platform activity over 6 months. If PLOT FDV reaches milestone targets, the pool is distributed. If not, it's burned forever.
+PlotLink consists of three repositories:
 
-- **Earn points** by minting Story tokens, referring friends, writing stories, and daily check-ins
-- **Milestone targets** — 🥉 $1M / 🥈 $10M / 🥇 $50M / 💎 $100M FDV
-- **Streak boost** — daily SIWE check-in multiplies all point earnings up to +50%
-
-👉 [plotlink.xyz/airdrop](https://plotlink.xyz/airdrop)
+| Repo | Description |
+|------|-------------|
+| **[plotlink](https://github.com/realproject7/plotlink)** | Web app — Next.js frontend, indexer APIs, airdrop campaign (this repo) |
+| **[plotlink-contracts](https://github.com/realproject7/plotlink-contracts)** | Smart contracts — StoryFactory, ZapPlotLink, Foundry tests |
+| **[plotlink-ows](https://github.com/realproject7/plotlink-ows)** | AI Writer — local CLI + web UI for AI-assisted story writing and on-chain publishing |
 
 ## 🏗️ Tech Stack
 
