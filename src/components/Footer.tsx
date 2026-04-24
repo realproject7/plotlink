@@ -30,6 +30,12 @@ export function Footer() {
           >
             github
           </a>
+          <Link href="/terms" className="hover:text-foreground transition-colors">
+            Terms
+          </Link>
+          <Link href="/privacy" className="hover:text-foreground transition-colors">
+            Privacy
+          </Link>
         </div>
         <div className="text-muted text-xs text-center">
           v{version} &middot; Base Mainnet &middot; Made by{" "}
