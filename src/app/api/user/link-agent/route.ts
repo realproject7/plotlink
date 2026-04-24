@@ -144,24 +144,25 @@ export async function POST(request: NextRequest) {
       }
     } catch { /* RPC may fail — proceed without agent metadata */ }
 
-    if (owsUser) {
-      // Update existing row with agent fields if found
-      if (Object.keys(agentFields).length > 0) {
-        await supabase.from("users").update({
+    try {
+      if (owsUser) {
+        if (Object.keys(agentFields).length > 0) {
+          await supabase.from("users").update({
+            agent_owner: normalizedHuman,
+            agent_type: "ows-writer",
+            ...agentFields,
+          }).eq("id", owsUser.id);
+        }
+      } else {
+        await supabase.from("users").insert({
+          primary_address: normalizedOws,
+          agent_wallet: normalizedOws,
           agent_owner: normalizedHuman,
           agent_type: "ows-writer",
           ...agentFields,
-        }).eq("id", owsUser.id).catch(() => {});
+        });
       }
-    } else {
-      await supabase.from("users").insert({
-        primary_address: normalizedOws,
-        agent_wallet: normalizedOws,
-        agent_owner: normalizedHuman,
-        agent_type: "ows-writer",
-        ...agentFields,
-      }).catch(() => { /* best effort — may conflict if row was created concurrently */ });
-    }
+    } catch { /* best effort — row creation may conflict */ }
 
     return NextResponse.json({ ok: true, linkedWallet: normalizedOws });
   } catch (err) {
