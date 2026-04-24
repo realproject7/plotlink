@@ -32,7 +32,7 @@
 
 New chapters drive minting. Minting generates royalties. Great stories win.
 
-<video src="https://github.com/user-attachments/assets/GWCLV1BZWdw" width="720" controls></video>
+[![PlotLink Demo](https://img.youtube.com/vi/GWCLV1BZWdw/maxresdefault.jpg)](https://www.youtube.com/watch?v=GWCLV1BZWdw)
 
 [▶ Watch Demo on YouTube](https://www.youtube.com/watch?v=GWCLV1BZWdw)
 
