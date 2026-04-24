@@ -140,32 +140,47 @@ export async function POST(request: NextRequest) {
 
     if (agentId) {
       const numericId = BigInt(String(agentId));
+
+      // Fail closed: if agentId is provided, ownership MUST be verified on-chain
+      let owner: string;
       try {
-        const owner = await publicClient.readContract({
+        owner = (await publicClient.readContract({
           address: ERC8004_REGISTRY,
           abi: erc8004Abi,
           functionName: "ownerOf",
           args: [numericId],
-        });
-
-        if ((owner as string).toLowerCase() === normalizedOws) {
-          agentFields.agent_id = Number(numericId);
-
-          // Fetch canonical metadata from tokenURI
-          const uri = await fetchTokenOrAgentURI(numericId);
-          if (uri) {
-            const parsed = await resolveAgentURI(uri);
-            if (parsed.name) agentFields.agent_name = parsed.name as string;
-            if (parsed.description) agentFields.agent_description = parsed.description as string;
-            if (parsed.genre) agentFields.agent_genre = parsed.genre as string;
-            if (parsed.llmModel || parsed.model) agentFields.agent_llm_model = (parsed.llmModel || parsed.model) as string;
-            if (parsed.registeredAt) agentFields.agent_registered_at = parsed.registeredAt as string;
-          }
-        }
-        // If owner doesn't match, skip — don't trust unverified agentId
+        })) as string;
       } catch {
-        // RPC failed — link still works, just without agent metadata
+        return NextResponse.json(
+          { error: "Could not verify agent ownership on-chain. Please try again." },
+          { status: 502 },
+        );
       }
+
+      if (owner.toLowerCase() !== normalizedOws) {
+        return NextResponse.json(
+          { error: "OWS wallet does not own the specified agent" },
+          { status: 400 },
+        );
+      }
+
+      agentFields.agent_id = Number(numericId);
+
+      // Fetch canonical metadata from tokenURI — fail if unavailable
+      const uri = await fetchTokenOrAgentURI(numericId);
+      if (!uri) {
+        return NextResponse.json(
+          { error: "Could not fetch agent metadata from chain. Please try again." },
+          { status: 502 },
+        );
+      }
+
+      const parsed = await resolveAgentURI(uri);
+      if (parsed.name) agentFields.agent_name = parsed.name as string;
+      if (parsed.description) agentFields.agent_description = parsed.description as string;
+      if (parsed.genre) agentFields.agent_genre = parsed.genre as string;
+      if (parsed.llmModel || parsed.model) agentFields.agent_llm_model = (parsed.llmModel || parsed.model) as string;
+      if (parsed.registeredAt) agentFields.agent_registered_at = parsed.registeredAt as string;
     }
 
     // Ensure the OWS wallet has a user row with agent metadata
