@@ -18,7 +18,7 @@ import type { Address } from "viem";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { humanWallet, owsWallet, signature, humanSignature } = body;
+    const { humanWallet, owsWallet, signature, humanSignature, agentId: providedAgentId } = body;
 
     if (!humanWallet || !owsWallet || !signature || !humanSignature) {
       return NextResponse.json(
@@ -129,20 +129,94 @@ export async function POST(request: NextRequest) {
       .limit(1)
       .single();
 
-    // Try to fetch ERC-8004 agent metadata for the OWS wallet (best effort)
+    // Build agent fields — use provided agentId if available, try RPC as fallback
     let agentFields: Record<string, unknown> = {};
-    try {
-      const meta = await getAgentMetadata(normalizedOws as Address);
-      if (meta?.agentId) {
-        agentFields = {
-          agent_id: Number(meta.agentId),
-          agent_name: meta.name || null,
-          agent_description: meta.description || null,
-          agent_genre: meta.genre || null,
-          agent_registered_at: meta.registeredAt || new Date().toISOString(),
-        };
+    const agentId = providedAgentId ? Number(providedAgentId) : null;
+
+    if (agentId) {
+      // Agent ID provided by client — verify on-chain that the OWS wallet owns this NFT
+      try {
+        const { publicClient } = await import("../../../../../lib/rpc");
+        const owner = await publicClient.readContract({
+          address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
+          abi: [{ type: "function", name: "ownerOf", stateMutability: "view", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "address" }] }] as const,
+          functionName: "ownerOf",
+          args: [BigInt(agentId)],
+        }) as string;
+
+        if (owner.toLowerCase() === normalizedOws) {
+          agentFields = { agent_id: agentId };
+          // Fetch metadata (best effort)
+          try {
+            const { getAgentMetadataById } = await import("../../../../../lib/contracts/erc8004");
+            const meta = await getAgentMetadataById(BigInt(agentId));
+            if (meta) {
+              agentFields.agent_name = meta.name || null;
+              agentFields.agent_description = meta.description || null;
+              agentFields.agent_genre = meta.genre || null;
+              agentFields.agent_registered_at = meta.registeredAt || new Date().toISOString();
+            }
+          } catch { /* metadata fetch failed — agent_id is still set */ }
+        }
+        // If owner doesn't match, ignore the provided agentId (don't trust it)
+      } catch { /* ownerOf RPC failed — ignore provided agentId */ }
+    } else {
+      // No agentId provided — try agentIdByWallet first, then balanceOf fallback
+      try {
+        const meta = await getAgentMetadata(normalizedOws as Address);
+        if (meta?.agentId) {
+          agentFields = {
+            agent_id: Number(meta.agentId),
+            agent_name: meta.name || null,
+            agent_description: meta.description || null,
+            agent_genre: meta.genre || null,
+            agent_registered_at: meta.registeredAt || new Date().toISOString(),
+          };
+        }
+      } catch { /* agentIdByWallet may revert for unbound wallets */ }
+
+      // balanceOf fallback: wallet owns an NFT but isn't bound
+      if (!agentFields.agent_id) {
+        try {
+          const { publicClient } = await import("../../../../../lib/rpc");
+          const balance = await publicClient.readContract({
+            address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
+            abi: [{ type: "function", name: "balanceOf", stateMutability: "view", inputs: [{ name: "owner", type: "address" }], outputs: [{ name: "", type: "uint256" }] }] as const,
+            functionName: "balanceOf",
+            args: [normalizedOws as `0x${string}`],
+          }) as bigint;
+
+          if (balance > BigInt(0)) {
+            // Get the token ID via tokenOfOwnerByIndex (may not be supported)
+            try {
+              const tokenId = await publicClient.readContract({
+                address: "0x8004A169FB4a3325136EB29fA0ceB6D2e539a432" as `0x${string}`,
+                abi: [{ type: "function", name: "tokenOfOwnerByIndex", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "index", type: "uint256" }], outputs: [{ name: "", type: "uint256" }] }] as const,
+                functionName: "tokenOfOwnerByIndex",
+                args: [normalizedOws as `0x${string}`, BigInt(0)],
+              }) as bigint;
+              agentFields.agent_id = Number(tokenId);
+
+              // Fetch metadata by ID
+              try {
+                const { getAgentMetadataById } = await import("../../../../../lib/contracts/erc8004");
+                const meta = await getAgentMetadataById(tokenId);
+                if (meta) {
+                  agentFields.agent_name = meta.name || null;
+                  agentFields.agent_description = meta.description || null;
+                  agentFields.agent_genre = meta.genre || null;
+                }
+              } catch { /* metadata lookup failed */ }
+            } catch { /* tokenOfOwnerByIndex not supported — set flag without ID */ }
+
+            // Even without token ID, mark as registered (has NFT)
+            if (!agentFields.agent_id) {
+              agentFields.agent_name = "AI Writer";
+            }
+          }
+        } catch { /* balanceOf RPC failed */ }
       }
-    } catch { /* RPC may fail — proceed without agent metadata */ }
+    }
 
     try {
       if (owsUser) {
