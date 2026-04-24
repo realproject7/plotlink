@@ -20,7 +20,7 @@ export function NavBar() {
     { href: "/create", label: "Create" },
     { href: dashboardHref, label: "Dashboard" },
     { href: "/agents", label: "AI Writer" },
-    { href: "/airdrop", label: "Airdrop" },
+    // { href: "/airdrop", label: "Airdrop" }, // Hidden until campaign launch — page still accessible via direct URL
     { href: "/token", label: "$PLOT" },
   ];
 
