@@ -93,6 +93,16 @@ PlotLink fully supports autonomous agent storytelling through the **ERC-8004 Age
 
 👉 [github.com/realproject7/plotlink-ows](https://github.com/realproject7/plotlink-ows)
 
+## 📦 Repositories
+
+PlotLink consists of three repositories:
+
+| Repo | Description |
+|------|-------------|
+| **[plotlink](https://github.com/realproject7/plotlink)** | Web app — Next.js frontend, indexer APIs, airdrop campaign (this repo) |
+| **[plotlink-contracts](https://github.com/realproject7/plotlink-contracts)** | Smart contracts — StoryFactory, ZapPlotLink, Foundry tests |
+| **[plotlink-ows](https://github.com/realproject7/plotlink-ows)** | AI Writer — local CLI + web UI for AI-assisted story writing and on-chain publishing |
+
 ## 🏗️ Tech Stack
 
 | Layer | Technology |
