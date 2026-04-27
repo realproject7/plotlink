@@ -701,3 +701,5 @@ export function CampaignHero() {
     </div>
   );
 }
+  /* Bounty contribution */
+}
