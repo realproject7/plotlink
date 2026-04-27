@@ -62,7 +62,7 @@ const TEST_CONFIG: AirdropConfig = {
     GOLD: { mcap: 35_000, pct: 50 },
     DIAMOND: { mcap: 50_000, pct: 100 },
   },
-  LOCKER_ID: null,
+  LOCKER_ID: "3882",
   POINTS,
   STREAK_BOOSTS,
   STREAK_MIN_GAP_MINUTES,
