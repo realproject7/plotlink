@@ -25,39 +25,36 @@ interface StatusData {
   lockerTx: string | null;
 }
 
-interface DailyPrice {
-  date: string;
-  fdv: number;
-}
-
 /* ─── Constants ─── */
 
 const MAX_SUPPLY = 1_000_000;
 
 const TIER_META = [
-  { key: "bronze" as const, emoji: "\uD83E\uDD49", label: "Bronze" },
-  { key: "silver" as const, emoji: "\uD83E\uDD48", label: "Silver" },
-  { key: "gold" as const, emoji: "\uD83E\uDD47", label: "Gold" },
-  { key: "diamond" as const, emoji: "\uD83D\uDC8E", label: "Diamond" },
+  { key: "bronze" as const, emoji: "🥉", label: "Bronze", cmcRank: 1900 },
+  { key: "silver" as const, emoji: "🥈", label: "Silver", cmcRank: 950 },
+  { key: "gold" as const, emoji: "🥇", label: "Gold", cmcRank: 400 },
+  { key: "diamond" as const, emoji: "💎", label: "Diamond", cmcRank: 250 },
 ];
 
-type Tier = { key: string; emoji: string; label: string; fdv: number; pct: number };
+type Tier = {
+  key: string;
+  emoji: string;
+  label: string;
+  cmcRank: number;
+  fdv: number;
+  pct: number;
+  reached: boolean;
+};
+
+const IS_PROD_MODE = process.env.NEXT_PUBLIC_AIRDROP_MODE !== "test";
 
 /** Build tier array from API milestones so test/prod config is respected */
 function buildTiers(milestones: StatusData["milestones"]): Tier[] {
   return TIER_META.map((m) => {
     const ms = milestones[m.key];
-    return { ...m, fdv: ms.mcap, pct: ms.pct };
+    return { ...m, fdv: ms.mcap, pct: ms.pct, reached: ms.reached };
   });
 }
-
-/* ─── SVG layout ─── */
-
-const SVG_W = 700;
-const SVG_H = 340;
-const PAD = { top: 30, right: 80, bottom: 40, left: 70 };
-const CW = SVG_W - PAD.left - PAD.right;
-const CH = SVG_H - PAD.top - PAD.bottom;
 
 /* ─── Helpers ─── */
 
@@ -74,39 +71,14 @@ function useAirdropStatus() {
   });
 }
 
-function useDailyPrices() {
-  return useQuery<DailyPrice[]>({
-    queryKey: ["airdrop-daily-prices"],
-    queryFn: async () => {
-      const res = await fetch("/api/airdrop/daily-prices");
-      if (!res.ok) throw new Error("Failed to fetch daily prices");
-      return res.json();
-    },
-    staleTime: 300_000,
-  });
+/** Pool USD at a given milestone: poolAmount * (pct/100) * (fdv / maxSupply). */
+function poolUsdAtTier(tier: Tier, poolAmount: number): number {
+  return poolAmount * (tier.pct / 100) * (tier.fdv / MAX_SUPPLY);
 }
 
-/** Pool value at current FDV: highest reached tier pct * pool * price */
-function poolValueAtFdv(fdv: number, poolAmount: number, tiers: Tier[]): number {
-  const price = fdv / MAX_SUPPLY;
-  // Walk tiers in reverse to find highest reached
-  for (let i = tiers.length - 1; i >= 0; i--) {
-    if (fdv >= tiers[i].fdv) return poolAmount * (tiers[i].pct / 100) * price;
-  }
-  return 0;
-}
-
-function currentZoneLabel(fdv: number, tiers: Tier[]): string {
-  for (let i = tiers.length - 1; i >= 0; i--) {
-    if (fdv >= tiers[i].fdv) return tiers[i].label;
-  }
-  return "Pre-" + tiers[0].label;
-}
-
-function formatCompact(val: number): string {
-  if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
-  if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}K`;
-  return `$${val.toFixed(0)}`;
+/** PLOT unlocked at a given milestone. */
+function plotAtTier(tier: Tier, poolAmount: number): number {
+  return poolAmount * (tier.pct / 100);
 }
 
 /* ─── Countdown hook ─── */
@@ -134,465 +106,146 @@ function useCountdown(endDateStr: string) {
   return remaining;
 }
 
-/* ─── Pure chart helpers (outside component to avoid unstable refs) ─── */
+/* ─── Segmented progress bar ─── */
 
-const FDV_LOG_MIN = Math.log10(100);
-
-function timeToX(ms: number, startMs: number, totalMs: number): number {
-  return PAD.left + ((ms - startMs) / totalMs) * CW;
-}
-
-function poolToY(usd: number, yLeftMax: number): number {
-  return PAD.top + CH * (1 - usd / yLeftMax);
-}
-
-function fdvToY(fdv: number, logMax: number): number {
-  if (fdv <= 0) return PAD.top + CH;
-  const t = Math.max(0, Math.min(1, (Math.log10(Math.max(fdv, 100)) - FDV_LOG_MIN) / (logMax - FDV_LOG_MIN)));
-  return PAD.top + CH * (1 - t);
-}
-
-/* ─── Chart sub-component ─── */
-
-function TimelineChart({
-  campaignStart,
-  campaignEnd,
-  currentFdv,
-  poolAmount,
+/**
+ * 4-segment progress bar. Each segment represents one milestone tier and
+ * fills based on log-scale progress between adjacent milestones, so reaching
+ * Bronze visibly fills the first segment instead of looking like 1% of the bar.
+ */
+function SegmentedProgressBar({
   tiers,
+  currentFdv,
 }: {
-  campaignStart: string;
-  campaignEnd: string;
-  currentFdv: number;
-  poolAmount: number;
   tiers: Tier[];
+  currentFdv: number;
 }) {
-  const { data: dailyPrices } = useDailyPrices();
-  const [nowMs, setNowMs] = useState(() => Date.now());
-
-  // Refresh current time once per minute (chart doesn't need per-second updates)
-  useEffect(() => {
-    const id = setInterval(() => setNowMs(Date.now()), 60_000);
-    return () => clearInterval(id);
-  }, []);
-
-  const startMs = new Date(campaignStart + "T00:00:00Z").getTime();
-  const endMs = new Date(campaignEnd + "T00:00:00Z").getTime();
-  const totalMs = endMs - startMs;
-
-  const nowX = timeToX(Math.max(startMs, Math.min(nowMs, endMs)), startMs, totalMs);
-
-  const diamondFdv = tiers[tiers.length - 1].fdv;
-  const fdvLogMax = Math.log10(diamondFdv * 2); // 2x headroom above diamond
-  const diamondPoolUsd = poolAmount * (diamondFdv / MAX_SUPPLY);
-  const yLeftMax = diamondPoolUsd * 1.1;
-
-  // Month labels for x-axis
-  const months = useMemo(() => {
-    const result: { label: string; ms: number }[] = [];
-    const d = new Date(campaignStart + "T00:00:00Z");
-    for (let i = 0; i < 7; i++) {
-      const ms = d.getTime();
-      if (ms <= endMs) {
-        result.push({ label: `M${i + 1}`, ms });
+  const segments = useMemo(() => {
+    return tiers.map((t, i) => {
+      const lowerFdv = i === 0 ? t.fdv / 10 : tiers[i - 1].fdv;
+      let fillPct = 0;
+      if (currentFdv >= t.fdv) {
+        fillPct = 100;
+      } else if (currentFdv > lowerFdv) {
+        const logCur = Math.log10(currentFdv);
+        const logLow = Math.log10(lowerFdv);
+        const logHi = Math.log10(t.fdv);
+        fillPct = ((logCur - logLow) / (logHi - logLow)) * 100;
       }
-      d.setUTCMonth(d.getUTCMonth() + 1);
-    }
-    return result;
-  }, [campaignStart, endMs]);
+      return { ...t, fillPct };
+    });
+  }, [tiers, currentFdv]);
 
-  // Effective data points: use daily prices if available, else synthesize from current FDV
-  const hasHistory = !!(dailyPrices?.length && dailyPrices.some((dp) => {
-    const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
-    return dpMs >= startMs && dpMs <= endMs;
-  }));
-
-  // Pool value step line from daily price data (or $0 flat line if no data)
-  const poolStepPath = useMemo(() => {
-    const baseline = poolToY(0, yLeftMax);
-    if (!hasHistory) {
-      // No data: flat $0 line from campaign start to now
-      const currentPv = poolValueAtFdv(currentFdv, poolAmount, tiers);
-      const pvY = currentPv > 0 ? poolToY(currentPv, yLeftMax) : baseline;
-      return `M ${PAD.left.toFixed(1)} ${baseline.toFixed(1)} L ${nowX.toFixed(1)} ${pvY.toFixed(1)}`;
-    }
-    const parts: string[] = [];
-    let lastPoolVal = 0;
-    for (const dp of dailyPrices!) {
-      const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
-      if (dpMs < startMs || dpMs > endMs) continue;
-      const x = timeToX(dpMs, startMs, totalMs);
-      const pv = poolValueAtFdv(dp.fdv, poolAmount, tiers);
-      if (pv !== lastPoolVal && parts.length > 0) {
-        parts.push(`L ${x.toFixed(1)} ${poolToY(lastPoolVal, yLeftMax).toFixed(1)}`);
-      }
-      parts.push(`${parts.length === 0 ? "M" : "L"} ${x.toFixed(1)} ${poolToY(pv, yLeftMax).toFixed(1)}`);
-      lastPoolVal = pv;
-    }
-    if (parts.length > 0) {
-      parts.push(`L ${nowX.toFixed(1)} ${poolToY(lastPoolVal, yLeftMax).toFixed(1)}`);
-    }
-    return parts.join(" ");
-  }, [hasHistory, dailyPrices, startMs, endMs, totalMs, poolAmount, nowX, yLeftMax, tiers, currentFdv]);
-
-  // Pool value area fill
-  const poolAreaPath = useMemo(() => {
-    if (!poolStepPath) return "";
-    const baseline = poolToY(0, yLeftMax);
-    if (!hasHistory) {
-      // Area from campaign start baseline → pool step → back to baseline
-      return `M ${PAD.left.toFixed(1)} ${baseline.toFixed(1)} ${poolStepPath.replace(/^M/, "L")} L ${nowX.toFixed(1)} ${baseline.toFixed(1)} Z`;
-    }
-    // Clamp area fill start to campaign start (daily prices may predate campaign)
-    const firstX = dailyPrices?.length
-      ? timeToX(Math.max(new Date(dailyPrices[0].date + "T00:00:00Z").getTime(), startMs), startMs, totalMs)
-      : PAD.left;
-    return `M ${firstX.toFixed(1)} ${baseline.toFixed(1)} ${poolStepPath.replace(/^M/, "L")} L ${nowX.toFixed(1)} ${baseline.toFixed(1)} Z`;
-  }, [poolStepPath, hasHistory, dailyPrices, startMs, totalMs, nowX, yLeftMax]);
-
-  // Actual FDV line (or single point if no history)
-  const actualFdvPath = useMemo(() => {
-    if (!hasHistory) {
-      // No history: just draw a point at current position (will be rendered as dot)
-      if (currentFdv <= 0) return "";
-      const y = fdvToY(currentFdv, fdvLogMax);
-      return `M ${nowX.toFixed(1)} ${y.toFixed(1)} L ${nowX.toFixed(1)} ${y.toFixed(1)}`;
-    }
-    const parts: string[] = [];
-    for (const dp of dailyPrices!) {
-      const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
-      if (dpMs < startMs || dpMs > endMs) continue;
-      const x = timeToX(dpMs, startMs, totalMs);
-      const y = fdvToY(dp.fdv, fdvLogMax);
-      parts.push(`${parts.length === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`);
-    }
-    if (parts.length > 0 && currentFdv > 0) {
-      parts.push(`L ${nowX.toFixed(1)} ${fdvToY(currentFdv, fdvLogMax).toFixed(1)}`);
-    }
-    return parts.join(" ");
-  }, [hasHistory, dailyPrices, startMs, endMs, totalMs, currentFdv, nowX, fdvLogMax]);
-
-  // Linear projection: from campaign start → Diamond at campaign end
-  // Represents "constant growth needed from day 1 to hit Diamond"
-  const startFdv = useMemo(() => {
-    if (hasHistory && dailyPrices?.length) {
-      // Use first daily price within campaign period
-      for (const dp of dailyPrices) {
-        const dpMs = new Date(dp.date + "T00:00:00Z").getTime();
-        if (dpMs >= startMs && dpMs <= endMs) return dp.fdv;
-      }
-    }
-    return currentFdv > 0 ? currentFdv : 100;
-  }, [hasHistory, dailyPrices, startMs, endMs, currentFdv]);
-
-  const projectionPath = useMemo(() => {
-    const fromX = PAD.left;
-    const toX = PAD.left + CW;
-    const fromY = fdvToY(startFdv, fdvLogMax);
-    const toY = fdvToY(diamondFdv, fdvLogMax);
-    return `M ${fromX} ${fromY} L ${toX} ${toY}`;
-  }, [startFdv, diamondFdv, fdvLogMax]);
-
-  const dotY = fdvToY(currentFdv > 0 ? currentFdv : 100, fdvLogMax);
-
-  const milestoneLines = tiers.map((t) => ({
-    ...t,
-    y: fdvToY(t.fdv, fdvLogMax),
-  }));
-
-  const yLeftTicks = [0, diamondPoolUsd * 0.25, diamondPoolUsd * 0.5, diamondPoolUsd];
-  // Right-axis ticks omitted — milestone emoji labels already show FDV values
-
-  // Linear target today: where FDV should be if growing linearly from start to Diamond
-  const linearTargetToday = useMemo(() => {
-    const elapsed = Math.max(0, nowMs - startMs);
-    const progress = Math.min(1, elapsed / totalMs);
-    return startFdv + (diamondFdv - startFdv) * progress;
-  }, [nowMs, startMs, totalMs, startFdv, diamondFdv]);
+  const indicatorIdx = segments.findIndex((s) => s.fillPct < 100 && s.fillPct > 0);
+  const indicatorSegment =
+    indicatorIdx === -1
+      ? segments.findIndex((s) => s.fillPct === 0)
+      : indicatorIdx;
 
   return (
-    <div className="w-full">
-      {/* Desktop: full SVG chart */}
-      <div className="hidden sm:block">
-        <svg
-          viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-          className="w-full h-auto"
-          role="img"
-          aria-label="6-month timeline chart showing actual FDV, linear projection to Diamond, and airdrop pool value"
-        >
-          <defs>
-            <linearGradient id="pool-area-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#8B4513" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#8B4513" stopOpacity="0.03" />
-            </linearGradient>
-          </defs>
-
-          {/* Grid lines (horizontal at each milestone FDV) */}
-          {milestoneLines.map((m) => (
-            <g key={m.key}>
-              <line
-                x1={PAD.left}
-                y1={m.y}
-                x2={PAD.left + CW}
-                y2={m.y}
-                stroke="#D4C5B0"
-                strokeWidth={0.5}
-                strokeDasharray="4,4"
-              />
-              {/* Right-side label */}
-              <text
-                x={PAD.left + CW + 4}
-                y={m.y + 3}
-                fill="#8B7355"
-                fontSize={11}
-                fontFamily="Inter, system-ui, sans-serif"
-              >
-                {m.emoji} {formatCompact(m.fdv)}
-              </text>
-            </g>
-          ))}
-
-          {/* Y-left axis ticks (pool value) */}
-          <g>
-            {yLeftTicks.map((val) => (
-              <text
-                key={val}
-                x={PAD.left - 6}
-                y={poolToY(val, yLeftMax) + 3}
-                textAnchor="end"
-                fill="#8B7355"
-                fontSize={11}
-                fontFamily="Inter, system-ui, sans-serif"
-              >
-                {formatCompact(val)}
-              </text>
-            ))}
-          </g>
-
-          {/* X-axis month labels */}
-          {months.map((m) => (
-            <g key={m.label}>
-              <line
-                x1={timeToX(m.ms, startMs, totalMs)}
-                y1={PAD.top}
-                x2={timeToX(m.ms, startMs, totalMs)}
-                y2={PAD.top + CH}
-                stroke="#D4C5B0"
-                strokeWidth={0.3}
-              />
-              <text
-                x={timeToX(m.ms, startMs, totalMs)}
-                y={PAD.top + CH + 14}
-                textAnchor="middle"
-                fill="#8B7355"
-                fontSize={12}
-                fontFamily="Inter, system-ui, sans-serif"
-              >
-                {m.label}
-              </text>
-            </g>
-          ))}
-
-          {/* Axis labels */}
-          <text
-            x={12}
-            y={PAD.top + CH / 2}
-            textAnchor="middle"
-            fill="#8B7355"
-            fontSize={11}
-            fontFamily="Inter, system-ui, sans-serif"
-            transform={`rotate(-90, 12, ${PAD.top + CH / 2})`}
+    <div className="space-y-1">
+      <div className="flex gap-1">
+        {segments.map((s) => (
+          <div
+            key={s.key}
+            className="bg-surface border-border h-3 flex-1 rounded border overflow-hidden"
+            aria-label={`${s.label} progress: ${Math.round(s.fillPct)}%`}
           >
-            Pool Value (USD)
-          </text>
-          <text
-            x={SVG_W - 8}
-            y={PAD.top + CH / 2}
-            textAnchor="middle"
-            fill="#8B7355"
-            fontSize={11}
-            fontFamily="Inter, system-ui, sans-serif"
-            transform={`rotate(90, ${SVG_W - 8}, ${PAD.top + CH / 2})`}
-          >
-            FDV (USD)
-          </text>
-
-          {/* 1. Pool value area fill */}
-          {poolAreaPath && (
-            <path d={poolAreaPath} fill="url(#pool-area-grad)" />
-          )}
-
-          {/* 2. Pool value step line */}
-          {poolStepPath && (
-            <path
-              d={poolStepPath}
-              fill="none"
-              stroke="#8B4513"
-              strokeWidth={2}
-              opacity={0.6}
-            />
-          )}
-
-          {/* 3. Linear FDV projection (dashed) */}
-          <path
-            d={projectionPath}
-            fill="none"
-            stroke="#8B7355"
-            strokeWidth={1.5}
-            strokeDasharray="6,4"
-            opacity={0.5}
-          />
-
-          {/* 4. Actual FDV line (solid) */}
-          {actualFdvPath && (
-            <path
-              d={actualFdvPath}
-              fill="none"
-              stroke="#2C1810"
-              strokeWidth={2}
-            />
-          )}
-
-          {/* Heartbeat dot on current FDV position */}
-          {currentFdv > 0 && (
-            <g>
-              {/* Pulse ring */}
-              <circle cx={nowX} cy={dotY} r={6} fill="none" stroke="#8B4513" strokeWidth={1.5} opacity={0.4}>
-                <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="0.4;0;0.4" dur="1.5s" repeatCount="indefinite" />
-              </circle>
-              {/* Solid dot */}
-              <circle cx={nowX} cy={dotY} r={4} fill="#8B4513">
-                <animate attributeName="r" values="4;5.6;4" dur="1.5s" repeatCount="indefinite" />
-                <animate attributeName="opacity" values="1;0.7;1" dur="1.5s" repeatCount="indefinite" />
-              </circle>
-            </g>
-          )}
-
-          {/* Chart border */}
-          <rect
-            x={PAD.left}
-            y={PAD.top}
-            width={CW}
-            height={CH}
-            fill="none"
-            stroke="#D4C5B0"
-            strokeWidth={0.5}
-          />
-        </svg>
-
-        {/* Legend */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 mt-2 text-[10px]">
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-4 h-0.5 bg-[#2C1810]" /> Actual FDV
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-4 h-0.5 border-t border-dashed border-[#8B7355]" /> Linear projection
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-4 h-0.5 bg-[#8B4513] opacity-60" /> Pool value
-          </span>
-        </div>
-      </div>
-
-      {/* Mobile: simplified milestone progress view */}
-      <div className="sm:hidden space-y-3">
-        <div className="text-foreground text-xs font-medium">FDV Progress</div>
-
-        {/* Current FDV + overall progress bar */}
-        <div>
-          <div className="flex items-baseline justify-between mb-1">
-            <span className="text-foreground text-sm font-bold">
-              Current: {currentFdv > 0 ? formatCompact(currentFdv) : "\u2014"}
-            </span>
-            <span className="text-muted text-[11px]">
-              {diamondFdv > 0 ? Math.min(100, Math.round((currentFdv / diamondFdv) * 100)) : 0}%
-            </span>
-          </div>
-          <div className="bg-surface border-border h-2 rounded border overflow-hidden">
             <div
               className="bg-accent h-full transition-all"
-              style={{ width: `${diamondFdv > 0 ? Math.min(100, (currentFdv / diamondFdv) * 100) : 0}%` }}
+              style={{ width: `${s.fillPct}%` }}
             />
           </div>
-        </div>
+        ))}
+      </div>
 
-        {/* Milestone list */}
-        <div className="space-y-1.5">
-          {tiers.map((t) => {
-            const reached = currentFdv >= t.fdv;
-            const tierPct = t.pct;
-            return (
-              <div key={t.key} className="flex items-center justify-between text-[12px]">
-                <span className={reached ? "text-foreground" : "text-muted"}>
-                  {t.emoji} {t.label}
-                </span>
-                <span className="flex items-center gap-2">
-                  <span className="text-muted">{formatCompact(t.fdv)}</span>
-                  <span className={`font-mono text-[11px] ${reached ? "text-accent" : "text-muted"}`}>
-                    {tierPct}%
-                  </span>
-                </span>
+      <div className="flex gap-1">
+        {segments.map((s, i) => (
+          <div
+            key={s.key}
+            className={`flex-1 text-center text-[10px] leading-tight ${
+              s.fillPct === 100 ? "text-accent" : "text-muted"
+            }`}
+          >
+            <div className="font-medium">
+              {s.emoji} {formatUsdValue(s.fdv)}
+            </div>
+            {indicatorSegment === i && currentFdv > 0 && (
+              <div className="text-foreground text-[9px] mt-0.5">
+                <span aria-hidden>▲</span> Current: {formatUsdValue(currentFdv)}
               </div>
-            );
-          })}
-        </div>
-
-        {/* Linear target comparison */}
-        <div className="border-border rounded border px-3 py-2 text-[12px]">
-          <div className="text-muted">Linear target today</div>
-          <div className="text-foreground font-bold">{formatCompact(linearTargetToday)}</div>
-        </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-/* ─── Stats row sub-component ─── */
+/* ─── Milestone card ─── */
 
-function StatsRow({
-  participants,
-  currentFdv,
-  tiers,
+function MilestoneCard({
+  tier,
+  poolAmount,
+  isCurrentTarget,
 }: {
-  participants: number;
-  currentFdv: number;
-  tiers: Tier[];
+  tier: Tier;
+  poolAmount: number;
+  isCurrentTarget: boolean;
 }) {
-  // Find next milestone
-  const nextTierIdx = tiers.findIndex((t) => currentFdv < t.fdv);
-  const allReached = nextTierIdx === -1;
-  const nextTier = allReached ? null : tiers[nextTierIdx];
-  const progressPct = allReached
-    ? 100
-    : nextTier
-      ? Math.min(100, Math.round((currentFdv / nextTier.fdv) * 100))
-      : 0;
+  const plot = plotAtTier(tier, poolAmount);
+  const poolUsd = poolUsdAtTier(tier, poolAmount);
+  const burnPct = 100 - tier.pct;
 
-  const progressLabel = allReached
-    ? `${tiers[tiers.length - 1].emoji} ${tiers[tiers.length - 1].label} Achieved!`
-    : `Progress to ${nextTier!.emoji} ${nextTier!.label}`;
+  const visualState = tier.reached
+    ? "border-accent text-foreground"
+    : isCurrentTarget
+      ? "border-border text-foreground"
+      : "border-border opacity-50";
 
   return (
-    <div className="grid grid-cols-3 gap-2 text-center">
-      <div className="border-border rounded border px-2 py-1.5">
-        <div className="text-foreground text-sm font-bold">{participants}</div>
-        <div className="text-muted text-[9px]">Participants</div>
-      </div>
-      <div className="border-border rounded border px-2 py-1.5">
-        <div className="text-foreground text-sm font-bold">
-          {currentFdv > 0 ? formatUsdValue(currentFdv) : "\u2014"}
+    <div
+      className={`rounded border px-3 py-2.5 space-y-1.5 ${visualState}`}
+      data-state={tier.reached ? "reached" : isCurrentTarget ? "current" : "future"}
+    >
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-bold">
+          {tier.emoji} {tier.label}
         </div>
-        <div className="text-muted text-[9px]">FDV</div>
+        {tier.reached && (
+          <span className="text-accent text-[10px]" aria-label="reached">✓</span>
+        )}
       </div>
-      <div className="border-border rounded border px-2 py-1.5">
-        <div className="text-foreground text-sm font-bold">{progressPct}%</div>
-        <div className="text-muted text-[9px] leading-tight">{progressLabel}</div>
-        <div className="bg-surface border-border mt-1 h-1 rounded border overflow-hidden">
-          <div
-            className="bg-accent h-full transition-all"
-            style={{ width: `${progressPct}%` }}
-          />
+
+      <div className="space-y-0.5 text-[11px]">
+        <div className="flex justify-between gap-2">
+          <span className="text-muted">FDV</span>
+          <span className="font-mono">{formatUsdValue(tier.fdv)}</span>
+        </div>
+
+        {IS_PROD_MODE && (
+          <div className="flex justify-between gap-2">
+            <span className="text-muted">CMC</span>
+            <span className="text-muted font-mono">~#{tier.cmcRank.toLocaleString()}</span>
+          </div>
+        )}
+
+        <div className="flex justify-between gap-2 pt-0.5">
+          <span className="text-muted">Unlock</span>
+          <span className="font-mono">{tier.pct}%</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted">PLOT</span>
+          <span className="font-mono">{plot.toLocaleString()}</span>
+        </div>
+
+        <div className="flex justify-between gap-2 pt-0.5">
+          <span className="text-muted">Pool</span>
+          <span className="font-mono">~{formatUsdValue(poolUsd)}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="text-muted">Burn</span>
+          <span className="font-mono">{burnPct}%</span>
         </div>
       </div>
     </div>
@@ -620,6 +273,9 @@ export function CampaignHero() {
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
+  // Current target = first unreached tier; null if all reached
+  const currentTargetIdx = tiers.findIndex((t) => !t.reached);
+
   return (
     <div className="border-border rounded border p-5 space-y-5">
       {/* Title + Explanation */}
@@ -628,9 +284,9 @@ export function CampaignHero() {
           PLOT Big or Nothing Airdrop
         </h2>
         <p className="text-muted text-xs leading-relaxed max-w-lg mx-auto">
-          {data.poolAmount.toLocaleString()} PLOT (5% of max supply) locked in a time-locked contract.
-          If PLOT FDV reaches milestone targets within 6 months, the pool is distributed to point holders.
-          If not, it&apos;s burned forever.
+          {data.poolAmount.toLocaleString()} PLOT locked in a time-locked contract.
+          Reach milestone FDV targets and the pool is distributed to point holders.
+          Miss them and the unreached portion is burned forever.
         </p>
 
         {/* Lock-up proof */}
@@ -672,31 +328,19 @@ export function CampaignHero() {
         </div>
       )}
 
-      {/* Stats row */}
-      <StatsRow
-        participants={data.totalParticipants}
-        currentFdv={data.currentFdv}
-        tiers={tiers}
-      />
+      {/* Segmented progress bar */}
+      <SegmentedProgressBar tiers={tiers} currentFdv={data.currentFdv} />
 
-      {/* 6-Month Timeline Chart */}
-      <TimelineChart
-        campaignStart={data.campaignStart}
-        campaignEnd={data.campaignEnd}
-        currentFdv={data.currentFdv}
-        poolAmount={data.poolAmount}
-        tiers={tiers}
-      />
-
-      {/* Current position summary */}
-      <div className="text-center space-y-0.5">
-        <div className="text-foreground text-xs font-medium">
-          Current FDV: {data.currentFdv > 0 ? formatUsdValue(data.currentFdv) : "\u2014"}
-          <span className="text-muted"> &middot; Zone: {currentZoneLabel(data.currentFdv, tiers)}</span>
-        </div>
-        <div className="text-muted text-[10px]">
-          Pool value: {data.currentFdv > 0 ? formatUsdValue(poolValueAtFdv(data.currentFdv, data.poolAmount, tiers)) : "$0"}
-        </div>
+      {/* Milestone cards: 2x2 mobile, 4-col desktop */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {tiers.map((t, i) => (
+          <MilestoneCard
+            key={t.key}
+            tier={t}
+            poolAmount={data.poolAmount}
+            isCurrentTarget={i === currentTargetIdx}
+          />
+        ))}
       </div>
     </div>
   );
