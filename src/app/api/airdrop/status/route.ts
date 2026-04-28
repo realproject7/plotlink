@@ -86,7 +86,7 @@ export async function GET() {
     milestones,
     totalPointsEarned,
     totalParticipants,
-    lockerId: AIRDROP_CONFIG.LOCKER_ID,
+    lockerTx: AIRDROP_CONFIG.LOCKER_TX,
   }, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" },
   });

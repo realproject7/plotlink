@@ -22,7 +22,7 @@ interface StatusData {
   };
   totalPointsEarned: number;
   totalParticipants: number;
-  lockerId: string | null;
+  lockerTx: string | null;
 }
 
 interface DailyPrice {
@@ -634,14 +634,14 @@ export function CampaignHero() {
         </p>
 
         {/* Lock-up proof */}
-        {data.lockerId ? (
+        {data.lockerTx ? (
           <a
-            href={`https://mint.club/locker/${data.lockerId}`}
+            href={`https://basescan.org/tx/${data.lockerTx}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-accent text-xs hover:underline inline-flex items-center gap-1"
           >
-            <span>&#x1F512;</span> View lock-up proof on Mint Club
+            <span>&#x1F512;</span> View lock-up proof on Basescan
           </a>
         ) : (
           <span className="text-muted text-xs inline-flex items-center gap-1">
