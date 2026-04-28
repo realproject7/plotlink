@@ -19,12 +19,14 @@ interface StatusData {
 /* ─── Chart tier definitions (presentation layer) ─── */
 
 const MAX_SUPPLY = 1_000_000;
-const CHART_TIERS = [
-  { label: "Bronze", emoji: "\uD83E\uDD49", fdv: 1_000_000, poolPct: 10 },
-  { label: "Silver", emoji: "\uD83E\uDD48", fdv: 10_000_000, poolPct: 30 },
-  { label: "Gold", emoji: "\uD83E\uDD47", fdv: 50_000_000, poolPct: 50 },
-  { label: "Diamond", emoji: "\uD83D\uDC8E", fdv: 100_000_000, poolPct: 100 },
-] as const;
+
+/** Visual presentation per tier; FDV and poolPct come from API/config. */
+const TIER_PRESENTATION = [
+  { key: "bronze" as const, label: "Bronze", emoji: "\uD83E\uDD49" },
+  { key: "silver" as const, label: "Silver", emoji: "\uD83E\uDD48" },
+  { key: "gold" as const, label: "Gold", emoji: "\uD83E\uDD47" },
+  { key: "diamond" as const, label: "Diamond", emoji: "\uD83D\uDC8E" },
+];
 
 /** Pool USD value at a given FDV milestone: poolAmount * (pct/100) * (fdv / maxSupply) */
 function poolUsdAt(fdv: number, poolPct: number, poolAmount: number): number {
@@ -47,14 +49,18 @@ const PAD = { top: 40, right: 20, bottom: 50, left: 65 };
 const CHART_W = SVG_W - PAD.left - PAD.right;
 const CHART_H = SVG_H - PAD.top - PAD.bottom;
 
-// Log scale helpers — FDV axis from 10k to 200M
-const LOG_MIN = Math.log10(10_000);
-const LOG_MAX = Math.log10(200_000_000);
+// Log scale helpers — FDV axis bounds derived from the active milestones so
+// test mode (e.g. $7K bronze) and prod mode (e.g. $1M bronze) both render.
+function computeFdvBounds(milestones: ChartMilestone[]): { logMin: number; logMax: number; floor: number } {
+  const minFdv = Math.max(milestones[0].fdv / 100, 1);
+  const maxFdv = milestones[milestones.length - 1].fdv * 2;
+  return { logMin: Math.log10(minFdv), logMax: Math.log10(maxFdv), floor: minFdv };
+}
 
-function fdvToX(fdv: number): number {
+function fdvToX(fdv: number, logMin: number, logMax: number, floor: number): number {
   if (fdv <= 0) return PAD.left;
-  const logVal = Math.log10(Math.max(fdv, 10_000));
-  const t = (logVal - LOG_MIN) / (LOG_MAX - LOG_MIN);
+  const logVal = Math.log10(Math.max(fdv, floor));
+  const t = (logVal - logMin) / (logMax - logMin);
   return PAD.left + t * CHART_W;
 }
 
@@ -65,12 +71,12 @@ function usdToY(usd: number, yMax: number): number {
 
 /* ─── Path builders ─── */
 
-function buildAreaPath(milestones: ChartMilestone[], yMax: number): string {
+function buildAreaPath(milestones: ChartMilestone[], yMax: number, logMin: number, logMax: number, floor: number): string {
   const baseline = usdToY(0, yMax);
-  let path = `M ${fdvToX(10_000)} ${baseline}`;
+  let path = `M ${fdvToX(floor, logMin, logMax, floor)} ${baseline}`;
   let prevY = baseline;
   for (const m of milestones) {
-    const x = fdvToX(m.fdv);
+    const x = fdvToX(m.fdv, logMin, logMax, floor);
     const y = usdToY(m.poolUsd, yMax);
     path += ` L ${x} ${prevY} L ${x} ${y}`;
     prevY = y;
@@ -80,15 +86,15 @@ function buildAreaPath(milestones: ChartMilestone[], yMax: number): string {
   return path;
 }
 
-function buildLinePath(milestones: ChartMilestone[], yMax: number): string {
+function buildLinePath(milestones: ChartMilestone[], yMax: number, logMin: number, logMax: number, floor: number): string {
   let path = "";
   let prevY = usdToY(0, yMax);
   for (let i = 0; i < milestones.length; i++) {
     const m = milestones[i];
-    const x = fdvToX(m.fdv);
+    const x = fdvToX(m.fdv, logMin, logMax, floor);
     const y = usdToY(m.poolUsd, yMax);
     if (i === 0) {
-      path = `M ${fdvToX(10_000)} ${prevY} L ${x} ${prevY} L ${x} ${y}`;
+      path = `M ${fdvToX(floor, logMin, logMax, floor)} ${prevY} L ${x} ${prevY} L ${x} ${y}`;
     } else {
       path += ` L ${x} ${prevY} L ${x} ${y}`;
     }
@@ -113,11 +119,17 @@ export function MilestoneTrack() {
 
   const milestones: ChartMilestone[] = useMemo(
     () =>
-      CHART_TIERS.map((t) => ({
-        ...t,
-        poolUsd: poolUsdAt(t.fdv, t.poolPct, data?.poolAmount ?? 50_000),
-      })),
-    [data?.poolAmount],
+      TIER_PRESENTATION.map((t) => {
+        const ms = data?.milestones?.[t.key];
+        return {
+          label: t.label,
+          emoji: t.emoji,
+          fdv: ms?.mcap ?? 0,
+          poolPct: ms?.pct ?? 0,
+          poolUsd: poolUsdAt(ms?.mcap ?? 0, ms?.pct ?? 0, data?.poolAmount ?? 0),
+        };
+      }),
+    [data?.milestones, data?.poolAmount],
   );
 
   if (isLoading || !data) {
@@ -127,6 +139,8 @@ export function MilestoneTrack() {
       </div>
     );
   }
+
+  const { logMin, logMax, floor } = computeFdvBounds(milestones);
 
   // Y-axis max with 10% headroom above Diamond
   const yMax = milestones[milestones.length - 1].poolUsd * 1.1;
@@ -152,11 +166,11 @@ export function MilestoneTrack() {
   const currentPoolUsd =
     currentZone > 0 ? milestones[currentZone - 1].poolUsd : 0;
 
-  const dotX = fdvToX(Math.max(currentFdv, 10_000));
+  const dotX = fdvToX(Math.max(currentFdv, floor), logMin, logMax, floor);
   const dotY = usdToY(currentPoolUsd, yMax);
 
-  const areaPath = buildAreaPath(milestones, yMax);
-  const linePath = buildLinePath(milestones, yMax);
+  const areaPath = buildAreaPath(milestones, yMax, logMin, logMax, floor);
+  const linePath = buildLinePath(milestones, yMax, logMin, logMax, floor);
 
   return (
     <div className="border-border rounded border p-4">
@@ -203,11 +217,7 @@ export function MilestoneTrack() {
                 fontSize={9}
                 fontFamily="Inter, system-ui, sans-serif"
               >
-                {val === 0
-                  ? "$0"
-                  : val >= 1_000_000
-                    ? `$${(val / 1_000_000).toFixed(1)}M`
-                    : `$${(val / 1_000).toFixed(0)}K`}
+                {val === 0 ? "$0" : formatUsdValue(val)}
               </text>
             </g>
           ))}
@@ -220,7 +230,7 @@ export function MilestoneTrack() {
 
           {/* Vertical zone dividers + annotations */}
           {milestones.map((m) => {
-            const x = fdvToX(m.fdv);
+            const x = fdvToX(m.fdv, logMin, logMax, floor);
             const y = usdToY(m.poolUsd, yMax);
             return (
               <g key={m.label}>
@@ -252,11 +262,7 @@ export function MilestoneTrack() {
                   fontSize={8}
                   fontFamily="Inter, system-ui, sans-serif"
                 >
-                  {m.poolPct}% ($
-                  {m.poolUsd >= 1_000_000
-                    ? `${(m.poolUsd / 1_000_000).toFixed(1)}M`
-                    : `${(m.poolUsd / 1_000).toFixed(0)}K`}
-                  )
+                  {m.poolPct}% ({formatUsdValue(m.poolUsd)})
                 </text>
                 <circle
                   cx={x}
@@ -274,14 +280,14 @@ export function MilestoneTrack() {
           {milestones.map((m) => (
             <text
               key={m.label}
-              x={fdvToX(m.fdv)}
+              x={fdvToX(m.fdv, logMin, logMax, floor)}
               y={PAD.top + CHART_H + 14}
               textAnchor="middle"
               fill="#8B7355"
               fontSize={9}
               fontFamily="Inter, system-ui, sans-serif"
             >
-              ${m.fdv >= 1_000_000 ? `${m.fdv / 1_000_000}M` : `${m.fdv / 1_000}K`}
+              {formatUsdValue(m.fdv)}
             </text>
           ))}
 
