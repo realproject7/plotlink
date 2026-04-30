@@ -20,7 +20,7 @@ export interface AirdropConfig {
     readonly GOLD: Milestone;
     readonly DIAMOND: Milestone;
   };
-  readonly LOCKER_ID: string | null;
+  readonly LOCKER_TX: string | null;
   readonly POINTS: {
     readonly BUY_PER_PLOT: number;
     readonly REFERRAL_PCT: number;
@@ -62,7 +62,7 @@ const TEST_CONFIG: AirdropConfig = {
     GOLD: { mcap: 35_000, pct: 50 },
     DIAMOND: { mcap: 50_000, pct: 100 },
   },
-  LOCKER_ID: "3882",
+  LOCKER_TX: "0xb4549d21a3a026d215f38d9bf50779fe337254944ae746d008b3b13cd684adce",
   POINTS,
   STREAK_BOOSTS,
   STREAK_MIN_GAP_MINUTES,
@@ -78,7 +78,7 @@ const PROD_CONFIG: AirdropConfig = {
     GOLD: { mcap: 50_000_000, pct: 50 },
     DIAMOND: { mcap: 100_000_000, pct: 100 },
   },
-  LOCKER_ID: null,
+  LOCKER_TX: null,
   POINTS,
   STREAK_BOOSTS,
   STREAK_MIN_GAP_MINUTES,
