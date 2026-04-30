@@ -41,12 +41,7 @@ interface MilestoneRow {
   isFull: boolean;
 }
 
-const CMC_RANKS: Record<number, string> = {
-  1_000_000: "≈ CMC #1900",
-  10_000_000: "≈ CMC #950",
-  50_000_000: "≈ CMC #400",
-  100_000_000: "≈ CMC #250",
-};
+const CMC_RANKS = ["≈ CMC #1900", "≈ CMC #950", "≈ CMC #400", "≈ CMC #250"];
 
 /* ─── Helpers ─── */
 
@@ -96,7 +91,7 @@ function buildMilestoneRows(
   milestones: StatusData["milestones"],
   poolAmount: number,
 ): MilestoneRow[] {
-  return TIER_KEYS.map((key) => {
+  return TIER_KEYS.map((key, i) => {
     const ms = milestones[key];
     const price = ms.mcap / MAX_SUPPLY;
     const unlockPlot = poolAmount * (ms.pct / 100);
@@ -106,7 +101,7 @@ function buildMilestoneRows(
       unlockPlot,
       poolUsd: unlockPlot * price,
       burnPct: 100 - ms.pct,
-      cmcRank: CMC_RANKS[ms.mcap] ?? null,
+      cmcRank: CMC_RANKS[i] ?? null,
       isFull: ms.pct === 100,
     };
   });
@@ -234,7 +229,7 @@ export function CampaignHero() {
         <h2 className="text-foreground text-xl sm:text-2xl font-bold leading-tight tracking-tight">
           5% OF ALL PLOT — LOCKED
         </h2>
-        <p className="text-muted text-sm sm:text-base font-medium">
+        <p className="text-muted text-sm sm:text-base font-bold uppercase tracking-wide">
           Grow the market. Or watch it burn.
         </p>
       </div>
