@@ -93,7 +93,7 @@ export function WeeklySnapshots() {
                   <span className="text-foreground">{snap.newReferrals}</span>
                 </div>
                 <div className="text-muted">
-                  FDV:{" "}
+                  MCap:{" "}
                   <span className="text-foreground">
                     {formatUsdValue(snap.mcapStart)} → {formatUsdValue(snap.mcapEnd)}
                   </span>{" "}
