@@ -283,52 +283,110 @@ export function CampaignHero() {
         poolUsd={burnState.poolUsd}
       />
 
-      {/* ── What happens as PLOT grows ── */}
+      {/* ── Section 1: Your airdrop grows with $PLOT ── */}
       <div className="space-y-3">
         <div className="text-foreground text-xs font-bold uppercase tracking-wider text-center">
-          What happens as PLOT grows
+          Your airdrop grows with $PLOT
         </div>
+        <p className="text-muted text-xs text-center max-w-md mx-auto">
+          The pool is {data.poolAmount.toLocaleString()} PLOT. Its value depends on the market.
+        </p>
 
-        <div className="space-y-0">
+        <div className="border-border rounded border overflow-hidden">
+          {/* "Now" row */}
+          <div className="grid grid-cols-3 gap-x-4 py-2.5 px-3 text-xs bg-surface">
+            <span className="text-muted font-bold">Now</span>
+            <span className="text-muted">MCap {data.currentFdv > 0 ? formatCompact(data.currentFdv) : "—"}</span>
+            <span className="text-muted">Pool value: {data.currentFdv > 0 ? formatUsdValue(burnState.poolUsd) : "$0"}</span>
+          </div>
+          {/* Milestone rows */}
           {milestoneRows.map((row, i) => (
-            <div key={row.fdv}>
-              {i > 0 && <div className="border-border border-t border-dashed" />}
-              <div
-                className={`grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 py-3 px-2 text-xs ${
-                  row.isFull ? "bg-surface rounded" : ""
-                }`}
-              >
-                <div>
-                  <span className="text-foreground font-bold">
-                    MCap {formatCompact(row.fdv)}
-                  </span>
-                  {row.cmcRank && (
-                    <span className="text-muted text-[10px] ml-1.5">{row.cmcRank}</span>
-                  )}
-                </div>
-                <div>
-                  <span className="text-foreground">
-                    {row.pct}% unlocked
-                  </span>
-                  <span className="text-muted ml-1.5">
-                    {row.burnPct}% burned
-                  </span>
-                </div>
-                <div className="text-foreground">
-                  {row.unlockPlot.toLocaleString()} PLOT
-                </div>
-                <div className={row.isFull ? "text-accent font-bold" : "text-foreground"}>
-                  Pool ~{formatCompact(row.poolUsd)}
-                  {row.isFull && (
-                    <span className="text-accent text-[10px] ml-1.5 uppercase">
-                      Full distribution
-                    </span>
-                  )}
-                </div>
-              </div>
+            <div key={row.fdv} className="grid grid-cols-3 gap-x-4 py-2.5 px-3 text-xs border-border border-t">
+              <span className={row.isFull ? "text-accent font-bold" : "text-foreground font-medium"}>
+                Step {i + 1}
+              </span>
+              <span className="text-foreground">MCap {formatCompact(row.fdv)}</span>
+              <span className={row.isFull ? "text-accent font-bold" : "text-foreground"}>
+                Pool ~{formatCompact(row.poolUsd)}
+              </span>
             </div>
           ))}
         </div>
+
+        <p className="text-muted text-[11px] text-center max-w-md mx-auto leading-relaxed">
+          The same {data.poolAmount.toLocaleString()} PLOT — worth{" "}
+          {data.currentFdv > 0 ? formatUsdValue(burnState.poolUsd) : "$0"} today, or{" "}
+          ~{formatCompact(milestoneRows[milestoneRows.length - 1]?.poolUsd ?? 0)} at full distribution.
+          Your airdrop size = market growth.
+        </p>
+      </div>
+
+      {/* ── Section 2: Four steps — not unrealistic ── */}
+      <div className="space-y-3">
+        <div className="text-foreground text-xs font-bold uppercase tracking-wider text-center">
+          Four steps — not unrealistic
+        </div>
+        <p className="text-muted text-xs text-center max-w-md mx-auto">
+          Each step unlocks a bigger share of the pool.
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {milestoneRows.map((row) => {
+            const reached = data.currentFdv >= row.fdv;
+            return (
+              <div
+                key={row.fdv}
+                className={`rounded border px-3 py-3 text-center space-y-1.5 ${
+                  reached ? "border-accent" : "border-border opacity-60"
+                }`}
+              >
+                <div className={`text-sm font-bold ${reached ? "text-accent" : "text-foreground"}`}>
+                  {formatCompact(row.fdv)}
+                </div>
+                {row.cmcRank && (
+                  <div className="text-muted text-[10px]">{row.cmcRank}</div>
+                )}
+                <div className="text-muted text-[10px]">unlocks</div>
+                <div className={`text-xs font-bold ${reached ? "text-accent" : "text-foreground"}`}>
+                  {row.pct}%
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {!AIRDROP_TEST_MODE && (
+          <p className="text-muted text-[11px] text-center max-w-md mx-auto leading-relaxed">
+            These aren&apos;t moonshot numbers — #250 on CMC is a mid-tier project.
+            Thousands of tokens have done it.
+          </p>
+        )}
+      </div>
+
+      {/* ── Section 3: Not reached? Burned forever. ── */}
+      <div className="space-y-3">
+        <div className="text-foreground text-xs font-bold uppercase tracking-wider text-center">
+          Not reached? Burned forever.
+        </div>
+
+        <div className="border-border bg-surface rounded border px-4 py-4 text-center space-y-2">
+          <div className="text-foreground text-sm font-bold">
+            If MCap stays below {formatCompact(milestoneRows[0]?.fdv ?? 0)}:
+          </div>
+          <div className="text-foreground text-base">
+            {data.poolAmount.toLocaleString()} PLOT &rarr; burned permanently &#x1F525;
+          </div>
+          <p className="text-muted text-xs leading-relaxed max-w-sm mx-auto">
+            No team keeps it. No treasury recycles it.<br />
+            Burned = reduced supply = value for holders.
+          </p>
+        </div>
+
+        <p className="text-muted text-[11px] text-center max-w-md mx-auto leading-relaxed">
+          Either way, PLOT holders benefit:<br />
+          reach milestones &rarr; earn airdrop.
+          Miss milestones &rarr; supply shrinks.
+        </p>
       </div>
 
       {/* ── Participant count ── */}
