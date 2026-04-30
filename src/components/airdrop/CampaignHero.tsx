@@ -300,10 +300,10 @@ export function CampaignHero() {
             <span className="text-muted">Pool value: {data.currentFdv > 0 ? formatUsdValue(burnState.poolUsd) : "$0"}</span>
           </div>
           {/* Milestone rows */}
-          {milestoneRows.map((row) => (
+          {milestoneRows.map((row, i) => (
             <div key={row.fdv} className="grid grid-cols-3 gap-x-4 py-2.5 px-3 text-xs border-border border-t">
               <span className={row.isFull ? "text-accent font-bold" : "text-foreground font-medium"}>
-                Step {milestoneRows.indexOf(row) + 1}
+                Step {i + 1}
               </span>
               <span className="text-foreground">MCap {formatCompact(row.fdv)}</span>
               <span className={row.isFull ? "text-accent font-bold" : "text-foreground"}>
