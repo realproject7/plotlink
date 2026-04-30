@@ -29,32 +29,19 @@ interface StatusData {
 
 const MAX_SUPPLY = 1_000_000;
 
-const TIER_META = [
-  { key: "bronze" as const, emoji: "🥉", label: "Bronze", cmcRank: 1900 },
-  { key: "silver" as const, emoji: "🥈", label: "Silver", cmcRank: 950 },
-  { key: "gold" as const, emoji: "🥇", label: "Gold", cmcRank: 400 },
-  { key: "diamond" as const, emoji: "💎", label: "Diamond", cmcRank: 250 },
-];
+const TIER_KEYS = ["bronze", "silver", "gold", "diamond"] as const;
 
-type Tier = {
-  key: string;
-  emoji: string;
-  label: string;
-  cmcRank: number;
+interface MilestoneRow {
   fdv: number;
   pct: number;
-  reached: boolean;
-};
-
-const IS_PROD_MODE = process.env.NEXT_PUBLIC_AIRDROP_MODE !== "test";
-
-/** Build tier array from API milestones so test/prod config is respected */
-function buildTiers(milestones: StatusData["milestones"]): Tier[] {
-  return TIER_META.map((m) => {
-    const ms = milestones[m.key];
-    return { ...m, fdv: ms.mcap, pct: ms.pct, reached: ms.reached };
-  });
+  unlockPlot: number;
+  poolUsd: number;
+  burnPct: number;
+  cmcRank: string | null;
+  isFull: boolean;
 }
+
+const CMC_RANKS = ["≈ CMC #1900", "≈ CMC #950", "≈ CMC #400", "≈ CMC #250"];
 
 /* ─── Helpers ─── */
 
@@ -71,17 +58,11 @@ function useAirdropStatus() {
   });
 }
 
-/** Pool USD at a given milestone: poolAmount * (pct/100) * (fdv / maxSupply). */
-function poolUsdAtTier(tier: Tier, poolAmount: number): number {
-  return poolAmount * (tier.pct / 100) * (tier.fdv / MAX_SUPPLY);
+function formatCompact(val: number): string {
+  if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`;
+  if (val >= 1_000) return `$${(val / 1_000).toFixed(0)}K`;
+  return `$${val.toFixed(0)}`;
 }
-
-/** PLOT unlocked at a given milestone. */
-function plotAtTier(tier: Tier, poolAmount: number): number {
-  return poolAmount * (tier.pct / 100);
-}
-
-/* ─── Countdown hook ─── */
 
 function useCountdown(endDateStr: string) {
   const [remaining, setRemaining] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -106,147 +87,107 @@ function useCountdown(endDateStr: string) {
   return remaining;
 }
 
-/* ─── Segmented progress bar ─── */
-
-/**
- * 4-segment progress bar. Each segment represents one milestone tier and
- * fills based on log-scale progress between adjacent milestones, so reaching
- * Bronze visibly fills the first segment instead of looking like 1% of the bar.
- */
-function SegmentedProgressBar({
-  tiers,
-  currentFdv,
-}: {
-  tiers: Tier[];
-  currentFdv: number;
-}) {
-  const segments = useMemo(() => {
-    return tiers.map((t, i) => {
-      const lowerFdv = i === 0 ? t.fdv / 10 : tiers[i - 1].fdv;
-      let fillPct = 0;
-      if (currentFdv >= t.fdv) {
-        fillPct = 100;
-      } else if (currentFdv > lowerFdv) {
-        const logCur = Math.log10(currentFdv);
-        const logLow = Math.log10(lowerFdv);
-        const logHi = Math.log10(t.fdv);
-        fillPct = ((logCur - logLow) / (logHi - logLow)) * 100;
-      }
-      return { ...t, fillPct };
-    });
-  }, [tiers, currentFdv]);
-
-  const indicatorIdx = segments.findIndex((s) => s.fillPct < 100 && s.fillPct > 0);
-  const indicatorSegment =
-    indicatorIdx === -1
-      ? segments.findIndex((s) => s.fillPct === 0)
-      : indicatorIdx;
-
-  return (
-    <div className="space-y-1">
-      <div className="flex gap-1">
-        {segments.map((s) => (
-          <div
-            key={s.key}
-            className="bg-surface border-border h-3 flex-1 rounded border overflow-hidden"
-            aria-label={`${s.label} progress: ${Math.round(s.fillPct)}%`}
-          >
-            <div
-              className="bg-accent h-full transition-all"
-              style={{ width: `${s.fillPct}%` }}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="flex gap-1">
-        {segments.map((s, i) => (
-          <div
-            key={s.key}
-            className={`flex-1 text-center text-[10px] leading-tight ${
-              s.fillPct === 100 ? "text-accent" : "text-muted"
-            }`}
-          >
-            <div className="font-medium">
-              {s.emoji} {formatUsdValue(s.fdv)}
-            </div>
-            {indicatorSegment === i && currentFdv > 0 && (
-              <div className="text-foreground text-[9px] mt-0.5">
-                <span aria-hidden>▲</span> Current: {formatUsdValue(currentFdv)}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+function buildMilestoneRows(
+  milestones: StatusData["milestones"],
+  poolAmount: number,
+): MilestoneRow[] {
+  return TIER_KEYS.map((key, i) => {
+    const ms = milestones[key];
+    const price = ms.mcap / MAX_SUPPLY;
+    const unlockPlot = poolAmount * (ms.pct / 100);
+    return {
+      fdv: ms.mcap,
+      pct: ms.pct,
+      unlockPlot,
+      poolUsd: unlockPlot * price,
+      burnPct: 100 - ms.pct,
+      cmcRank: CMC_RANKS[i] ?? null,
+      isFull: ms.pct === 100,
+    };
+  });
 }
 
-/* ─── Milestone card ─── */
+function getCurrentBurnState(
+  currentFdv: number,
+  milestones: StatusData["milestones"],
+  poolAmount: number,
+): { burnPct: number; distributePct: number; poolUsd: number } {
+  const entries = TIER_KEYS.map((k) => milestones[k]);
+  let highestPct = 0;
+  for (let i = entries.length - 1; i >= 0; i--) {
+    if (currentFdv >= entries[i].mcap) {
+      highestPct = entries[i].pct;
+      break;
+    }
+  }
+  const price = currentFdv / MAX_SUPPLY;
+  const unlockPlot = poolAmount * (highestPct / 100);
+  return {
+    burnPct: 100 - highestPct,
+    distributePct: highestPct,
+    poolUsd: unlockPlot * price,
+  };
+}
 
-function MilestoneCard({
-  tier,
-  poolAmount,
-  isCurrentTarget,
+/* ─── Burn Bar ─── */
+
+function BurnBar({
+  burnPct,
+  distributePct,
+  currentFdv,
+  poolUsd,
 }: {
-  tier: Tier;
-  poolAmount: number;
-  isCurrentTarget: boolean;
+  burnPct: number;
+  distributePct: number;
+  currentFdv: number;
+  poolUsd: number;
 }) {
-  const plot = plotAtTier(tier, poolAmount);
-  const poolUsd = poolUsdAtTier(tier, poolAmount);
-  const burnPct = 100 - tier.pct;
-
-  const visualState = tier.reached
-    ? "border-accent text-foreground"
-    : isCurrentTarget
-      ? "border-border text-foreground"
-      : "border-border opacity-50";
+  const isFull = distributePct >= 100;
+  const isAllBurned = burnPct >= 100;
 
   return (
-    <div
-      className={`rounded border px-3 py-2.5 space-y-1.5 ${visualState}`}
-      data-state={tier.reached ? "reached" : isCurrentTarget ? "current" : "future"}
-    >
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-bold">
-          {tier.emoji} {tier.label}
-        </div>
-        {tier.reached && (
-          <span className="text-accent text-[10px]" aria-label="reached">✓</span>
+    <div className="border-border bg-surface rounded border p-4 space-y-3">
+      <div className="text-foreground text-xs font-bold uppercase tracking-wider">
+        If the campaign ended right now...
+      </div>
+
+      <div className="h-5 w-full rounded overflow-hidden flex">
+        {burnPct > 0 && (
+          <div
+            className="h-full transition-all duration-700"
+            style={{
+              width: `${burnPct}%`,
+              background: "linear-gradient(90deg, #CC3333, #E8650A)",
+            }}
+          />
+        )}
+        {distributePct > 0 && (
+          <div
+            className="h-full transition-all duration-700"
+            style={{
+              width: `${distributePct}%`,
+              background: "linear-gradient(90deg, #2D8B4E, #00CC66)",
+            }}
+          />
         )}
       </div>
 
-      <div className="space-y-0.5 text-[11px]">
-        <div className="flex justify-between gap-2">
-          <span className="text-muted">FDV</span>
-          <span className="font-mono">{formatUsdValue(tier.fdv)}</span>
-        </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className={isAllBurned ? "text-[#CC3333] font-bold" : "text-muted"}>
+          ← {burnPct}% BURNED
+        </span>
+        <span className={isFull ? "text-[#00CC66] font-bold" : "text-muted"}>
+          {isFull ? "FULL DISTRIBUTION" : `${distributePct}% distributed →`}
+        </span>
+      </div>
 
-        {IS_PROD_MODE && (
-          <div className="flex justify-between gap-2">
-            <span className="text-muted">CMC</span>
-            <span className="text-muted font-mono">~#{tier.cmcRank.toLocaleString()}</span>
-          </div>
-        )}
-
-        <div className="flex justify-between gap-2 pt-0.5">
-          <span className="text-muted">Unlock</span>
-          <span className="font-mono">{tier.pct}%</span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted">PLOT</span>
-          <span className="font-mono">{plot.toLocaleString()}</span>
-        </div>
-
-        <div className="flex justify-between gap-2 pt-0.5">
-          <span className="text-muted">Pool</span>
-          <span className="font-mono">~{formatUsdValue(poolUsd)}</span>
-        </div>
-        <div className="flex justify-between gap-2">
-          <span className="text-muted">Burn</span>
-          <span className="font-mono">{burnPct}%</span>
-        </div>
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted">
+          Current FDV: {currentFdv > 0 ? formatUsdValue(currentFdv) : "—"}
+        </span>
+        <span className="text-foreground font-bold">
+          Pool value right now: {poolUsd > 0 ? formatUsdValue(poolUsd) : "$0"}
+        </span>
       </div>
     </div>
   );
@@ -258,8 +199,16 @@ export function CampaignHero() {
   const { data, isLoading } = useAirdropStatus();
   const countdown = useCountdown(data?.campaignEnd ?? "2027-01-01");
 
-  const tiers = useMemo(
-    () => (data ? buildTiers(data.milestones) : []),
+  const milestoneRows = useMemo(
+    () => (data ? buildMilestoneRows(data.milestones, data.poolAmount) : []),
+    [data],
+  );
+
+  const burnState = useMemo(
+    () =>
+      data
+        ? getCurrentBurnState(data.currentFdv, data.milestones, data.poolAmount)
+        : { burnPct: 100, distributePct: 0, poolUsd: 0 },
     [data],
   );
 
@@ -273,40 +222,19 @@ export function CampaignHero() {
 
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
-  // Current target = first unreached tier; null if all reached
-  const currentTargetIdx = tiers.findIndex((t) => !t.reached);
-
   return (
-    <div className="border-border rounded border p-5 space-y-5">
-      {/* Title + Explanation */}
+    <div className="border-border rounded border p-5 space-y-6">
+      {/* ── Bold headline ── */}
       <div className="text-center space-y-2">
-        <h2 className="text-foreground text-xl font-bold leading-tight">
-          PLOT Big or Nothing Airdrop
+        <h2 className="text-foreground text-xl sm:text-2xl font-bold leading-tight tracking-tight">
+          5% OF ALL PLOT — LOCKED
         </h2>
-        <p className="text-muted text-xs leading-relaxed max-w-lg mx-auto">
-          {data.poolAmount.toLocaleString()} PLOT locked in a time-locked contract.
-          Reach milestone FDV targets and the pool is distributed to point holders.
-          Miss them and the unreached portion is burned forever.
+        <p className="text-muted text-sm sm:text-base font-bold uppercase tracking-wide">
+          Grow the market. Or watch it burn.
         </p>
-
-        {/* Lock-up proof */}
-        {data.lockerTx ? (
-          <a
-            href={`https://basescan.org/tx/${data.lockerTx}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent text-xs hover:underline inline-flex items-center gap-1"
-          >
-            <span>&#x1F512;</span> View lock-up proof on Basescan
-          </a>
-        ) : (
-          <span className="text-muted text-xs inline-flex items-center gap-1">
-            <span>&#x1F512;</span> Lock-up proof: pending
-          </span>
-        )}
       </div>
 
-      {/* Live Countdown */}
+      {/* ── Countdown ── */}
       {data.timeRemainingDays > 0 && (
         <div className="flex items-center gap-2 justify-center">
           {[
@@ -328,19 +256,85 @@ export function CampaignHero() {
         </div>
       )}
 
-      {/* Segmented progress bar */}
-      <SegmentedProgressBar tiers={tiers} currentFdv={data.currentFdv} />
+      {/* ── Lock-up proof ── */}
+      <div className="text-center">
+        {data.lockerTx ? (
+          <a
+            href={`https://basescan.org/tx/${data.lockerTx}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent text-xs hover:underline inline-flex items-center gap-1"
+          >
+            <span>&#x1F512;</span> Verified on Basescan
+          </a>
+        ) : (
+          <span className="text-muted text-xs inline-flex items-center gap-1">
+            <span>&#x1F512;</span> Lock-up proof: pending
+          </span>
+        )}
+      </div>
 
-      {/* Milestone cards: 2x2 mobile, 4-col desktop */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {tiers.map((t, i) => (
-          <MilestoneCard
-            key={t.key}
-            tier={t}
-            poolAmount={data.poolAmount}
-            isCurrentTarget={i === currentTargetIdx}
-          />
-        ))}
+      {/* ── Burn bar ── */}
+      <BurnBar
+        burnPct={burnState.burnPct}
+        distributePct={burnState.distributePct}
+        currentFdv={data.currentFdv}
+        poolUsd={burnState.poolUsd}
+      />
+
+      {/* ── What happens as PLOT grows ── */}
+      <div className="space-y-3">
+        <div className="text-foreground text-xs font-bold uppercase tracking-wider text-center">
+          What happens as PLOT grows
+        </div>
+
+        <div className="space-y-0">
+          {milestoneRows.map((row, i) => (
+            <div key={row.fdv}>
+              {i > 0 && <div className="border-border border-t border-dashed" />}
+              <div
+                className={`grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-1 py-3 px-2 text-xs ${
+                  row.isFull ? "bg-surface rounded" : ""
+                }`}
+              >
+                <div>
+                  <span className="text-foreground font-bold">
+                    FDV {formatCompact(row.fdv)}
+                  </span>
+                  {row.cmcRank && (
+                    <span className="text-muted text-[10px] ml-1.5">{row.cmcRank}</span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-foreground">
+                    {row.pct}% unlocked
+                  </span>
+                  <span className="text-muted ml-1.5">
+                    {row.burnPct}% burned
+                  </span>
+                </div>
+                <div className="text-foreground">
+                  {row.unlockPlot.toLocaleString()} PLOT
+                </div>
+                <div className={row.isFull ? "text-accent font-bold" : "text-foreground"}>
+                  Pool ~{formatCompact(row.poolUsd)}
+                  {row.isFull && (
+                    <span className="text-accent text-[10px] ml-1.5 uppercase">
+                      Full distribution
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Participant count ── */}
+      <div className="text-center text-muted text-xs">
+        {data.totalParticipants > 0
+          ? `${data.totalParticipants} participants earning`
+          : "Be the first to participate"}
       </div>
     </div>
   );
