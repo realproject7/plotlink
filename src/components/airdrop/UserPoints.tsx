@@ -47,6 +47,7 @@ const ACTIONS: { key: keyof PointsData["breakdown"]; label: string }[] = [
   { key: "rate", label: "Rating" },
 ];
 
+const MAX_SUPPLY = 1_000_000;
 const TIER_KEYS = ["bronze", "silver", "gold", "diamond"] as const;
 
 function useAirdropPoints(address: string | undefined) {
@@ -155,8 +156,6 @@ function UserPointsInner({ address }: { address: string }) {
     );
   }
 
-  const price = statusData?.latestPriceUsd ?? null;
-
   return (
     <div className="space-y-3">
       {/* Points summary */}
@@ -187,14 +186,15 @@ function UserPointsInner({ address }: { address: string }) {
                 {TIER_KEYS.map((key) => {
                   const amount = data.estimatedAirdrop[key];
                   const fdv = statusData?.milestones[key].mcap ?? 0;
-                  const usdVal = price && amount > 0 ? formatUsdValue(amount * price) : null;
+                  const scenarioPrice = fdv / MAX_SUPPLY;
+                  const scenarioUsd = amount > 0 ? formatUsdValue(amount * scenarioPrice) : null;
                   return (
                     <div key={key} className="text-muted">
                       At {formatCompact(fdv)} FDV →{" "}
                       <span className="text-foreground font-medium">
                         {amount.toLocaleString()} PLOT
                       </span>
-                      {usdVal && <span> (~{usdVal})</span>}
+                      {scenarioUsd && <span> (~{scenarioUsd})</span>}
                     </div>
                   );
                 })}
