@@ -1,17 +1,12 @@
 const COLUMNS = [
   {
     title: "TYPICAL AIRDROP",
-    rows: ["Fixed amount", "Dumps on listing", "No skin in game"],
-    highlighted: false,
-  },
-  {
-    title: "TYPICAL STAKING",
-    rows: ["Fixed APY", "Inflates supply", "No risk reward"],
+    rows: ["Fixed amount", "Dumps on day 1", "No skin in game"],
     highlighted: false,
   },
   {
     title: "THIS AIRDROP",
-    rows: ["Pool grows with market", "Burned if no growth", "Everyone wins together"],
+    rows: ["Pool grows with MCap", "Burned if no growth", "Everyone wins together"],
     highlighted: true,
   },
 ] as const;
@@ -23,8 +18,8 @@ export function InnovationBanner() {
         ── How is this different? ──
       </div>
 
-      {/* Three-column comparison */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* Two-column comparison */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {COLUMNS.map((col) => (
           <div
             key={col.title}
@@ -51,7 +46,7 @@ export function InnovationBanner() {
       {/* Summary */}
       <p className="text-muted text-xs leading-relaxed max-w-xl mx-auto text-center font-mono">
         The pool isn&apos;t pre-valued — it&apos;s valued <span className="text-foreground font-medium">by the market</span>.
-        At $100M FDV, 50,000 PLOT = $5M distributed.
+        At $100M MCap, 50,000 PLOT = $5M distributed.
         At $0 growth, 50,000 PLOT = burned forever.
         Everyone — team, holders, earners — wins only if PLOT grows.
       </p>
