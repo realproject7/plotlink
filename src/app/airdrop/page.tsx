@@ -4,6 +4,7 @@ import { UserPoints } from "../../components/airdrop/UserPoints";
 import { ClaimPanel } from "../../components/airdrop/ClaimPanel";
 import { Leaderboard } from "../../components/airdrop/Leaderboard";
 import { WeeklySnapshots } from "../../components/airdrop/WeeklySnapshots";
+import { InnovationBanner } from "../../components/airdrop/InnovationBanner";
 import { AIRDROP_CONFIG } from "../../../lib/airdrop/config";
 
 export const metadata: Metadata = {
@@ -18,6 +19,11 @@ export default function AirdropPage() {
     <main className="mx-auto max-w-5xl px-6 py-8 pb-24 lg:pb-8">
       {/* Hero spans full width */}
       <CampaignHero />
+
+      {/* Innovation banner — between hero and user sections */}
+      <div className="mt-6">
+        <InnovationBanner />
+      </div>
 
       {/* 2-column grid below hero */}
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
