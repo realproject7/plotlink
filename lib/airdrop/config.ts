@@ -86,5 +86,7 @@ const PROD_CONFIG: AirdropConfig = {
 
 const mode = process.env.NEXT_PUBLIC_AIRDROP_MODE ?? "prod";
 
+export const AIRDROP_TEST_MODE = mode === "test";
+
 export const AIRDROP_CONFIG: AirdropConfig =
-  mode === "test" ? TEST_CONFIG : PROD_CONFIG;
+  AIRDROP_TEST_MODE ? TEST_CONFIG : PROD_CONFIG;
