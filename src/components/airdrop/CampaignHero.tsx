@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { formatUsdValue } from "../../../lib/usd-price";
+import { AIRDROP_TEST_MODE } from "../../../lib/airdrop/config";
 
 /* ─── Types ─── */
 
@@ -101,7 +102,7 @@ function buildMilestoneRows(
       unlockPlot,
       poolUsd: unlockPlot * price,
       burnPct: 100 - ms.pct,
-      cmcRank: CMC_RANKS[i] ?? null,
+      cmcRank: AIRDROP_TEST_MODE ? null : (CMC_RANKS[i] ?? null),
       isFull: ms.pct === 100,
     };
   });
