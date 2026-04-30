@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -36,8 +36,7 @@ function getWeekDays(
   lastCheckin: string | null,
 ): DayStatus[] {
   const now = new Date();
-  // Get Monday of the current week (UTC)
-  const todayDow = now.getUTCDay(); // 0=Sun, 1=Mon, ...
+  const todayDow = now.getUTCDay();
   const mondayOffset = todayDow === 0 ? -6 : 1 - todayDow;
   const monday = new Date(now);
   monday.setUTCDate(monday.getUTCDate() + mondayOffset);
@@ -46,7 +45,6 @@ function getWeekDays(
   const todayStr = now.toISOString().slice(0, 10);
   const lastCheckinStr = lastCheckin ? new Date(lastCheckin).toISOString().slice(0, 10) : null;
 
-  // Build set of checked-in dates this week by walking back from lastCheckin
   const checkedDates = new Set<string>();
   if (lastCheckinStr && currentStreak > 0) {
     const lastDate = new Date(lastCheckinStr + "T00:00:00Z");
@@ -54,9 +52,8 @@ function getWeekDays(
       const d = new Date(lastDate);
       d.setUTCDate(d.getUTCDate() - i);
       const ds = d.toISOString().slice(0, 10);
-      // Only include dates in this week
       if (d >= monday) checkedDates.add(ds);
-      else break; // no need to go further back
+      else break;
     }
   }
 
@@ -77,6 +74,57 @@ function getWeekDays(
     }
   }
   return result;
+}
+
+/* ─── Tiers tooltip ─── */
+
+function TiersTooltip({ currentStreak }: { currentStreak: number }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="text-muted hover:text-foreground text-[10px] cursor-pointer"
+      >
+        tiers &#9432;
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-10 bg-surface border-border border rounded p-2.5 shadow-sm min-w-[180px]">
+          <div className="space-y-0.5">
+            {BOOST_TIERS.map((tier) => {
+              const unlocked = currentStreak >= tier.days;
+              return (
+                <div
+                  key={tier.days}
+                  className={`flex items-center justify-between text-[11px] ${
+                    unlocked ? "text-foreground" : "text-muted opacity-60"
+                  }`}
+                >
+                  <span>{tier.days}+ days → +{tier.boost}%</span>
+                  <span>{unlocked ? "✓" : "🔒"}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="border-border border-t mt-1.5 pt-1.5">
+            <p className="text-muted text-[9px]">Miss a day → drop one tier</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ─── Component ─── */
@@ -122,106 +170,57 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
     [streak.currentStreak, streak.checkedInToday, streak.lastCheckin],
   );
 
-  // Current tier index for highlight
-  const currentTierIdx = useMemo(() => {
-    for (let i = BOOST_TIERS.length - 1; i >= 0; i--) {
-      if (streak.currentStreak >= BOOST_TIERS[i].days) return i;
-    }
-    return -1;
-  }, [streak.currentStreak]);
-
   return (
-    <div className="border-border rounded border px-3 py-3 space-y-3">
-      {/* Header: streak count + boost tier */}
-      <div className="text-center">
-        <div className="text-foreground text-lg font-bold">
-          &#x26A1; {streak.currentStreak} Day{streak.currentStreak !== 1 ? "s" : ""} Streak
+    <div className="border-border rounded border px-3 py-2.5 space-y-2.5">
+      {/* Compact header: streak + boost + check-in button */}
+      <div className="flex items-center justify-between">
+        <div className="text-foreground text-sm font-bold">
+          &#x26A1; {streak.currentStreak} Day{streak.currentStreak !== 1 ? "s" : ""}
           {streak.boostPercent > 0 && (
-            <span className="text-accent"> &middot; +{streak.boostPercent}% Boost</span>
+            <span className="text-accent font-medium"> · +{streak.boostPercent}%</span>
           )}
         </div>
-        {streak.boostPercent === 0 && streak.nextTier && (
-          <div className="text-muted text-xs">
-            Next: {streak.nextTier.days} days &rarr; +{streak.nextTier.boost * 100}%
-          </div>
-        )}
-      </div>
-
-      {/* Weekly calendar */}
-      <div className="border-border rounded border px-2 py-2">
-        <div className="grid grid-cols-7 gap-1 text-center">
-          {DAY_LABELS.map((label) => (
-            <div key={label} className="text-muted text-[8px] uppercase tracking-wider">
-              {label}
-            </div>
-          ))}
-          {weekDays.map((status, i) => (
-            <div key={i} className="flex justify-center">
-              <DayDot status={status} />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Check In button */}
-      <div className="text-center">
         <button
           type="button"
           onClick={handleCheckIn}
           disabled={streak.checkedInToday || checking}
-          className="bg-accent text-white rounded px-4 py-1.5 text-xs font-medium disabled:opacity-50 cursor-pointer"
+          className="bg-accent text-white rounded px-3 py-1 text-xs font-medium disabled:opacity-50 cursor-pointer"
         >
           {streak.checkedInToday
-            ? "Checked in today \u2713"
+            ? "✓ Done"
             : checking
-              ? "Signing..."
+              ? "..."
               : "Check In"}
         </button>
       </div>
 
-      {error && <div className="text-error text-xs text-center">{error}</div>}
-
-      {/* Boost tiers table */}
-      <div className="border-border rounded border px-2 py-2">
-        <div className="text-muted text-[10px] font-medium uppercase tracking-wider mb-1.5">
-          Boost Tiers
-        </div>
-        <div className="space-y-0.5">
-          {BOOST_TIERS.map((tier, i) => {
-            const unlocked = streak.currentStreak >= tier.days;
-            const isCurrent = i === currentTierIdx;
-            return (
-              <div
-                key={tier.days}
-                className={`grid grid-cols-[1fr_auto_auto] items-center text-xs px-2 py-0.5 rounded gap-x-3 ${
-                  isCurrent
-                    ? "bg-accent/10 text-foreground font-medium"
-                    : unlocked
-                      ? "text-foreground"
-                      : "text-muted opacity-60"
-                }`}
-              >
-                <span>{tier.days}+ days</span>
-                <span>+{tier.boost}%</span>
-                <span className="w-14 text-right text-[10px]">
-                  {isCurrent ? (
-                    <span className="text-accent font-medium">&larr; active</span>
-                  ) : unlocked ? (
-                    <span>&check;</span>
-                  ) : (
-                    <span>&#x1F512;</span>
-                  )}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="border-border border-t mt-1.5 pt-1.5">
-          <p className="text-muted text-[9px]">
-            Miss a day &rarr; drop one tier
-          </p>
-        </div>
+      {/* Weekly calendar */}
+      <div className="grid grid-cols-7 gap-1 text-center">
+        {DAY_LABELS.map((label) => (
+          <div key={label} className="text-muted text-[8px] uppercase tracking-wider">
+            {label}
+          </div>
+        ))}
+        {weekDays.map((status, i) => (
+          <div key={i} className="flex justify-center">
+            <DayDot status={status} />
+          </div>
+        ))}
       </div>
+
+      {/* Next tier + tiers tooltip */}
+      <div className="flex items-center justify-between">
+        {streak.nextTier ? (
+          <div className="text-muted text-[10px]">
+            Next: {streak.nextTier.days} days → +{streak.nextTier.boost * 100}%
+          </div>
+        ) : (
+          <div className="text-accent text-[10px] font-medium">Max boost reached!</div>
+        )}
+        <TiersTooltip currentStreak={streak.currentStreak} />
+      </div>
+
+      {error && <div className="text-error text-xs text-center">{error}</div>}
     </div>
   );
 }
