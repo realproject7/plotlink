@@ -190,7 +190,7 @@ function UserPointsInner({ address }: { address: string }) {
                   const scenarioUsd = amount > 0 ? formatUsdValue(amount * scenarioPrice) : null;
                   return (
                     <div key={key} className="text-muted">
-                      At {formatCompact(fdv)} FDV →{" "}
+                      At {formatCompact(fdv)} MCap →{" "}
                       <span className="text-foreground font-medium">
                         {amount.toLocaleString()} PLOT
                       </span>
@@ -200,7 +200,7 @@ function UserPointsInner({ address }: { address: string }) {
                 })}
               </div>
             </InfoTooltip>
-            <div className="text-muted text-[10px] mt-0.5">(based on current FDV)</div>
+            <div className="text-muted text-[10px] mt-0.5">(based on current MCap)</div>
           </div>
         )}
       </div>

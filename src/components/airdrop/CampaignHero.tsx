@@ -184,7 +184,7 @@ function BurnBar({
 
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted">
-          Current FDV: {currentFdv > 0 ? formatUsdValue(currentFdv) : "—"}
+          Current MCap: {currentFdv > 0 ? formatUsdValue(currentFdv) : "—"}
         </span>
         <span className="text-foreground font-bold">
           Pool value right now: {poolUsd > 0 ? formatUsdValue(poolUsd) : "$0"}
@@ -300,7 +300,7 @@ export function CampaignHero() {
               >
                 <div>
                   <span className="text-foreground font-bold">
-                    FDV {formatCompact(row.fdv)}
+                    MCap {formatCompact(row.fdv)}
                   </span>
                   {row.cmcRank && (
                     <span className="text-muted text-[10px] ml-1.5">{row.cmcRank}</span>
@@ -336,6 +336,11 @@ export function CampaignHero() {
         {data.totalParticipants > 0
           ? `${data.totalParticipants} participants earning`
           : "Be the first to participate"}
+      </div>
+
+      {/* ── MCap explanation footnote ── */}
+      <div className="text-center text-muted text-[10px]">
+        MCap = PLOT price × 1M max supply
       </div>
     </div>
   );
