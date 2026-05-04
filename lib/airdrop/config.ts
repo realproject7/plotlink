@@ -53,8 +53,8 @@ const STREAK_BOOSTS: Record<number, number> = {
 const STREAK_MIN_GAP_MINUTES = 30;
 
 const TEST_CONFIG: AirdropConfig = {
-  CAMPAIGN_START: new Date("2026-04-27"),
-  CAMPAIGN_END: new Date("2026-04-29"),       // start + 2 days
+  CAMPAIGN_START: new Date("2026-05-04"),
+  CAMPAIGN_END: new Date("2026-05-11"),       // start + 7 days
   POOL_AMOUNT: 10,                            // 10 PLOT
   MILESTONES: {
     BRONZE: { mcap: 7_000, pct: 10 },
