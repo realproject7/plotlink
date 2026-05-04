@@ -306,13 +306,6 @@ export function CampaignHero() {
       {/* ── MCap progress chart ── */}
       <MCapChart currentFdv={data.currentFdv} />
 
-      {/* ── Participant count ── */}
-      <div className="text-center text-muted text-xs">
-        {data.totalParticipants > 0
-          ? `${data.totalParticipants} participants earning`
-          : "Be the first to participate"}
-      </div>
-
       {/* ── MCap explanation footnote ── */}
       <div className="text-center text-muted text-[10px]">
         MCap = PLOT price × 1M max supply

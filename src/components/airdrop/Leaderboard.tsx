@@ -57,7 +57,10 @@ export function Leaderboard() {
 
   return (
     <div className="border-border rounded border p-4">
-      <h3 className="text-foreground text-sm font-bold mb-3">Leaderboard</h3>
+      <h3 className="text-foreground text-sm font-bold">Leaderboard</h3>
+      <div className="text-muted text-xs mb-3">
+        {data.entries.length} {data.entries.length === 1 ? "participant" : "participants"}
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full text-xs">
