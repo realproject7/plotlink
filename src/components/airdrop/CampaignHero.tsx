@@ -52,12 +52,19 @@ function formatMcap(n: number): string {
 
 interface DailyPrice { date: string; fdv: number }
 
-/** Non-derivable metadata per milestone tier (cmcRank only applies to prod values) */
-const MILESTONE_EXTRA: Record<string, { cmcRank: string; letter: string }> = {
-  bronze: { cmcRank: "≈ #1900", letter: "A" },
-  silver: { cmcRank: "≈ #950", letter: "B" },
-  gold: { cmcRank: "≈ #400", letter: "C" },
-  diamond: { cmcRank: "≈ #250", letter: "D" },
+/** CMC ranks only apply at specific production milestone values */
+const MILESTONE_EXTRA: Record<string, { letter: string }> = {
+  bronze: { letter: "A" },
+  silver: { letter: "B" },
+  gold: { letter: "C" },
+  diamond: { letter: "D" },
+};
+
+const CMC_RANKS: Record<number, string> = {
+  1_000_000: "≈ #1900",
+  10_000_000: "≈ #950",
+  50_000_000: "≈ #400",
+  100_000_000: "≈ #250",
 };
 
 /* ─── Helpers ─── */
@@ -131,14 +138,14 @@ function MCapChart({
   const chartW = svgW - pad.left - pad.right;
   const chartH = svgH - pad.top - pad.bottom;
 
-  // Milestone entries — derive labels from config values
+  // Milestone entries — derive labels from config values, cmcRank only for matching prod values
   const milestoneEntries = Object.entries(milestones).map(([key, val]) => {
-    const extra = MILESTONE_EXTRA[key] ?? { cmcRank: "", letter: key[0].toUpperCase() };
+    const extra = MILESTONE_EXTRA[key] ?? { letter: key[0].toUpperCase() };
     return {
       key,
       ...val,
       label: formatMcap(val.mcap),
-      cmcRank: extra.cmcRank,
+      cmcRank: CMC_RANKS[val.mcap] ?? "",
       letter: extra.letter,
     };
   });
