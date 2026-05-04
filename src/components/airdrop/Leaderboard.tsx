@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
 
@@ -15,6 +16,9 @@ interface LeaderboardData {
   entries: LeaderboardEntry[];
   userRank: number | null;
   totalParticipants: number;
+  page: number;
+  totalPages: number;
+  limit: number;
 }
 
 function truncateAddress(addr: string) {
@@ -23,12 +27,14 @@ function truncateAddress(addr: string) {
 
 export function Leaderboard() {
   const { address, isConnected } = useAccount();
+  const [page, setPage] = useState(1);
 
   const { data, isLoading } = useQuery<LeaderboardData>({
-    queryKey: ["airdrop-leaderboard", address],
+    queryKey: ["airdrop-leaderboard", address, page],
     queryFn: async () => {
-      const params = address ? `?address=${address.toLowerCase()}` : "";
-      const res = await fetch(`/api/airdrop/leaderboard${params}`);
+      const params = new URLSearchParams({ page: String(page), limit: "20" });
+      if (address) params.set("address", address.toLowerCase());
+      const res = await fetch(`/api/airdrop/leaderboard?${params}`);
       if (!res.ok) throw new Error("Failed to fetch leaderboard");
       return res.json();
     },
@@ -44,7 +50,7 @@ export function Leaderboard() {
     );
   }
 
-  if (data.entries.length === 0) {
+  if (data.entries.length === 0 && data.totalParticipants === 0) {
     return (
       <div className="border-border rounded border p-4">
         <h3 className="text-foreground text-sm font-bold mb-2">Leaderboard</h3>
@@ -54,7 +60,7 @@ export function Leaderboard() {
   }
 
   const userAddr = address?.toLowerCase();
-  const inTop50 = userAddr && data.entries.some((e) => e.address.toLowerCase() === userAddr);
+  const onCurrentPage = userAddr && data.entries.some((e) => e.address.toLowerCase() === userAddr);
 
   return (
     <div className="border-border rounded border p-4">
@@ -99,8 +105,31 @@ export function Leaderboard() {
         </table>
       </div>
 
-      {/* User's rank if outside top 50 */}
-      {isConnected && !inTop50 && data.userRank && (
+      {/* Pagination */}
+      {data.totalPages > 1 && (
+        <div className="border-border mt-3 border-t pt-2 flex items-center justify-center gap-3 text-xs">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={data.page <= 1}
+            className="text-accent disabled:text-muted disabled:cursor-not-allowed"
+          >
+            &larr; Prev
+          </button>
+          <span className="text-muted">
+            {data.page}/{data.totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => Math.min(data.totalPages, p + 1))}
+            disabled={data.page >= data.totalPages}
+            className="text-accent disabled:text-muted disabled:cursor-not-allowed"
+          >
+            Next &rarr;
+          </button>
+        </div>
+      )}
+
+      {/* User's rank if outside current page */}
+      {isConnected && !onCurrentPage && data.userRank && (
         <div className="border-border mt-3 border-t pt-2 text-center text-xs">
           <span className="text-muted">Your rank: </span>
           <span className="text-foreground font-medium">#{data.userRank}</span>
