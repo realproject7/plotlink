@@ -14,6 +14,7 @@ interface LeaderboardEntry {
 interface LeaderboardData {
   entries: LeaderboardEntry[];
   userRank: number | null;
+  totalParticipants: number;
 }
 
 function truncateAddress(addr: string) {
@@ -59,7 +60,7 @@ export function Leaderboard() {
     <div className="border-border rounded border p-4">
       <h3 className="text-foreground text-sm font-bold">Leaderboard</h3>
       <div className="text-muted text-xs mb-3">
-        {data.entries.length} {data.entries.length === 1 ? "participant" : "participants"}
+        {data.totalParticipants} {data.totalParticipants === 1 ? "participant" : "participants"}
       </div>
 
       <div className="overflow-x-auto">
