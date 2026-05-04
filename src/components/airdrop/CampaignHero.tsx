@@ -32,6 +32,30 @@ const MILESTONES = [
 ];
 
 const MAX_MCAP = 100_000_000;
+const ACCENT = "#8B4513";
+
+/** Fixed milestone positions at 25/50/75/100% for even visual spacing */
+const MILESTONE_POS = new Map([
+  [1_000_000, 0.25],
+  [10_000_000, 0.50],
+  [50_000_000, 0.75],
+  [100_000_000, 1.0],
+]);
+
+/** Map MCap to 0–1 using piecewise linear interpolation between milestones */
+function mcapToX(mcap: number): number {
+  if (mcap <= 0) return 0;
+  if (mcap >= MAX_MCAP) return 1;
+  const thresholds = [0, 1_000_000, 10_000_000, 50_000_000, 100_000_000];
+  const positions = [0, 0.25, 0.50, 0.75, 1.0];
+  for (let i = 1; i < thresholds.length; i++) {
+    if (mcap <= thresholds[i]) {
+      const t = (mcap - thresholds[i - 1]) / (thresholds[i] - thresholds[i - 1]);
+      return positions[i - 1] + t * (positions[i] - positions[i - 1]);
+    }
+  }
+  return 1;
+}
 
 /* ─── Helpers ─── */
 
@@ -74,10 +98,10 @@ function useCountdown(endDateStr: string) {
 /* ─── MCap Chart ─── */
 
 function MCapChart({ currentFdv }: { currentFdv: number }) {
-  const progress = Math.min(currentFdv / MAX_MCAP, 1);
+  const progress = mcapToX(currentFdv);
   const svgW = 600;
   const svgH = 80;
-  const pad = { left: 0, right: 0 };
+  const pad = { left: 10, right: 10 };
   const chartW = svgW - pad.left - pad.right;
   const fillX = pad.left + progress * chartW;
 
@@ -85,13 +109,14 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
     <div className="space-y-3">
       {/* Desktop labels above chart */}
       <div className="hidden sm:block relative" style={{ height: 60 }}>
-        {MILESTONES.map((ms) => {
-          const x = (ms.mcap / MAX_MCAP) * 100;
+        {MILESTONES.map((ms, i) => {
+          const x = (MILESTONE_POS.get(ms.mcap) ?? 0) * 100;
+          const isLast = i === MILESTONES.length - 1;
           return (
             <div
               key={ms.letter}
-              className="absolute text-center -translate-x-1/2"
-              style={{ left: `${x}%`, top: 0 }}
+              className={`absolute ${isLast ? "text-right" : "text-center -translate-x-1/2"}`}
+              style={{ left: isLast ? undefined : `${x}%`, right: isLast ? 0 : undefined, top: 0 }}
             >
               <div className="text-sm font-bold text-foreground">{ms.label}</div>
               <div className="text-sm font-bold text-foreground">unlocks {ms.pct}%</div>
@@ -111,8 +136,8 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
       >
         <defs>
           <linearGradient id="mcap-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#00ff88" stopOpacity="0.4" />
-            <stop offset="100%" stopColor="#00ff88" stopOpacity="0.05" />
+            <stop offset="0%" stopColor={ACCENT} stopOpacity="0.4" />
+            <stop offset="100%" stopColor={ACCENT} stopOpacity="0.05" />
           </linearGradient>
         </defs>
 
@@ -140,7 +165,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
 
         {/* Milestone vertical dashed lines */}
         {MILESTONES.map((ms) => {
-          const mx = pad.left + (ms.mcap / MAX_MCAP) * chartW;
+          const mx = pad.left + (MILESTONE_POS.get(ms.mcap) ?? 0) * chartW;
           return (
             <line
               key={ms.letter}
@@ -157,7 +182,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
 
         {/* Mobile letter markers */}
         {MILESTONES.map((ms) => {
-          const mx = pad.left + (ms.mcap / MAX_MCAP) * chartW;
+          const mx = pad.left + (MILESTONE_POS.get(ms.mcap) ?? 0) * chartW;
           return (
             <text
               key={`label-${ms.letter}`}
@@ -182,7 +207,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
             y1={0}
             x2={fillX}
             y2={svgH}
-            stroke="#00ff88"
+            stroke={ACCENT}
             strokeWidth={2}
           />
         )}
@@ -190,7 +215,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
         {/* Heartbeat dot — inside SVG for pixel-perfect alignment */}
         {progress > 0 && (
           <>
-            <circle cx={fillX} cy={svgH / 2} r={8} fill="#00ff88" opacity={0.75}>
+            <circle cx={fillX} cy={svgH / 2} r={8} fill={ACCENT} opacity={0.75}>
               <animate
                 attributeName="r"
                 values="8;16;8"
@@ -204,7 +229,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
                 repeatCount="indefinite"
               />
             </circle>
-            <circle cx={fillX} cy={svgH / 2} r={6} fill="#00ff88" />
+            <circle cx={fillX} cy={svgH / 2} r={6} fill={ACCENT} />
           </>
         )}
       </svg>
@@ -212,7 +237,6 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
       {/* Scale labels */}
       <div className="flex justify-between text-[10px] text-muted font-mono mt-1">
         <span>$0</span>
-        <span>$50M</span>
         <span>$100M</span>
       </div>
 
