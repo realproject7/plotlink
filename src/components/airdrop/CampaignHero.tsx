@@ -83,10 +83,24 @@ export function CampaignHero() {
       {/* ── Bold headline ── */}
       <div className="text-center space-y-2">
         <h2 className="text-foreground text-xl sm:text-2xl font-bold leading-tight tracking-tight">
-          5% OF ALL PLOT — LOCKED
+          PLOT BIG AIRDROP
         </h2>
-        <p className="text-muted text-sm sm:text-base font-bold uppercase tracking-wide">
-          Grow the market. Or watch it burn.
+        <p className="text-muted text-sm sm:text-base leading-relaxed max-w-md mx-auto">
+          When PLOT MCap reaches each milestone, the airdrop pool gets bigger.{" "}
+          If not,{" "}
+          {data.lockerTx ? (
+            <a
+              href={`https://basescan.org/tx/${data.lockerTx}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline"
+            >
+              locked
+            </a>
+          ) : (
+            "locked"
+          )}{" "}
+          tokens will be burned.
         </p>
       </div>
 
@@ -111,24 +125,6 @@ export function CampaignHero() {
           ))}
         </div>
       )}
-
-      {/* ── Lock-up proof ── */}
-      <div className="text-center">
-        {data.lockerTx ? (
-          <a
-            href={`https://basescan.org/tx/${data.lockerTx}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent text-xs hover:underline inline-flex items-center gap-1"
-          >
-            <span>&#x1F512;</span> Verified on Basescan
-          </a>
-        ) : (
-          <span className="text-muted text-xs inline-flex items-center gap-1">
-            <span>&#x1F512;</span> Lock-up proof: pending
-          </span>
-        )}
-      </div>
 
       {/* ── Participant count ── */}
       <div className="text-center text-muted text-xs">
