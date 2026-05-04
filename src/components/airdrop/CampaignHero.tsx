@@ -24,38 +24,41 @@ interface StatusData {
   lockerTx: string | null;
 }
 
-const MILESTONES = [
-  { mcap: 1_000_000, label: "$1M", cmcRank: "≈ #1900", pct: 10, letter: "A" },
-  { mcap: 10_000_000, label: "$10M", cmcRank: "≈ #950", pct: 30, letter: "B" },
-  { mcap: 50_000_000, label: "$50M", cmcRank: "≈ #400", pct: 50, letter: "C" },
-  { mcap: 100_000_000, label: "$100M", cmcRank: "≈ #250", pct: 100, letter: "D" },
-];
+/* ─── Chart constants ─── */
 
-const MAX_MCAP = 100_000_000;
-const ACCENT = "#8B4513";
+const Y_MIN = 1_000; // $1K floor for log scale
+const Y_MAX = 100_000_000; // $100M ceiling
+const LOG_MIN = Math.log10(Y_MIN);
+const LOG_MAX = Math.log10(Y_MAX);
 
-/** Fixed milestone positions at 25/50/75/100% for even visual spacing */
-const MILESTONE_POS = new Map([
-  [1_000_000, 0.25],
-  [10_000_000, 0.50],
-  [50_000_000, 0.75],
-  [100_000_000, 1.0],
-]);
-
-/** Map MCap to 0–1 using piecewise linear interpolation between milestones */
-function mcapToX(mcap: number): number {
-  if (mcap <= 0) return 0;
-  if (mcap >= MAX_MCAP) return 1;
-  const thresholds = [0, 1_000_000, 10_000_000, 50_000_000, 100_000_000];
-  const positions = [0, 0.25, 0.50, 0.75, 1.0];
-  for (let i = 1; i < thresholds.length; i++) {
-    if (mcap <= thresholds[i]) {
-      const t = (mcap - thresholds[i - 1]) / (thresholds[i] - thresholds[i - 1]);
-      return positions[i - 1] + t * (positions[i] - positions[i - 1]);
-    }
-  }
-  return 1;
+/** Map MCap → 0–1 on log Y scale (inverted: 0 = top, 1 = bottom) */
+function mcapToY(mcap: number): number {
+  if (mcap <= 0) return 1;
+  const clamped = Math.min(Math.max(mcap, Y_MIN), Y_MAX);
+  return 1 - (Math.log10(clamped) - LOG_MIN) / (LOG_MAX - LOG_MIN);
 }
+
+/** Map date → 0–1 on X (time) axis */
+function dateToX(date: Date, start: Date, end: Date): number {
+  const range = end.getTime() - start.getTime();
+  if (range <= 0) return 0;
+  return Math.min(1, Math.max(0, (date.getTime() - start.getTime()) / range));
+}
+
+function formatMcap(n: number): string {
+  if (n >= 1_000_000) return `$${n / 1_000_000}M`;
+  if (n >= 1_000) return `$${n / 1_000}K`;
+  return `$${n}`;
+}
+
+interface DailyPrice { date: string; fdv: number }
+
+const MILESTONE_META: Record<string, { label: string; cmcRank: string; letter: string }> = {
+  bronze: { label: "$1M", cmcRank: "≈ #1900", letter: "A" },
+  silver: { label: "$10M", cmcRank: "≈ #950", letter: "B" },
+  gold: { label: "$50M", cmcRank: "≈ #400", letter: "C" },
+  diamond: { label: "$100M", cmcRank: "≈ #250", letter: "D" },
+};
 
 /* ─── Helpers ─── */
 
@@ -95,155 +98,228 @@ function useCountdown(endDateStr: string) {
   return remaining;
 }
 
-/* ─── MCap Chart ─── */
+/* ─── MCap Time-Series Chart ─── */
 
-function MCapChart({ currentFdv }: { currentFdv: number }) {
-  const progress = mcapToX(currentFdv);
+function MCapChart({
+  currentFdv,
+  campaignStart,
+  campaignEnd,
+  milestones,
+}: {
+  currentFdv: number;
+  campaignStart: string;
+  campaignEnd: string;
+  milestones: StatusData["milestones"];
+}) {
+  const { data: history } = useQuery<DailyPrice[]>({
+    queryKey: ["airdrop-daily-prices"],
+    queryFn: async () => {
+      const res = await fetch("/api/airdrop/daily-prices");
+      if (!res.ok) throw new Error("Failed to fetch daily prices");
+      return res.json();
+    },
+    staleTime: 300_000,
+  });
+
+  const start = new Date(campaignStart + "T00:00:00Z");
+  const end = new Date(campaignEnd + "T00:00:00Z");
+  const now = new Date();
+
   const svgW = 600;
-  const svgH = 80;
-  const pad = { left: 10, right: 10 };
+  const svgH = 200;
+  const pad = { top: 10, right: 10, bottom: 24, left: 10 };
   const chartW = svgW - pad.left - pad.right;
-  const fillX = pad.left + progress * chartW;
+  const chartH = svgH - pad.top - pad.bottom;
+
+  // Milestone entries from config
+  const milestoneEntries = Object.entries(milestones).map(([key, val]) => ({
+    key,
+    ...val,
+    ...(MILESTONE_META[key] ?? { label: formatMcap(val.mcap), cmcRank: "", letter: key[0].toUpperCase() }),
+  }));
+
+  // X/Y coordinate helpers (within chart area)
+  const toX = (d: Date) => pad.left + dateToX(d, start, end) * chartW;
+  const toY = (mcap: number) => pad.top + mcapToY(mcap) * chartH;
+
+  // Historical line path + area fill
+  const points = (history ?? []).map((p) => ({
+    x: toX(new Date(p.date)),
+    y: toY(p.fdv),
+  }));
+  const linePath = points.length > 0
+    ? points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ")
+    : "";
+  const areaPath = points.length > 0
+    ? `${linePath} L${points[points.length - 1].x},${pad.top + chartH} L${points[0].x},${pad.top + chartH} Z`
+    : "";
+
+  // Projection line: start FDV → $100M at campaign end
+  const startFdv = history && history.length > 0 ? history[0].fdv : currentFdv;
+  const projX1 = toX(start);
+  const projY1 = toY(startFdv > 0 ? startFdv : Y_MIN);
+  const projX2 = toX(end);
+  const projY2 = toY(Y_MAX);
+
+  // Current dot position
+  const dotX = toX(now);
+  const dotY = toY(currentFdv > 0 ? currentFdv : Y_MIN);
+
+  // X-axis time ticks
+  const totalDays = Math.ceil((end.getTime() - start.getTime()) / 86_400_000);
+  const tickInterval = totalDays <= 14 ? 1 : totalDays <= 60 ? 7 : 30;
+  const xTicks: Date[] = [];
+  for (let d = new Date(start); d <= end; d = new Date(d.getTime() + tickInterval * 86_400_000)) {
+    xTicks.push(new Date(d));
+  }
+
+  // Y-axis ticks at milestone values + floor
+  const yTicks = [Y_MIN, ...milestoneEntries.map((m) => m.mcap)];
 
   return (
     <div className="space-y-3">
-      {/* Desktop labels above chart */}
-      <div className="hidden sm:block relative" style={{ height: 60 }}>
-        {MILESTONES.map((ms, i) => {
-          const x = (MILESTONE_POS.get(ms.mcap) ?? 0) * 100;
-          const isLast = i === MILESTONES.length - 1;
-          return (
-            <div
-              key={ms.letter}
-              className={`absolute ${isLast ? "text-right" : "text-center -translate-x-1/2"}`}
-              style={{ left: isLast ? undefined : `${x}%`, right: isLast ? 0 : undefined, top: 0 }}
-            >
-              <div className="text-sm font-bold text-foreground">{ms.label}</div>
-              <div className="text-sm font-bold text-foreground">unlocks {ms.pct}%</div>
-              <div className="text-xs text-muted">{ms.cmcRank}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* SVG chart */}
       <svg
         viewBox={`0 0 ${svgW} ${svgH}`}
         className="w-full"
-        preserveAspectRatio="none"
+        style={{ minHeight: 160 }}
+        preserveAspectRatio="xMidYMid meet"
         role="img"
-        aria-label={`MCap progress: ${currentFdv > 0 ? `$${(currentFdv / 1_000_000).toFixed(2)}M` : "$0"} of $100M`}
+        aria-label={`MCap time-series chart: current $${currentFdv > 0 ? (currentFdv / 1_000).toFixed(0) + "K" : "0"}`}
       >
         <defs>
-          <linearGradient id="mcap-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={ACCENT} stopOpacity="0.4" />
-            <stop offset="100%" stopColor={ACCENT} stopOpacity="0.05" />
+          <linearGradient id="mcap-area-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
           </linearGradient>
         </defs>
 
-        {/* Unfilled area */}
+        {/* Chart background */}
         <rect
           x={pad.left}
-          y={0}
+          y={pad.top}
           width={chartW}
-          height={svgH}
-          fill="rgba(255,255,255,0.03)"
+          height={chartH}
+          fill="rgba(255,255,255,0.02)"
           rx={4}
         />
 
-        {/* Filled area */}
-        {progress > 0 && (
-          <rect
-            x={pad.left}
-            y={0}
-            width={Math.max(2, progress * chartW)}
-            height={svgH}
-            fill="url(#mcap-fill)"
-            rx={4}
-          />
+        {/* Milestone horizontal dashed lines */}
+        {milestoneEntries.map((ms) => {
+          const y = toY(ms.mcap);
+          return (
+            <g key={ms.key}>
+              <line
+                x1={pad.left}
+                y1={y}
+                x2={pad.left + chartW}
+                y2={y}
+                stroke="var(--accent)"
+                strokeWidth={0.75}
+                strokeDasharray="4 3"
+                opacity={0.5}
+              />
+              {/* Right-edge label — desktop only */}
+              <text
+                x={pad.left + chartW - 4}
+                y={y - 4}
+                textAnchor="end"
+                fill="var(--accent)"
+                fontSize={9}
+                fontFamily="monospace"
+                opacity={0.6}
+                className="hidden sm:block"
+              >
+                {ms.label} — unlocks {ms.pct}%
+              </text>
+            </g>
+          );
+        })}
+
+        {/* Projection line (dashed) */}
+        <line
+          x1={projX1}
+          y1={projY1}
+          x2={projX2}
+          y2={projY2}
+          stroke="var(--accent-dim)"
+          strokeWidth={1.5}
+          strokeDasharray="6 4"
+          opacity={0.6}
+        />
+
+        {/* Historical area fill */}
+        {areaPath && (
+          <path d={areaPath} fill="url(#mcap-area-fill)" />
         )}
 
-        {/* Milestone vertical dashed lines */}
-        {MILESTONES.map((ms) => {
-          const mx = pad.left + (MILESTONE_POS.get(ms.mcap) ?? 0) * chartW;
-          return (
-            <line
-              key={ms.letter}
-              x1={mx}
-              y1={0}
-              x2={mx}
-              y2={svgH}
-              stroke="rgba(255,255,255,0.15)"
-              strokeWidth={1}
-              strokeDasharray="4 3"
-            />
-          );
-        })}
-
-        {/* Mobile letter markers */}
-        {MILESTONES.map((ms) => {
-          const mx = pad.left + (MILESTONE_POS.get(ms.mcap) ?? 0) * chartW;
-          return (
-            <text
-              key={`label-${ms.letter}`}
-              x={mx}
-              y={16}
-              textAnchor="middle"
-              className="sm:hidden"
-              fill="rgba(255,255,255,0.5)"
-              fontSize={12}
-              fontWeight="bold"
-              fontFamily="monospace"
-            >
-              {ms.letter}
-            </text>
-          );
-        })}
-
-        {/* Current MCap line */}
-        {progress > 0 && (
-          <line
-            x1={fillX}
-            y1={0}
-            x2={fillX}
-            y2={svgH}
-            stroke={ACCENT}
+        {/* Historical line */}
+        {linePath && (
+          <path
+            d={linePath}
+            fill="none"
+            stroke="var(--accent)"
             strokeWidth={2}
           />
         )}
 
-        {/* Heartbeat dot — inside SVG for pixel-perfect alignment */}
-        {progress > 0 && (
-          <>
-            <circle cx={fillX} cy={svgH / 2} r={8} fill={ACCENT} opacity={0.75}>
-              <animate
-                attributeName="r"
-                values="8;16;8"
-                dur="1.5s"
-                repeatCount="indefinite"
+        {/* Current MCap heartbeat dot */}
+        <circle cx={dotX} cy={dotY} r={6} fill="var(--accent)" opacity={0.75}>
+          <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.75;0;0.75" dur="1.5s" repeatCount="indefinite" />
+        </circle>
+        <circle cx={dotX} cy={dotY} r={4} fill="var(--accent)" />
+
+        {/* X-axis time ticks */}
+        {xTicks.map((d, i) => {
+          const x = toX(d);
+          const label = totalDays <= 60
+            ? `${d.getUTCMonth() + 1}/${d.getUTCDate()}`
+            : d.toLocaleString("en", { month: "short", timeZone: "UTC" });
+          // Show every other label if crowded
+          const showLabel = totalDays <= 14 || i % 2 === 0;
+          return (
+            <g key={i}>
+              <line
+                x1={x} y1={pad.top + chartH}
+                x2={x} y2={pad.top + chartH + 4}
+                stroke="var(--color-muted)" strokeWidth={0.5}
               />
-              <animate
-                attributeName="opacity"
-                values="0.75;0;0.75"
-                dur="1.5s"
-                repeatCount="indefinite"
-              />
-            </circle>
-            <circle cx={fillX} cy={svgH / 2} r={6} fill={ACCENT} />
-          </>
-        )}
+              {showLabel && (
+                <text
+                  x={x}
+                  y={svgH - 4}
+                  textAnchor="middle"
+                  fill="var(--color-muted)"
+                  fontSize={8}
+                  fontFamily="monospace"
+                >
+                  {label}
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+        {/* Y-axis labels — desktop only */}
+        {yTicks.map((mcap) => (
+          <text
+            key={mcap}
+            x={pad.left + 4}
+            y={toY(mcap) - 3}
+            fill="var(--color-muted)"
+            fontSize={8}
+            fontFamily="monospace"
+            className="hidden sm:block"
+          >
+            {formatMcap(mcap)}
+          </text>
+        ))}
       </svg>
 
-      {/* Scale labels */}
-      <div className="flex justify-between text-[10px] text-muted font-mono mt-1">
-        <span>$0</span>
-        <span>$100M</span>
-      </div>
-
-      {/* Mobile legend */}
+      {/* Mobile milestone legend */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:hidden">
-        {MILESTONES.map((ms) => (
-          <div key={ms.letter} className="flex gap-2">
+        {milestoneEntries.map((ms) => (
+          <div key={ms.key} className="flex gap-2">
             <span className="text-xs font-bold text-muted font-mono">{ms.letter}</span>
             <div>
               <div className="text-sm font-bold text-foreground">{ms.label}</div>
@@ -335,8 +411,13 @@ export function CampaignHero() {
         </div>
       )}
 
-      {/* ── MCap progress chart ── */}
-      <MCapChart currentFdv={data.currentFdv} />
+      {/* ── MCap time-series chart ── */}
+      <MCapChart
+        currentFdv={data.currentFdv}
+        campaignStart={data.campaignStart}
+        campaignEnd={data.campaignEnd}
+        milestones={data.milestones}
+      />
 
       {/* ── MCap explanation footnote ── */}
       <div className="text-center text-muted text-[10px]">
