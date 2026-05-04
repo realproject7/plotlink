@@ -34,13 +34,27 @@ const MILESTONES = [
 const MAX_MCAP = 100_000_000;
 const ACCENT = "#8B4513";
 
-/** Map MCap to 0–1 using a log scale (base at $100K for visual spread) */
-const LOG_MIN = Math.log10(100_000);
-const LOG_MAX = Math.log10(MAX_MCAP);
-function logScale(mcap: number): number {
+/** Fixed milestone positions at 25/50/75/100% for even visual spacing */
+const MILESTONE_POS = new Map([
+  [1_000_000, 0.25],
+  [10_000_000, 0.50],
+  [50_000_000, 0.75],
+  [100_000_000, 1.0],
+]);
+
+/** Map MCap to 0–1 using piecewise linear interpolation between milestones */
+function mcapToX(mcap: number): number {
   if (mcap <= 0) return 0;
-  const clamped = Math.min(Math.max(mcap, 100_000), MAX_MCAP);
-  return (Math.log10(clamped) - LOG_MIN) / (LOG_MAX - LOG_MIN);
+  if (mcap >= MAX_MCAP) return 1;
+  const thresholds = [0, 1_000_000, 10_000_000, 50_000_000, 100_000_000];
+  const positions = [0, 0.25, 0.50, 0.75, 1.0];
+  for (let i = 1; i < thresholds.length; i++) {
+    if (mcap <= thresholds[i]) {
+      const t = (mcap - thresholds[i - 1]) / (thresholds[i] - thresholds[i - 1]);
+      return positions[i - 1] + t * (positions[i] - positions[i - 1]);
+    }
+  }
+  return 1;
 }
 
 /* ─── Helpers ─── */
@@ -84,7 +98,7 @@ function useCountdown(endDateStr: string) {
 /* ─── MCap Chart ─── */
 
 function MCapChart({ currentFdv }: { currentFdv: number }) {
-  const progress = logScale(currentFdv);
+  const progress = mcapToX(currentFdv);
   const svgW = 600;
   const svgH = 80;
   const pad = { left: 10, right: 10 };
@@ -95,13 +109,14 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
     <div className="space-y-3">
       {/* Desktop labels above chart */}
       <div className="hidden sm:block relative" style={{ height: 60 }}>
-        {MILESTONES.map((ms) => {
-          const x = logScale(ms.mcap) * 100;
+        {MILESTONES.map((ms, i) => {
+          const x = (MILESTONE_POS.get(ms.mcap) ?? 0) * 100;
+          const isLast = i === MILESTONES.length - 1;
           return (
             <div
               key={ms.letter}
-              className="absolute text-center -translate-x-1/2"
-              style={{ left: `${x}%`, top: 0 }}
+              className={`absolute ${isLast ? "text-right" : "text-center -translate-x-1/2"}`}
+              style={{ left: isLast ? undefined : `${x}%`, right: isLast ? 0 : undefined, top: 0 }}
             >
               <div className="text-sm font-bold text-foreground">{ms.label}</div>
               <div className="text-sm font-bold text-foreground">unlocks {ms.pct}%</div>
@@ -150,7 +165,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
 
         {/* Milestone vertical dashed lines */}
         {MILESTONES.map((ms) => {
-          const mx = pad.left + logScale(ms.mcap) * chartW;
+          const mx = pad.left + (MILESTONE_POS.get(ms.mcap) ?? 0) * chartW;
           return (
             <line
               key={ms.letter}
@@ -167,7 +182,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
 
         {/* Mobile letter markers */}
         {MILESTONES.map((ms) => {
-          const mx = pad.left + logScale(ms.mcap) * chartW;
+          const mx = pad.left + (MILESTONE_POS.get(ms.mcap) ?? 0) * chartW;
           return (
             <text
               key={`label-${ms.letter}`}
@@ -221,7 +236,7 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
 
       {/* Scale labels */}
       <div className="flex justify-between text-[10px] text-muted font-mono mt-1">
-        <span>$100K</span>
+        <span>$0</span>
         <span>$100M</span>
       </div>
 
