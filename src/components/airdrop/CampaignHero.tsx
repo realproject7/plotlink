@@ -186,23 +186,31 @@ function MCapChart({ currentFdv }: { currentFdv: number }) {
             strokeWidth={2}
           />
         )}
+
+        {/* Heartbeat dot — inside SVG for pixel-perfect alignment */}
+        {progress > 0 && (
+          <>
+            <circle cx={fillX} cy={svgH / 2} r={8} fill="#00ff88" opacity={0.75}>
+              <animate
+                attributeName="r"
+                values="8;16;8"
+                dur="1.5s"
+                repeatCount="indefinite"
+              />
+              <animate
+                attributeName="opacity"
+                values="0.75;0;0.75"
+                dur="1.5s"
+                repeatCount="indefinite"
+              />
+            </circle>
+            <circle cx={fillX} cy={svgH / 2} r={6} fill="#00ff88" />
+          </>
+        )}
       </svg>
 
-      {/* Heartbeat dot — positioned via CSS over the SVG */}
-      <div className="relative -mt-[52px] pointer-events-none" style={{ height: 0 }}>
-        <div
-          className="absolute top-0 -translate-x-1/2 -translate-y-1/2"
-          style={{ left: `${progress * 100}%`, top: 0 }}
-        >
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-accent" />
-          </span>
-        </div>
-      </div>
-
       {/* Scale labels */}
-      <div className="flex justify-between text-[10px] text-muted font-mono mt-6">
+      <div className="flex justify-between text-[10px] text-muted font-mono mt-1">
         <span>$0</span>
         <span>$50M</span>
         <span>$100M</span>
