@@ -24,12 +24,14 @@ interface StatusData {
   lockerTx: string | null;
 }
 
-const MILESTONE_CARDS = [
-  { mcap: 1_000_000, label: "$1M", cmcRank: "#1900", pct: 10, key: "bronze" as const },
-  { mcap: 10_000_000, label: "$10M", cmcRank: "#950", pct: 30, key: "silver" as const },
-  { mcap: 50_000_000, label: "$50M", cmcRank: "#400", pct: 50, key: "gold" as const },
-  { mcap: 100_000_000, label: "$100M", cmcRank: "#250", pct: 100, key: "diamond" as const },
+const MILESTONES = [
+  { mcap: 1_000_000, label: "$1M", cmcRank: "≈ #1900", pct: 10, letter: "A" },
+  { mcap: 10_000_000, label: "$10M", cmcRank: "≈ #950", pct: 30, letter: "B" },
+  { mcap: 50_000_000, label: "$50M", cmcRank: "≈ #400", pct: 50, letter: "C" },
+  { mcap: 100_000_000, label: "$100M", cmcRank: "≈ #250", pct: 100, letter: "D" },
 ];
+
+const MAX_MCAP = 100_000_000;
 
 /* ─── Helpers ─── */
 
@@ -67,6 +69,160 @@ function useCountdown(endDateStr: string) {
   }, [endDateStr]);
 
   return remaining;
+}
+
+/* ─── MCap Chart ─── */
+
+function MCapChart({ currentFdv }: { currentFdv: number }) {
+  const progress = Math.min(currentFdv / MAX_MCAP, 1);
+  const svgW = 600;
+  const svgH = 80;
+  const pad = { left: 0, right: 0 };
+  const chartW = svgW - pad.left - pad.right;
+  const fillX = pad.left + progress * chartW;
+
+  return (
+    <div className="space-y-3">
+      {/* Desktop labels above chart */}
+      <div className="hidden sm:block relative" style={{ height: 60 }}>
+        {MILESTONES.map((ms) => {
+          const x = (ms.mcap / MAX_MCAP) * 100;
+          return (
+            <div
+              key={ms.letter}
+              className="absolute text-center -translate-x-1/2"
+              style={{ left: `${x}%`, top: 0 }}
+            >
+              <div className="text-sm font-bold text-foreground">{ms.label}</div>
+              <div className="text-sm font-bold text-foreground">unlocks {ms.pct}%</div>
+              <div className="text-xs text-muted">{ms.cmcRank}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* SVG chart */}
+      <svg
+        viewBox={`0 0 ${svgW} ${svgH}`}
+        className="w-full"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={`MCap progress: ${currentFdv > 0 ? `$${(currentFdv / 1_000_000).toFixed(2)}M` : "$0"} of $100M`}
+      >
+        <defs>
+          <linearGradient id="mcap-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#00ff88" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#00ff88" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+
+        {/* Unfilled area */}
+        <rect
+          x={pad.left}
+          y={0}
+          width={chartW}
+          height={svgH}
+          fill="rgba(255,255,255,0.03)"
+          rx={4}
+        />
+
+        {/* Filled area */}
+        {progress > 0 && (
+          <rect
+            x={pad.left}
+            y={0}
+            width={Math.max(2, progress * chartW)}
+            height={svgH}
+            fill="url(#mcap-fill)"
+            rx={4}
+          />
+        )}
+
+        {/* Milestone vertical dashed lines */}
+        {MILESTONES.map((ms) => {
+          const mx = pad.left + (ms.mcap / MAX_MCAP) * chartW;
+          return (
+            <line
+              key={ms.letter}
+              x1={mx}
+              y1={0}
+              x2={mx}
+              y2={svgH}
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth={1}
+              strokeDasharray="4 3"
+            />
+          );
+        })}
+
+        {/* Mobile letter markers */}
+        {MILESTONES.map((ms) => {
+          const mx = pad.left + (ms.mcap / MAX_MCAP) * chartW;
+          return (
+            <text
+              key={`label-${ms.letter}`}
+              x={mx}
+              y={16}
+              textAnchor="middle"
+              className="sm:hidden"
+              fill="rgba(255,255,255,0.5)"
+              fontSize={12}
+              fontWeight="bold"
+              fontFamily="monospace"
+            >
+              {ms.letter}
+            </text>
+          );
+        })}
+
+        {/* Current MCap line */}
+        {progress > 0 && (
+          <line
+            x1={fillX}
+            y1={0}
+            x2={fillX}
+            y2={svgH}
+            stroke="#00ff88"
+            strokeWidth={2}
+          />
+        )}
+      </svg>
+
+      {/* Heartbeat dot — positioned via CSS over the SVG */}
+      <div className="relative -mt-[52px] pointer-events-none" style={{ height: 0 }}>
+        <div
+          className="absolute top-0 -translate-x-1/2 -translate-y-1/2"
+          style={{ left: `${progress * 100}%`, top: 0 }}
+        >
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-accent" />
+          </span>
+        </div>
+      </div>
+
+      {/* Scale labels */}
+      <div className="flex justify-between text-[10px] text-muted font-mono mt-6">
+        <span>$0</span>
+        <span>$50M</span>
+        <span>$100M</span>
+      </div>
+
+      {/* Mobile legend */}
+      <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:hidden">
+        {MILESTONES.map((ms) => (
+          <div key={ms.letter} className="flex gap-2">
+            <span className="text-xs font-bold text-muted font-mono">{ms.letter}</span>
+            <div>
+              <div className="text-sm font-bold text-foreground">{ms.label}</div>
+              <div className="text-sm font-bold text-foreground">unlocks {ms.pct}%</div>
+              <div className="text-xs text-muted">{ms.cmcRank}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /* ─── Main component ─── */
@@ -147,38 +303,8 @@ export function CampaignHero() {
         </div>
       )}
 
-      {/* ── Milestone cards ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {MILESTONE_CARDS.map((ms) => {
-          const reached = data.currentFdv >= ms.mcap;
-          return (
-            <div
-              key={ms.key}
-              className={`rounded border px-3 py-3 space-y-1.5 ${
-                reached ? "border-accent" : "border-border opacity-60"
-              }`}
-            >
-              <div className="text-sm">
-                {reached ? (
-                  <span className="text-accent">&#x2705;</span>
-                ) : (
-                  <span className="text-muted">&#x25CB;</span>
-                )}
-              </div>
-              <div className={`text-sm font-bold text-center ${reached ? "text-accent" : "text-foreground"}`}>
-                {ms.label}
-              </div>
-              <div className="text-muted text-[10px] text-center">
-                ≈ CMC {ms.cmcRank}
-              </div>
-              <div className="text-muted text-[10px] text-center">unlocks</div>
-              <div className={`text-xs font-bold text-center ${reached ? "text-accent" : "text-foreground"}`}>
-                {ms.pct}%
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {/* ── MCap progress chart ── */}
+      <MCapChart currentFdv={data.currentFdv} />
 
       {/* ── Participant count ── */}
       <div className="text-center text-muted text-xs">
