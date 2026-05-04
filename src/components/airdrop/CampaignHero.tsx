@@ -121,7 +121,7 @@ export function CampaignHero() {
           onClick={() => setShowModal(true)}
           className="text-accent text-xs hover:underline cursor-pointer"
         >
-          Why is this airdrop different? &rarr;
+          How does this work? &rarr;
         </button>
       </div>
 
@@ -192,14 +192,14 @@ export function CampaignHero() {
         MCap = PLOT price × 1M max supply
       </div>
 
-      {/* ── Innovation modal ── */}
+      {/* ── How It Works modal ── */}
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
           onClick={closeModal}
         >
           <div
-            className="bg-background border-border rounded border p-5 w-full max-w-lg space-y-4 relative"
+            className="bg-background border-border rounded border p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-5 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -210,39 +210,107 @@ export function CampaignHero() {
               &times;
             </button>
 
-            <div className="text-muted text-[10px] font-bold uppercase tracking-widest text-center font-mono">
-              ── How is this different? ──
+            <h3 className="text-foreground text-base font-bold uppercase tracking-wider text-center">
+              How does this work?
+            </h3>
+
+            {/* Section 1 */}
+            <div className="space-y-2">
+              <div className="text-muted text-[10px] font-bold uppercase tracking-widest font-mono">
+                ── 1. The Airdrop Pool ──
+              </div>
+              <p className="text-muted text-xs leading-relaxed font-mono">
+                50,000 PLOT (5% of max supply) is locked in a time-locked contract.
+                After 6 months, the pool is either distributed to point holders or
+                burned forever. No team keeps it. No treasury recycles it.
+              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="rounded border border-border text-muted opacity-50 px-4 py-3 space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-center">
-                  TYPICAL AIRDROP
-                </div>
-                <div className="space-y-1.5 text-xs text-center font-mono">
-                  <div>Fixed amount</div>
-                  <div>Dumps on day 1</div>
-                  <div>No skin in game</div>
-                </div>
+            {/* Section 2 */}
+            <div className="space-y-2">
+              <div className="text-muted text-[10px] font-bold uppercase tracking-widest font-mono">
+                ── 2. Milestones &amp; Pool Size ──
               </div>
-              <div className="rounded border border-accent text-foreground px-4 py-3 space-y-2">
-                <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-center">
-                  THIS AIRDROP
+              <p className="text-muted text-xs leading-relaxed font-mono">
+                The pool distribution depends on PLOT MCap:
+              </p>
+              <div className="space-y-1 text-xs font-mono">
+                <div><span className="text-foreground">MCap $1M</span> <span className="text-muted">&rarr; 10% unlocked (5,000 PLOT)</span></div>
+                <div><span className="text-foreground">MCap $10M</span> <span className="text-muted">&rarr; 30% unlocked (15,000 PLOT)</span></div>
+                <div><span className="text-foreground">MCap $50M</span> <span className="text-muted">&rarr; 50% unlocked (25,000 PLOT)</span></div>
+                <div><span className="text-foreground">MCap $100M</span> <span className="text-muted">&rarr; 100% unlocked (50,000 PLOT)</span></div>
+              </div>
+              <p className="text-muted text-xs leading-relaxed font-mono">
+                The remaining % is burned permanently. Higher MCap = bigger pool AND
+                higher per-PLOT value. Double benefit.
+              </p>
+            </div>
+
+            {/* Section 3 */}
+            <div className="space-y-2">
+              <div className="text-muted text-[10px] font-bold uppercase tracking-widest font-mono">
+                ── 3. How to Earn PL Points ──
+              </div>
+              <p className="text-muted text-xs leading-relaxed font-mono">
+                Your share of the pool is based on PL points:
+              </p>
+              <div className="space-y-1 text-xs font-mono text-muted">
+                <div>&bull; Buy story tokens &rarr; 1 PL per PLOT spent</div>
+                <div>&bull; Refer friends &rarr; 20% of their points</div>
+                <div>&bull; Publish a story &rarr; 50 PL (flat)</div>
+                <div>&bull; Rate a story &rarr; 5 PL (max 10/day)</div>
+              </div>
+            </div>
+
+            {/* Section 4 */}
+            <div className="space-y-2">
+              <div className="text-muted text-[10px] font-bold uppercase tracking-widest font-mono">
+                ── 4. Streak Boost ──
+              </div>
+              <p className="text-muted text-xs leading-relaxed font-mono">
+                Daily check-in builds streaks. Longer streak = higher boost on all points earned:
+              </p>
+              <div className="text-xs font-mono text-muted">
+                <span className="text-foreground">7d</span> +5% &nbsp;| <span className="text-foreground">&nbsp;14d</span> +10% &nbsp;| <span className="text-foreground">&nbsp;30d</span> +20% &nbsp;| <span className="text-foreground">&nbsp;50d</span> +30% &nbsp;| <span className="text-foreground">&nbsp;100d</span> +50%
+              </div>
+              <p className="text-muted text-xs leading-relaxed font-mono">
+                Miss a day &rarr; drop one tier.
+              </p>
+            </div>
+
+            {/* Section 5 */}
+            <div className="space-y-3">
+              <div className="text-muted text-[10px] font-bold uppercase tracking-widest font-mono">
+                ── 5. Why Is This Different? ──
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded border border-border text-muted opacity-50 px-4 py-3 space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-center">
+                    TYPICAL AIRDROP
+                  </div>
+                  <div className="space-y-1.5 text-xs text-center font-mono">
+                    <div>Fixed amount</div>
+                    <div>Dumps on day 1</div>
+                    <div>No skin in game</div>
+                  </div>
                 </div>
-                <div className="space-y-1.5 text-xs text-center font-mono">
-                  <div>Pool grows with MCap</div>
-                  <div>Burned if no growth</div>
-                  <div>Everyone wins together</div>
+                <div className="rounded border border-accent text-foreground px-4 py-3 space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-center">
+                    THIS AIRDROP
+                  </div>
+                  <div className="space-y-1.5 text-xs text-center font-mono">
+                    <div>Pool grows with MCap</div>
+                    <div>Burned if no growth</div>
+                    <div>Everyone wins together</div>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <p className="text-muted text-xs leading-relaxed max-w-xl mx-auto text-center font-mono">
-              The pool isn&apos;t pre-valued — it&apos;s valued <span className="text-foreground font-medium">by the market</span>.
-              At $100M MCap, 50,000 PLOT = $5M distributed.
-              At $0 growth, 50,000 PLOT = burned forever.
-              Everyone — team, holders, earners — wins only if PLOT grows.
-            </p>
+            {/* Footnote */}
+            <div className="text-center text-muted text-[10px] font-mono">
+              MCap = PLOT price × 1M max supply
+            </div>
           </div>
         </div>
       )}
