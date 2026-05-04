@@ -24,18 +24,17 @@ interface StatusData {
   lockerTx: string | null;
 }
 
-/* ─── Chart constants ─── */
+/* ─── Chart helpers ─── */
 
-const Y_MIN = 1_000; // $1K floor for log scale
-const Y_MAX = 100_000_000; // $100M ceiling
-const LOG_MIN = Math.log10(Y_MIN);
-const LOG_MAX = Math.log10(Y_MAX);
+const Y_FLOOR = 1_000; // $1K minimum for log scale
 
 /** Map MCap → 0–1 on log Y scale (inverted: 0 = top, 1 = bottom) */
-function mcapToY(mcap: number): number {
+function mcapToY(mcap: number, yMin: number, yMax: number): number {
   if (mcap <= 0) return 1;
-  const clamped = Math.min(Math.max(mcap, Y_MIN), Y_MAX);
-  return 1 - (Math.log10(clamped) - LOG_MIN) / (LOG_MAX - LOG_MIN);
+  const logMin = Math.log10(yMin);
+  const logMax = Math.log10(yMax);
+  const clamped = Math.min(Math.max(mcap, yMin), yMax);
+  return 1 - (Math.log10(clamped) - logMin) / (logMax - logMin);
 }
 
 /** Map date → 0–1 on X (time) axis */
@@ -53,11 +52,12 @@ function formatMcap(n: number): string {
 
 interface DailyPrice { date: string; fdv: number }
 
-const MILESTONE_META: Record<string, { label: string; cmcRank: string; letter: string }> = {
-  bronze: { label: "$1M", cmcRank: "≈ #1900", letter: "A" },
-  silver: { label: "$10M", cmcRank: "≈ #950", letter: "B" },
-  gold: { label: "$50M", cmcRank: "≈ #400", letter: "C" },
-  diamond: { label: "$100M", cmcRank: "≈ #250", letter: "D" },
+/** Non-derivable metadata per milestone tier (cmcRank only applies to prod values) */
+const MILESTONE_EXTRA: Record<string, { cmcRank: string; letter: string }> = {
+  bronze: { cmcRank: "≈ #1900", letter: "A" },
+  silver: { cmcRank: "≈ #950", letter: "B" },
+  gold: { cmcRank: "≈ #400", letter: "C" },
+  diamond: { cmcRank: "≈ #250", letter: "D" },
 };
 
 /* ─── Helpers ─── */
@@ -131,16 +131,25 @@ function MCapChart({
   const chartW = svgW - pad.left - pad.right;
   const chartH = svgH - pad.top - pad.bottom;
 
-  // Milestone entries from config
-  const milestoneEntries = Object.entries(milestones).map(([key, val]) => ({
-    key,
-    ...val,
-    ...(MILESTONE_META[key] ?? { label: formatMcap(val.mcap), cmcRank: "", letter: key[0].toUpperCase() }),
-  }));
+  // Milestone entries — derive labels from config values
+  const milestoneEntries = Object.entries(milestones).map(([key, val]) => {
+    const extra = MILESTONE_EXTRA[key] ?? { cmcRank: "", letter: key[0].toUpperCase() };
+    return {
+      key,
+      ...val,
+      label: formatMcap(val.mcap),
+      cmcRank: extra.cmcRank,
+      letter: extra.letter,
+    };
+  });
+
+  // Y-axis domain: floor to diamond milestone (config-driven)
+  const yMax = milestones.diamond.mcap;
+  const yMin = Math.min(Y_FLOOR, yMax / 1000);
 
   // X/Y coordinate helpers (within chart area)
   const toX = (d: Date) => pad.left + dateToX(d, start, end) * chartW;
-  const toY = (mcap: number) => pad.top + mcapToY(mcap) * chartH;
+  const toY = (mcap: number) => pad.top + mcapToY(mcap, yMin, yMax) * chartH;
 
   // Historical line path + area fill
   const points = (history ?? []).map((p) => ({
@@ -154,16 +163,16 @@ function MCapChart({
     ? `${linePath} L${points[points.length - 1].x},${pad.top + chartH} L${points[0].x},${pad.top + chartH} Z`
     : "";
 
-  // Projection line: start FDV → $100M at campaign end
+  // Projection line: start FDV → diamond milestone at campaign end
   const startFdv = history && history.length > 0 ? history[0].fdv : currentFdv;
   const projX1 = toX(start);
-  const projY1 = toY(startFdv > 0 ? startFdv : Y_MIN);
+  const projY1 = toY(startFdv > 0 ? startFdv : yMin);
   const projX2 = toX(end);
-  const projY2 = toY(Y_MAX);
+  const projY2 = toY(yMax);
 
   // Current dot position
   const dotX = toX(now);
-  const dotY = toY(currentFdv > 0 ? currentFdv : Y_MIN);
+  const dotY = toY(currentFdv > 0 ? currentFdv : yMin);
 
   // X-axis time ticks
   const totalDays = Math.ceil((end.getTime() - start.getTime()) / 86_400_000);
@@ -174,7 +183,7 @@ function MCapChart({
   }
 
   // Y-axis ticks at milestone values + floor
-  const yTicks = [Y_MIN, ...milestoneEntries.map((m) => m.mcap)];
+  const yTicks = [yMin, ...milestoneEntries.map((m) => m.mcap)];
 
   return (
     <div className="space-y-3">
@@ -229,7 +238,7 @@ function MCapChart({
                 opacity={0.6}
                 className="hidden sm:block"
               >
-                {ms.label} — unlocks {ms.pct}%
+                {ms.label} — unlocks {ms.pct}%{ms.cmcRank ? ` (${ms.cmcRank})` : ""}
               </text>
             </g>
           );
