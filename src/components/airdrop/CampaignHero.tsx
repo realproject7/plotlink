@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 
 /* ─── Types ─── */
@@ -74,6 +74,9 @@ function useCountdown(endDateStr: string) {
 export function CampaignHero() {
   const { data, isLoading } = useAirdropStatus();
   const countdown = useCountdown(data?.campaignEnd ?? "2027-01-01");
+  const [showModal, setShowModal] = useState(false);
+
+  const closeModal = useCallback(() => setShowModal(false), []);
 
   if (isLoading || !data) {
     return (
@@ -109,6 +112,17 @@ export function CampaignHero() {
           )}{" "}
           tokens will be burned.
         </p>
+      </div>
+
+      {/* ── Modal trigger ── */}
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={() => setShowModal(true)}
+          className="text-accent text-xs hover:underline cursor-pointer"
+        >
+          Why is this airdrop different? &rarr;
+        </button>
       </div>
 
       {/* ── Countdown ── */}
@@ -177,6 +191,61 @@ export function CampaignHero() {
       <div className="text-center text-muted text-[10px]">
         MCap = PLOT price × 1M max supply
       </div>
+
+      {/* ── Innovation modal ── */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="bg-background border-border rounded border p-5 w-full max-w-lg space-y-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={closeModal}
+              className="absolute top-3 right-3 text-muted hover:text-foreground text-lg leading-none cursor-pointer"
+            >
+              &times;
+            </button>
+
+            <div className="text-muted text-[10px] font-bold uppercase tracking-widest text-center font-mono">
+              ── How is this different? ──
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded border border-border text-muted opacity-50 px-4 py-3 space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-center">
+                  TYPICAL AIRDROP
+                </div>
+                <div className="space-y-1.5 text-xs text-center font-mono">
+                  <div>Fixed amount</div>
+                  <div>Dumps on day 1</div>
+                  <div>No skin in game</div>
+                </div>
+              </div>
+              <div className="rounded border border-accent text-foreground px-4 py-3 space-y-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider font-mono text-center">
+                  THIS AIRDROP
+                </div>
+                <div className="space-y-1.5 text-xs text-center font-mono">
+                  <div>Pool grows with MCap</div>
+                  <div>Burned if no growth</div>
+                  <div>Everyone wins together</div>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-muted text-xs leading-relaxed max-w-xl mx-auto text-center font-mono">
+              The pool isn&apos;t pre-valued — it&apos;s valued <span className="text-foreground font-medium">by the market</span>.
+              At $100M MCap, 50,000 PLOT = $5M distributed.
+              At $0 growth, 50,000 PLOT = burned forever.
+              Everyone — team, holders, earners — wins only if PLOT grows.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
