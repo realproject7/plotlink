@@ -24,6 +24,13 @@ interface StatusData {
   lockerTx: string | null;
 }
 
+const MILESTONE_CARDS = [
+  { mcap: 1_000_000, label: "$1M", cmcRank: "#1900", pct: 10, key: "bronze" as const },
+  { mcap: 10_000_000, label: "$10M", cmcRank: "#950", pct: 30, key: "silver" as const },
+  { mcap: 50_000_000, label: "$50M", cmcRank: "#400", pct: 50, key: "gold" as const },
+  { mcap: 100_000_000, label: "$100M", cmcRank: "#250", pct: 100, key: "diamond" as const },
+];
+
 /* ─── Helpers ─── */
 
 function useAirdropStatus() {
@@ -125,6 +132,39 @@ export function CampaignHero() {
           ))}
         </div>
       )}
+
+      {/* ── Milestone cards ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {MILESTONE_CARDS.map((ms) => {
+          const reached = data.currentFdv >= ms.mcap;
+          return (
+            <div
+              key={ms.key}
+              className={`rounded border px-3 py-3 space-y-1.5 ${
+                reached ? "border-accent" : "border-border opacity-60"
+              }`}
+            >
+              <div className="text-sm">
+                {reached ? (
+                  <span className="text-accent">&#x2705;</span>
+                ) : (
+                  <span className="text-muted">&#x25CB;</span>
+                )}
+              </div>
+              <div className={`text-sm font-bold text-center ${reached ? "text-accent" : "text-foreground"}`}>
+                {ms.label}
+              </div>
+              <div className="text-muted text-[10px] text-center">
+                ≈ CMC {ms.cmcRank}
+              </div>
+              <div className="text-muted text-[10px] text-center">unlocks</div>
+              <div className={`text-xs font-bold text-center ${reached ? "text-accent" : "text-foreground"}`}>
+                {ms.pct}%
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
       {/* ── Participant count ── */}
       <div className="text-center text-muted text-xs">
