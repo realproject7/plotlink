@@ -57,10 +57,10 @@ const TEST_CONFIG: AirdropConfig = {
   CAMPAIGN_END: new Date("2026-05-11"),       // start + 7 days
   POOL_AMOUNT: 10,                            // 10 PLOT
   MILESTONES: {
-    BRONZE: { mcap: 7_000, pct: 10 },
-    SILVER: { mcap: 10_000, pct: 30 },
-    GOLD: { mcap: 35_000, pct: 50 },
-    DIAMOND: { mcap: 50_000, pct: 100 },
+    BRONZE: { mcap: 1_000_000, pct: 10 },
+    SILVER: { mcap: 10_000_000, pct: 30 },
+    GOLD: { mcap: 50_000_000, pct: 50 },
+    DIAMOND: { mcap: 100_000_000, pct: 100 },
   },
   LOCKER_TX: "0xb4549d21a3a026d215f38d9bf50779fe337254944ae746d008b3b13cd684adce",
   POINTS,
