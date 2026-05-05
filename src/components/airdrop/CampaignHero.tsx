@@ -26,15 +26,43 @@ interface StatusData {
 
 /* ─── Chart helpers ─── */
 
-const Y_FLOOR = 1_000; // $1K minimum for log scale
-
-/** Map MCap → 0–1 on log Y scale (inverted: 0 = top, 1 = bottom) */
-function mcapToY(mcap: number, yMin: number, yMax: number): number {
-  if (mcap <= 0) return 1;
-  const logMin = Math.log10(yMin);
-  const logMax = Math.log10(yMax);
-  const clamped = Math.min(Math.max(mcap, yMin), yMax);
-  return 1 - (Math.log10(clamped) - logMin) / (logMax - logMin);
+/**
+ * Piecewise-linear-banded Y-axis: each of the 4 milestones occupies an equal
+ * 25% band of chart height. Within a band, position is log-interpolated
+ * between that band's lower and upper milestone values.
+ *
+ *   knot 0 = bronze / 100   →  100% (chart bottom)
+ *   knot 1 = bronze         →   75%
+ *   knot 2 = silver         →   50%
+ *   knot 3 = gold           →   25%
+ *   knot 4 = diamond        →    0% (chart top)
+ *
+ * Returns a fn that maps MCap → 0–1 (0 = top, 1 = bottom). Always returns a
+ * value inside the chart region, so milestone labels are 25% apart and
+ * cannot collide regardless of MCap ratios.
+ */
+function makeMcapToY(milestones: StatusData["milestones"]) {
+  const knots = [
+    milestones.bronze.mcap / 100,
+    milestones.bronze.mcap,
+    milestones.silver.mcap,
+    milestones.gold.mcap,
+    milestones.diamond.mcap,
+  ];
+  const zoneCount = knots.length - 1;
+  return (mcap: number): number => {
+    if (mcap <= knots[0]) return 1;
+    if (mcap >= knots[knots.length - 1]) return 0;
+    for (let i = 1; i < knots.length; i++) {
+      if (mcap <= knots[i]) {
+        const t =
+          (Math.log10(mcap) - Math.log10(knots[i - 1])) /
+          (Math.log10(knots[i]) - Math.log10(knots[i - 1]));
+        return 1 - (i - 1 + t) / zoneCount;
+      }
+    }
+    return 0;
+  };
 }
 
 /** Map date → 0–1 on X (time) axis */
@@ -150,13 +178,13 @@ function MCapChart({
     };
   });
 
-  // Y-axis domain: floor to diamond milestone (config-driven)
-  const yMax = milestones.diamond.mcap;
-  const yMin = Math.min(Y_FLOOR, yMax / 1000);
+  // Banded Y-axis (each milestone gets equal 25% of chart height)
+  const mcapToY = makeMcapToY(milestones);
+  const floorMcap = milestones.bronze.mcap / 100;
 
   // X/Y coordinate helpers (within chart area)
   const toX = (d: Date) => pad.left + dateToX(d, start, end) * chartW;
-  const toY = (mcap: number) => pad.top + mcapToY(mcap, yMin, yMax) * chartH;
+  const toY = (mcap: number) => pad.top + mcapToY(mcap) * chartH;
 
   // Historical line path + area fill
   const points = (history ?? []).map((p) => ({
@@ -173,13 +201,13 @@ function MCapChart({
   // Projection line: start FDV → diamond milestone at campaign end
   const startFdv = history && history.length > 0 ? history[0].fdv : currentFdv;
   const projX1 = toX(start);
-  const projY1 = toY(startFdv > 0 ? startFdv : yMin);
+  const projY1 = toY(startFdv > 0 ? startFdv : floorMcap);
   const projX2 = toX(end);
-  const projY2 = toY(yMax);
+  const projY2 = toY(milestones.diamond.mcap);
 
   // Current dot position
   const dotX = toX(now);
-  const dotY = toY(currentFdv > 0 ? currentFdv : yMin);
+  const dotY = toY(currentFdv > 0 ? currentFdv : floorMcap);
 
   // X-axis time ticks
   const totalDays = Math.ceil((end.getTime() - start.getTime()) / 86_400_000);
@@ -189,8 +217,13 @@ function MCapChart({
     xTicks.push(new Date(d));
   }
 
-  // Y-axis ticks at milestone values + floor
-  const yTicks = [yMin, ...milestoneEntries.map((m) => m.mcap)];
+  // Alternating band stripes (subtle visual band separators)
+  const bands = [
+    { yTop: 0, yBottom: 0.25 },   // gold→diamond
+    { yTop: 0.25, yBottom: 0.5 }, // silver→gold
+    { yTop: 0.5, yBottom: 0.75 }, // bronze→silver
+    { yTop: 0.75, yBottom: 1 },   // floor→bronze
+  ];
 
   return (
     <div className="space-y-3">
@@ -219,37 +252,62 @@ function MCapChart({
           rx={4}
         />
 
-        {/* Milestone horizontal dashed lines */}
+        {/* Alternating band stripes — subtle visual separation between zones */}
+        {bands.map((b, i) => (
+          i % 2 === 0 ? (
+            <rect
+              key={`band-${i}`}
+              x={pad.left}
+              y={pad.top + b.yTop * chartH}
+              width={chartW}
+              height={(b.yBottom - b.yTop) * chartH}
+              fill="var(--accent)"
+              opacity={0.04}
+            />
+          ) : null
+        ))}
+
+        {/* Milestone horizontal dashed lines (4 lines, 25% apart) */}
         {milestoneEntries.map((ms) => {
           const y = toY(ms.mcap);
           return (
-            <g key={ms.key}>
-              <line
-                x1={pad.left}
-                y1={y}
-                x2={pad.left + chartW}
-                y2={y}
-                stroke="var(--accent)"
-                strokeWidth={0.75}
-                strokeDasharray="4 3"
-                opacity={0.5}
-              />
-              {/* Right-edge label — desktop only */}
+            <line
+              key={`line-${ms.key}`}
+              x1={pad.left}
+              y1={y}
+              x2={pad.left + chartW}
+              y2={y}
+              stroke="var(--accent)"
+              strokeWidth={0.75}
+              strokeDasharray="4 3"
+              opacity={0.5}
+            />
+          );
+        })}
+
+        {/* Right-edge milestone labels — desktop only, never overlap (25% apart) */}
+        <g className="hidden sm:block">
+          {milestoneEntries.map((ms) => {
+            const y = toY(ms.mcap);
+            // Diamond (top) milestone: label below the line so it doesn't clip
+            // out of the chart area; others: above the line (standard).
+            const isTop = ms.key === "diamond";
+            return (
               <text
+                key={`label-${ms.key}`}
                 x={pad.left + chartW - 4}
-                y={y - 4}
+                y={isTop ? y + 11 : y - 4}
                 textAnchor="end"
                 fill="var(--accent)"
                 fontSize={9}
                 fontFamily="monospace"
-                opacity={0.6}
-                className="hidden sm:block"
+                opacity={0.7}
               >
                 {ms.label} — unlocks {ms.pct}%{ms.cmcRank ? ` (${ms.cmcRank})` : ""}
               </text>
-            </g>
-          );
-        })}
+            );
+          })}
+        </g>
 
         {/* Projection line (dashed) */}
         <line
@@ -316,20 +374,6 @@ function MCapChart({
           );
         })}
 
-        {/* Y-axis labels — desktop only */}
-        {yTicks.map((mcap) => (
-          <text
-            key={mcap}
-            x={pad.left + 4}
-            y={toY(mcap) - 3}
-            fill="var(--color-muted)"
-            fontSize={8}
-            fontFamily="monospace"
-            className="hidden sm:block"
-          >
-            {formatMcap(mcap)}
-          </text>
-        ))}
       </svg>
 
       {/* Mobile milestone legend */}
