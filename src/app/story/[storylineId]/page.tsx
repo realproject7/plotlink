@@ -90,7 +90,7 @@ export async function generateMetadata({
         type: "launch_miniapp",
         url: storyUrl,
         name: "PlotLink",
-        splashBackgroundColor: "#1f1a15",
+        splashBackgroundColor: "#faf8f5",
       },
     },
   });

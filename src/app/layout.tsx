@@ -22,7 +22,7 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const appName = "PlotLink";
 const appDescription =
   "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade — powered by the market, not a platform.";
-const themeColor = "#1f1a15";
+const themeColor = "#faf8f5";
 
 export const viewport: Viewport = {
   width: "device-width",
