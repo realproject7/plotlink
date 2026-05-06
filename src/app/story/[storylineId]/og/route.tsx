@@ -82,6 +82,17 @@ export async function GET(
     }
   }
 
+  type FallbackVariant = "A" | "B" | "C" | "D";
+  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
+  const variant = variants[((id * 2654435761) >>> 0) % 4];
+
+  const FALLBACK_BG: Record<FallbackVariant, string> = {
+    A: "radial-gradient(ellipse at 30% 20%, #3a2e24, #261f19)",
+    B: "repeating-linear-gradient(135deg, #2a2420 0px, #2a2420 8px, #332c26 8px, #332c26 16px)",
+    C: "conic-gradient(from 180deg at 50% 50%, #2e3540, #2a2420, #2e3540)",
+    D: "#302820",
+  };
+
   const fonts = fontData
     ? [{ name: "Newsreader", data: fontData, weight: 500 as const }]
     : [];
@@ -100,14 +111,14 @@ export async function GET(
           fontFamily: fontData ? "Newsreader" : "Georgia, serif",
         }}
       >
-        {/* Dark card */}
+        {/* Cover card with deterministic fallback pattern */}
         <div
           style={{
             width: "380px",
             height: "520px",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#2a2420",
+            background: FALLBACK_BG[variant],
             borderRadius: "12px",
             border: "1px solid #3a332c",
             position: "relative",
