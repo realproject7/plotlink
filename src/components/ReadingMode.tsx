@@ -109,7 +109,7 @@ export function ReadingMode({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--paper-bg, #F5F0E8)" }}>
+    <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--bg)" }}>
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-3 sm:px-6" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="min-w-0 flex-1">
@@ -228,7 +228,7 @@ export function ReadingMode({
         >
           <div
             className="border-border w-full max-w-md rounded-t-lg border sm:rounded-lg"
-            style={{ background: "var(--paper-bg, #F5F0E8)" }}
+            style={{ background: "var(--bg)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b border-[var(--border)] px-4 py-3">

@@ -90,7 +90,7 @@ export async function generateMetadata({
         type: "launch_miniapp",
         url: storyUrl,
         name: "PlotLink",
-        splashBackgroundColor: "#E8DFD0",
+        splashBackgroundColor: "#1f1a15",
       },
     },
   });
@@ -159,9 +159,17 @@ export default async function StoryPage({ params }: { params: Params }) {
     : null;
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10 pb-24 lg:pb-10">
+    <div className="mx-auto max-w-5xl px-4 py-8 pb-24 lg:pb-10">
       <ViewTracker storylineId={id} />
-      <StoryHeader storyline={storyline} priceInfo={priceInfo} />
+
+      {/* Breadcrumb */}
+      <nav className="text-muted mb-6 text-xs">
+        <Link href="/" className="hover:text-accent transition-colors">Stories</Link>
+        <span className="mx-2">›</span>
+        <span className="text-foreground">{sl.title}</span>
+      </nav>
+
+      <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} />
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
         {/* Story content — genesis + table of contents */}
@@ -252,31 +260,50 @@ export default async function StoryPage({ params }: { params: Params }) {
   );
 }
 
+type FallbackVariant = "A" | "B" | "C" | "D";
+
+function hashToVariant(id: number): FallbackVariant {
+  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
+  return variants[((id * 2654435761) >>> 0) % 4];
+}
+
+const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
+  A: { background: "radial-gradient(ellipse at 30% 20%, oklch(28% 0.04 40), oklch(16% 0.02 50))" },
+  B: { background: "repeating-linear-gradient(135deg, oklch(18% 0.018 50) 0px, oklch(18% 0.018 50) 8px, oklch(22% 0.02 45) 8px, oklch(22% 0.02 45) 16px)" },
+  C: { background: "conic-gradient(from 180deg at 50% 50%, oklch(20% 0.03 220), oklch(18% 0.02 50), oklch(20% 0.03 220))" },
+  D: { background: "oklch(20% 0.025 50)" },
+};
+
 function StoryHeader({
   storyline,
   priceInfo,
+  storylineId,
+  coverUrl,
 }: {
   storyline: Storyline;
   priceInfo: TokenPriceInfo | null;
+  storylineId: number;
+  coverUrl?: string;
 }) {
   const createdDate = storyline.block_timestamp
     ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
+  const variant = hashToVariant(storylineId);
 
   const statsGrid = priceInfo ? (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
         <MarketCapBox
           tokenAddress={storyline.token_address}
           totalSupply={parseFloat(priceInfo.totalSupply)}
           pricePerToken={parseFloat(priceInfo.pricePerToken)}
         />
       </div>
-      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
         <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
         <div className="text-muted text-[9px]">Supply Minted</div>
       </div>
-      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
         {storyline.sunset ? (
           <>
             <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
@@ -301,14 +328,14 @@ function StoryHeader({
           </>
         )}
       </div>
-      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
         <TokenPriceBox pricePerToken={parseFloat(priceInfo.pricePerToken)} />
       </div>
-      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
         <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
         <div className="text-muted text-[9px]">{storyline.plot_count === 1 ? "Plot" : "Plots"}</div>
       </div>
-      <div className="border-border rounded border px-2 py-1.5 text-center min-w-0">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
         <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
         <div className="text-muted text-[9px]">Created</div>
       </div>
@@ -320,37 +347,30 @@ function StoryHeader({
   );
 
   return (
-    <header
-      className="pb-6 grid gap-x-4 sm:gap-x-6 grid-cols-[130px_1fr] sm:grid-cols-[160px_1fr]"
-    >
-      {/* Moleskine book cover */}
-      <div className="sm:row-span-2">
+    <header className="pb-6 grid gap-x-6 grid-cols-1 sm:grid-cols-[200px_1fr] lg:grid-cols-[280px_1fr]">
+      {/* Cover frame */}
+      <div className="hidden sm:block sm:row-span-2">
         <div
-          className="relative flex flex-col overflow-hidden border border-[var(--border)]"
-          style={{
-            aspectRatio: "2/3",
-            borderRadius: "5px 12px 12px 5px",
-            backgroundColor: "#F5EFE6",
-            boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
-          }}
+          className="relative w-full overflow-hidden rounded-[var(--card-radius)] border border-border"
+          style={{ aspectRatio: "2/3" }}
         >
-          <div
-            className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
-            style={{ background: "rgba(139, 69, 19, 0.15)" }}
-          />
-          <div className="relative z-10 px-2.5 pt-2.5">
-            <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+          {coverUrl ? (
+            <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+          ) : (
+            <div className="absolute inset-0" style={FALLBACK_STYLES[variant]}>
+              <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+                <div className="mb-3 h-px w-8 bg-accent/40" />
+                <h2 className="font-heading text-lg font-medium leading-tight tracking-tight text-foreground lg:text-xl">
+                  {storyline.title}
+                </h2>
+                <div className="mt-3 h-px w-8 bg-accent/40" />
+              </div>
+            </div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
               {storyline.genre || "Uncategorized"}
-            </span>
-          </div>
-          <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
-            <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
-              {storyline.title}
-            </span>
-          </div>
-          <div className="relative z-10 px-2.5 pb-2.5">
-            <span className="text-[8px] text-[var(--text-muted)]">
-              {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
             </span>
           </div>
         </div>
@@ -358,14 +378,14 @@ function StoryHeader({
 
       {/* Info column */}
       <div className="min-w-0">
-        <h1 className="font-body text-xl sm:text-2xl font-bold tracking-tight text-accent">
+        <h1 className="font-heading text-xl sm:text-2xl lg:text-3xl font-medium tracking-tight text-foreground">
           {storyline.title}
         </h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
           <RatingSummary storylineId={storyline.storyline_id} separator />
           <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
         </div>
-        <div className="mt-2 space-y-1 text-xs">
+        <div className="mt-3 space-y-1 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="text-muted w-12 shrink-0">Writer</span>
             <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
@@ -386,7 +406,7 @@ function StoryHeader({
       </div>
 
       {/* Stats + CTA */}
-      <div className="col-span-2 sm:col-span-1 sm:col-start-2">
+      <div className="col-span-1 sm:col-start-2">
         {statsGrid && <div className="mt-4 sm:mt-6">{statsGrid}</div>}
         <div className="[&_a]:w-full [&_div]:w-full sm:[&_a]:w-auto sm:[&_div]:w-auto">{ctaButton}</div>
       </div>
