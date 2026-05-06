@@ -65,9 +65,15 @@ function makeMcapToX(milestones: StatusData["milestones"]) {
 }
 
 function formatMcap(n: number): string {
-  if (n >= 1_000_000) return `$${n / 1_000_000}M`;
-  if (n >= 1_000) return `$${n / 1_000}K`;
-  return `$${n}`;
+  if (n >= 1_000_000) {
+    const m = n / 1_000_000;
+    return Number.isInteger(m) ? `$${m}M` : `$${m.toFixed(2)}M`;
+  }
+  if (n >= 1_000) {
+    const k = n / 1_000;
+    return Number.isInteger(k) ? `$${k}K` : `$${k.toFixed(2)}K`;
+  }
+  return `$${n.toFixed(0)}`;
 }
 
 const TIER_NAMES: Record<string, string> = {
@@ -138,7 +144,7 @@ function MCapChart({
   // SVG geometry — short horizontal band, room for top labels on desktop
   const svgW = 600;
   const svgH = 110;
-  const pad = { top: 50, right: 16, bottom: 14, left: 16 };
+  const pad = { top: 50, right: 50, bottom: 14, left: 24 };
   const chartW = svgW - pad.left - pad.right;
   const barY = pad.top + (svgH - pad.top - pad.bottom) / 2;
 
