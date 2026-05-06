@@ -141,7 +141,7 @@ export default function ProfilePage() {
   const onCooldown = cooldownRemaining > 0;
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
+    <div className="mx-auto max-w-4xl px-6 py-12">
       <ProfileHeader
         address={address}
         fcProfile={fcProfile ?? null}
@@ -317,6 +317,14 @@ function ProfileHeader({
 
         </div>
       </div>
+
+      {/* Stats row */}
+      <ProfileStatsRow
+        address={address}
+        claimedRoyalties={claimedRoyalties}
+        plotBalance={plotBalance}
+        plotUsdPrice={plotUsdPrice}
+      />
 
       {/* Trust dashboard — social credibility cards */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -601,6 +609,66 @@ function CopyButton({ text }: { text: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// Profile Stats Row — key metrics shown in header
+// ---------------------------------------------------------------------------
+
+function ProfileStatsRow({
+  address,
+  claimedRoyalties,
+  plotBalance,
+  plotUsdPrice,
+}: {
+  address: string;
+  claimedRoyalties: bigint | null;
+  plotBalance: bigint | null;
+  plotUsdPrice: number | null;
+}) {
+  const { data: storylines } = useQuery({
+    queryKey: ["profile-stats-storylines", address],
+    queryFn: async () => {
+      if (!supabase) return [];
+      const { data } = await supabase
+        .from("storylines")
+        .select("storyline_id, view_count")
+        .eq("writer_address", address)
+        .eq("hidden", false)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      return data ?? [];
+    },
+  });
+
+  const storyCount = storylines?.length ?? 0;
+  const totalReaders = storylines?.reduce((sum, s) => sum + (s.view_count ?? 0), 0) ?? 0;
+  const royaltiesStr = claimedRoyalties != null && claimedRoyalties > BigInt(0)
+    ? `${formatPrice(formatUnits(claimedRoyalties, 18))} ${RESERVE_LABEL}`
+    : "—";
+  const balanceStr = plotBalance != null
+    ? formatCompact(Number(formatUnits(plotBalance, 18)))
+    : "—";
+
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
+        <div className="text-foreground text-sm font-bold">{storyCount}</div>
+        <div className="text-muted text-[9px]">Stories</div>
+      </div>
+      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
+        <div className="text-foreground text-sm font-bold">{formatCompact(totalReaders)}</div>
+        <div className="text-muted text-[9px]">Total Readers</div>
+      </div>
+      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
+        <div className="text-foreground text-sm font-bold truncate">{royaltiesStr}</div>
+        <div className="text-muted text-[9px]">Royalties</div>
+      </div>
+      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
+        <div className="text-foreground text-sm font-bold">{balanceStr}</div>
+        <div className="text-muted text-[9px]">PLOT Balance</div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Stories Tab — writer stats + story portfolio
 // ---------------------------------------------------------------------------
 
@@ -868,9 +936,9 @@ function StoriesTab({
         </div>
       )}
 
-      {/* Stories */}
+      {/* Stories — card grid */}
       <p className="text-muted text-[10px] uppercase tracking-wider">Stories</p>
-      <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-[var(--card-gap)]">
         {storylines.map((s) => (
           <StoryRow
             key={s.id}
@@ -980,95 +1048,58 @@ function StoryRow({
   }, [storyline.sunset, storyline.has_deadline, storyline.last_plot_time]);
 
   return (
-    <>
-    <div className="border-border rounded border divide-y divide-border text-xs">
-      {/* Moleskine book (left) + Info (right) */}
-      <div className="flex flex-row items-center gap-4 px-4 py-3">
-        {/* Cover card */}
-        <Link
-          href={`/story/${storyline.storyline_id}`}
-          className="group relative block shrink-0 w-[130px] sm:w-[180px]"
-        >
-          <div
-            className="relative overflow-hidden rounded-[var(--card-radius)] border border-border"
-            style={{ aspectRatio: "2/3" }}
-          >
-            <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]}>
-              <div className="flex h-full flex-col items-center justify-center px-3 text-center">
-                <div className="mb-2 h-px w-6 bg-accent/40" />
-                <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-foreground">
-                  {storyline.title}
-                </span>
-                <div className="mt-2 h-px w-6 bg-accent/40" />
-              </div>
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-2">
-              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-                {storyline.genre || "Uncategorized"}
+    <div className="flex flex-col">
+      {/* Cover-image card */}
+      <Link
+        href={`/story/${storyline.storyline_id}`}
+        className="group relative block overflow-hidden rounded-[var(--card-radius)] border border-border transition-transform hover:scale-[1.03]"
+      >
+        <div className="relative" style={{ aspectRatio: "2/3" }}>
+          <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]}>
+            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+              <div className="mb-2 h-px w-8 bg-accent/40" />
+              <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-foreground">
+                {storyline.title}
               </span>
+              <div className="mt-2 h-px w-8 bg-accent/40" />
             </div>
           </div>
-        </Link>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent" />
 
-        {/* Info (right) */}
-        <div className="min-w-0 flex-1 space-y-1">
-          <div className="grid grid-cols-2 gap-2">
-            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-              <div className="text-muted text-[9px]">Plots</div>
-            </div>
-            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{holderCount ?? "—"}</div>
-              <div className="text-muted text-[9px]">Holders</div>
-            </div>
-            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{formatViewCount(storyline.view_count)}</div>
-              <div className="text-muted text-[9px]">Views</div>
-            </div>
-            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
-              <div className="text-foreground text-sm font-bold">{ratingData && ratingData.count > 0 ? ratingData.average.toFixed(1) : "—"}</div>
-              <div className="text-muted text-[9px]">Rating</div>
+          {/* Status badge */}
+          <div className="absolute top-2 right-2">
+            {storyline.sunset ? (
+              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-muted backdrop-blur-sm">complete</span>
+            ) : isExpired ? (
+              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-danger backdrop-blur-sm">expired</span>
+            ) : (
+              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-success backdrop-blur-sm">active</span>
+            )}
+          </div>
+
+          {/* Bottom overlay: genre + stats */}
+          <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
+            <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+              {storyline.genre || "Uncategorized"}
+            </span>
+            <div className="flex items-center gap-2 text-[10px] text-white/80">
+              <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
+              <span>·</span>
+              <span>{formatViewCount(storyline.view_count)} views</span>
+              {ratingData && ratingData.count > 0 && (
+                <>
+                  <span>·</span>
+                  <span>{ratingData.average.toFixed(1)}★</span>
+                </>
+              )}
             </div>
           </div>
-          {/* TVL + Donations (inline in info area) */}
-          {storyline.token_address && (
-            <>
-              <div className="space-y-0.5">
-                <WriterTradingStats storyline={storyline} plotUsd={plotUsd} showPrice={false} />
-                <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
-              </div>
-            </>
-          )}
         </div>
-      </div>
-
-      {/* Status + Created + Deadline */}
-      <div className="px-4 py-2 text-xs space-y-0.5">
-        <div className="flex items-center gap-2">
-          {!storyline.sunset && storyline.has_deadline && storyline.last_plot_time && (
-            <>
-              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} />
-              <span className="text-muted">·</span>
-            </>
-          )}
-          {storyline.sunset ? (
-            <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
-          ) : isExpired ? (
-            <span className="border border-danger/30 text-danger rounded px-1.5 py-0.5 text-[10px]">expired</span>
-          ) : (
-            <span className="border border-success/30 text-success rounded px-1.5 py-0.5 text-[10px]">active</span>
-          )}
-        </div>
-        <div>
-          <span className="text-muted">Created:</span>{" "}
-          <span className="text-foreground font-medium">{storyline.block_timestamp ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—"}</span>
-        </div>
-      </div>
+      </Link>
 
       {/* Royalties — own profile */}
       {isOwnProfile && storyline.token_address && (
-        <div className="px-4 py-2">
+        <div className="mt-2 text-xs">
           <ClaimRoyalties
             tokenAddress={storyline.token_address as Address}
             plotCount={storyline.plot_count}
@@ -1078,18 +1109,17 @@ function StoryRow({
         </div>
       )}
 
+      {/* Genre prompt */}
+      {isOwnProfile && !storyline.genre && (
+        <div className="mt-2">
+          <GenrePrompt
+            storylineId={storyline.storyline_id}
+            language={storyline.language}
+            writerAddress={writerAddress}
+          />
+        </div>
+      )}
     </div>
-    {/* Genre prompt — outside the card */}
-    {isOwnProfile && !storyline.genre && (
-      <div className="mt-2">
-        <GenrePrompt
-          storylineId={storyline.storyline_id}
-          language={storyline.language}
-          writerAddress={writerAddress}
-        />
-      </div>
-    )}
-    </>
   );
 }
 
