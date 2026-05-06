@@ -27,6 +27,7 @@ vi.mock("../RatingSummary", () => ({
 
 vi.mock("../StoryCardStats", () => ({
   StoryCardTVL: () => <span data-testid="tvl">TVL</span>,
+  StoryCardPrice: () => <span data-testid="price">Price</span>,
 }));
 
 function makeStoryline(overrides: Partial<Storyline> = {}): Storyline {
@@ -81,7 +82,7 @@ describe("StoryCard", () => {
 
   it("shows plot count", () => {
     render(<StoryCard storyline={makeStoryline({ plot_count: 3 })} />);
-    expect(screen.getAllByText(/3 plots? linked/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/3 plots/).length).toBeGreaterThan(0);
   });
 
   it("displays genre prop when provided", () => {

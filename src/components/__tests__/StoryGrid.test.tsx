@@ -31,6 +31,7 @@ vi.mock("../RatingSummary", () => ({
 
 vi.mock("../StoryCardStats", () => ({
   StoryCardTVL: () => null,
+  StoryCardPrice: () => null,
 }));
 
 function makeStoryline(id: number, title: string): Storyline {
@@ -78,6 +79,6 @@ describe("StoryGrid", () => {
     const { container } = render(<StoryGrid storylines={[makeStoryline(1, "S1")]} />);
     const grid = container.querySelector(".grid");
     expect(grid).toHaveClass("grid-cols-2");
-    expect(grid).toHaveClass("lg:grid-cols-3");
+    expect(grid).toHaveClass("xl:grid-cols-4");
   });
 });
