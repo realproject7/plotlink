@@ -27,40 +27,50 @@ interface StatusData {
 /* ─── Chart helpers ─── */
 
 /**
- * Piecewise-linear-banded X-axis: each of the 4 milestones occupies an equal
- * 25% band of chart width. Within a band, position is log-interpolated
- * between that band's lower and upper milestone values.
- *
- *   knot 0 = bronze / 100   →   0% (chart left, "$0")
- *   knot 1 = bronze         →  25%
- *   knot 2 = silver         →  50%
- *   knot 3 = gold           →  75%
- *   knot 4 = diamond        → 100% (chart right)
- *
- * Returns a fn that maps MCap → 0–1 (0 = left, 1 = right). Milestone
- * markers are 25% apart and cannot collide regardless of MCap ratios.
+ * Maps MCap → 0–1 X position with milestones at fixed positions
+ * (0/0.25/0.5/0.75/1.0). Uses monotone cubic Hermite interpolation in
+ * (log10(mcap), X) space, with Catmull-Rom slopes at each knot, so the
+ * function is C¹-continuous everywhere — no slope discontinuities at
+ * milestone boundaries (which cause visible kinks in the rendered curve).
  */
 function makeMcapToX(milestones: StatusData["milestones"]) {
-  const knots = [
-    milestones.bronze.mcap / 100,
-    milestones.bronze.mcap,
-    milestones.silver.mcap,
-    milestones.gold.mcap,
-    milestones.diamond.mcap,
+  const lms = [
+    Math.log10(milestones.bronze.mcap / 100),
+    Math.log10(milestones.bronze.mcap),
+    Math.log10(milestones.silver.mcap),
+    Math.log10(milestones.gold.mcap),
+    Math.log10(milestones.diamond.mcap),
   ];
-  const zoneCount = knots.length - 1;
+  const xs = [0, 0.25, 0.5, 0.75, 1.0];
+
+  // Catmull-Rom slopes (centered diff interior, one-sided at ends)
+  const slopes = lms.map((_, i) => {
+    if (i === 0) return (xs[1] - xs[0]) / (lms[1] - lms[0]);
+    if (i === lms.length - 1) return (xs[i] - xs[i - 1]) / (lms[i] - lms[i - 1]);
+    return (xs[i + 1] - xs[i - 1]) / (lms[i + 1] - lms[i - 1]);
+  });
+
   return (mcap: number): number => {
-    if (mcap <= knots[0]) return 0;
-    if (mcap >= knots[knots.length - 1]) return 1;
-    for (let i = 1; i < knots.length; i++) {
-      if (mcap <= knots[i]) {
-        const t =
-          (Math.log10(mcap) - Math.log10(knots[i - 1])) /
-          (Math.log10(knots[i]) - Math.log10(knots[i - 1]));
-        return (i - 1 + t) / zoneCount;
-      }
-    }
-    return 1;
+    if (mcap <= 0) return 0;
+    const t = Math.log10(mcap);
+    if (t <= lms[0]) return 0;
+    if (t >= lms[lms.length - 1]) return 1;
+
+    let i = 1;
+    while (i < lms.length && t > lms[i]) i++;
+
+    const t0 = lms[i - 1], t1 = lms[i];
+    const x0 = xs[i - 1], x1 = xs[i];
+    const m0 = slopes[i - 1], m1 = slopes[i];
+    const dt = t1 - t0;
+    const u = (t - t0) / dt;
+    const u2 = u * u;
+    const u3 = u2 * u;
+    const h00 = 2 * u3 - 3 * u2 + 1;
+    const h10 = u3 - 2 * u2 + u;
+    const h01 = -2 * u3 + 3 * u2;
+    const h11 = u3 - u2;
+    return h00 * x0 + h10 * dt * m0 + h01 * x1 + h11 * dt * m1;
   };
 }
 
@@ -75,13 +85,6 @@ function formatMcap(n: number): string {
   }
   return `$${n.toFixed(0)}`;
 }
-
-const TIER_NAMES: Record<string, string> = {
-  bronze: "Bronze",
-  silver: "Silver",
-  gold: "Gold",
-  diamond: "Diamond",
-};
 
 const CMC_RANKS: Record<number, string> = {
   1_000_000: "≈ #1900",
@@ -137,13 +140,12 @@ function MCapChart({
   currentFdv: number;
   milestones: StatusData["milestones"];
 }) {
-  // Banded X-axis (each milestone gets equal 25% of chart width)
   const mcapToX = makeMcapToX(milestones);
 
-  // SVG geometry — area chart with room for top labels and Y-axis ticks
+  // SVG geometry — area chart, no label space above (labels are inside)
   const svgW = 600;
-  const svgH = 280;
-  const pad = { top: 78, right: 16, bottom: 30, left: 48 };
+  const svgH = 240;
+  const pad = { top: 14, right: 16, bottom: 14, left: 48 };
   const chartW = svgW - pad.left - pad.right;
   const chartH = svgH - pad.top - pad.bottom;
 
@@ -155,41 +157,32 @@ function MCapChart({
       ...val,
       label: formatMcap(val.mcap),
       cmcRank: CMC_RANKS[val.mcap] ?? "",
-      tierName: TIER_NAMES[key] ?? key,
+      milestoneNum: idx + 1,
       pos: positions[idx] ?? 1,
     };
   });
 
-  // Y-axis: linear, $0 → diamond. 5 evenly-spaced ticks at 0/25/50/75/100% of diamond.
+  // Y-axis: linear, $0 → diamond. 5 evenly-spaced ticks.
   const yMax = milestones.diamond.mcap;
   const yTicks = [0, 0.25, 0.5, 0.75, 1.0].map((f) => f * yMax);
   const toX = (xFrac: number) => pad.left + xFrac * chartW;
   const toY = (mcap: number) => pad.top + (1 - Math.min(1, Math.max(0, mcap / yMax))) * chartH;
 
-  // Smooth curve: sample 20 points per band using the same banded log
-  // interpolation as mcapToX, so the curve passes exactly through the
-  // milestone knots and the heartbeat dot lies exactly on the curve.
-  const knots = [
-    milestones.bronze.mcap / 100,
-    milestones.bronze.mcap,
-    milestones.silver.mcap,
-    milestones.gold.mcap,
-    milestones.diamond.mcap,
-  ];
+  // Smooth curve: sample 200 points across full log range. Because mcapToX
+  // is C¹-smooth (Catmull-Rom Hermite), the curve has no slope discontinuities
+  // at milestone knots. Heartbeat dot lies exactly on the curve.
+  const lmStart = Math.log10(milestones.bronze.mcap / 100);
+  const lmEnd = Math.log10(milestones.diamond.mcap);
+  const numSamples = 200;
   const curve: { x: number; y: number }[] = [{ x: toX(0), y: toY(0) }];
-  for (let i = 1; i < knots.length; i++) {
-    const lo = Math.log10(knots[i - 1]);
-    const hi = Math.log10(knots[i]);
-    const samples = 24;
-    for (let s = 1; s <= samples; s++) {
-      const m = Math.pow(10, lo + (hi - lo) * (s / samples));
-      curve.push({ x: toX(mcapToX(m)), y: toY(m) });
-    }
+  for (let s = 1; s <= numSamples; s++) {
+    const m = Math.pow(10, lmStart + (lmEnd - lmStart) * (s / numSamples));
+    curve.push({ x: toX(mcapToX(m)), y: toY(m) });
   }
   const linePath = curve.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
   const areaPath = `${linePath} L${curve[curve.length - 1].x},${pad.top + chartH} L${curve[0].x},${pad.top + chartH} Z`;
 
-  // Current MCap dot — clamp at floor so dot is always visible if currentFdv = 0
+  // Current MCap dot
   const dotMcap = currentFdv > 0 ? currentFdv : 0;
   const dotX = toX(mcapToX(dotMcap));
   const dotY = toY(dotMcap);
@@ -198,7 +191,7 @@ function MCapChart({
     <div className="space-y-2">
       <svg
         viewBox={`0 0 ${svgW} ${svgH}`}
-        className="w-full"
+        className="w-full font-mono"
         preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={`MCap area chart: current ${formatMcap(currentFdv)} of ${formatMcap(yMax)}`}
@@ -210,78 +203,28 @@ function MCapChart({
           </linearGradient>
         </defs>
 
-        {/* Y-axis tick gridlines (subtle) */}
+        {/* Y-axis tick gridlines */}
         {yTicks.map((tick) => {
           const y = toY(tick);
           return (
-            <line
-              key={`grid-${tick}`}
-              x1={pad.left}
-              y1={y}
-              x2={pad.left + chartW}
-              y2={y}
-              stroke="var(--accent)"
-              strokeWidth={0.5}
-              opacity={0.1}
-            />
+            <line key={`grid-${tick}`} x1={pad.left} y1={y} x2={pad.left + chartW} y2={y} stroke="var(--accent)" strokeWidth={0.5} opacity={0.1} />
           );
         })}
 
-        {/* Vertical band dividers — span full chart height (3 inner + 2 edges) */}
+        {/* Vertical band dividers (full chart height, 3 inner + 2 edges) */}
         {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
           const x = toX(frac);
           const isEdge = frac === 0 || frac === 1;
           return (
-            <line
-              key={`band-${frac}`}
-              x1={x}
-              y1={pad.top}
-              x2={x}
-              y2={pad.top + chartH}
-              stroke="var(--accent)"
-              strokeWidth={isEdge ? 0.75 : 0.5}
-              opacity={isEdge ? 0.5 : 0.35}
-            />
+            <line key={`band-${frac}`} x1={x} y1={pad.top} x2={x} y2={pad.top + chartH} stroke="var(--accent)" strokeWidth={isEdge ? 0.75 : 0.5} opacity={isEdge ? 0.5 : 0.35} />
           );
         })}
 
-        {/* Top-of-band labels: TIER / $value / unlocks Y% / (≈ #Z), centered in each band column */}
-        {milestoneEntries.map((ms, i) => {
-          // Bronze owns band 0 (0-25%), Silver band 1 (25-50%), etc. Center = (i + 0.5) / 4.
-          const cx = toX((i + 0.5) / 4);
-          return (
-            <g key={`top-${ms.key}`} className="hidden sm:block">
-              <text x={cx} y={pad.top - 56} textAnchor="middle" fill="var(--accent)" fontSize={11} fontFamily="monospace" fontWeight="bold" letterSpacing="2">
-                {ms.tierName.toUpperCase()}
-              </text>
-              <text x={cx} y={pad.top - 40} textAnchor="middle" fill="var(--accent)" fontSize={13} fontFamily="monospace" fontWeight="bold">
-                {ms.label}
-              </text>
-              <text x={cx} y={pad.top - 25} textAnchor="middle" fill="var(--accent)" fontSize={10} fontFamily="monospace" opacity={0.85}>
-                unlocks {ms.pct}%
-              </text>
-              {ms.cmcRank && (
-                <text x={cx} y={pad.top - 11} textAnchor="middle" fill="var(--accent)" fontSize={9} fontFamily="monospace" opacity={0.55}>
-                  {ms.cmcRank}
-                </text>
-              )}
-            </g>
-          );
-        })}
-
-        {/* Y-axis tick labels on the left */}
+        {/* Y-axis tick labels (left) */}
         {yTicks.map((tick) => {
           const y = toY(tick);
           return (
-            <text
-              key={`ytick-${tick}`}
-              x={pad.left - 6}
-              y={y + 3}
-              textAnchor="end"
-              fill="var(--color-muted)"
-              fontSize={9}
-              fontFamily="monospace"
-            >
+            <text key={`ytick-${tick}`} x={pad.left - 6} y={y + 3} textAnchor="end" fill="var(--color-muted)" fontSize={9}>
               {formatMcap(tick)}
             </text>
           );
@@ -293,56 +236,55 @@ function MCapChart({
         {/* Curve line */}
         <path d={linePath} fill="none" stroke="var(--accent)" strokeWidth={2} />
 
-        {/* Heartbeat dot at current MCap (always lies on curve by construction) */}
+        {/* Milestone label blocks — inside chart, anchored to LEFT of each vertical line */}
+        <g className="hidden sm:block">
+          {milestoneEntries.map((ms) => {
+            const lineX = toX(ms.pos);
+            const labelX = lineX - 6;
+            const top = pad.top + 14;
+            return (
+              <g key={`label-${ms.key}`}>
+                <text x={labelX} y={top} textAnchor="end" fill="var(--accent)" fontSize={10} fontWeight="bold" style={{ letterSpacing: "0.18em" }}>
+                  MILESTONE {ms.milestoneNum}
+                </text>
+                <text x={labelX} y={top + 16} textAnchor="end" fill="var(--accent)" fontSize={13} fontWeight="bold">
+                  {ms.label}
+                </text>
+                <text x={labelX} y={top + 30} textAnchor="end" fill="var(--accent)" fontSize={10} opacity={0.85}>
+                  unlocks {ms.pct}%
+                </text>
+                {ms.cmcRank && (
+                  <text x={labelX} y={top + 43} textAnchor="end" fill="var(--accent)" fontSize={9} opacity={0.55}>
+                    CMC {ms.cmcRank}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </g>
+
+        {/* Heartbeat dot at current MCap */}
         <circle cx={dotX} cy={dotY} r={6} fill="var(--accent)" opacity={0.75}>
           <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
           <animate attributeName="opacity" values="0.75;0;0.75" dur="1.5s" repeatCount="indefinite" />
         </circle>
         <circle cx={dotX} cy={dotY} r={4} fill="var(--accent)" />
 
-        {/* Bottom tier-name labels under each band (desktop only) */}
-        {milestoneEntries.map((ms, i) => {
-          const cx = toX((i + 0.5) / 4);
-          return (
-            <text
-              key={`bot-${ms.key}`}
-              x={cx}
-              y={pad.top + chartH + 16}
-              textAnchor="middle"
-              fill="var(--color-muted)"
-              fontSize={10}
-              fontFamily="monospace"
-              letterSpacing="1.5"
-              className="hidden sm:block"
-            >
-              {ms.tierName.toLowerCase()}
-            </text>
-          );
-        })}
-
         {/* Current MCap caption right above the dot */}
-        <text
-          x={dotX}
-          y={dotY - 12}
-          textAnchor="middle"
-          fill="var(--accent)"
-          fontSize={10}
-          fontFamily="monospace"
-          fontWeight="bold"
-        >
+        <text x={dotX} y={dotY - 12} textAnchor="middle" fill="var(--accent)" fontSize={10} fontWeight="bold">
           {formatMcap(currentFdv)}
         </text>
       </svg>
 
-      {/* Mobile milestone legend — tier name + value + unlock% in 4 columns under chart */}
-      <div className="grid grid-cols-4 gap-1 sm:hidden">
+      {/* Mobile milestone legend — Mn / value / pct in 4 columns */}
+      <div className="grid grid-cols-4 gap-1 sm:hidden font-mono">
         {milestoneEntries.map((ms) => (
           <div key={ms.key} className="text-center">
             <div className="text-[10px] font-bold text-foreground uppercase tracking-wider">
-              {ms.tierName}
+              M{ms.milestoneNum}
             </div>
-            <div className="text-[10px] text-muted font-mono">{ms.label}</div>
-            <div className="text-[10px] text-muted font-mono">{ms.pct}%</div>
+            <div className="text-[10px] text-muted">{ms.label}</div>
+            <div className="text-[10px] text-muted">{ms.pct}%</div>
           </div>
         ))}
       </div>
@@ -436,7 +378,7 @@ export function CampaignHero() {
 
       {/* ── MCap explanation footnote ── */}
       <div className="text-center text-muted text-[10px]">
-        MCap = PLOT price × 1M max supply
+        MCap = PLOT price × 1M max supply · CMC = CoinMarketCap
       </div>
 
       {/* ── How It Works modal ── */}
@@ -556,7 +498,7 @@ export function CampaignHero() {
 
             {/* Footnote */}
             <div className="text-center text-muted text-[10px] font-mono">
-              MCap = PLOT price × 1M max supply
+              MCap = PLOT price × 1M max supply · CMC = CoinMarketCap
             </div>
           </div>
         </div>
