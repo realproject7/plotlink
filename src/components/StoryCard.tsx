@@ -52,6 +52,7 @@ export function StoryCard({
         <img
           src={coverUrl}
           alt={storyline.title}
+          loading="lazy"
           className="absolute inset-0 h-full w-full object-cover"
         />
       ) : (
@@ -91,6 +92,11 @@ export function StoryCard({
         {isNew && (
           <span className="rounded-sm bg-[var(--accent)]/80 px-1.5 py-0.5 text-[9px] font-bold text-white backdrop-blur-sm">
             NEW
+          </span>
+        )}
+        {storyline.language && storyline.language !== "English" && (
+          <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[9px] text-white/80 backdrop-blur-sm">
+            {storyline.language}
           </span>
         )}
       </div>

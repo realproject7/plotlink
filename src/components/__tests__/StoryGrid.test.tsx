@@ -78,6 +78,6 @@ describe("StoryGrid", () => {
     const { container } = render(<StoryGrid storylines={[makeStoryline(1, "S1")]} />);
     const grid = container.querySelector(".grid");
     expect(grid).toHaveClass("grid-cols-2");
-    expect(grid).toHaveClass("lg:grid-cols-4");
+    expect(grid).toHaveClass("xl:grid-cols-4");
   });
 });
