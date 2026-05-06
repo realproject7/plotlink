@@ -73,10 +73,10 @@ describe("StoryCard", () => {
     expect(link).toHaveAttribute("href", "/story/42");
   });
 
-  it("applies moleskine-notebook class for hover animation", () => {
+  it("wraps card in a link with group class", () => {
     render(<StoryCard storyline={makeStoryline()} />);
     const link = screen.getAllByText("Test Story Title")[0].closest("a");
-    expect(link).toHaveClass("moleskine-notebook");
+    expect(link).toHaveClass("group");
   });
 
   it("shows plot count", () => {

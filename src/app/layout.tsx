@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Lora, Inter, Geist_Mono } from "next/font/google";
+import { Newsreader, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import { NavBar } from "../components/NavBar";
 import { Footer } from "../components/Footer";
@@ -7,13 +7,8 @@ import { FarcasterMiniApp } from "../components/FarcasterMiniApp";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
-const lora = Lora({
-  variable: "--font-lora",
-  subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
   subsets: ["latin"],
 });
 
@@ -27,7 +22,7 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 const appName = "PlotLink";
 const appDescription =
   "Tokenise your story from day 1. Publish plots, drive trading, earn royalties from every trade — powered by the market, not a platform.";
-const themeColor = "#E8DFD0";
+const themeColor = "#1f1a15";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -76,8 +71,6 @@ export const metadata: Metadata = {
   themeColor,
   other: {
     "base:app_id": "69c257e93c2c56b9bbd2f62a",
-    // Farcaster Mini App embed meta tag for social sharing preview
-    // Note: embed-image.png is 1200x800 (3:2 ratio) per Farcaster requirements
     "fc:miniapp": JSON.stringify({
       version: "1",
       imageUrl: `${appUrl}/embed-image.png`,
@@ -102,7 +95,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${lora.variable} ${inter.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${newsreader.variable} ${geistMono.variable} antialiased`}>
         <Providers>
           <FarcasterMiniApp />
           <NavBar />

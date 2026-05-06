@@ -973,10 +973,10 @@ function StoryRow({
         {/* Moleskine book card */}
         <Link
           href={`/story/${storyline.storyline_id}`}
-          className="moleskine-notebook group relative block shrink-0 w-[130px] sm:w-[180px]"
+          className="group relative block shrink-0 w-[130px] sm:w-[180px]"
         >
           <div
-            className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
+            className="relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
             style={{
               aspectRatio: "2/3",
               borderRadius: "5px 12px 12px 5px",
@@ -1596,10 +1596,10 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
           <div className="flex flex-col sm:flex-row items-center gap-4 px-4 py-3">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
-              className="moleskine-notebook group relative block shrink-0 w-[130px] sm:w-[180px]"
+              className="group relative block shrink-0 w-[130px] sm:w-[180px]"
             >
               <div
-                className="notebook-cover relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
+                className="relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
                 style={{
                   aspectRatio: "2/3",
                   borderRadius: "5px 12px 12px 5px",
