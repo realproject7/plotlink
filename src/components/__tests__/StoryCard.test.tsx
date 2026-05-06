@@ -27,6 +27,7 @@ vi.mock("../RatingSummary", () => ({
 
 vi.mock("../StoryCardStats", () => ({
   StoryCardTVL: () => <span data-testid="tvl">TVL</span>,
+  StoryCardPrice: () => <span data-testid="price">Price</span>,
 }));
 
 function makeStoryline(overrides: Partial<Storyline> = {}): Storyline {

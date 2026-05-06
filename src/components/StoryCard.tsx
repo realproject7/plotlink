@@ -3,7 +3,7 @@ import type { Storyline } from "../../lib/supabase";
 import { AgentBadge } from "./AgentBadge";
 import { WriterIdentityClient } from "./WriterIdentityClient";
 import { RatingSummary } from "./RatingSummary";
-import { StoryCardTVL } from "./StoryCardStats";
+import { StoryCardTVL, StoryCardPrice } from "./StoryCardStats";
 import { getStoryStatus } from "../../lib/story-status";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -112,8 +112,9 @@ export function StoryCard({
           <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
         </div>
         {storyline.token_address && (
-          <div className="mt-1 text-[10px] font-mono text-white/60">
-            <StoryCardTVL tokenAddress={storyline.token_address} />
+          <div className="mt-1 flex flex-wrap gap-x-2 text-[10px] font-mono text-white/60">
+            <span><StoryCardPrice tokenAddress={storyline.token_address} /></span>
+            <span><StoryCardTVL tokenAddress={storyline.token_address} /></span>
           </div>
         )}
         <div className="mt-1 text-[10px] text-white/50">

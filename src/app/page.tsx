@@ -55,7 +55,7 @@ export default async function Home({
         Explore Stories
       </h2>
 
-      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} />
+      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} />
 
       {/* Story grid — batched multicall for price/TVL */}
       <StoryGrid storylines={storylines} />
@@ -65,7 +65,7 @@ export default async function Home({
         <div className="mt-8 flex items-center justify-center gap-4">
           {page > 1 && (
             <Link
-              href={buildPageHref(tab, writer, page - 1)}
+              href={buildPageHref(tab, writer, page - 1, genre, lang)}
               className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
             >
               &larr; Previous
@@ -74,7 +74,7 @@ export default async function Home({
           <span className="text-muted text-xs">Page {page}</span>
           {storylines.length === PAGE_SIZE && (
             <Link
-              href={buildPageHref(tab, writer, page + 1)}
+              href={buildPageHref(tab, writer, page + 1, genre, lang)}
               className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
             >
               Next &rarr;
@@ -103,9 +103,11 @@ export default async function Home({
   );
 }
 
-function buildPageHref(tab: string, writer: string, page: number): string {
+function buildPageHref(tab: string, writer: string, page: number, genre: string, lang: string): string {
   const params = new URLSearchParams({ tab });
   if (writer !== "all") params.set("writer", writer);
+  if (genre !== "all") params.set("genre", genre);
+  if (lang !== "all") params.set("lang", lang);
   if (page > 1) params.set("page", String(page));
   return `/?${params.toString()}`;
 }

@@ -31,6 +31,7 @@ vi.mock("../RatingSummary", () => ({
 
 vi.mock("../StoryCardStats", () => ({
   StoryCardTVL: () => null,
+  StoryCardPrice: () => null,
 }));
 
 function makeStoryline(id: number, title: string): Storyline {

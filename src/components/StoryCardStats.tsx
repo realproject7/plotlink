@@ -58,6 +58,30 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
   );
 }
 
+/** Compact price chip for cover cards */
+export function StoryCardPrice({ tokenAddress }: { tokenAddress: string }) {
+  const { entry: batchEntry, isReady } = useBatchTokenData(tokenAddress);
+  const addr = tokenAddress as Address;
+  const { data: plotUsd } = usePlotUsdPrice();
+
+  const { data: individualPrice } = useQuery({
+    queryKey: ["card-price", tokenAddress],
+    queryFn: () => getTokenPrice(addr, browserClient),
+    staleTime: 60000,
+    enabled: isReady && !batchEntry,
+  });
+
+  const priceData = batchEntry?.price ?? individualPrice;
+  const price = priceData ? formatCompact(priceData.pricePerToken) : "—";
+  const priceUsd = priceData && plotUsd
+    ? formatUsdValue(parseFloat(priceData.pricePerToken) * plotUsd)
+    : null;
+
+  return (
+    <span>{price} {RESERVE_LABEL}{priceUsd && <span className="ml-1 opacity-60">({priceUsd})</span>}</span>
+  );
+}
+
 /** TVL-only display for home page book cards.
  *  Uses batch context when available (home page), falls back to individual fetch. */
 export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
