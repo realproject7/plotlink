@@ -90,7 +90,7 @@ export async function generateMetadata({
         type: "launch_miniapp",
         url: storyUrl,
         name: "PlotLink",
-        splashBackgroundColor: "#1f1a15",
+        splashBackgroundColor: "#faf8f5",
       },
     },
   });
@@ -360,7 +360,7 @@ function StoryHeader({
             <div className="absolute inset-0" style={FALLBACK_STYLES[variant]}>
               <div className="flex h-full flex-col items-center justify-center px-4 text-center">
                 <div className="mb-3 h-px w-8 bg-accent/40" />
-                <h2 className="font-heading text-lg font-medium leading-tight tracking-tight text-foreground lg:text-xl">
+                <h2 className="font-heading text-lg font-medium leading-tight tracking-tight text-white lg:text-xl">
                   {storyline.title}
                 </h2>
                 <div className="mt-3 h-px w-8 bg-accent/40" />

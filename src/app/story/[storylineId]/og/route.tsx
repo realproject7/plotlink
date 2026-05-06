@@ -107,7 +107,7 @@ export async function GET(
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#1f1a15",
+          backgroundColor: "#faf8f5",
           fontFamily: fontData ? "Newsreader" : "Georgia, serif",
         }}
       >
@@ -237,11 +237,11 @@ export async function GET(
             width: "380px",
             marginTop: "20px",
             fontSize: "15px",
-            color: "#8a7e70",
+            color: "#6a5e50",
           }}
         >
           <div style={{ display: "flex" }}>by {authorName}</div>
-          <div style={{ display: "flex", color: "#5a5248" }}>plotlink.xyz</div>
+          <div style={{ display: "flex", color: "#4a4038" }}>plotlink.xyz</div>
         </div>
       </div>
     ),

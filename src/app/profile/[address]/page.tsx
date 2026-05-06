@@ -1058,7 +1058,7 @@ function StoryRow({
           <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]}>
             <div className="flex h-full flex-col items-center justify-center px-4 text-center">
               <div className="mb-2 h-px w-8 bg-accent/40" />
-              <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-foreground">
+              <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-white">
                 {storyline.title}
               </span>
               <div className="mt-2 h-px w-8 bg-accent/40" />
@@ -1069,7 +1069,7 @@ function StoryRow({
           {/* Status badge */}
           <div className="absolute top-2 right-2">
             {storyline.sunset ? (
-              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-muted backdrop-blur-sm">complete</span>
+              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-white/60 backdrop-blur-sm">complete</span>
             ) : isExpired ? (
               <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-danger backdrop-blur-sm">expired</span>
             ) : (
@@ -1656,7 +1656,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]}>
                   <div className="flex h-full flex-col items-center justify-center px-3 text-center">
                     <div className="mb-2 h-px w-6 bg-accent/40" />
-                    <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-foreground">
+                    <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-white">
                       {h.storyline.title}
                     </span>
                     <div className="mt-2 h-px w-6 bg-accent/40" />

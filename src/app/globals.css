@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg:            oklch(13% 0.02 50);
-  --surface:       oklch(18% 0.018 50);
-  --surface-raised: oklch(21% 0.018 50);
-  --fg:            oklch(92% 0.012 70);
-  --muted:         oklch(55% 0.015 50);
-  --border:        oklch(25% 0.015 50);
-  --accent:        oklch(64% 0.13 28);
-  --accent-dim:    oklch(45% 0.08 28);
-  --accent-bg:     oklch(64% 0.13 28 / 0.1);
-  --danger:        oklch(60% 0.18 25);
-  --success:       oklch(58% 0.14 145);
-  --burn:          oklch(58% 0.20 25);
-  --dist:          oklch(58% 0.16 145);
+  --bg:            oklch(98% 0.005 70);
+  --surface:       oklch(95% 0.008 60);
+  --surface-raised: oklch(91% 0.012 55);
+  --fg:            oklch(20% 0.015 50);
+  --muted:         oklch(48% 0.012 50);
+  --border:        oklch(87% 0.008 55);
+  --accent:        oklch(52% 0.14 28);
+  --accent-dim:    oklch(40% 0.10 28);
+  --accent-bg:     oklch(52% 0.14 28 / 0.08);
+  --danger:        oklch(50% 0.18 25);
+  --success:       oklch(45% 0.14 145);
+  --burn:          oklch(50% 0.20 25);
+  --dist:          oklch(45% 0.16 145);
 
   --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
   --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -148,7 +148,7 @@ code, pre, .font-mono {
 .story-markdown code {
   font-family: var(--font-mono), monospace;
   font-size: 0.9em;
-  background: oklch(100% 0 0 / 0.06);
+  background: oklch(0% 0 0 / 0.06);
   padding: 0.1em 0.3em;
   border-radius: 2px;
 }
