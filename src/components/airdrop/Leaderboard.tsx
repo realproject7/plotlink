@@ -44,7 +44,7 @@ export function Leaderboard() {
 
   if (isLoading || !data) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <div className="text-muted text-sm">Loading leaderboard...</div>
       </div>
     );
@@ -52,7 +52,7 @@ export function Leaderboard() {
 
   if (data.entries.length === 0 && data.totalParticipants === 0) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <h3 className="text-foreground text-sm font-bold mb-2">Leaderboard</h3>
         <div className="text-muted text-xs">No participants yet.</div>
       </div>
@@ -63,7 +63,7 @@ export function Leaderboard() {
   const onCurrentPage = userAddr && data.entries.some((e) => e.address.toLowerCase() === userAddr);
 
   return (
-    <div className="border-border rounded border p-4">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
       <h3 className="text-foreground text-sm font-bold">Leaderboard</h3>
       <div className="text-muted text-xs mb-3">
         {data.totalParticipants} {data.totalParticipants === 1 ? "participant" : "participants"}

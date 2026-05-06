@@ -189,98 +189,118 @@ function MCapChart({
 
   return (
     <div className="space-y-2">
-      <svg
-        viewBox={`0 0 ${svgW} ${svgH}`}
-        className="w-full font-mono"
-        preserveAspectRatio="xMidYMid meet"
-        role="img"
-        aria-label={`MCap area chart: current ${formatMcap(currentFdv)} of ${formatMcap(yMax)}`}
-      >
-        <defs>
-          <linearGradient id="mcap-area-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.32" />
-            <stop offset="100%" stopColor="var(--accent)" stopOpacity="0.02" />
-          </linearGradient>
-        </defs>
+      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
+        <svg
+          viewBox={`0 0 ${svgW} ${svgH}`}
+          className="w-full font-mono"
+          preserveAspectRatio="xMidYMid meet"
+          role="img"
+          aria-label={`MCap area chart: current ${formatMcap(currentFdv)} of ${formatMcap(yMax)}`}
+        >
+          <defs>
+            <linearGradient id="mcap-area-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--dist)" stopOpacity="0.28" />
+              <stop offset="100%" stopColor="var(--dist)" stopOpacity="0.02" />
+            </linearGradient>
+          </defs>
 
-        {/* Y-axis tick gridlines */}
-        {yTicks.map((tick) => {
-          const y = toY(tick);
-          return (
-            <line key={`grid-${tick}`} x1={pad.left} y1={y} x2={pad.left + chartW} y2={y} stroke="var(--accent)" strokeWidth={0.5} opacity={0.1} />
-          );
-        })}
-
-        {/* Vertical band dividers (full chart height, 3 inner + 2 edges) */}
-        {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
-          const x = toX(frac);
-          const isEdge = frac === 0 || frac === 1;
-          return (
-            <line key={`band-${frac}`} x1={x} y1={pad.top} x2={x} y2={pad.top + chartH} stroke="var(--accent)" strokeWidth={isEdge ? 0.75 : 0.5} opacity={isEdge ? 0.5 : 0.35} />
-          );
-        })}
-
-        {/* Y-axis tick labels (left) */}
-        {yTicks.map((tick) => {
-          const y = toY(tick);
-          return (
-            <text key={`ytick-${tick}`} x={pad.left - 6} y={y + 3} textAnchor="end" fill="var(--color-muted)" fontSize={9}>
-              {formatMcap(tick)}
-            </text>
-          );
-        })}
-
-        {/* Area fill below curve */}
-        <path d={areaPath} fill="url(#mcap-area-fill)" />
-
-        {/* Curve line */}
-        <path d={linePath} fill="none" stroke="var(--accent)" strokeWidth={2} />
-
-        {/* Milestone label blocks — inside chart, anchored to LEFT of each vertical line */}
-        <g className="hidden sm:block">
-          {milestoneEntries.map((ms) => {
-            const lineX = toX(ms.pos);
-            const labelX = lineX - 6;
-            const top = pad.top + 14;
+          {/* Y-axis tick gridlines */}
+          {yTicks.map((tick) => {
+            const y = toY(tick);
             return (
-              <g key={`label-${ms.key}`}>
-                <text x={labelX} y={top} textAnchor="end" fill="var(--accent)" fontSize={10} fontWeight="bold" style={{ letterSpacing: "0.18em" }}>
-                  MILESTONE {ms.milestoneNum}
-                </text>
-                <text x={labelX} y={top + 16} textAnchor="end" fill="var(--accent)" fontSize={13} fontWeight="bold">
-                  {ms.label}
-                </text>
-                <text x={labelX} y={top + 30} textAnchor="end" fill="var(--accent)" fontSize={10} opacity={0.85}>
-                  unlocks {ms.pct}%
-                </text>
-                {ms.cmcRank && (
-                  <text x={labelX} y={top + 43} textAnchor="end" fill="var(--accent)" fontSize={9} opacity={0.55}>
-                    CMC {ms.cmcRank}
-                  </text>
-                )}
-              </g>
+              <line key={`grid-${tick}`} x1={pad.left} y1={y} x2={pad.left + chartW} y2={y} stroke="var(--border)" strokeWidth={0.5} />
             );
           })}
-        </g>
 
-        {/* Heartbeat dot at current MCap */}
-        <circle cx={dotX} cy={dotY} r={6} fill="var(--accent)" opacity={0.75}>
-          <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.75;0;0.75" dur="1.5s" repeatCount="indefinite" />
-        </circle>
-        <circle cx={dotX} cy={dotY} r={4} fill="var(--accent)" />
+          {/* Milestone column backgrounds — reached=dist, unreached=burn(faded) */}
+          {milestoneEntries.map((ms, idx) => {
+            const x0 = toX(idx === 0 ? 0 : milestoneEntries[idx - 1].pos);
+            const x1 = toX(ms.pos);
+            return (
+              <rect
+                key={`col-${ms.key}`}
+                x={x0}
+                y={pad.top}
+                width={x1 - x0}
+                height={chartH}
+                fill={ms.reached ? "var(--dist)" : "var(--burn)"}
+                opacity={ms.reached ? 0.08 : 0.04}
+              />
+            );
+          })}
 
-        {/* Current MCap caption right above the dot */}
-        <text x={dotX} y={dotY - 12} textAnchor="middle" fill="var(--accent)" fontSize={10} fontWeight="bold">
-          {formatMcap(currentFdv)}
-        </text>
-      </svg>
+          {/* Vertical band dividers */}
+          {[0, 0.25, 0.5, 0.75, 1].map((frac) => {
+            const x = toX(frac);
+            const isEdge = frac === 0 || frac === 1;
+            return (
+              <line key={`band-${frac}`} x1={x} y1={pad.top} x2={x} y2={pad.top + chartH} stroke="var(--border)" strokeWidth={isEdge ? 0.75 : 0.5} />
+            );
+          })}
+
+          {/* Y-axis tick labels (left) */}
+          {yTicks.map((tick) => {
+            const y = toY(tick);
+            return (
+              <text key={`ytick-${tick}`} x={pad.left - 6} y={y + 3} textAnchor="end" fill="var(--muted)" fontSize={9}>
+                {formatMcap(tick)}
+              </text>
+            );
+          })}
+
+          {/* Area fill below curve */}
+          <path d={areaPath} fill="url(#mcap-area-fill)" />
+
+          {/* Curve line */}
+          <path d={linePath} fill="none" stroke="var(--dist)" strokeWidth={2} />
+
+          {/* Milestone label blocks — inside chart, anchored to LEFT of each vertical line */}
+          <g className="hidden sm:block">
+            {milestoneEntries.map((ms) => {
+              const lineX = toX(ms.pos);
+              const labelX = lineX - 6;
+              const top = pad.top + 14;
+              const color = ms.reached ? "var(--dist)" : "var(--accent)";
+              return (
+                <g key={`label-${ms.key}`}>
+                  <text x={labelX} y={top} textAnchor="end" fill={color} fontSize={10} fontWeight="bold" style={{ letterSpacing: "0.18em" }}>
+                    MILESTONE {ms.milestoneNum}
+                  </text>
+                  <text x={labelX} y={top + 16} textAnchor="end" fill={color} fontSize={13} fontWeight="bold">
+                    {ms.label}
+                  </text>
+                  <text x={labelX} y={top + 30} textAnchor="end" fill={color} fontSize={10} opacity={0.85}>
+                    unlocks {ms.pct}%
+                  </text>
+                  {ms.cmcRank && (
+                    <text x={labelX} y={top + 43} textAnchor="end" fill={color} fontSize={9} opacity={0.55}>
+                      CMC {ms.cmcRank}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+          </g>
+
+          {/* Heartbeat dot at current MCap */}
+          <circle cx={dotX} cy={dotY} r={6} fill="var(--accent)" opacity={0.75}>
+            <animate attributeName="r" values="6;12;6" dur="1.5s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.75;0;0.75" dur="1.5s" repeatCount="indefinite" />
+          </circle>
+          <circle cx={dotX} cy={dotY} r={4} fill="var(--accent)" />
+
+          {/* Current MCap caption right above the dot */}
+          <text x={dotX} y={dotY - 12} textAnchor="middle" fill="var(--accent)" fontSize={10} fontWeight="bold">
+            {formatMcap(currentFdv)}
+          </text>
+        </svg>
+      </div>
 
       {/* Mobile milestone legend — Mn / value / pct in 4 columns */}
       <div className="grid grid-cols-4 gap-1 sm:hidden font-mono">
         {milestoneEntries.map((ms) => (
           <div key={ms.key} className="text-center">
-            <div className="text-[10px] font-bold text-foreground uppercase tracking-wider">
+            <div className={`text-[10px] font-bold uppercase tracking-wider ${ms.reached ? "text-[var(--dist)]" : "text-foreground"}`}>
               M{ms.milestoneNum}
             </div>
             <div className="text-[10px] text-muted">{ms.label}</div>
@@ -303,7 +323,7 @@ export function CampaignHero() {
 
   if (isLoading || !data) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border p-4">
         <div className="text-muted text-sm">Loading campaign status...</div>
       </div>
     );
@@ -312,10 +332,10 @@ export function CampaignHero() {
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div className="border-border rounded border p-5 space-y-6">
+    <div className="bg-surface rounded-[var(--card-radius)] border border-border p-5 space-y-6">
       {/* ── Bold headline ── */}
       <div className="text-center space-y-2">
-        <h2 className="text-foreground text-xl sm:text-2xl font-bold leading-tight tracking-tight">
+        <h2 className="font-heading text-foreground text-3xl sm:text-[48px] font-bold leading-[1.1] tracking-tight">
           PLOT BIG AIRDROP
         </h2>
         <p className="text-muted text-sm sm:text-base leading-relaxed max-w-md mx-auto">
@@ -359,7 +379,7 @@ export function CampaignHero() {
           ].map((unit, i) => (
             <div key={unit.label} className="flex items-center gap-2">
               {i > 0 && <span className="text-muted text-lg font-mono">:</span>}
-              <div className="text-center">
+              <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center min-w-[56px]">
                 <div className="text-foreground text-2xl font-bold font-mono tabular-nums">
                   {i === 0 ? unit.val : pad2(unit.val)}
                 </div>
@@ -384,11 +404,11 @@ export function CampaignHero() {
       {/* ── How It Works modal ── */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={closeModal}
         >
           <div
-            className="bg-background border-border rounded border p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-5 relative"
+            className="bg-surface border-border rounded-[var(--card-radius)] border p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-5 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button

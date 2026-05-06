@@ -20,7 +20,7 @@ export default function AirdropPage() {
       <CampaignHero />
 
       {/* 2-column grid below hero */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
         {/* Left column: user-specific */}
         <div className="min-w-0 space-y-6">
           {campaignEnded ? <ClaimPanel /> : <UserPoints />}

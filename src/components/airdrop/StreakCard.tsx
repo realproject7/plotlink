@@ -171,7 +171,7 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
   );
 
   return (
-    <div className="border-border rounded border px-3 py-2.5 space-y-2.5">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border px-3 py-2.5 space-y-2.5">
       {/* Compact header: streak + boost + check-in button */}
       <div className="flex items-center justify-between">
         <div className="text-foreground text-sm font-bold">
@@ -184,7 +184,7 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
           type="button"
           onClick={handleCheckIn}
           disabled={streak.checkedInToday || checking}
-          className="bg-accent text-white rounded px-3 py-1 text-xs font-medium disabled:opacity-50 cursor-pointer"
+          className="bg-accent text-white rounded-[var(--card-radius)] px-3 py-1 text-xs font-medium disabled:opacity-50 cursor-pointer"
         >
           {streak.checkedInToday
             ? "✓ Done"
