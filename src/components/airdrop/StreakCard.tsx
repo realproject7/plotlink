@@ -184,7 +184,7 @@ export function StreakCard({ streak, address }: { streak: StreakData; address: s
           type="button"
           onClick={handleCheckIn}
           disabled={streak.checkedInToday || checking}
-          className="bg-accent text-bg rounded-[var(--card-radius)] px-3 py-1 text-xs font-medium disabled:opacity-50 cursor-pointer"
+          className="bg-accent text-white rounded-[var(--card-radius)] px-3 py-1 text-xs font-medium disabled:opacity-50 cursor-pointer"
         >
           {streak.checkedInToday
             ? "✓ Done"
