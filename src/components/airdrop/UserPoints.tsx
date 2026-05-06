@@ -109,7 +109,7 @@ export function UserPoints() {
 
   if (!isConnected || !address) {
     return (
-      <div className="border-border rounded border p-4 text-center">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4 text-center">
         <p className="text-muted text-sm">Connect your wallet to view your points.</p>
       </div>
     );
@@ -150,7 +150,7 @@ function UserPointsInner({ address }: { address: string }) {
 
   if (isLoading || !data) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <div className="text-muted text-sm">Loading your points...</div>
       </div>
     );
@@ -159,7 +159,7 @@ function UserPointsInner({ address }: { address: string }) {
   return (
     <div className="space-y-3">
       {/* Points summary */}
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <div className="flex items-baseline justify-between">
           <div>
             <span className="text-muted text-xs">Your PL Points</span>
@@ -209,7 +209,7 @@ function UserPointsInner({ address }: { address: string }) {
       <StreakCard streak={data.streak} address={address} />
 
       {/* Point breakdown — collapsed by default */}
-      <div className="border-border rounded border px-3 py-2.5">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border px-3 py-2.5">
         <button
           type="button"
           onClick={() => setBreakdownOpen(!breakdownOpen)}
@@ -343,7 +343,7 @@ function ReferralSection({
   };
 
   return (
-    <div className="border-border rounded border px-3 py-2.5 space-y-2">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border px-3 py-2.5 space-y-2">
       {/* Referral link + actions */}
       {referralLink ? (
         <div>

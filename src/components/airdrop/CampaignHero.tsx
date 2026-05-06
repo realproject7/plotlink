@@ -303,7 +303,7 @@ export function CampaignHero() {
 
   if (isLoading || !data) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border p-4">
         <div className="text-muted text-sm">Loading campaign status...</div>
       </div>
     );
@@ -312,10 +312,10 @@ export function CampaignHero() {
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div className="border-border rounded border p-5 space-y-6">
+    <div className="bg-surface rounded-[var(--card-radius)] border border-border p-5 space-y-6">
       {/* ── Bold headline ── */}
       <div className="text-center space-y-2">
-        <h2 className="text-foreground text-xl sm:text-2xl font-bold leading-tight tracking-tight">
+        <h2 className="font-heading text-foreground text-3xl sm:text-[48px] font-bold leading-[1.1] tracking-tight">
           PLOT BIG AIRDROP
         </h2>
         <p className="text-muted text-sm sm:text-base leading-relaxed max-w-md mx-auto">
@@ -359,7 +359,7 @@ export function CampaignHero() {
           ].map((unit, i) => (
             <div key={unit.label} className="flex items-center gap-2">
               {i > 0 && <span className="text-muted text-lg font-mono">:</span>}
-              <div className="text-center">
+              <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center min-w-[56px]">
                 <div className="text-foreground text-2xl font-bold font-mono tabular-nums">
                   {i === 0 ? unit.val : pad2(unit.val)}
                 </div>
@@ -384,11 +384,11 @@ export function CampaignHero() {
       {/* ── How It Works modal ── */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
           onClick={closeModal}
         >
           <div
-            className="bg-background border-border rounded border p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-5 relative"
+            className="bg-surface border-border rounded-[var(--card-radius)] border p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-5 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button

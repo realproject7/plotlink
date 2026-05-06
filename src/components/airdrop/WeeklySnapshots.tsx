@@ -39,7 +39,7 @@ export function WeeklySnapshots() {
 
   if (isLoading || !data) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <div className="text-muted text-sm">Loading snapshots...</div>
       </div>
     );
@@ -47,7 +47,7 @@ export function WeeklySnapshots() {
 
   if (data.snapshots.length === 0) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <h3 className="text-foreground text-sm font-bold mb-2">Weekly Recaps</h3>
         <div className="text-muted text-xs">
           No weekly snapshots yet — check back after the first week!
@@ -57,7 +57,7 @@ export function WeeklySnapshots() {
   }
 
   return (
-    <div className="border-border rounded border p-4">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
       <h3 className="text-foreground text-sm font-bold mb-3">Weekly Recaps</h3>
 
       <div className="space-y-2">
@@ -72,7 +72,7 @@ export function WeeklySnapshots() {
           return (
             <div
               key={snap.weekNumber}
-              className="border-border rounded border px-3 py-2"
+              className="bg-surface border-border rounded-[var(--card-radius)] border px-3 py-2"
             >
               <div className="text-foreground text-xs font-bold mb-1">
                 Week {snap.weekNumber} Recap{" "}

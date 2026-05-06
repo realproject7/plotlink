@@ -54,7 +54,7 @@ function CampaignResults() {
   if (!data || !data.finalized) return null;
 
   return (
-    <div className="border-border rounded border p-4 space-y-2">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4 space-y-2">
       <div className="flex items-center gap-2">
         <span className="bg-accent text-bg rounded px-2 py-0.5 text-[10px] font-bold">CAMPAIGN COMPLETE</span>
       </div>
@@ -107,7 +107,7 @@ export function ClaimPanel() {
     <>
       <CampaignResults />
       {!isConnected || !address ? (
-        <div className="border-border rounded border p-4 text-center">
+        <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4 text-center">
           <p className="text-muted text-sm">Connect your wallet to check your claim.</p>
         </div>
       ) : (
@@ -163,7 +163,7 @@ function ClaimPanelInner({ address }: { address: string }) {
 
   if (isLoading || !proofData) {
     return (
-      <div className="border-border rounded border p-4">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
         <div className="text-muted text-sm">Checking claim eligibility...</div>
       </div>
     );
@@ -172,7 +172,7 @@ function ClaimPanelInner({ address }: { address: string }) {
   // Not eligible
   if (!proofData.eligible || !proofData.amount || !proofData.proof) {
     return (
-      <div className="border-border rounded border p-4 text-center">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4 text-center">
         <div className="text-foreground text-sm font-bold mb-1">Campaign Complete</div>
         <p className="text-muted text-xs">You did not earn any PLOT in this campaign.</p>
       </div>
@@ -201,7 +201,7 @@ function ClaimPanelInner({ address }: { address: string }) {
   };
 
   return (
-    <div className="border-border rounded border p-4">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
       <div className="text-foreground text-sm font-bold mb-3">Claim Your PLOT</div>
 
       <div className="text-center space-y-2">
