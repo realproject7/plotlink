@@ -60,10 +60,10 @@ export function StoryCard({
           {/* Fallback: centered title treatment */}
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
             <div className="mb-3 h-px w-8 bg-[var(--accent)]/40" />
-            <h3 className="font-heading text-base font-medium leading-tight tracking-tight text-foreground sm:text-lg">
+            <h3 className="font-heading text-base font-medium leading-tight tracking-tight text-white sm:text-lg">
               {storyline.title}
             </h3>
-            <div className="mt-2 text-[10px] text-muted">
+            <div className="mt-2 text-[10px] text-white/70">
               <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
             </div>
             <div className="mt-3 h-px w-8 bg-[var(--accent)]/40" />
@@ -76,7 +76,7 @@ export function StoryCard({
 
       {/* Top-left badges */}
       <div className="absolute top-0 left-0 z-10 flex flex-wrap gap-1 p-2">
-        <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-foreground backdrop-blur-sm">
+        <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
           {displayGenre || "Uncategorized"}
         </span>
         {storyline.writer_type === 1 && (
