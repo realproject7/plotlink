@@ -25,9 +25,9 @@ vi.mock("wagmi", () => ({
 describe("NavBar", () => {
   it("renders logo linking to home", () => {
     render(<NavBar />);
-    const logo = screen.getByText("PlotLink");
-    expect(logo).toBeInTheDocument();
-    expect(logo.closest("a")).toHaveAttribute("href", "/");
+    const logos = screen.getAllByText((_content, element) => element?.tagName === "SPAN" && element?.textContent === "PlotLink");
+    expect(logos.length).toBeGreaterThan(0);
+    expect(logos[0].closest("a")).toHaveAttribute("href", "/");
   });
 
   it("renders wallet connect button", () => {

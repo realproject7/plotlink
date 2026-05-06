@@ -23,6 +23,14 @@
   --card-radius: 4px;
   --grid-max: 1280px;
   --page-max: 1120px;
+
+  /* Compatibility aliases — old token names still referenced across components */
+  --text: var(--fg);
+  --text-muted: var(--muted);
+  --bg-surface: var(--surface);
+  --error: var(--danger);
+  --bg-shelf: var(--surface-raised);
+  --paper-bg: var(--surface);
 }
 
 @theme inline {
