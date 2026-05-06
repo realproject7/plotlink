@@ -169,7 +169,7 @@ export function ReadingMode({
                 flipDir === "left" ? "page-flip-out-left" : "page-flip-out-right"
               }`}
               style={{
-                background: "var(--paper-bg, #F5F0E8)",
+                background: "var(--bg)",
                 top: `-${outgoingScroll}px`,
               }}
             >

@@ -450,7 +450,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
     <section className="border-border mt-8 rounded border px-4 py-4">
       <h2 className="text-foreground group relative text-sm font-medium">
         Trade to Support
-        <span className="bg-background border-border text-muted pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-64 rounded border p-2 text-[10px] font-normal leading-snug shadow-md group-hover:block">
+        <span className="bg-surface border-border text-muted pointer-events-none absolute left-0 top-full z-10 mt-1 hidden w-64 rounded border p-2 text-[10px] font-normal leading-snug shadow-md group-hover:block">
           Every trade generates a creator royalty — buying and selling these story tokens directly supports the writer to keep continuing this story.
         </span>
       </h2>
@@ -526,7 +526,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               if (txState !== "idle") reset();
             }}
             disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
-            className={`border-border bg-background text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 ${tab === "sell" || tab === "buy" ? "pr-14" : ""}`}
+            className={`border-border bg-surface text-foreground w-full rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50 ${tab === "sell" || tab === "buy" ? "pr-14" : ""}`}
           />
           {tab === "sell" && balance !== undefined && (
             <button

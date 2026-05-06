@@ -437,7 +437,7 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
       )}
 
       {/* Wallet Info */}
-      <div className="border-border rounded border divide-y divide-[var(--border)]">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border divide-y divide-[var(--border)]">
         <div className="px-4 py-3">
           <p className="text-muted text-xs mb-1">Owner Wallet</p>
           <p className="text-foreground text-xs font-mono break-all">
@@ -478,7 +478,7 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
             </div>
           ) : source === "ows" ? (
             /* OWS agents: paste-based flow (signature generated on local OWS app) */
-            <div className="border-border rounded border p-4 space-y-4">
+            <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4 space-y-4">
               <div>
                 <label className="text-foreground mb-2 block text-sm">New OWS Wallet Address</label>
                 <input type="text" value={newWalletAddr} onChange={(e) => setNewWalletAddr(e.target.value)} placeholder="0x..."
@@ -534,7 +534,7 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
             </div>
           ) : (
             /* Direct agents: browser-based sign flow (existing) */
-            <div className="border-border rounded border p-4 space-y-4">
+            <div className="bg-surface border-border rounded-[var(--card-radius)] border p-4 space-y-4">
               {walletStep === "enter" && (
                 <>
                   <div>

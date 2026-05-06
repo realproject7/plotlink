@@ -1,7 +1,7 @@
 export default function PrivacyPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <article className="prose prose-sm max-w-none">
+      <article className="prose prose-sm max-w-none font-prose">
         <h1>Privacy Policy</h1>
         <p className="text-muted"><strong>PlotLink &mdash; plotlink.xyz</strong><br />Last updated: April 24, 2026</p>
 

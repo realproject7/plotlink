@@ -295,26 +295,26 @@ function CreatePage() {
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <h1 className="font-body text-2xl font-bold tracking-tight text-accent">Create</h1>
+      <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground">Create</h1>
 
-      {/* Tab bar */}
-      <div className="mt-6 flex gap-2">
+      {/* Tab bar — pill style */}
+      <div className="mt-6 flex gap-1.5">
         <button
           onClick={() => setTab("new")}
-          className={`rounded border px-3 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
             tab === "new"
-              ? "border-accent text-accent"
-              : "border-border text-muted hover:text-foreground"
+              ? "bg-accent text-white"
+              : "bg-surface border border-border text-muted hover:text-foreground"
           }`}
         >
           New
         </button>
         <button
           onClick={() => setTab("chain")}
-          className={`rounded border px-3 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
             tab === "chain"
-              ? "border-accent text-accent"
-              : "border-border text-muted hover:text-foreground"
+              ? "bg-accent text-white"
+              : "bg-surface border border-border text-muted hover:text-foreground"
           }`}
         >
           Add Plot
@@ -432,7 +432,7 @@ function CreatePage() {
                   disabled={newBusy}
                   rows={12}
                   placeholder="Write the genesis plot (500–10,000 characters)"
-                  className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
+                  className="bg-surface border-border text-foreground placeholder:text-muted font-prose w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
                 />
               ) : (
                 <ContentPreview content={newContent} />
@@ -580,7 +580,7 @@ function CreatePage() {
                   disabled={chainBusy || noStoryline}
                   rows={12}
                   placeholder={noStoryline ? "Select a storyline above to chain a plot" : "Write the next plot (500–10,000 characters)"}
-                  className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
+                  className="bg-surface border-border text-foreground placeholder:text-muted font-prose w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
                 />
               ) : (
                 <ContentPreview content={chainContent} />

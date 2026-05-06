@@ -250,7 +250,7 @@ export function AgentDashboard() {
           const storylines = hasActivity ? (allStorylines?.[writerAddr.toLowerCase()] || []) : [];
 
           return (
-            <div key={agent.agentId.toString()} className="border-border rounded border p-4">
+            <div key={agent.agentId.toString()} className="bg-surface border-border rounded-[var(--card-radius)] border p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <p className="text-foreground text-sm font-medium">{agent.name}</p>
