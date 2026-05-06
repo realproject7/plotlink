@@ -39,44 +39,84 @@ export default function TokenPage() {
   };
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 space-y-4">
-      {/* Page Title */}
-      <div className="text-center mb-6">
-        <h1 className="text-foreground text-2xl font-bold">$PLOT Token</h1>
-        <p className="text-muted mt-1 text-sm">The reserve token behind every story on PlotLink</p>
+    <div className="mx-auto max-w-[512px] px-4 py-8 sm:py-12 space-y-6">
+      {/* Hero */}
+      <header className="text-center">
+        <h1 className="font-heading text-4xl font-medium tracking-tight text-accent sm:text-5xl">
+          $PLOT
+        </h1>
+        <p className="text-muted mt-2 text-sm">
+          The reserve token behind every story on PlotLink
+        </p>
+      </header>
+
+      {/* Price + Stats */}
+      <div className="grid grid-cols-2 gap-[var(--card-gap)]">
+        <div className="bg-surface rounded-[var(--card-radius)] border border-border p-4">
+          <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Price</div>
+          {tokenInfoLoading ? (
+            <div className="bg-border h-6 animate-pulse rounded" />
+          ) : tokenInfo ? (
+            <div className="space-y-0.5">
+              <div className="text-foreground text-lg font-bold sm:text-xl">
+                {formatPrice(tokenInfo.price)}
+              </div>
+              {tokenInfo.priceChange24h !== null && (
+                <div className={`text-xs ${tokenInfo.priceChange24h >= 0 ? "text-success" : "text-danger"}`}>
+                  {tokenInfo.priceChange24h >= 0 ? "+" : ""}
+                  {tokenInfo.priceChange24h.toFixed(2)}%
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-muted text-sm">—</div>
+          )}
+        </div>
+        <div className="bg-surface rounded-[var(--card-radius)] border border-border p-4">
+          <div className="text-muted text-[10px] uppercase tracking-wider mb-1">FDV</div>
+          {tokenInfoLoading ? (
+            <div className="bg-border h-6 animate-pulse rounded" />
+          ) : tokenInfo ? (
+            <div className="text-foreground text-lg font-bold sm:text-xl">
+              ${formatNumber(tokenInfo.fdv)}
+            </div>
+          ) : (
+            <div className="text-muted text-sm">—</div>
+          )}
+        </div>
       </div>
 
-      {/* Your Balance */}
-      <div className="bg-accent text-background rounded p-5">
+      {/* Balance */}
+      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-5">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-background/60 text-xs uppercase tracking-wider">Your Balance</h2>
+          <h2 className="text-muted text-[10px] uppercase tracking-wider">Your Balance</h2>
           {isConnected && (
-            <div className="flex items-center gap-1.5 text-xs text-background/80">
-              <div className="bg-background h-1.5 w-1.5 animate-pulse rounded-full" />
+            <div className="flex items-center gap-1.5 text-[10px] text-accent">
+              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
               Connected
             </div>
           )}
         </div>
 
         {!isConnected ? (
-          <div className="text-center py-4">
-            <p className="text-background/70 text-sm">Connect your wallet to view balance</p>
+          <div className="text-center py-3">
+            <p className="text-muted text-sm">Connect your wallet to view balance</p>
           </div>
         ) : balanceLoading ? (
-          <div className="text-center py-4">
-            <p className="text-background/70 text-sm">Loading...</p>
+          <div className="text-center py-3">
+            <div className="bg-border h-8 w-32 mx-auto animate-pulse rounded" />
           </div>
         ) : (
           <div className="text-center">
-            <div className="text-background text-3xl font-bold">
+            <div className="text-foreground text-3xl font-bold sm:text-4xl">
               {parseFloat(formattedBalance).toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
               })}{" "}
-              <span className="text-background/80">PLOT</span>
+              <span className="text-muted text-xl sm:text-2xl">PLOT</span>
             </div>
             {tokenInfo?.price && parseFloat(formattedBalance) > 0 && (
-              <div className="text-background/60 mt-1 text-sm">
+              <div className="text-muted mt-1 text-sm">
                 ${(parseFloat(formattedBalance) * tokenInfo.price).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -87,24 +127,27 @@ export default function TokenPage() {
         )}
       </div>
 
+      {/* Swap */}
+      <SwapInterface />
+
       {/* Token Utility */}
-      <div className="border-border rounded border p-5">
-        <h3 className="text-foreground text-sm font-bold mb-3">Why PLOT?</h3>
+      <div className="bg-surface rounded-[var(--card-radius)] border border-border p-5">
+        <h3 className="text-foreground text-sm font-semibold mb-4">Why PLOT?</h3>
         <div className="space-y-3">
           <div className="flex items-start gap-3">
-            <span className="bg-accent/10 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold">1</span>
+            <span className="bg-accent-bg text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--card-radius)] text-xs font-bold">1</span>
             <p className="text-muted text-sm">
               <span className="text-foreground font-semibold">Reserve token for story tokens</span> — every storyline token on PlotLink is backed by PLOT via MCV2 bonding curves.
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="bg-accent/10 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold">2</span>
+            <span className="bg-accent-bg text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--card-radius)] text-xs font-bold">2</span>
             <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">TVL growth</span> — as more story tokens are minted, more PLOT gets locked in bonding curve reserves, increasing total value locked across all storylines.
+              <span className="text-foreground font-semibold">TVL growth</span> — as more story tokens are minted, more PLOT gets locked in bonding curve reserves.
             </p>
           </div>
           <div className="flex items-start gap-3">
-            <span className="bg-accent/10 text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded text-xs font-bold">3</span>
+            <span className="bg-accent-bg text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--card-radius)] text-xs font-bold">3</span>
             <p className="text-muted text-sm">
               <span className="text-foreground font-semibold">Creator royalties</span> — 1% mint and 1% burn royalty on every trade flows directly to the story writer.
             </p>
@@ -112,151 +155,81 @@ export default function TokenPage() {
         </div>
       </div>
 
-      {/* Swap Interface */}
-      <SwapInterface />
-
-      {/* Token Information */}
-      <div className="border-border rounded border p-5">
-        <h3 className="text-foreground text-sm font-bold mb-4">Token Information</h3>
-
-        {/* Stats Grid — Price + FDV */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          <div className="border-border bg-surface rounded border p-3">
-            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">Price</div>
-            {tokenInfoLoading ? (
-              <div className="bg-border h-6 animate-pulse rounded" />
-            ) : tokenInfo ? (
-              <div className="space-y-1">
-                <div className="text-foreground text-sm font-bold">
-                  {formatPrice(tokenInfo.price)}
-                </div>
-                {tokenInfo.priceChange24h !== null && (
-                  <div className={`text-xs ${tokenInfo.priceChange24h >= 0 ? "text-green-600" : "text-red-600"}`}>
-                    {tokenInfo.priceChange24h >= 0 ? "+" : ""}
-                    {tokenInfo.priceChange24h.toFixed(2)}%
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-muted text-sm">—</div>
-            )}
+      {/* External Links */}
+      <div className="space-y-[var(--card-gap)]">
+        <a
+          href={MINT_CLUB_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-surface border border-border hover:border-accent/50 flex items-center justify-between rounded-[var(--card-radius)] p-3 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Image src="/mc-icon-light.svg" alt="Mint Club" width={20} height={20} className="h-5 w-5" />
+            <span className="text-foreground text-sm">View on Mint Club</span>
           </div>
-          <div className="border-border bg-surface rounded border p-3">
-            <div className="text-muted text-[10px] uppercase tracking-wider mb-1">FDV</div>
-            {tokenInfoLoading ? (
-              <div className="bg-border h-6 animate-pulse rounded" />
-            ) : tokenInfo ? (
-              <div className="text-foreground text-sm font-bold">
-                ${formatNumber(tokenInfo.fdv)}
-              </div>
-            ) : (
-              <div className="text-muted text-sm">—</div>
-            )}
+          <ExternalLinkIcon />
+        </a>
+
+        <a
+          href={HUNT_TOWN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-surface border border-border hover:border-accent/50 flex items-center justify-between rounded-[var(--card-radius)] p-3 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Image src="/hunt-token.svg" alt="Hunt Town" width={20} height={20} className="h-5 w-5" />
+            <span className="text-foreground text-sm">View on Hunt Town</span>
           </div>
+          <ExternalLinkIcon />
+        </a>
+
+        <a
+          href={BASESCAN_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-surface border border-border hover:border-accent/50 flex items-center justify-between rounded-[var(--card-radius)] p-3 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Image src="/basescan-icon.svg" alt="Basescan" width={20} height={20} className="h-5 w-5" />
+            <div className="flex flex-col">
+              <span className="text-muted text-[10px] uppercase tracking-wider">Contract</span>
+              <code className="text-foreground text-sm font-mono">
+                {PLOT_TOKEN.slice(0, 6)}...{PLOT_TOKEN.slice(-6)}
+              </code>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => { e.preventDefault(); handleCopyAddress(); }}
+              className="text-muted hover:text-foreground p-1 transition-colors"
+              title="Copy address"
+            >
+              {copied ? (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+              )}
+            </button>
+            <ExternalLinkIcon />
+          </div>
+        </a>
+      </div>
+
+      {/* Network Badge */}
+      <div className="bg-surface border border-border rounded-[var(--card-radius)] flex items-center gap-3 p-3">
+        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20">
+          <div className="h-2 w-2 rounded-full bg-blue-500" />
         </div>
-
-        {/* External Links */}
-        <div className="space-y-2">
-          {/* Mint Club */}
-          <a
-            href={MINT_CLUB_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border-border hover:border-accent flex items-center justify-between rounded border p-3 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Image
-                src="/mc-icon-light.svg"
-                alt="Mint Club"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-              <span className="text-foreground text-sm">View on Mint Club</span>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </a>
-
-          {/* Hunt Town */}
-          <a
-            href={HUNT_TOWN_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border-border hover:border-accent flex items-center justify-between rounded border p-3 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Image
-                src="/hunt-token.svg"
-                alt="Hunt Town"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-              <span className="text-foreground text-sm">View on Hunt Town</span>
-            </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-            </svg>
-          </a>
-
-          {/* Basescan — Contract Address */}
-          <a
-            href={BASESCAN_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="border-border hover:border-accent flex items-center justify-between rounded border p-3 transition-colors"
-          >
-            <div className="flex items-center gap-3">
-              <Image
-                src="/basescan-icon.svg"
-                alt="Basescan"
-                width={20}
-                height={20}
-                className="h-5 w-5"
-              />
-              <div className="flex flex-col">
-                <span className="text-muted text-[10px] uppercase tracking-wider">Contract Address</span>
-                <code className="text-foreground text-sm font-bold">
-                  {PLOT_TOKEN.slice(0, 6)}...{PLOT_TOKEN.slice(-6)}
-                </code>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleCopyAddress();
-                }}
-                className="text-muted hover:text-foreground p-1.5 transition-colors"
-                title="Copy address"
-              >
-                {copied ? (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                  </svg>
-                )}
-              </button>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
-              </svg>
-            </div>
-          </a>
-
-          {/* Network Badge */}
-          <div className="border-border bg-surface flex items-center gap-3 rounded border p-3">
-            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-blue-500/20">
-              <div className="h-2 w-2 rounded-full bg-blue-500" />
-            </div>
-            <span className="text-foreground text-sm">Base Mainnet (ERC-20)</span>
-          </div>
-        </div>
+        <span className="text-foreground text-sm">Base Mainnet (ERC-20)</span>
       </div>
     </div>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted shrink-0">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" /><polyline points="15 3 21 3 21 9" /><line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
   );
 }
