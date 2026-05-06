@@ -348,10 +348,10 @@ function StoryHeader({
 
   return (
     <header className="pb-6 grid gap-x-6 grid-cols-1 sm:grid-cols-[200px_1fr] lg:grid-cols-[280px_1fr]">
-      {/* Cover frame */}
-      <div className="hidden sm:block sm:row-span-2">
+      {/* Cover frame — stacks on mobile, side column on sm+ */}
+      <div className="sm:row-span-2">
         <div
-          className="relative w-full overflow-hidden rounded-[var(--card-radius)] border border-border"
+          className="relative mx-auto w-48 overflow-hidden rounded-[var(--card-radius)] border border-border sm:mx-0 sm:w-full"
           style={{ aspectRatio: "2/3" }}
         >
           {coverUrl ? (

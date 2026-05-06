@@ -122,7 +122,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
       {/* Chapter header with inline reading mode */}
       <header className="border-border mb-8 border-b pb-4">
         <div className="flex items-center gap-3">
-          <h1 className="text-accent flex-1 text-xl font-bold tracking-tight">
+          <h1 className="font-heading text-foreground flex-1 text-xl font-medium tracking-tight sm:text-2xl">
             {chapterTitle}
           </h1>
           <ReadingModeWrapper
@@ -168,7 +168,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
         {prevIndex !== null ? (
           <Link
             href={`/story/${sid}/${prevIndex}`}
-            className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
+            className="bg-surface border-border text-muted hover:text-foreground hover:border-accent/30 rounded-[var(--card-radius)] border px-4 py-2 text-xs transition-colors"
           >
             &larr; Previous
           </Link>
@@ -184,7 +184,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
         {nextIndex !== null ? (
           <Link
             href={`/story/${sid}/${nextIndex}`}
-            className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
+            className="bg-surface border-border text-muted hover:text-foreground hover:border-accent/30 rounded-[var(--card-radius)] border px-4 py-2 text-xs transition-colors"
           >
             Next &rarr;
           </Link>
