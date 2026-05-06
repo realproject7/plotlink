@@ -163,16 +163,16 @@ export default function ProfilePage() {
         cooldownRemaining={cooldownRemaining}
       />
 
-      {/* Tab navigation */}
-      <div className="mt-8 flex gap-2 border-b border-[var(--border)] pb-2">
+      {/* Tab navigation — pill style */}
+      <div className="mt-8 flex gap-1.5">
         {(["stories", "portfolio", "activity"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-t px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
               tab === t
-                ? "bg-accent/15 text-accent"
-                : "text-muted hover:text-foreground"
+                ? "bg-accent text-white"
+                : "bg-surface border border-border text-muted hover:text-foreground"
             }`}
           >
             {t === "stories" ? "Writer" : t === "portfolio" ? "Reader" : "Activity"}
@@ -264,7 +264,7 @@ function ProfileHeader({
   const hasQuotient = dbUser?.quotient_score != null;
 
   return (
-    <header className="space-y-5 pb-6">
+    <header className="bg-surface rounded-[var(--card-radius)] border border-border p-5 space-y-5">
       {/* Primary identity */}
       <div className="flex items-start gap-4">
         {/* For AI agents, use owner's PFP; otherwise use own Farcaster PFP */}
@@ -285,7 +285,7 @@ function ProfileHeader({
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className={`font-body font-bold tracking-tight text-accent break-words ${
+            <h1 className={`font-heading font-medium tracking-tight text-foreground break-words ${
               (displayName ?? "").length > 14 ? "text-lg sm:text-2xl" : "text-xl sm:text-2xl"
             }`}>
               {fcLoading && agentLoading
@@ -322,7 +322,7 @@ function ProfileHeader({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* Farcaster card */}
         {hasFarcaster && (
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Farcaster</span>
               <div className="flex items-center gap-1">
@@ -362,7 +362,7 @@ function ProfileHeader({
 
         {/* X/Twitter card */}
         {hasX && (
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
             <div className="mb-2 flex items-center justify-between">
               <span className="text-muted text-[10px] font-medium uppercase tracking-wider">X / Twitter</span>
               {dbUser.x_verified && (
@@ -405,7 +405,7 @@ function ProfileHeader({
 
         {/* Quotient Score card */}
         {hasQuotient && (
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
             <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Quotient Score</span>
             <div className="mt-1.5 flex items-baseline gap-2">
               <span className="text-accent font-mono text-xl font-bold">{dbUser!.quotient_score}</span>
@@ -418,7 +418,7 @@ function ProfileHeader({
 
         {/* Agent Identity card — shown for registered agents */}
         {isAgent && agentMeta && (
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
             <div className="flex items-center justify-between">
               <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Agent Identity</span>
               <span className="bg-accent/10 text-accent rounded px-1 py-0.5 text-[9px] font-medium">ERC-8004</span>
@@ -475,7 +475,7 @@ function ProfileHeader({
 
         {/* Linked AI Writer card — shown for human agent owners */}
         {isAgentOwner && (
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
             <div className="flex items-center justify-between">
               <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Linked AI Writer</span>
               {linkedAgentMeta?.agentId && (
@@ -520,7 +520,7 @@ function ProfileHeader({
         )}
 
         {/* Wallet identity card — always shown */}
-        <div className="border-border rounded border p-3">
+        <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-3">
           <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Wallet</span>
           <div className="mt-1.5 flex items-center gap-1.5">
             <a
@@ -543,7 +543,7 @@ function ProfileHeader({
           )}
           {claimedRoyalties != null && claimedRoyalties > BigInt(0) && (
             <div className="text-muted mt-1.5 text-[11px]">
-              Royalties: <span className="text-green-700 font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+              Royalties: <span className="text-success font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
               {plotUsdPrice != null && (
                 <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsdPrice)})</span>
               )}
@@ -570,7 +570,7 @@ function ProfileHeader({
             })()}
           </button>
           {refreshError && (
-            <span className="text-[11px] text-red-500">{refreshError}</span>
+            <span className="text-[11px] text-danger">{refreshError}</span>
           )}
         </div>
       )}
@@ -886,6 +886,20 @@ function StoriesTab({
   );
 }
 
+type FallbackVariant = "A" | "B" | "C" | "D";
+
+function hashToVariant(id: number): FallbackVariant {
+  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
+  return variants[((id * 2654435761) >>> 0) % 4];
+}
+
+const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
+  A: { background: "radial-gradient(ellipse at 30% 20%, oklch(28% 0.04 40), oklch(16% 0.02 50))" },
+  B: { background: "repeating-linear-gradient(135deg, oklch(18% 0.018 50) 0px, oklch(18% 0.018 50) 8px, oklch(22% 0.02 45) 8px, oklch(22% 0.02 45) 16px)" },
+  C: { background: "conic-gradient(from 180deg at 50% 50%, oklch(20% 0.03 220), oklch(18% 0.02 50), oklch(20% 0.03 220))" },
+  D: { background: "oklch(20% 0.025 50)" },
+};
+
 function StoryRow({
   storyline,
   isOwnProfile,
@@ -970,37 +984,28 @@ function StoryRow({
     <div className="border-border rounded border divide-y divide-border text-xs">
       {/* Moleskine book (left) + Info (right) */}
       <div className="flex flex-row items-center gap-4 px-4 py-3">
-        {/* Moleskine book card */}
+        {/* Cover card */}
         <Link
           href={`/story/${storyline.storyline_id}`}
           className="group relative block shrink-0 w-[130px] sm:w-[180px]"
         >
           <div
-            className="relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
-            style={{
-              aspectRatio: "2/3",
-              borderRadius: "5px 12px 12px 5px",
-              backgroundColor: "#F5EFE6",
-              boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
-            }}
+            className="relative overflow-hidden rounded-[var(--card-radius)] border border-border"
+            style={{ aspectRatio: "2/3" }}
           >
-            <div
-              className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
-              style={{ background: "rgba(139, 69, 19, 0.15)" }}
-            />
-            <div className="relative z-10 px-2.5 pt-2.5">
-              <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+            <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]}>
+              <div className="flex h-full flex-col items-center justify-center px-3 text-center">
+                <div className="mb-2 h-px w-6 bg-accent/40" />
+                <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-foreground">
+                  {storyline.title}
+                </span>
+                <div className="mt-2 h-px w-6 bg-accent/40" />
+              </div>
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 p-2">
+              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
                 {storyline.genre || "Uncategorized"}
-              </span>
-            </div>
-            <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
-              <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
-                {storyline.title}
-              </span>
-            </div>
-            <div className="relative z-10 px-2.5 pb-2.5">
-              <span className="text-[8px] text-[var(--text-muted)]">
-                {storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}
               </span>
             </div>
           </div>
@@ -1009,19 +1014,19 @@ function StoryRow({
         {/* Info (right) */}
         <div className="min-w-0 flex-1 space-y-1">
           <div className="grid grid-cols-2 gap-2">
-            <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
               <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
               <div className="text-muted text-[9px]">Plots</div>
             </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
               <div className="text-foreground text-sm font-bold">{holderCount ?? "—"}</div>
               <div className="text-muted text-[9px]">Holders</div>
             </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
               <div className="text-foreground text-sm font-bold">{formatViewCount(storyline.view_count)}</div>
               <div className="text-muted text-[9px]">Views</div>
             </div>
-            <div className="border-border rounded border px-2 py-1.5 text-center">
+            <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
               <div className="text-foreground text-sm font-bold">{ratingData && ratingData.count > 0 ? ratingData.average.toFixed(1) : "—"}</div>
               <div className="text-muted text-[9px]">Rating</div>
             </div>
@@ -1050,9 +1055,9 @@ function StoryRow({
           {storyline.sunset ? (
             <span className="border-border text-muted rounded border px-1.5 py-0.5 text-[10px]">complete</span>
           ) : isExpired ? (
-            <span className="border border-red-700/30 text-red-700 rounded px-1.5 py-0.5 text-[10px]">expired</span>
+            <span className="border border-danger/30 text-danger rounded px-1.5 py-0.5 text-[10px]">expired</span>
           ) : (
-            <span className="border border-green-700/30 text-green-700 rounded px-1.5 py-0.5 text-[10px]">active</span>
+            <span className="border border-success/30 text-success rounded px-1.5 py-0.5 text-[10px]">active</span>
           )}
         </div>
         <div>
@@ -1592,38 +1597,29 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         <p className="text-muted text-[10px] uppercase tracking-wider">Story Token Holdings</p>
         {holdings!.map((h) => (
         <div key={h.storyline.id} className="border-border rounded border text-xs">
-          {/* Moleskine book (left) + Info (right) */}
+          {/* Cover card (left) + Info (right) */}
           <div className="flex flex-col sm:flex-row items-center gap-4 px-4 py-3">
             <Link
               href={`/story/${h.storyline.storyline_id}`}
               className="group relative block shrink-0 w-[130px] sm:w-[180px]"
             >
               <div
-                className="relative z-10 flex flex-col overflow-hidden border border-[var(--border)]"
-                style={{
-                  aspectRatio: "2/3",
-                  borderRadius: "5px 12px 12px 5px",
-                  backgroundColor: "#F5EFE6",
-                  boxShadow: "2px 4px 8px rgba(44, 24, 16, 0.08)",
-                }}
+                className="relative overflow-hidden rounded-[var(--card-radius)] border border-border"
+                style={{ aspectRatio: "2/3" }}
               >
-                <div
-                  className="pointer-events-none absolute inset-y-[-1px] right-[16px] z-20 w-[5px] rounded-[2px]"
-                  style={{ background: "rgba(139, 69, 19, 0.15)" }}
-                />
-                <div className="relative z-10 px-2.5 pt-2.5">
-                  <span className="rounded-sm bg-[var(--accent)]/10 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-widest text-[var(--accent)]">
+                <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]}>
+                  <div className="flex h-full flex-col items-center justify-center px-3 text-center">
+                    <div className="mb-2 h-px w-6 bg-accent/40" />
+                    <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-foreground">
+                      {h.storyline.title}
+                    </span>
+                    <div className="mt-2 h-px w-6 bg-accent/40" />
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-2">
+                  <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
                     {h.storyline.genre || "Uncategorized"}
-                  </span>
-                </div>
-                <div className="relative z-10 flex flex-1 items-center justify-center px-3 text-center">
-                  <span className="font-heading text-sm sm:text-base font-bold leading-tight text-[var(--accent)]">
-                    {h.storyline.title}
-                  </span>
-                </div>
-                <div className="relative z-10 px-2.5 pb-2.5">
-                  <span className="text-[8px] text-[var(--text-muted)]">
-                    {h.storyline.plot_count} {h.storyline.plot_count === 1 ? "plot" : "plots"}
                   </span>
                 </div>
               </div>
@@ -1631,7 +1627,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
             <div className="min-w-0 w-full sm:flex-1">
               <div className="grid grid-cols-2 gap-2">
                 {/* Value */}
-                <div className="border-border rounded border px-2 py-1.5 text-center">
+                <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
                   <div className="text-foreground text-sm font-bold leading-tight">
                     {plotUsd ? formatUsdValue(Number(formatUnits(h.value, h.reserveDecimals)) * plotUsd) : "—"}
                     {(() => {
@@ -1639,7 +1635,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                       const currentPrice = Number(formatUnits(h.price, 18));
                       const costPct = ((currentPrice - h.entryPrice) / h.entryPrice) * 100;
                       return (
-                        <span className={`ml-1 text-xs font-medium ${costPct >= 0 ? "text-accent" : "text-error"}`}>
+                        <span className={`ml-1 text-xs font-medium ${costPct >= 0 ? "text-accent" : "text-danger"}`}>
                           {costPct >= 0 ? "+" : ""}{costPct.toFixed(1)}%
                         </span>
                       );
@@ -1648,7 +1644,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                   <div className="text-muted text-[9px]">Value</div>
                 </div>
                 {/* Balance */}
-                <div className="border-border rounded border px-2 py-1.5 text-center">
+                <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center">
                   <div className="text-foreground text-sm font-bold">{formatCompact(Number(formatUnits(h.balance, 18)))}</div>
                   <div className="text-muted text-[9px]">Balance</div>
                 </div>
@@ -1699,7 +1695,7 @@ function HoldingRecentTrades({ address, storylineId, plotUsd }: { address: strin
         const amount = plotUsd != null ? formatUsdValue(t.reserve_amount * plotUsd) : `${formatPrice(t.reserve_amount)} ${RESERVE_LABEL}`;
         return (
           <div key={i} className="border-border flex items-center gap-2 rounded border px-3 py-1.5 text-xs">
-            <span className={`font-medium shrink-0 w-8 ${isBuy ? "text-green-700" : "text-red-700"}`}>
+            <span className={`font-medium shrink-0 w-8 ${isBuy ? "text-success" : "text-danger"}`}>
               {isBuy ? "Buy" : "Sell"}
             </span>
             <span className="text-foreground">{amount}</span>
@@ -2073,16 +2069,16 @@ const EVENT_LABELS: Record<FeedEntry["type"], string> = {
 const EVENT_COLORS: Record<FeedEntry["type"], string> = {
   created_storyline: "text-accent",
   published_plot: "text-accent",
-  bought: "text-green-700",
-  sold: "text-red-700",
+  bought: "text-success",
+  sold: "text-danger",
   donated: "text-accent",
   rated: "text-muted",
-  claimed_royalties: "text-green-700",
+  claimed_royalties: "text-success",
 };
 
 function FeedRow({ entry, plotUsd }: { entry: FeedEntry; plotUsd?: number | null }) {
   return (
-    <div className="border-border flex flex-col gap-1 rounded border px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
+    <div className="bg-surface border-border flex flex-col gap-1 rounded-[var(--card-radius)] border px-3 py-2 text-xs sm:flex-row sm:items-center sm:justify-between sm:gap-2">
       {/* Row 1 (mobile) / Left (desktop): event type + story title */}
       <div className="flex items-center gap-2 min-w-0">
         <span className={`font-medium shrink-0 w-16 ${EVENT_COLORS[entry.type]}`}>
