@@ -1097,6 +1097,22 @@ function StoryRow({
         </div>
       </Link>
 
+      {/* Token metadata below card */}
+      {storyline.token_address && (
+        <div className="mt-2 space-y-1 text-[10px]">
+          <div className="flex items-center justify-between text-muted">
+            <span>{holderCount ?? "—"} holders</span>
+            {priceInfo && (
+              <span className="text-foreground font-medium">
+                {formatPrice(priceInfo.pricePerToken)} {RESERVE_LABEL}
+              </span>
+            )}
+          </div>
+          <WriterTradingStats storyline={storyline} plotUsd={plotUsd} showPrice={false} />
+          <StoryDonationCount storylineId={storyline.storyline_id} tokenAddress={storyline.token_address} />
+        </div>
+      )}
+
       {/* Royalties — own profile */}
       {isOwnProfile && storyline.token_address && (
         <div className="mt-2 text-xs">
