@@ -13,7 +13,7 @@ export const runtime = "nodejs";
 async function loadFont(): Promise<ArrayBuffer | null> {
   try {
     const res = await fetch(
-      "https://fonts.googleapis.com/css2?family=Lora:wght@700&display=swap",
+      "https://fonts.googleapis.com/css2?family=Newsreader:wght@500&display=swap",
     );
     const css = await res.text();
     const match =
@@ -82,8 +82,19 @@ export async function GET(
     }
   }
 
+  type FallbackVariant = "A" | "B" | "C" | "D";
+  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
+  const variant = variants[((id * 2654435761) >>> 0) % 4];
+
+  const FALLBACK_BG: Record<FallbackVariant, string> = {
+    A: "radial-gradient(ellipse at 30% 20%, #3a2e24, #261f19)",
+    B: "repeating-linear-gradient(135deg, #2a2420 0px, #2a2420 8px, #332c26 8px, #332c26 16px)",
+    C: "conic-gradient(from 180deg at 50% 50%, #2e3540, #2a2420, #2e3540)",
+    D: "#302820",
+  };
+
   const fonts = fontData
-    ? [{ name: "Lora", data: fontData, weight: 700 as const }]
+    ? [{ name: "Newsreader", data: fontData, weight: 500 as const }]
     : [];
 
   return new ImageResponse(
@@ -96,59 +107,52 @@ export async function GET(
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "#DDD3C2",
-          fontFamily: fontData ? "Lora" : "Georgia, serif",
+          backgroundColor: "#1f1a15",
+          fontFamily: fontData ? "Newsreader" : "Georgia, serif",
         }}
       >
-        {/* Centered moleskine card */}
+        {/* Cover card with deterministic fallback pattern */}
         <div
           style={{
-            width: "360px",
-            height: "540px",
+            width: "380px",
+            height: "520px",
             display: "flex",
             flexDirection: "column",
-            backgroundColor: "#F5EFE6",
-            borderRadius: "5px 15px 15px 5px",
-            border: "1px solid #D4C5B0",
-            boxShadow:
-              "4px 6px 20px rgba(44, 24, 16, 0.18), 1px 1px 4px rgba(44, 24, 16, 0.08)",
+            background: FALLBACK_BG[variant],
+            borderRadius: "12px",
+            border: "1px solid #3a332c",
             position: "relative",
             overflow: "hidden",
           }}
         >
-          {/* Elastic band */}
+          {/* Accent strip at top */}
           <div
             style={{
-              position: "absolute",
-              top: "-1px",
-              bottom: "-1px",
-              right: "28px",
-              width: "8px",
-              borderRadius: "2px",
-              background: "rgba(139, 69, 19, 0.18)",
               display: "flex",
+              height: "3px",
+              background: "linear-gradient(90deg, #b05c3a, #b05c3a80, transparent)",
             }}
           />
 
-          {/* Top-left: genre tag */}
+          {/* Top: genre tag */}
           <div
             style={{
               display: "flex",
-              padding: "24px 28px 0",
+              padding: "28px 28px 0",
             }}
           >
             {sl.genre ? (
               <div
                 style={{
                   display: "flex",
-                  fontSize: "13px",
-                  color: "#8B4513",
-                  backgroundColor: "rgba(139, 69, 19, 0.08)",
-                  borderRadius: "3px",
+                  fontSize: "12px",
+                  color: "#b05c3a",
+                  backgroundColor: "rgba(176, 92, 58, 0.12)",
+                  borderRadius: "4px",
                   padding: "4px 12px",
                   textTransform: "uppercase",
-                  letterSpacing: "0.1em",
-                  fontWeight: 700,
+                  letterSpacing: "0.12em",
+                  fontWeight: 500,
                 }}
               >
                 {sl.genre}
@@ -166,60 +170,78 @@ export async function GET(
               justifyContent: "center",
               alignItems: "center",
               flex: 1,
-              padding: "0 36px",
+              padding: "0 32px",
               textAlign: "center",
             }}
           >
             <div
               style={{
-                fontSize: titleDisplay.length > 30 ? "32px" : "38px",
-                fontWeight: 700,
-                color: "#8B4513",
-                lineHeight: 1.25,
+                width: "40px",
+                height: "1px",
+                background: "rgba(176, 92, 58, 0.4)",
+                marginBottom: "20px",
+                display: "flex",
+              }}
+            />
+            <div
+              style={{
+                fontSize: titleDisplay.length > 30 ? "30px" : "36px",
+                fontWeight: 500,
+                color: "#ede4d6",
+                lineHeight: 1.3,
                 display: "flex",
                 textAlign: "center",
                 justifyContent: "center",
-                maxWidth: "380px",
+                maxWidth: "340px",
               }}
             >
               {titleDisplay}
             </div>
+            <div
+              style={{
+                width: "40px",
+                height: "1px",
+                background: "rgba(176, 92, 58, 0.4)",
+                marginTop: "20px",
+                display: "flex",
+              }}
+            />
           </div>
 
-          {/* Bottom: plot count + TVL */}
+          {/* Bottom: stats */}
           <div
             style={{
               display: "flex",
               flexDirection: "column",
               gap: "6px",
-              padding: "0 28px 24px",
-              fontSize: "15px",
-              color: "#6B5B47",
+              padding: "0 28px 28px",
+              fontSize: "14px",
+              color: "#8a7e70",
             }}
           >
             <div style={{ display: "flex" }}>{plotLabel}</div>
             {tvlDisplay && (
-              <div style={{ display: "flex", fontWeight: 700, color: "#8B4513" }}>
+              <div style={{ display: "flex", fontWeight: 500, color: "#b05c3a" }}>
                 {tvlDisplay}
               </div>
             )}
           </div>
         </div>
 
-        {/* Below moleskine: author + branding */}
+        {/* Below card: author + branding */}
         <div
           style={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            width: "360px",
-            marginTop: "16px",
-            fontSize: "16px",
-            color: "#8B7355",
+            width: "380px",
+            marginTop: "20px",
+            fontSize: "15px",
+            color: "#8a7e70",
           }}
         >
           <div style={{ display: "flex" }}>by {authorName}</div>
-          <div style={{ display: "flex", color: "#A89880" }}>plotlink.xyz</div>
+          <div style={{ display: "flex", color: "#5a5248" }}>plotlink.xyz</div>
         </div>
       </div>
     ),

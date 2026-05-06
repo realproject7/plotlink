@@ -5,10 +5,6 @@ import rehypeSanitize, { defaultSchema } from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
 
-/**
- * Sanitization schema — fiction-focused Markdown only.
- * No images, tables, or code blocks.
- */
 const sanitizeSchema = {
   ...defaultSchema,
   tagNames: [
@@ -30,13 +26,9 @@ const sanitizeSchema = {
   attributes: {},
 };
 
-/**
- * Renders story content as Markdown with fiction-focused styling.
- * Plain text stories render correctly (plain text is valid Markdown).
- */
 export function StoryContent({ content }: { content: string }) {
   return (
-    <div className="ruled-paper story-markdown">
+    <div className="story-markdown font-prose text-foreground leading-7">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkBreaks]}
         rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
@@ -47,9 +39,6 @@ export function StoryContent({ content }: { content: string }) {
   );
 }
 
-/**
- * Write/Preview toggle for story editing forms.
- */
 export function WritePreviewToggle({
   activeTab,
   onTabChange,
@@ -58,7 +47,7 @@ export function WritePreviewToggle({
   onTabChange: (tab: "write" | "preview") => void;
 }) {
   return (
-    <div className="mb-2 flex gap-1 border-b border-[var(--border)] pb-1">
+    <div className="mb-2 flex gap-1 border-b border-border pb-1">
       <button
         type="button"
         onClick={() => onTabChange("write")}
@@ -85,19 +74,16 @@ export function WritePreviewToggle({
   );
 }
 
-/**
- * Preview pane that matches story page rendering.
- */
 export function ContentPreview({ content }: { content: string }) {
   if (!content.trim()) {
     return (
-      <div className="ruled-paper text-muted min-h-[336px] text-sm italic">
+      <div className="text-muted min-h-[336px] text-sm italic p-6">
         Nothing to preview
       </div>
     );
   }
   return (
-    <div className="min-h-[336px]">
+    <div className="min-h-[336px] p-6">
       <StoryContent content={content} />
     </div>
   );
