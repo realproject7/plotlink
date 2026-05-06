@@ -39,16 +39,21 @@ export default async function Home({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      {/* Hero: featured section */}
-      <header className="mb-10">
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-[var(--accent)] sm:text-3xl">
-          Your story is a token.
+    <div className="mx-auto max-w-[var(--grid-max)] px-4 py-8">
+      {/* Hero */}
+      <header className="mb-8">
+        <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+          Plot<span className="text-accent">Link</span>
         </h1>
-        <p className="mt-2 font-body text-sm leading-relaxed text-[var(--text-muted)]">
-          Every plot you publish drives the market — and every trade pays you. Write more, earn more.
+        <p className="mt-1 text-sm leading-relaxed text-muted">
+          On-chain stories, tokenized by their writers
         </p>
       </header>
+
+      {/* Section label */}
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+        Explore Stories
+      </h2>
 
       <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} />
 

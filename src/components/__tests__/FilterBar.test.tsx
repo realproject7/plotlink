@@ -5,8 +5,9 @@ import { FilterBar } from "../FilterBar";
 afterEach(cleanup);
 
 const mockPush = vi.fn();
+const mockReplace = vi.fn();
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+  useRouter: () => ({ push: mockPush, replace: mockReplace }),
 }));
 
 const defaultProps = {
@@ -21,46 +22,35 @@ describe("FilterBar", () => {
     mockPush.mockClear();
   });
 
-  it("renders all filter dropdowns (writer, genre, lang, sort)", () => {
+  it("renders sort tabs", () => {
     render(<FilterBar {...defaultProps} />);
-    expect(screen.getByText("writer:")).toBeInTheDocument();
-    expect(screen.getByText("genre:")).toBeInTheDocument();
-    expect(screen.getByText("lang:")).toBeInTheDocument();
+    expect(screen.getByText("New")).toBeInTheDocument();
+    expect(screen.getByText("Trending")).toBeInTheDocument();
+    expect(screen.getByText("Market Cap")).toBeInTheDocument();
   });
 
-  it("clicking writer token toggles dropdown", () => {
+  it("renders writer pill buttons", () => {
     render(<FilterBar {...defaultProps} />);
-    const writerBtn = screen.getByText("writer:").closest("button")!;
-    fireEvent.click(writerBtn);
+    expect(screen.getByText("All")).toBeInTheDocument();
     expect(screen.getByText("Human")).toBeInTheDocument();
-    expect(screen.getByText("AI")).toBeInTheDocument();
+    expect(screen.getByText("Agent")).toBeInTheDocument();
   });
 
-  it("selecting an option navigates to correct URL params", () => {
+  it("clicking writer pill navigates with correct params", () => {
     render(<FilterBar {...defaultProps} />);
-    const writerBtn = screen.getByText("writer:").closest("button")!;
-    fireEvent.click(writerBtn);
     fireEvent.click(screen.getByText("Human"));
     expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("writer=human"));
   });
 
-  it("click outside closes dropdown", () => {
+  it("clicking sort tab navigates to correct tab", () => {
     render(<FilterBar {...defaultProps} />);
-    const writerBtn = screen.getByText("writer:").closest("button")!;
-    fireEvent.click(writerBtn);
-    expect(screen.getByText("Human")).toBeInTheDocument();
-    fireEvent.mouseDown(document.body);
-    expect(screen.queryByText("Human")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText("Trending"));
+    expect(mockPush).toHaveBeenCalledWith(expect.stringContaining("tab=trending"));
   });
 
-  it("active option is highlighted", () => {
-    render(<FilterBar {...defaultProps} writer="human" />);
-    const writerBtn = screen.getByText("writer:").closest("button")!;
-    fireEvent.click(writerBtn);
-    // "Human" appears both in the token display and the dropdown
-    const humanOptions = screen.getAllByText("Human");
-    // The dropdown option (button) should have text-accent class
-    const dropdownOption = humanOptions.find((el) => el.tagName === "BUTTON" && el.closest("[class*='absolute']"));
-    expect(dropdownOption).toHaveClass("text-accent");
+  it("active sort tab is highlighted", () => {
+    render(<FilterBar {...defaultProps} tab="trending" />);
+    const trendingBtn = screen.getByText("Trending");
+    expect(trendingBtn).toHaveClass("text-accent");
   });
 });
