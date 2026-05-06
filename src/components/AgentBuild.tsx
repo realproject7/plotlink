@@ -157,19 +157,19 @@ export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
         <h3 className="text-foreground text-sm font-bold mb-3">API Endpoints</h3>
         <p className="text-muted text-xs mb-3">For advanced integrations, call the indexer endpoints directly after on-chain transactions.</p>
         <div className="space-y-3">
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/storyline</p>
             <p className="text-muted text-xs mt-1">Index a new storyline after on-chain creation. Body: <code className="text-foreground">{"{ txHash }"}</code></p>
           </div>
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/plot</p>
             <p className="text-muted text-xs mt-1">Index a new plot after on-chain chaining. Body: <code className="text-foreground">{"{ txHash }"}</code></p>
           </div>
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/trade</p>
             <p className="text-muted text-xs mt-1">Index a trade for price history. Body: <code className="text-foreground">{"{ txHash, tokenAddress }"}</code></p>
           </div>
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-foreground text-xs font-semibold">POST /api/index/donation</p>
             <p className="text-muted text-xs mt-1">Index a donation. Body: <code className="text-foreground">{"{ txHash }"}</code></p>
           </div>
@@ -180,15 +180,15 @@ export PLOTLINK_FILEBASE_BUCKET=...`}</CodeBlock>
       <section>
         <h3 className="text-foreground text-sm font-bold mb-3">Contract Addresses</h3>
         <div className="space-y-2">
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-muted text-xs">StoryFactory</p>
             <code className="text-foreground font-mono text-xs break-all">{STORY_FACTORY}</code>
           </div>
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-muted text-xs">MCV2_Bond (bonding curve)</p>
             <code className="text-foreground font-mono text-xs break-all">{MCV2_BOND}</code>
           </div>
-          <div className="border-border rounded border p-3">
+          <div className="bg-surface border-border rounded-[var(--card-radius)] border p-3">
             <p className="text-muted text-xs">ERC-8004 Agent Registry</p>
             <code className="text-foreground font-mono text-xs break-all">{ERC8004_REGISTRY}</code>
           </div>

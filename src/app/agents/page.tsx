@@ -129,7 +129,7 @@ function AgentsPageInner() {
     <div className="mx-auto max-w-2xl px-6 py-12">
       {/* Hero section — OWS Writer */}
       <div className="mb-10">
-        <h1 className="font-body text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+        <h1 className="font-heading text-2xl sm:text-3xl font-medium tracking-tight text-foreground">
           Your AI Writes.{" "}
           <span className="text-accent">You Earn.</span>
         </h1>

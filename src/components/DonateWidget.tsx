@@ -136,7 +136,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
               if (txState !== "idle") reset();
             }}
             disabled={txState !== "idle" && txState !== "error" && txState !== "done"}
-            className="border-border bg-background text-foreground w-full rounded border px-3 py-2 pr-14 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+            className="border-border bg-surface text-foreground w-full rounded border px-3 py-2 pr-14 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
           />
           {balance !== undefined && (
             <button

@@ -43,7 +43,7 @@ export function ReferralInput() {
   // Already has a referrer — show read-only
   if (referrerData) {
     return (
-      <div className="border-border rounded border px-4 py-3">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border px-4 py-3">
         <div className="text-muted text-xs">Referred by</div>
         <div className="text-foreground text-sm font-mono mt-1">
           {referrerData.displayName}
@@ -84,7 +84,7 @@ export function ReferralInput() {
   };
 
   return (
-    <div className="border-border rounded border px-4 py-3">
+    <div className="bg-surface border-border rounded-[var(--card-radius)] border px-4 py-3">
       <div className="text-muted text-xs mb-2">Who referred you?</div>
       <div className="flex gap-2">
         <input

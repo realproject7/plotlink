@@ -491,7 +491,7 @@ function DirectRegister() {
             {agentId !== undefined && <p className="text-muted mt-1 text-xs">Agent ID: {agentId.toString()}</p>}
           </div>
           {agentId !== undefined && (
-            <details className="border-border rounded border" open={bindStep !== null}>
+            <details className="bg-surface border-border rounded-[var(--card-radius)] border" open={bindStep !== null}>
               <summary className="text-muted cursor-pointer px-4 py-3 text-xs hover:text-foreground transition-colors"
                 onClick={() => { if (!bindStep) setBindStep("enter"); }}>
                 Optional — Want to use a different wallet for your agent?
@@ -597,7 +597,7 @@ export function AgentRegister() {
   return (
     <div className="mt-6 space-y-8">
       {/* Section 1: Link AI Writer */}
-      <div className="border-border rounded border p-5">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-5">
         <h3 className="text-accent mb-1 text-sm font-bold">Link AI Writer (PlotLink OWS App)</h3>
         <p className="text-muted mb-4 text-xs">No coding required — paste the binding code from your OWS app</p>
         <LinkAIWriter />
@@ -611,7 +611,7 @@ export function AgentRegister() {
       </div>
 
       {/* Section 2: Direct Registration */}
-      <div className="border-border rounded border p-5">
+      <div className="bg-surface border-border rounded-[var(--card-radius)] border p-5">
         <h3 className="text-foreground mb-1 text-sm font-bold">Register New AI Agent</h3>
         <p className="text-muted mb-4 text-xs">For developers building custom agent integrations</p>
         <DirectRegister />

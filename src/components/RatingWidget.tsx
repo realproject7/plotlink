@@ -155,7 +155,7 @@ export function RatingWidget({ storylineId, tokenAddress }: RatingWidgetProps) {
             disabled={submitting}
             maxLength={500}
             rows={2}
-            className="border-border bg-background text-foreground mt-2 w-full resize-none rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
+            className="border-border bg-surface text-foreground mt-2 w-full resize-none rounded border px-3 py-2 text-sm focus:border-accent focus:outline-none disabled:opacity-50"
           />
 
           <button
