@@ -572,15 +572,17 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
         </div>
       )}
       {!isZapMode && estimate != null && parsedAmount > BigInt(0) && (() => {
-        const plotAmount = formatTokenAmount(applySlippage(estimate, tab === "buy"), 18);
-        const usd = plotUsd ? formatUsdValue(parseFloat(plotAmount) * plotUsd) : null;
+        const slippageAmount = applySlippage(estimate, tab === "buy");
+        const plotDisplay = formatTokenAmount(slippageAmount, 18);
+        const plotNumeric = parseFloat(formatUnits(slippageAmount, 18));
+        const usd = plotUsd ? formatUsdValue(plotNumeric * plotUsd) : null;
         return (
           <div className="text-muted mt-2 text-xs">
             {tab === "buy" ? "Max cost" : "Min return"}:{" "}
             <span className="font-semibold text-accent">
-              {usd || `${plotAmount} ${RESERVE_LABEL}`}
+              {usd || `${plotDisplay} ${RESERVE_LABEL}`}
             </span>
-            {usd && <span className="ml-1 opacity-60">({plotAmount} {RESERVE_LABEL})</span>}
+            {usd && <span className="ml-1 opacity-60">({plotDisplay} {RESERVE_LABEL})</span>}
             <span className="ml-2">(incl. 3% slippage)</span>
           </div>
         );
