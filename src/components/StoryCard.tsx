@@ -63,9 +63,9 @@ export function StoryCard({
       )}
 
       {/* Top badges */}
-      <div className="absolute top-2 right-2 left-2 z-[2] flex items-center gap-1">
+      <div className="absolute top-2 right-2 left-2 z-[2] flex flex-wrap items-center gap-1">
         {displayGenre && (
-          <span className="rounded-[3px] border border-[var(--border)] bg-[var(--surface)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-[var(--muted)]">
+          <span className="max-w-[50%] truncate rounded-[3px] border border-[var(--border)] bg-[var(--surface)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-[var(--muted)]">
             {displayGenre}
           </span>
         )}
