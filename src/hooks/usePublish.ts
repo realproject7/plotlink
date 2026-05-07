@@ -106,9 +106,13 @@ export function usePublish() {
         });
         opts.onTxConfirmed?.(hash);
 
-        // 3. Wait for tx confirmation
+        // 3. Wait for tx confirmation (2-min timeout, 4s polling to avoid request spam)
         setState("pending");
-        const receipt = await publicClient.waitForTransactionReceipt({ hash });
+        const receipt = await publicClient.waitForTransactionReceipt({
+          hash,
+          timeout: 120_000,
+          pollingInterval: 4_000,
+        });
 
         setReceipt(receipt);
 
@@ -127,8 +131,11 @@ export function usePublish() {
         setState("published");
         cachedCid.current = null;
       } catch (err) {
-        const message =
-          err instanceof Error ? err.message : "Unknown error";
+        let message = err instanceof Error ? err.message : "Unknown error";
+        if (message.includes("Timed out") && message.includes("transaction")) {
+          message =
+            "Transaction confirmation timed out. It may still be processing — check your wallet and refresh the page in a few minutes.";
+        }
         setError(message);
         setState("error");
       }
