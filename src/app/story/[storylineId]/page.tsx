@@ -287,6 +287,9 @@ function StoryHeader({
   const createdDate = storyline.block_timestamp
     ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
+  const createdDateCompact = storyline.block_timestamp
+    ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " '" + new Date(storyline.block_timestamp).getFullYear().toString().slice(2)
+    : null;
   const variant = hashToVariant(storylineId);
 
   const statsGrid = priceInfo ? (
@@ -323,7 +326,7 @@ function StoryHeader({
           {storyline.sunset ? (
             "Complete"
           ) : storyline.has_deadline && storyline.last_plot_time ? (
-            <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-[15px] font-semibold tabular-nums text-foreground" />
+            <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel compact valueClassName="text-[15px] font-semibold tabular-nums text-foreground" />
           ) : !storyline.has_deadline ? (
             "Open"
           ) : (
@@ -333,7 +336,10 @@ function StoryHeader({
       </div>
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
         <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Created</div>
-        <div className="text-[15px] font-semibold tabular-nums text-foreground">{createdDate ?? "—"}</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground">
+          <span className="sm:hidden">{createdDateCompact ?? "—"}</span>
+          <span className="hidden sm:inline">{createdDate ?? "—"}</span>
+        </div>
       </div>
     </div>
   ) : null;
