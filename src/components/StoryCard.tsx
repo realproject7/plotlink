@@ -12,9 +12,9 @@ function hashToVariant(id: number): FallbackVariant {
 }
 
 const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
-  A: { background: "radial-gradient(circle at 30% 70%, oklch(30% 0.06 28 / 0.5) 0%, transparent 60%), linear-gradient(160deg, oklch(22% 0.03 50) 0%, oklch(16% 0.025 30) 100%)" },
-  C: { background: "conic-gradient(from 45deg at 80% 20%, oklch(25% 0.04 280 / 0.3), transparent 120deg), linear-gradient(180deg, oklch(20% 0.03 260) 0%, oklch(15% 0.02 240) 100%)" },
-  D: { background: "oklch(18% 0.035 50)" },
+  A: { background: "radial-gradient(circle at 30% 70%, oklch(88% 0.03 28 / 0.4) 0%, transparent 60%), linear-gradient(160deg, oklch(93% 0.015 50) 0%, oklch(90% 0.012 30) 100%)" },
+  C: { background: "radial-gradient(circle at 70% 30%, oklch(90% 0.02 280 / 0.3) 0%, transparent 50%), linear-gradient(180deg, oklch(94% 0.012 260) 0%, oklch(91% 0.01 240) 100%)" },
+  D: { background: "linear-gradient(175deg, oklch(94% 0.015 50) 0%, oklch(90% 0.02 40) 100%)" },
 };
 
 export function StoryCard({
@@ -34,7 +34,7 @@ export function StoryCard({
   return (
     <Link
       href={`/story/${storyline.storyline_id}`}
-      className="group relative block aspect-[2/3] overflow-hidden rounded-[var(--card-radius)] transition-[transform,box-shadow] duration-200 ease-out hover:z-[2] hover:scale-[1.03] hover:shadow-[0_12px_40px_oklch(0%_0_0_/_0.5)]"
+      className="group relative block aspect-[2/3] overflow-hidden rounded-[var(--card-radius)] border border-[var(--border)] shadow-[0_1px_3px_oklch(0%_0_0_/_0.06)] transition-[transform,box-shadow] duration-200 ease-out hover:z-[2] hover:scale-[1.03] hover:shadow-[0_12px_40px_oklch(0%_0_0_/_0.12)]"
     >
       {/* Cover image or fallback pattern */}
       {coverUrl ? (
@@ -46,13 +46,9 @@ export function StoryCard({
         />
       ) : (
         <div className="absolute inset-0" style={FALLBACK_STYLES[variant]}>
-          {/* Fallback: centered title treatment */}
           <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center px-4 text-center">
-            <div className="font-heading text-base font-semibold leading-tight text-[oklch(88%_0.012_70)] sm:text-lg" style={{ maxWidth: "90%" }}>
+            <div className="font-heading text-base font-semibold leading-tight text-[var(--fg)] sm:text-lg" style={{ maxWidth: "90%" }}>
               {storyline.title}
-            </div>
-            <div className="mt-2 text-[11px] text-[oklch(55%_0.015_50)]">
-              <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
             </div>
             <div className="mt-2.5 h-0.5 w-8 rounded-sm bg-accent" />
           </div>
@@ -63,28 +59,28 @@ export function StoryCard({
       {coverUrl ? (
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0%_0_0_/_0)_40%,oklch(0%_0_0_/_0.35)_60%,oklch(0%_0_0_/_0.85)_100%)]" />
       ) : (
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(0%_0_0_/_0)_55%,oklch(0%_0_0_/_0.7)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,oklch(100%_0_0_/_0)_55%,oklch(100%_0_0_/_0.6)_100%)]" />
       )}
 
       {/* Top badges */}
-      <div className="absolute top-2 right-2 left-2 z-[2] flex flex-wrap gap-1">
+      <div className="absolute top-2 right-2 left-2 z-[2] flex flex-wrap items-center gap-1">
         {displayGenre && (
-          <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.55)] px-[7px] py-[2px] text-[10px] font-semibold uppercase tracking-[0.03em] leading-[1.4] text-[oklch(92%_0.01_70)] backdrop-blur-sm">
+          <span className="max-w-[50%] truncate rounded-[3px] border border-[var(--border)] bg-[var(--surface)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-[var(--muted)]">
             {displayGenre}
           </span>
         )}
         {storyline.writer_type === 1 && (
-          <span className="rounded-[3px] bg-[oklch(55%_0.18_280_/_0.85)] px-[7px] py-[2px] text-[10px] font-semibold uppercase tracking-[0.03em] leading-[1.4] text-[oklch(95%_0.02_280)]">
+          <span className="rounded-[3px] border border-[oklch(70%_0.10_280)] bg-[oklch(94%_0.03_280)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-[oklch(45%_0.12_280)]">
             AI Writer
           </span>
         )}
         {status === "completed" && (
-          <span className="rounded-[3px] bg-[oklch(55%_0.15_145_/_0.85)] px-[7px] py-[2px] text-[10px] font-semibold uppercase tracking-[0.03em] leading-[1.4] text-[oklch(95%_0.02_145)]">
+          <span className="rounded-[3px] border border-[oklch(70%_0.08_145)] bg-[oklch(94%_0.02_145)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-[oklch(40%_0.10_145)]">
             Completed
           </span>
         )}
         {isActive && (
-          <span className="rounded-[3px] bg-[oklch(60%_0.15_80_/_0.85)] px-[7px] py-[2px] text-[10px] font-semibold uppercase tracking-[0.03em] leading-[1.4] text-[oklch(95%_0.02_80)]">
+          <span className="rounded-[3px] border border-[oklch(72%_0.08_80)] bg-[oklch(94%_0.02_80)] px-1.5 py-px text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-[oklch(42%_0.10_80)]">
             Ongoing
           </span>
         )}
@@ -97,12 +93,12 @@ export function StoryCard({
             {storyline.title}
           </h3>
         )}
-        <div className="mt-[3px] text-[11px] text-[oklch(75%_0.01_70)]">
+        <div className={`${coverUrl ? "mt-[3px]" : ""} text-[11px] ${coverUrl ? "text-[oklch(75%_0.01_70)]" : "text-[var(--muted)]"}`}>
           <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
         </div>
         {storyline.token_address && (
           <div className="mt-1.5">
-            <span className="font-mono text-[10px] tabular-nums text-[oklch(55%_0.01_50)]">
+            <span className={`font-mono text-[10px] tabular-nums ${coverUrl ? "text-[oklch(55%_0.01_50)]" : "text-[var(--muted)]"}`}>
               <StoryCardTVL tokenAddress={storyline.token_address} />
             </span>
           </div>
