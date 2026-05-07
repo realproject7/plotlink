@@ -208,7 +208,7 @@ function ClaimPanelInner({ address }: { address: string }) {
         <div>
           <div className="text-muted text-[10px]">You earned</div>
           <div className="text-foreground text-xl font-bold">{usdValue || `${amountDisplay} PLOT`}</div>
-          <div className="text-muted text-xs">({amountDisplay} PLOT)</div>
+          {usdValue && <div className="text-muted text-xs">({amountDisplay} PLOT)</div>}
         </div>
 
         {alreadyClaimed ? (

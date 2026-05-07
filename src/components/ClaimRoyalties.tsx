@@ -165,7 +165,7 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
           <span className="text-foreground font-medium">
             {plotUsd != null ? formatUsdValue(parseFloat(formatUnits(totalClaimed, decimals)) * plotUsd) : `${formatTruncated(totalClaimed, decimals)} ${RESERVE_LABEL}`}
           </span>
-          <span className="text-muted"> ({formatTruncated(totalClaimed, decimals)} {RESERVE_LABEL})</span>
+          {plotUsd != null && <span className="text-muted"> ({formatTruncated(totalClaimed, decimals)} {RESERVE_LABEL})</span>}
         </div>
       )}
       {!eligible && txState === "idle" && (

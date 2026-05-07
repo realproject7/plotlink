@@ -178,7 +178,7 @@ function UserPointsInner({ address }: { address: string }) {
             <span className="text-foreground font-medium">
               {currentEstimate.usd ? `~${formatUsdValue(currentEstimate.usd)}` : `${currentEstimate.amount.toLocaleString()} PLOT`}
             </span>
-            <span className="text-muted"> ({currentEstimate.amount.toLocaleString()} PLOT)</span>
+            {currentEstimate.usd && <span className="text-muted"> ({currentEstimate.amount.toLocaleString()} PLOT)</span>}
             <InfoTooltip>
               <div className="space-y-1">
                 {TIER_KEYS.map((key) => {
@@ -192,7 +192,7 @@ function UserPointsInner({ address }: { address: string }) {
                       <span className="text-foreground font-medium">
                         {scenarioUsd ? `~${scenarioUsd}` : `${amount.toLocaleString()} PLOT`}
                       </span>
-                      <span> ({amount.toLocaleString()} PLOT)</span>
+                      {scenarioUsd && <span> ({amount.toLocaleString()} PLOT)</span>}
                     </div>
                   );
                 })}
