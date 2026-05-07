@@ -13,6 +13,8 @@ import {
 } from "../../lib/contracts/constants";
 import { getZapQuote, buildZapMintTx } from "../../lib/zap";
 import { indexFetch } from "../../lib/index-fetch";
+import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
+import { formatUsdValue } from "../../lib/usd-price";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
@@ -66,6 +68,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const [txHash, setTxHash] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const { data: plotUsd } = usePlotUsdPrice();
   const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({ address });
 
   const isPlotMode = payToken === "PLOT" || !isZapAvailable;
@@ -568,15 +571,22 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           <span className="ml-2">(incl. 3% slippage)</span>
         </div>
       )}
-      {!isZapMode && estimate != null && parsedAmount > BigInt(0) && (
-        <div className="text-muted mt-2 text-xs">
-          {tab === "buy" ? "Max cost" : "Min return"}:{" "}
-          <span className="font-semibold text-accent">
-            {formatTokenAmount(applySlippage(estimate, tab === "buy"), 18)} {RESERVE_LABEL}
-          </span>
-          <span className="ml-2">(incl. 3% slippage)</span>
-        </div>
-      )}
+      {!isZapMode && estimate != null && parsedAmount > BigInt(0) && (() => {
+        const slippageAmount = applySlippage(estimate, tab === "buy");
+        const plotDisplay = formatTokenAmount(slippageAmount, 18);
+        const plotNumeric = parseFloat(formatUnits(slippageAmount, 18));
+        const usd = plotUsd ? formatUsdValue(plotNumeric * plotUsd) : null;
+        return (
+          <div className="text-muted mt-2 text-xs">
+            {tab === "buy" ? "Max cost" : "Min return"}:{" "}
+            <span className="font-semibold text-accent">
+              {usd || `${plotDisplay} ${RESERVE_LABEL}`}
+            </span>
+            {usd && <span className="ml-1 opacity-60">({plotDisplay} {RESERVE_LABEL})</span>}
+            <span className="ml-2">(incl. 3% slippage)</span>
+          </div>
+        );
+      })()}
 
       {/* Action button */}
       <button

@@ -52,8 +52,8 @@ export function StoryCardStats({ tokenAddress }: { tokenAddress: string }) {
 
   return (
     <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-[var(--text-muted)]">
-      <span>Price: <span className="font-semibold text-[var(--accent)]">{price} {RESERVE_LABEL}</span>{priceUsd && <span className="ml-1 opacity-60">({priceUsd})</span>}</span>
-      <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span>{tvlUsd && <span className="ml-1 opacity-60">({tvlUsd})</span>}</span>
+      <span>Price: {priceUsd ? <><span className="font-semibold text-[var(--accent)]">{priceUsd}</span><span className="ml-1 opacity-60">({price} {RESERVE_LABEL})</span></> : <span className="font-semibold text-[var(--accent)]">{price} {RESERVE_LABEL}</span>}</span>
+      <span>TVL: {tvlUsd ? <><span className="font-semibold text-[var(--accent)]">{tvlUsd}</span><span className="ml-1 opacity-60">({tvl} {RESERVE_LABEL})</span></> : <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span>}</span>
     </div>
   );
 }
@@ -78,7 +78,7 @@ export function StoryCardPrice({ tokenAddress }: { tokenAddress: string }) {
     : null;
 
   return (
-    <span>{price} {RESERVE_LABEL}{priceUsd && <span className="ml-1 opacity-60">({priceUsd})</span>}</span>
+    <span>{priceUsd ? <>{priceUsd}<span className="ml-1 opacity-60">({price} {RESERVE_LABEL})</span></> : <>{price} {RESERVE_LABEL}</>}</span>
   );
 }
 

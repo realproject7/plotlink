@@ -176,11 +176,9 @@ function UserPointsInner({ address }: { address: string }) {
           <div className="mt-2 text-xs">
             <span className="text-muted">Est. airdrop: </span>
             <span className="text-foreground font-medium">
-              {currentEstimate.amount.toLocaleString()} PLOT
+              {currentEstimate.usd ? `~${formatUsdValue(currentEstimate.usd)}` : `${currentEstimate.amount.toLocaleString()} PLOT`}
             </span>
-            {currentEstimate.usd && (
-              <span className="text-muted"> (~{formatUsdValue(currentEstimate.usd)})</span>
-            )}
+            {currentEstimate.usd && <span className="text-muted"> ({currentEstimate.amount.toLocaleString()} PLOT)</span>}
             <InfoTooltip>
               <div className="space-y-1">
                 {TIER_KEYS.map((key) => {
@@ -192,9 +190,9 @@ function UserPointsInner({ address }: { address: string }) {
                     <div key={key} className="text-muted">
                       At {formatCompact(fdv)} MCap →{" "}
                       <span className="text-foreground font-medium">
-                        {amount.toLocaleString()} PLOT
+                        {scenarioUsd ? `~${scenarioUsd}` : `${amount.toLocaleString()} PLOT`}
                       </span>
-                      {scenarioUsd && <span> (~{scenarioUsd})</span>}
+                      {scenarioUsd && <span> ({amount.toLocaleString()} PLOT)</span>}
                     </div>
                   );
                 })}
