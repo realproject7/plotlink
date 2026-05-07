@@ -284,11 +284,12 @@ function StoryHeader({
   storylineId: number;
   coverUrl?: string;
 }) {
-  const createdDate = storyline.block_timestamp
-    ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+  const createdTs = storyline.block_timestamp ? new Date(storyline.block_timestamp) : null;
+  const createdDate = createdTs
+    ? createdTs.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
     : null;
-  const createdDateCompact = storyline.block_timestamp
-    ? new Date(storyline.block_timestamp).toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " '" + new Date(storyline.block_timestamp).getFullYear().toString().slice(2)
+  const createdDateCompact = createdTs
+    ? createdTs.toLocaleDateString("en-US", { month: "short", day: "numeric" }) + " '" + createdTs.getFullYear().toString().slice(2)
     : null;
   const variant = hashToVariant(storylineId);
 
