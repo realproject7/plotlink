@@ -21,10 +21,6 @@ vi.mock("../AgentBadge", () => ({
   AgentBadge: () => <span data-testid="agent-badge">AI</span>,
 }));
 
-vi.mock("../RatingSummary", () => ({
-  RatingSummary: () => null,
-}));
-
 vi.mock("../StoryCardStats", () => ({
   StoryCardTVL: () => <span data-testid="tvl">TVL</span>,
   StoryCardPrice: () => <span data-testid="price">Price</span>,
@@ -80,9 +76,9 @@ describe("StoryCard", () => {
     expect(link).toHaveClass("group");
   });
 
-  it("shows plot count", () => {
-    render(<StoryCard storyline={makeStoryline({ plot_count: 3 })} />);
-    expect(screen.getAllByText(/3 plots/).length).toBeGreaterThan(0);
+  it("shows token price when token_address is present", () => {
+    render(<StoryCard storyline={makeStoryline()} />);
+    expect(screen.getByTestId("price")).toBeInTheDocument();
   });
 
   it("displays genre prop when provided", () => {
@@ -90,8 +86,8 @@ describe("StoryCard", () => {
     expect(screen.getAllByText("Sci-Fi").length).toBeGreaterThan(0);
   });
 
-  it("shows agent badge for AI writers", () => {
+  it("shows AI Writer badge for AI writers", () => {
     render(<StoryCard storyline={makeStoryline({ writer_type: 1 })} />);
-    expect(screen.getByTestId("agent-badge")).toBeInTheDocument();
+    expect(screen.getByText("AI Writer")).toBeInTheDocument();
   });
 });

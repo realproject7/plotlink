@@ -141,7 +141,7 @@ export default function ProfilePage() {
   const onCooldown = cooldownRemaining > 0;
 
   return (
-    <div className="mx-auto max-w-4xl px-6 py-12">
+    <div className="mx-auto max-w-[var(--page-max)] px-6 py-8">
       <ProfileHeader
         address={address}
         fcProfile={fcProfile ?? null}
@@ -163,16 +163,16 @@ export default function ProfilePage() {
         cooldownRemaining={cooldownRemaining}
       />
 
-      {/* Tab navigation — pill style */}
-      <div className="mt-8 flex gap-1.5">
+      {/* Tab navigation — underline style (matches reference) */}
+      <div className="mt-6 flex border-b border-border">
         {(["stories", "portfolio", "activity"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+            className={`-mb-px border-b-2 px-6 py-2.5 text-sm font-semibold transition-colors ${
               tab === t
-                ? "bg-accent text-white"
-                : "bg-surface border border-border text-muted hover:text-foreground"
+                ? "border-accent text-accent"
+                : "border-transparent text-muted hover:text-foreground"
             }`}
           >
             {t === "stories" ? "Writer" : t === "portfolio" ? "Reader" : "Activity"}
@@ -264,7 +264,7 @@ function ProfileHeader({
   const hasQuotient = dbUser?.quotient_score != null;
 
   return (
-    <header className="bg-surface rounded-[var(--card-radius)] border border-border p-5 space-y-5">
+    <header className="space-y-5 pb-7 border-b border-border mb-7">
       {/* Primary identity */}
       <div className="flex items-start gap-4">
         {/* For AI agents, use owner's PFP; otherwise use own Farcaster PFP */}

@@ -39,13 +39,13 @@ export default function TokenPage() {
   };
 
   return (
-    <div className="mx-auto max-w-[512px] px-4 py-8 sm:py-12 space-y-6">
+    <div className="mx-auto max-w-[512px] px-5 py-8 sm:py-12 space-y-5">
       {/* Hero */}
-      <header className="text-center">
-        <h1 className="font-heading text-4xl font-medium tracking-tight text-accent sm:text-5xl">
-          $PLOT
+      <header className="text-center py-6">
+        <h1 className="font-heading text-[36px] font-semibold tracking-tight text-foreground leading-[1.15]">
+          <span className="text-accent">$PLOT</span>
         </h1>
-        <p className="text-muted mt-2 text-sm">
+        <p className="text-muted mt-1.5 text-[15px] max-w-[360px] mx-auto">
           The reserve token behind every story on PlotLink
         </p>
       </header>
@@ -87,36 +87,37 @@ export default function TokenPage() {
       </div>
 
       {/* Balance */}
-      <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-muted text-[10px] uppercase tracking-wider">Your Balance</h2>
+      <div className="relative overflow-hidden rounded-md border border-accent/20 p-7 text-center" style={{ background: "linear-gradient(135deg, oklch(28% 0.06 28) 0%, oklch(20% 0.05 40) 100%)" }}>
+        <div className="pointer-events-none absolute -top-[40%] -right-[20%] h-[200px] w-[200px] rounded-full" style={{ background: "radial-gradient(circle, oklch(52% 0.14 28 / 0.08) 0%, transparent 70%)" }} />
+        <div className="relative flex items-center justify-center gap-2 mb-4">
+          <h2 className="text-xs font-medium uppercase tracking-[0.04em] text-white/60">Your Balance</h2>
           {isConnected && (
-            <div className="flex items-center gap-1.5 text-[10px] text-accent">
-              <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-success">
+              <div className="h-1.5 w-1.5 rounded-full bg-success shadow-[0_0_6px_oklch(45%_0.14_145_/_0.5)]" />
               Connected
             </div>
           )}
         </div>
 
         {!isConnected ? (
-          <div className="text-center py-3">
-            <p className="text-muted text-sm">Connect your wallet to view balance</p>
+          <div className="relative text-center py-2">
+            <p className="text-white/50 text-[13px] mb-3.5">Connect your wallet to view balance</p>
           </div>
         ) : balanceLoading ? (
-          <div className="text-center py-3">
-            <div className="bg-border h-8 w-32 mx-auto animate-pulse rounded" />
+          <div className="relative text-center py-2">
+            <div className="bg-white/10 h-8 w-32 mx-auto animate-pulse rounded" />
           </div>
         ) : (
-          <div className="text-center">
-            <div className="text-foreground text-3xl font-bold sm:text-4xl">
+          <div className="relative text-center">
+            <div className="font-mono text-[38px] font-bold tabular-nums leading-[1.1] tracking-tight text-white">
               {parseFloat(formattedBalance).toLocaleString(undefined, {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
-              })}{" "}
-              <span className="text-muted text-xl sm:text-2xl">PLOT</span>
+              })}
+              <span className="ml-1.5 text-lg font-medium tracking-wide text-white/50">PLOT</span>
             </div>
             {tokenInfo?.price && parseFloat(formattedBalance) > 0 && (
-              <div className="text-muted mt-1 text-sm">
+              <div className="font-mono text-[15px] tabular-nums text-white/40 mt-1.5">
                 ${(parseFloat(formattedBalance) * tokenInfo.price).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,
@@ -131,26 +132,29 @@ export default function TokenPage() {
       <SwapInterface />
 
       {/* Token Utility */}
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border p-5">
-        <h3 className="text-foreground text-sm font-semibold mb-4">Why PLOT?</h3>
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
-            <span className="bg-accent-bg text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--card-radius)] text-xs font-bold">1</span>
-            <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Reserve token for story tokens</span> — every storyline token on PlotLink is backed by PLOT via MCV2 bonding curves.
-            </p>
+      <div className="bg-surface rounded-md border border-border p-6">
+        <h3 className="font-heading text-xl font-semibold text-foreground mb-5">Why $PLOT?</h3>
+        <div className="space-y-5">
+          <div className="grid grid-cols-[36px_1fr] items-start gap-3.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent/20 bg-accent-bg font-mono text-sm font-bold text-accent">1</span>
+            <div>
+              <div className="text-sm font-semibold text-foreground mb-1">Reserve token for story tokens</div>
+              <p className="text-[13px] leading-relaxed text-muted">Every storyline token on PlotLink is backed by PLOT via MCV2 bonding curves.</p>
+            </div>
           </div>
-          <div className="flex items-start gap-3">
-            <span className="bg-accent-bg text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--card-radius)] text-xs font-bold">2</span>
-            <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">TVL growth</span> — as more story tokens are minted, more PLOT gets locked in bonding curve reserves.
-            </p>
+          <div className="grid grid-cols-[36px_1fr] items-start gap-3.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent/20 bg-accent-bg font-mono text-sm font-bold text-accent">2</span>
+            <div>
+              <div className="text-sm font-semibold text-foreground mb-1">TVL growth</div>
+              <p className="text-[13px] leading-relaxed text-muted">As more story tokens are minted, more PLOT gets locked in bonding curve reserves.</p>
+            </div>
           </div>
-          <div className="flex items-start gap-3">
-            <span className="bg-accent-bg text-accent flex h-6 w-6 shrink-0 items-center justify-center rounded-[var(--card-radius)] text-xs font-bold">3</span>
-            <p className="text-muted text-sm">
-              <span className="text-foreground font-semibold">Creator royalties</span> — 1% mint and 1% burn royalty on every trade flows directly to the story writer.
-            </p>
+          <div className="grid grid-cols-[36px_1fr] items-start gap-3.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-accent/20 bg-accent-bg font-mono text-sm font-bold text-accent">3</span>
+            <div>
+              <div className="text-sm font-semibold text-foreground mb-1">Creator royalties</div>
+              <p className="text-[13px] leading-relaxed text-muted">1% mint and 1% burn royalty on every trade flows directly to the story writer.</p>
+            </div>
           </div>
         </div>
       </div>

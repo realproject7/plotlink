@@ -54,74 +54,74 @@ export function FilterBar({ writer, genre, lang, tab, totalCount }: FilterBarPro
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* Row 1: Sort tabs + Writer pills */}
-      <div className="flex flex-wrap items-center gap-2">
-        {/* Sort tab group */}
-        <div className="flex items-center gap-1 rounded-md bg-surface p-1">
-          {SORT_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => navigate({ tab: value, writer, genre, lang })}
-              className={`rounded px-3 py-1 text-xs font-medium transition-colors ${
-                tab === value
-                  ? "bg-accent-bg text-accent"
-                  : "text-muted hover:text-foreground"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Writer pill group */}
-        <div className="flex items-center gap-1">
-          {WRITER_OPTIONS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => navigate({ tab, writer: value, genre, lang })}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                writer === value
-                  ? "border-accent text-accent bg-accent-bg"
-                  : "border-border text-muted hover:text-foreground hover:border-foreground/20"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-
-        {/* Genre select */}
-        <select
-          value={genre}
-          onChange={(e) => navigate({ tab, writer, genre: e.target.value, lang })}
-          className="rounded-full border border-border bg-transparent px-3 py-1 text-xs text-muted transition-colors hover:border-foreground/20 hover:text-foreground focus:border-accent focus:text-foreground focus:outline-none"
-        >
-          <option value="all">All Genres</option>
-          {GENRES.map((g) => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
-
-        {/* Language select */}
-        <select
-          value={lang}
-          onChange={(e) => navigate({ tab, writer, genre, lang: e.target.value })}
-          className="rounded-full border border-border bg-transparent px-3 py-1 text-xs text-muted transition-colors hover:border-foreground/20 hover:text-foreground focus:border-accent focus:text-foreground focus:outline-none"
-        >
-          <option value="all">All Languages</option>
-          {LANGUAGES.map((l) => (
-            <option key={l} value={l}>{l}</option>
-          ))}
-        </select>
-
-        {/* Result count — right aligned */}
-        {totalCount !== undefined && (
-          <span className="ml-auto text-xs text-muted">
-            {totalCount} {totalCount === 1 ? "story" : "stories"}
-          </span>
-        )}
+    <div className="flex flex-wrap items-center gap-3 py-6 sm:py-4">
+      {/* Sort tab group */}
+      <div className="flex items-center gap-0.5 rounded-md bg-surface p-[3px]">
+        {SORT_OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => navigate({ tab: value, writer, genre, lang })}
+            className={`rounded px-3.5 py-1.5 text-[13px] font-medium transition-all ${
+              tab === value
+                ? "bg-accent text-white"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
       </div>
+
+      {/* Vertical divider */}
+      <div className="hidden h-6 w-px bg-border sm:block" />
+
+      {/* Writer pill group */}
+      <div className="flex items-center gap-0.5">
+        {WRITER_OPTIONS.map(({ value, label }) => (
+          <button
+            key={value}
+            onClick={() => navigate({ tab, writer: value, genre, lang })}
+            className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              writer === value
+                ? "border-accent text-accent bg-[oklch(52%_0.14_28_/_0.1)]"
+                : "border-border text-muted hover:border-muted hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Genre select */}
+      <select
+        value={genre}
+        onChange={(e) => navigate({ tab, writer, genre: e.target.value, lang })}
+        className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted transition-colors hover:border-muted hover:text-foreground focus:border-accent focus:text-foreground focus:outline-none"
+      >
+        <option value="all">All Genres</option>
+        {GENRES.map((g) => (
+          <option key={g} value={g}>{g}</option>
+        ))}
+      </select>
+
+      {/* Language select */}
+      <select
+        value={lang}
+        onChange={(e) => navigate({ tab, writer, genre, lang: e.target.value })}
+        className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-muted transition-colors hover:border-muted hover:text-foreground focus:border-accent focus:text-foreground focus:outline-none"
+      >
+        <option value="all">All Languages</option>
+        {LANGUAGES.map((l) => (
+          <option key={l} value={l}>{l}</option>
+        ))}
+      </select>
+
+      {/* Result count — right aligned, hidden on mobile */}
+      {totalCount !== undefined && (
+        <span className="ml-auto hidden text-xs tabular-nums text-muted sm:inline">
+          {totalCount} {totalCount === 1 ? "story" : "stories"}
+        </span>
+      )}
     </div>
   );
 }
