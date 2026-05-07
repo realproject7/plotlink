@@ -15,6 +15,9 @@ const sanitizeSchema = {
     "h1",
     "h2",
     "h3",
+    "h4",
+    "h5",
+    "h6",
     "blockquote",
     "hr",
     "ul",
@@ -22,8 +25,14 @@ const sanitizeSchema = {
     "li",
     "br",
     "code",
+    "pre",
+    "a",
+    "img",
   ],
-  attributes: {},
+  attributes: {
+    a: ["href", "title"],
+    img: ["src", "alt", "title"],
+  },
 };
 
 export function StoryContent({ content }: { content: string }) {
