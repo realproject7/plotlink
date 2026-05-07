@@ -48,14 +48,14 @@ export function WriterTradingStats({ storyline, plotUsd, showPrice = true }: Wri
       {showPrice && (
         <div>
           <span className="text-muted">Price:</span>{" "}
-          <span className="text-foreground font-medium">{data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}</span>
-          {data && plotUsd && <span className="text-muted"> ({formatUsdValue(parseFloat(data.price) * plotUsd)})</span>}
+          <span className="text-foreground font-medium">{data && plotUsd ? formatUsdValue(parseFloat(data.price) * plotUsd) : data ? `${formatPrice(data.price)} ${RESERVE_LABEL}` : "—"}</span>
+          {data && plotUsd && <span className="text-muted"> ({formatPrice(data.price)} {RESERVE_LABEL})</span>}
         </div>
       )}
       <div>
         <span className="text-muted">TVL:</span>{" "}
-        <span className="text-foreground font-medium">{data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}</span>
-        {data && plotUsd && <span className="text-muted"> ({formatUsdValue(parseFloat(data.tvl) * plotUsd)})</span>}
+        <span className="text-foreground font-medium">{data && plotUsd ? formatUsdValue(parseFloat(data.tvl) * plotUsd) : data ? `${formatPrice(data.tvl)} ${RESERVE_LABEL}` : "—"}</span>
+        {data && plotUsd && <span className="text-muted"> ({formatPrice(data.tvl)} {RESERVE_LABEL})</span>}
       </div>
     </div>
   );

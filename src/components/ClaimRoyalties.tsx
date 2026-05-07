@@ -115,10 +115,10 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
       <div className="flex items-center gap-2">
         <span className="text-muted">Claimable:</span>{" "}
         <span className={`font-medium ${unclaimed > BigInt(0) ? "text-accent" : "text-foreground"}`}>
-          {formatTruncated(unclaimed, decimals)} {RESERVE_LABEL}
+          {plotUsd != null && unclaimed > BigInt(0) ? formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd) : `${formatTruncated(unclaimed, decimals)} ${RESERVE_LABEL}`}
         </span>
-        {plotUsd != null && unclaimed > BigInt(0) && (
-          <span className="text-muted"> ({formatUsdValue(parseFloat(formatUnits(unclaimed, decimals)) * plotUsd)})</span>
+        {unclaimed > BigInt(0) && (
+          <span className="text-muted"> ({formatTruncated(unclaimed, decimals)} {RESERVE_LABEL})</span>
         )}
         <button
           onClick={txState === "error" ? reset : executeClaim}
@@ -163,11 +163,9 @@ export function ClaimRoyalties({ tokenAddress, plotCount, beneficiary, plotUsd }
         <div>
           <span className="text-muted">Claimed:</span>{" "}
           <span className="text-foreground font-medium">
-            {formatTruncated(totalClaimed, decimals)} {RESERVE_LABEL}
+            {plotUsd != null ? formatUsdValue(parseFloat(formatUnits(totalClaimed, decimals)) * plotUsd) : `${formatTruncated(totalClaimed, decimals)} ${RESERVE_LABEL}`}
           </span>
-          {plotUsd != null && (
-            <span className="text-muted"> ({formatUsdValue(parseFloat(formatUnits(totalClaimed, decimals)) * plotUsd)})</span>
-          )}
+          <span className="text-muted"> ({formatTruncated(totalClaimed, decimals)} {RESERVE_LABEL})</span>
         </div>
       )}
       {!eligible && txState === "idle" && (

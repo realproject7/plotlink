@@ -18,6 +18,9 @@ export function TokenPriceBox({ pricePerToken }: { pricePerToken: number }) {
       <div className="text-foreground text-sm font-bold">
         {usdPrice !== null ? formatUsdTokenPrice(usdPrice) : `${formatPrice(pricePerToken)} ${RESERVE_LABEL}`}
       </div>
+      {usdPrice !== null && (
+        <div className="text-muted text-[10px]">{formatPrice(pricePerToken)} {RESERVE_LABEL}</div>
+      )}
       <div className="text-muted text-[9px]">Token Price</div>
     </>
   );
