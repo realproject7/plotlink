@@ -260,18 +260,17 @@ export default async function StoryPage({ params }: { params: Params }) {
   );
 }
 
-type FallbackVariant = "A" | "B" | "C" | "D";
+type FallbackVariant = "A" | "C" | "D";
 
 function hashToVariant(id: number): FallbackVariant {
-  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
-  return variants[((id * 2654435761) >>> 0) % 4];
+  const variants: FallbackVariant[] = ["A", "C", "D"];
+  return variants[((id * 2654435761) >>> 0) % 3];
 }
 
 const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
-  A: { background: "radial-gradient(circle at 30% 70%, oklch(30% 0.06 28 / 0.5) 0%, transparent 60%), linear-gradient(160deg, oklch(22% 0.03 50) 0%, oklch(16% 0.025 30) 100%)" },
-  B: { background: "repeating-linear-gradient(-45deg, oklch(20% 0.02 50) 0px, oklch(20% 0.02 50) 2px, oklch(23% 0.025 50) 2px, oklch(23% 0.025 50) 12px)" },
-  C: { background: "conic-gradient(from 45deg at 80% 20%, oklch(25% 0.04 280 / 0.3), transparent 120deg), linear-gradient(180deg, oklch(20% 0.03 260) 0%, oklch(15% 0.02 240) 100%)" },
-  D: { background: "oklch(18% 0.035 50)" },
+  A: { background: "radial-gradient(circle at 30% 70%, oklch(88% 0.03 28 / 0.4) 0%, transparent 60%), linear-gradient(160deg, oklch(93% 0.015 50) 0%, oklch(90% 0.012 30) 100%)" },
+  C: { background: "radial-gradient(circle at 70% 30%, oklch(90% 0.02 280 / 0.3) 0%, transparent 50%), linear-gradient(180deg, oklch(94% 0.012 260) 0%, oklch(91% 0.01 240) 100%)" },
+  D: { background: "linear-gradient(175deg, oklch(94% 0.015 50) 0%, oklch(90% 0.02 40) 100%)" },
 };
 
 function StoryHeader({
@@ -355,23 +354,17 @@ function StoryHeader({
             <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
             <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center" style={FALLBACK_STYLES[variant]}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-accent mb-3">
-                {storyline.genre || "Uncategorized"}
-              </div>
-              <h2 className="font-heading text-[22px] font-semibold leading-tight text-[oklch(85%_0.01_70)]">
+              <h2 className="font-heading text-[22px] font-semibold leading-tight text-[var(--fg)]">
                 {storyline.title}
               </h2>
               <div className="mt-3.5 h-0.5 w-8 rounded-sm bg-accent" />
-              <div className="mt-2.5 text-xs text-muted">
-                <WriterIdentity address={storyline.writer_address} writerType={storyline.writer_type} />
-              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Info column */}
-      <div className="min-w-0 pt-1">
+      <div className="min-w-0 pt-4 sm:pt-1">
         {/* Badges row */}
         <div className="mb-3 flex flex-wrap gap-1.5">
           <span className="rounded-[3px] border border-border bg-surface px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-foreground/80">
