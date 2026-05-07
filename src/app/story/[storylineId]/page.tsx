@@ -171,7 +171,7 @@ export default async function StoryPage({ params }: { params: Params }) {
 
       <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} />
 
-      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px]">
+      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px] lg:items-start">
         {/* Story content — genesis + table of contents */}
         <main className="min-w-0">
           {genesis ? (
