@@ -104,6 +104,6 @@ export function StoryCardTVL({ tokenAddress }: { tokenAddress: string }) {
     : null;
 
   return (
-    <span>TVL: <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span>{tvlUsd && <span className="ml-1 opacity-60">({tvlUsd})</span>}</span>
+    <span>TVL: {tvlUsd ? <><span className="font-semibold text-[var(--accent)]">{tvlUsd}</span><span className="ml-1 opacity-60">({tvl} {RESERVE_LABEL})</span></> : <span className="font-semibold text-[var(--accent)]">{tvl} {RESERVE_LABEL}</span>}</span>
   );
 }
