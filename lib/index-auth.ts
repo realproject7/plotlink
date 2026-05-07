@@ -9,7 +9,7 @@
 import { type Hex } from "viem";
 import { publicClient, getReceiptWithRetry } from "./rpc";
 
-const MAX_TX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+const MAX_TX_AGE_MS = 30 * 60 * 1000; // 30 minutes
 
 /**
  * Validate that a tx hash corresponds to a real, recent, successful transaction.
