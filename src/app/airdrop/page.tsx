@@ -15,12 +15,12 @@ export default function AirdropPage() {
   const campaignEnded = new Date() > AIRDROP_CONFIG.CAMPAIGN_END;
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8 pb-24 lg:pb-8">
+    <main className="mx-auto max-w-[var(--page-max)] px-6 py-8 pb-24 lg:pb-8">
       {/* Hero spans full width */}
       <CampaignHero />
 
       {/* 2-column grid below hero */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
         {/* Left column: user-specific */}
         <div className="min-w-0 space-y-6">
           {campaignEnded ? <ClaimPanel /> : <UserPoints />}

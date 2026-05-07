@@ -332,13 +332,13 @@ export function CampaignHero() {
   const pad2 = (n: number) => String(n).padStart(2, "0");
 
   return (
-    <div className="bg-surface rounded-[var(--card-radius)] border border-border p-5 space-y-6">
-      {/* ── Bold headline ── */}
-      <div className="text-center space-y-2">
-        <h2 className="font-heading text-foreground text-3xl sm:text-[48px] font-bold leading-[1.1] tracking-tight">
+    <div className="space-y-8">
+      {/* ── Hero headline ── */}
+      <div className="text-center pt-4">
+        <h2 className="font-heading text-foreground text-3xl sm:text-[48px] font-bold leading-[1.1] tracking-tight mb-3">
           PLOT BIG AIRDROP
         </h2>
-        <p className="text-muted text-sm sm:text-base leading-relaxed max-w-md mx-auto">
+        <p className="text-muted text-sm sm:text-[16px] leading-relaxed max-w-[560px] mx-auto mb-2.5">
           When PLOT MCap reaches each milestone, the airdrop pool gets bigger.{" "}
           If not,{" "}
           {data.lockerTx ? (
@@ -355,14 +355,10 @@ export function CampaignHero() {
           )}{" "}
           tokens will be burned.
         </p>
-      </div>
-
-      {/* ── Modal trigger ── */}
-      <div className="text-center">
         <button
           type="button"
           onClick={() => setShowModal(true)}
-          className="text-accent text-xs hover:underline cursor-pointer"
+          className="inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline cursor-pointer"
         >
           How does this work? &rarr;
         </button>
@@ -378,12 +374,14 @@ export function CampaignHero() {
             { val: countdown.s, label: "sec" },
           ].map((unit, i) => (
             <div key={unit.label} className="flex items-center gap-2">
-              {i > 0 && <span className="text-muted text-lg font-mono">:</span>}
-              <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center min-w-[56px]">
-                <div className="text-foreground text-2xl font-bold font-mono tabular-nums">
-                  {i === 0 ? unit.val : pad2(unit.val)}
+              {i > 0 && <span className="font-mono text-[36px] font-bold text-muted/30">:</span>}
+              <div className="flex flex-col items-center">
+                <div className="bg-surface rounded-lg border border-border px-5 py-3.5 text-center min-w-[80px]">
+                  <div className="font-mono text-[48px] font-bold tabular-nums leading-none text-foreground">
+                    {i === 0 ? unit.val : pad2(unit.val)}
+                  </div>
                 </div>
-                <div className="text-muted text-[9px] uppercase tracking-wider">{unit.label}</div>
+                <div className="mt-1.5 text-[10px] font-medium uppercase tracking-[0.06em] text-muted">{unit.label}</div>
               </div>
             </div>
           ))}
@@ -397,18 +395,18 @@ export function CampaignHero() {
       />
 
       {/* ── MCap explanation footnote ── */}
-      <div className="text-center text-muted text-[10px]">
+      <div className="text-center text-[11px] italic text-muted">
         MCap = PLOT price × 1M max supply · CMC = CoinMarketCap
       </div>
 
       {/* ── How It Works modal ── */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/65 backdrop-blur-sm p-6"
           onClick={closeModal}
         >
           <div
-            className="bg-surface border-border rounded-[var(--card-radius)] border p-5 w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-5 relative"
+            className="bg-surface border-border rounded-[10px] border p-8 w-full max-w-[520px] max-h-[85vh] overflow-y-auto space-y-5 relative"
             onClick={(e) => e.stopPropagation()}
           >
             <button
