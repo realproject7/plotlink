@@ -39,23 +39,23 @@ export default async function Home({
   }
 
   return (
-    <div className="mx-auto max-w-[var(--grid-max)] px-4 py-8">
+    <div className="mx-auto max-w-[var(--grid-max)] px-3 py-5 sm:px-5 sm:py-8">
       {/* Hero */}
-      <header className="mb-8">
-        <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground sm:text-3xl">
+      <header className="mb-0 pt-2">
+        <h1 className="font-heading text-[22px] font-medium tracking-tight text-foreground sm:text-[28px]">
           Plot<span className="text-accent">Link</span>
         </h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">
+        <p className="mt-1 text-[13px] text-muted">
           On-chain stories, tokenized by their writers
         </p>
       </header>
 
+      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} />
+
       {/* Section label */}
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
+      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
         Explore Stories
       </h2>
-
-      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} />
 
       {/* Story grid — batched multicall for price/TVL */}
       <StoryGrid storylines={storylines} />

@@ -268,10 +268,10 @@ function hashToVariant(id: number): FallbackVariant {
 }
 
 const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
-  A: { background: "radial-gradient(ellipse at 30% 20%, oklch(28% 0.04 40), oklch(16% 0.02 50))" },
-  B: { background: "repeating-linear-gradient(135deg, oklch(18% 0.018 50) 0px, oklch(18% 0.018 50) 8px, oklch(22% 0.02 45) 8px, oklch(22% 0.02 45) 16px)" },
-  C: { background: "conic-gradient(from 180deg at 50% 50%, oklch(20% 0.03 220), oklch(18% 0.02 50), oklch(20% 0.03 220))" },
-  D: { background: "oklch(20% 0.025 50)" },
+  A: { background: "radial-gradient(circle at 30% 70%, oklch(30% 0.06 28 / 0.5) 0%, transparent 60%), linear-gradient(160deg, oklch(22% 0.03 50) 0%, oklch(16% 0.025 30) 100%)" },
+  B: { background: "repeating-linear-gradient(-45deg, oklch(20% 0.02 50) 0px, oklch(20% 0.02 50) 2px, oklch(23% 0.025 50) 2px, oklch(23% 0.025 50) 12px)" },
+  C: { background: "conic-gradient(from 45deg at 80% 20%, oklch(25% 0.04 280 / 0.3), transparent 120deg), linear-gradient(180deg, oklch(20% 0.03 260) 0%, oklch(15% 0.02 240) 100%)" },
+  D: { background: "oklch(18% 0.035 50)" },
 };
 
 function StoryHeader({
@@ -291,53 +291,50 @@ function StoryHeader({
   const variant = hashToVariant(storylineId);
 
   const statsGrid = priceInfo ? (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
-        <MarketCapBox
-          tokenAddress={storyline.token_address}
-          totalSupply={parseFloat(priceInfo.totalSupply)}
-          pricePerToken={parseFloat(priceInfo.pricePerToken)}
-        />
+    <div className="grid grid-cols-3 gap-1.5">
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Market Cap</div>
+        <div className="text-[15px] font-semibold tabular-nums text-accent">
+          <MarketCapBox
+            tokenAddress={storyline.token_address}
+            totalSupply={parseFloat(priceInfo.totalSupply)}
+            pricePerToken={parseFloat(priceInfo.pricePerToken)}
+          />
+        </div>
       </div>
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
-        <div className="text-foreground text-sm font-bold">{formatSupply(priceInfo.totalSupply)}</div>
-        <div className="text-muted text-[9px]">Supply Minted</div>
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Price</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground">
+          <TokenPriceBox pricePerToken={parseFloat(priceInfo.pricePerToken)} />
+        </div>
       </div>
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
-        {storyline.sunset ? (
-          <>
-            <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-            <div className="text-muted text-[9px]">Complete</div>
-          </>
-        ) : storyline.has_deadline && storyline.last_plot_time ? (
-          <>
-            <div className="text-foreground text-sm font-bold leading-tight">
-              <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-foreground text-sm font-bold" />
-            </div>
-            <div className="text-muted text-[9px]">Deadline</div>
-          </>
-        ) : !storyline.has_deadline ? (
-          <>
-            <div className="text-foreground text-sm font-bold">Open</div>
-            <div className="text-muted text-[9px]">Deadline</div>
-          </>
-        ) : (
-          <>
-            <div className="text-foreground text-sm font-bold">—</div>
-            <div className="text-muted text-[9px]">Deadline</div>
-          </>
-        )}
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Supply</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground">
+          {formatSupply(priceInfo.totalSupply)}
+        </div>
       </div>
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
-        <TokenPriceBox pricePerToken={parseFloat(priceInfo.pricePerToken)} />
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Plots</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground">{storyline.plot_count}</div>
       </div>
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
-        <div className="text-foreground text-sm font-bold">{storyline.plot_count}</div>
-        <div className="text-muted text-[9px]">{storyline.plot_count === 1 ? "Plot" : "Plots"}</div>
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Deadline</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground leading-tight">
+          {storyline.sunset ? (
+            "Complete"
+          ) : storyline.has_deadline && storyline.last_plot_time ? (
+            <DeadlineCountdown lastPlotTime={storyline.last_plot_time} hideLabel valueClassName="text-[15px] font-semibold tabular-nums text-foreground" />
+          ) : !storyline.has_deadline ? (
+            "Open"
+          ) : (
+            "—"
+          )}
+        </div>
       </div>
-      <div className="bg-surface rounded-[var(--card-radius)] border border-border px-2 py-1.5 text-center min-w-0">
-        <div className="text-foreground text-sm font-bold">{createdDate ?? "—"}</div>
-        <div className="text-muted text-[9px]">Created</div>
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Created</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground">{createdDate ?? "—"}</div>
       </div>
     </div>
   ) : null;
@@ -351,56 +348,70 @@ function StoryHeader({
       {/* Cover frame — stacks on mobile, side column on sm+ */}
       <div className="sm:row-span-2">
         <div
-          className="relative mx-auto w-48 overflow-hidden rounded-[var(--card-radius)] border border-border sm:mx-0 sm:w-full"
+          className="relative mx-auto w-[220px] overflow-hidden rounded-md sm:mx-0 sm:w-full"
           style={{ aspectRatio: "2/3" }}
         >
           {coverUrl ? (
             <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <div className="absolute inset-0" style={FALLBACK_STYLES[variant]}>
-              <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-                <div className="mb-3 h-px w-8 bg-accent/40" />
-                <h2 className="font-heading text-lg font-medium leading-tight tracking-tight text-white lg:text-xl">
-                  {storyline.title}
-                </h2>
-                <div className="mt-3 h-px w-8 bg-accent/40" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center" style={FALLBACK_STYLES[variant]}>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.08em] text-accent mb-3">
+                {storyline.genre || "Uncategorized"}
+              </div>
+              <h2 className="font-heading text-[22px] font-semibold leading-tight text-[oklch(85%_0.01_70)]">
+                {storyline.title}
+              </h2>
+              <div className="mt-3.5 h-0.5 w-8 rounded-sm bg-accent" />
+              <div className="mt-2.5 text-xs text-muted">
+                <WriterIdentity address={storyline.writer_address} writerType={storyline.writer_type} />
               </div>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-              {storyline.genre || "Uncategorized"}
-            </span>
-          </div>
         </div>
       </div>
 
       {/* Info column */}
-      <div className="min-w-0">
-        <h1 className="font-heading text-xl sm:text-2xl lg:text-3xl font-medium tracking-tight text-foreground">
+      <div className="min-w-0 pt-1">
+        {/* Badges row */}
+        <div className="mb-3 flex flex-wrap gap-1.5">
+          <span className="rounded-[3px] border border-border bg-surface px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-foreground/80">
+            {storyline.genre || "Uncategorized"}
+          </span>
+          {storyline.writer_type === 1 && (
+            <span className="rounded-[3px] border border-[oklch(55%_0.18_280_/_0.25)] bg-[oklch(55%_0.18_280_/_0.15)] px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-[oklch(72%_0.12_280)]">
+              AI Writer
+            </span>
+          )}
+          {storyline.language && storyline.language !== "English" && (
+            <span className="rounded-[3px] border border-border px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-muted">
+              {storyline.language}
+            </span>
+          )}
+        </div>
+
+        <h1 className="font-heading text-2xl sm:text-[32px] font-semibold leading-[1.15] tracking-tight text-foreground">
           {storyline.title}
         </h1>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted">
+
+        {/* Rating + views */}
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-[13px] text-muted">
           <RatingSummary storylineId={storyline.storyline_id} separator />
           <ViewCount storylineId={storyline.storyline_id} initialCount={storyline.view_count} />
         </div>
-        <div className="mt-3 space-y-1 text-xs">
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted w-12 shrink-0">Writer</span>
-            <Suspense fallback={<span className="text-foreground font-medium">{truncateAddress(storyline.writer_address)}</span>}>
-              <WriterIdentity address={storyline.writer_address} writerType={storyline.writer_type} />
-            </Suspense>
-            {storyline.writer_type === 1 && <AgentBadge />}
+
+        {/* Writer row */}
+        <div className="mt-4 flex items-center gap-2.5">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface text-[13px] font-semibold text-foreground/70">
+            {storyline.writer_address.slice(2, 4).toUpperCase()}
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="text-muted w-12 shrink-0">Genre</span>
-            <span className="text-foreground font-medium">
-              {storyline.genre || "Uncategorized"}
-              {storyline.language && storyline.language !== "English" && (
-                <span className="text-muted ml-1.5">· {storyline.language}</span>
-              )}
-            </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <Suspense fallback={<span>{truncateAddress(storyline.writer_address)}</span>}>
+                <WriterIdentity address={storyline.writer_address} writerType={storyline.writer_type} />
+              </Suspense>
+              {storyline.writer_type === 1 && <AgentBadge />}
+            </div>
+            <div className="font-mono text-[11px] text-muted">{truncateAddress(storyline.writer_address)}</div>
           </div>
         </div>
       </div>
@@ -451,10 +462,10 @@ function TableOfContents({
 }) {
   return (
     <section className="mt-10">
-      <h2 className="text-foreground mb-4 text-sm font-semibold uppercase tracking-wider">
+      <h2 className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted pb-2.5 border-b border-border mb-5">
         Chapters
       </h2>
-      <div className="divide-border divide-y">
+      <ul className="space-y-0">
         {chapters.map((ch) => {
           const chapterTitle = ch.title || `Chapter ${ch.plot_index}`;
           const preview = ch.content ? ch.content.slice(0, 100) : "";
@@ -466,29 +477,30 @@ function TableOfContents({
             : null;
 
           return (
-            <Link
-              key={ch.id}
-              href={`/story/${storylineId}/${ch.plot_index}`}
-              className="hover:bg-surface/50 flex items-start justify-between gap-4 py-3 transition-colors"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="text-foreground text-sm font-medium">
-                  {chapterTitle}
+            <li key={ch.id}>
+              <Link
+                href={`/story/${storylineId}/${ch.plot_index}`}
+                className="grid grid-cols-[48px_1fr_auto] items-baseline gap-3 border-b border-border/50 px-3 py-3.5 transition-colors hover:bg-surface/50 sm:grid-cols-[48px_1fr_auto]"
+              >
+                <span className="font-mono text-xs font-medium tabular-nums text-muted">
+                  #{ch.plot_index}
+                </span>
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-foreground">{chapterTitle}</div>
+                  {preview && (
+                    <p className="mt-0.5 truncate text-xs text-muted">
+                      {preview}{ch.content && ch.content.length > 100 ? "…" : ""}
+                    </p>
+                  )}
                 </div>
-                {preview && (
-                  <p className="text-muted mt-0.5 truncate text-xs">
-                    {preview}
-                    {ch.content && ch.content.length > 100 ? "…" : ""}
-                  </p>
-                )}
-              </div>
-              <div className="text-muted shrink-0 text-xs">
-                {dateStr}
-              </div>
-            </Link>
+                <span className="font-mono text-[11px] tabular-nums text-muted/60 whitespace-nowrap">
+                  {dateStr}
+                </span>
+              </Link>
+            </li>
           );
         })}
-      </div>
+      </ul>
     </section>
   );
 }

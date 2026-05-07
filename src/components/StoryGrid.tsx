@@ -12,7 +12,7 @@ export function StoryGrid({ storylines }: { storylines: Storyline[] }) {
 
   return (
     <BatchTokenDataProvider tokenAddresses={tokenAddresses}>
-      <div className="mt-4 grid grid-cols-2 gap-[var(--card-gap)] lg:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-[var(--card-gap)] sm:grid-cols-3 lg:grid-cols-4">
         {storylines.map((s) => (
           <StoryCard key={s.id} storyline={s} />
         ))}
