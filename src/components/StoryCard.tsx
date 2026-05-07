@@ -1,19 +1,18 @@
 import Link from "next/link";
 import type { Storyline } from "../../lib/supabase";
 import { WriterIdentityClient } from "./WriterIdentityClient";
-import { StoryCardTVL, StoryCardPrice } from "./StoryCardStats";
+import { StoryCardTVL } from "./StoryCardStats";
 import { getStoryStatus } from "../../lib/story-status";
 
-type FallbackVariant = "A" | "B" | "C" | "D";
+type FallbackVariant = "A" | "C" | "D";
 
 function hashToVariant(id: number): FallbackVariant {
-  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
-  return variants[((id * 2654435761) >>> 0) % 4];
+  const variants: FallbackVariant[] = ["A", "C", "D"];
+  return variants[((id * 2654435761) >>> 0) % 3];
 }
 
 const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
   A: { background: "radial-gradient(circle at 30% 70%, oklch(30% 0.06 28 / 0.5) 0%, transparent 60%), linear-gradient(160deg, oklch(22% 0.03 50) 0%, oklch(16% 0.025 30) 100%)" },
-  B: { background: "repeating-linear-gradient(-45deg, oklch(20% 0.02 50) 0px, oklch(20% 0.02 50) 2px, oklch(23% 0.025 50) 2px, oklch(23% 0.025 50) 12px)" },
   C: { background: "conic-gradient(from 45deg at 80% 20%, oklch(25% 0.04 280 / 0.3), transparent 120deg), linear-gradient(180deg, oklch(20% 0.03 260) 0%, oklch(15% 0.02 240) 100%)" },
   D: { background: "oklch(18% 0.035 50)" },
 };
@@ -102,10 +101,7 @@ export function StoryCard({
           <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
         </div>
         {storyline.token_address && (
-          <div className="mt-1.5 flex items-center gap-2">
-            <span className="rounded-[3px] bg-[oklch(52%_0.14_28_/_0.15)] px-1.5 py-[2px] font-mono text-[10px] font-medium tabular-nums text-accent">
-              <StoryCardPrice tokenAddress={storyline.token_address} />
-            </span>
+          <div className="mt-1.5">
             <span className="font-mono text-[10px] tabular-nums text-[oklch(55%_0.01_50)]">
               <StoryCardTVL tokenAddress={storyline.token_address} />
             </span>

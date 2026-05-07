@@ -76,9 +76,9 @@ describe("StoryCard", () => {
     expect(link).toHaveClass("group");
   });
 
-  it("shows token price when token_address is present", () => {
+  it("shows TVL when token_address is present", () => {
     render(<StoryCard storyline={makeStoryline()} />);
-    expect(screen.getByTestId("price")).toBeInTheDocument();
+    expect(screen.getByTestId("tvl")).toBeInTheDocument();
   });
 
   it("displays genre prop when provided", () => {
