@@ -40,13 +40,13 @@ export default async function Home({
 
   return (
     <div className="mx-auto max-w-[var(--grid-max)] px-3 py-5 sm:px-5 sm:py-8">
-      {/* Hero */}
+      {/* Hero tagline */}
       <header className="mb-0 pt-2">
         <h1 className="font-heading text-[22px] font-medium tracking-tight text-foreground sm:text-[28px]">
-          Plot<span className="text-accent">Link</span>
+          Your story is a token.
         </h1>
         <p className="mt-1 text-[13px] text-muted">
-          On-chain stories, tokenized by their writers
+          Write, tokenize, and trade storylines on a bonding curve — from day one.
         </p>
       </header>
 
