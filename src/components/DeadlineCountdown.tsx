@@ -9,10 +9,12 @@ export function DeadlineCountdown({
   lastPlotTime,
   hideLabel,
   valueClassName,
+  compact,
 }: {
   lastPlotTime: string;
   hideLabel?: boolean;
   valueClassName?: string;
+  compact?: boolean;
 }) {
   const [remaining, setRemaining] = useState<number | null>(null);
 
@@ -52,12 +54,22 @@ export function DeadlineCountdown({
   const seconds = remaining % 60;
 
   let formatted: string;
-  if (days > 0) {
-    formatted = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-  } else if (hours > 0) {
-    formatted = `${hours}h ${minutes}m ${seconds}s`;
+  if (compact) {
+    if (days > 0) {
+      formatted = `${days}d ${hours}h`;
+    } else if (hours > 0) {
+      formatted = `${hours}h ${minutes}m`;
+    } else {
+      formatted = `${minutes}m ${seconds}s`;
+    }
   } else {
-    formatted = `${minutes}m ${seconds}s`;
+    if (days > 0) {
+      formatted = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    } else if (hours > 0) {
+      formatted = `${hours}h ${minutes}m ${seconds}s`;
+    } else {
+      formatted = `${minutes}m ${seconds}s`;
+    }
   }
 
   return (
