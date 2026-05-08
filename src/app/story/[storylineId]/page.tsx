@@ -24,6 +24,7 @@ import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
 import { MarketCapBox } from "../../../components/MarketCapBox";
 import { TokenPriceBox } from "../../../components/TokenPriceBox";
+import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
 function deduplicateByPlotIndex(plots: Plot[]) {
@@ -260,19 +261,6 @@ export default async function StoryPage({ params }: { params: Params }) {
   );
 }
 
-type FallbackVariant = "A" | "C" | "D";
-
-function hashToVariant(id: number): FallbackVariant {
-  const variants: FallbackVariant[] = ["A", "C", "D"];
-  return variants[((id * 2654435761) >>> 0) % 3];
-}
-
-const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
-  A: { background: "radial-gradient(circle at 30% 70%, oklch(88% 0.03 28 / 0.4) 0%, transparent 60%), linear-gradient(160deg, oklch(93% 0.015 50) 0%, oklch(90% 0.012 30) 100%)" },
-  C: { background: "radial-gradient(circle at 70% 30%, oklch(90% 0.02 280 / 0.3) 0%, transparent 50%), linear-gradient(180deg, oklch(94% 0.012 260) 0%, oklch(91% 0.01 240) 100%)" },
-  D: { background: "linear-gradient(175deg, oklch(94% 0.015 50) 0%, oklch(90% 0.02 40) 100%)" },
-};
-
 function StoryHeader({
   storyline,
   priceInfo,
@@ -360,13 +348,15 @@ function StoryHeader({
           {coverUrl ? (
             <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center" style={FALLBACK_STYLES[variant]}>
-              <h2 className="font-heading text-[22px] font-semibold leading-tight text-[var(--fg)]">
-                {storyline.title}
-              </h2>
-              <div className="mt-3.5 h-0.5 w-8 rounded-sm bg-accent" />
-            </div>
+            <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
           )}
+          {/* Gradient overlay + title at bottom */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,oklch(0%_0_0_/_0.85)_92%)]" />
+          <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
+            <h2 className="font-heading text-[18px] font-semibold leading-tight text-white sm:text-[22px]">
+              {storyline.title}
+            </h2>
+          </div>
         </div>
       </div>
 
