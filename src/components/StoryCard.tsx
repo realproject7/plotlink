@@ -86,7 +86,7 @@ export function StoryCard({
         </div>
         {storyline.token_address && (
           <div className="mt-1.5">
-            <span className="font-mono text-[10px] tabular-nums text-[var(--muted)]">
+            <span className="font-mono text-[10px] tabular-nums text-[var(--muted)] [&_.font-semibold]:text-[var(--fg)]">
               <StoryCardTVL tokenAddress={storyline.token_address} />
             </span>
           </div>
