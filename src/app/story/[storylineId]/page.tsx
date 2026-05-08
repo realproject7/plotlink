@@ -26,6 +26,7 @@ import { MarketCapBox } from "../../../components/MarketCapBox";
 import { TokenPriceBox } from "../../../components/TokenPriceBox";
 import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
 import { getCoverUrl } from "../../../../lib/cover";
+import { StoryEditPanel } from "../../../components/StoryEditPanel";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
 function deduplicateByPlotIndex(plots: Plot[]) {
@@ -172,6 +173,15 @@ export default async function StoryPage({ params }: { params: Params }) {
       </nav>
 
       <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} coverUrl={getCoverUrl(sl.cover_cid) ?? undefined} />
+
+      <StoryEditPanel
+        storylineId={id}
+        writerAddress={sl.writer_address}
+        currentGenre={sl.genre}
+        currentLanguage={sl.language}
+        currentCoverCid={sl.cover_cid}
+        currentIsNsfw={sl.is_nsfw}
+      />
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px] lg:items-start">
         {/* Story content — genesis + table of contents */}
