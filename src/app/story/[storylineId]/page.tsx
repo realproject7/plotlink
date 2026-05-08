@@ -351,9 +351,9 @@ function StoryHeader({
             <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
           )}
           {/* Gradient overlay + title at bottom */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(97%_0.008_70_/_0.6)_85%,oklch(97%_0.008_70_/_0.95)_100%)]" />
           <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
-            <h2 className="font-heading text-[18px] font-semibold leading-tight text-white sm:text-[22px]">
+            <h2 className="font-heading text-[18px] font-semibold leading-tight text-[var(--fg)] sm:text-[22px]">
               {storyline.title}
             </h2>
           </div>

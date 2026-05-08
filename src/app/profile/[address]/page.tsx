@@ -1044,7 +1044,7 @@ function StoryRow({
       >
         <div className="relative" style={{ aspectRatio: "2/3" }}>
           <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]} />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(97%_0.008_70_/_0.6)_85%,oklch(97%_0.008_70_/_0.95)_100%)]" />
 
           {/* Top badges */}
           <div className="absolute top-2 left-2 z-[1] flex flex-wrap items-center gap-1">
@@ -1062,10 +1062,10 @@ function StoryRow({
 
           {/* Bottom info */}
           <div className="absolute bottom-0 left-0 right-0 z-[1] px-2.5 pb-2.5">
-            <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white line-clamp-2 sm:text-[15px]">
+            <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2 sm:text-[15px]">
               {storyline.title}
             </h3>
-            <div className="mt-1 flex items-center gap-2 text-[10px] text-white/60">
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--muted)]">
               <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
               <span>·</span>
               <span>{formatViewCount(storyline.view_count)} views</span>
@@ -1637,14 +1637,14 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 style={{ aspectRatio: "2/3" }}
               >
                 <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]} />
-                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(97%_0.008_70_/_0.6)_85%,oklch(97%_0.008_70_/_0.95)_100%)]" />
                 <div className="absolute top-1.5 left-1.5 z-[1]">
                   <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
                     {h.storyline.genre || "Uncategorized"}
                   </span>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 z-[1] px-2 pb-2">
-                  <span className="font-heading text-xs font-semibold leading-tight text-white line-clamp-2 sm:text-sm">
+                  <span className="font-heading text-xs font-semibold leading-tight text-[var(--fg)] line-clamp-2 sm:text-sm">
                     {h.storyline.title}
                   </span>
                 </div>
