@@ -42,10 +42,6 @@ PR CI runs `lint-and-typecheck` and `e2e` only. Visual regression snapshots are 
 
 Terminal aesthetic: dark background (`#0a0a0a`), monospace font (Geist Mono), green accent (`#00ff88`), outline-based UI. CSS custom properties defined in `src/app/globals.css`.
 
-## Proposal
-
-The full project proposal will be added at `docs/PROPOSAL-plotlink.md` in a future ticket.
-
 ## Versioning
 
 Version format: X.Y.Z (e.g., 1.0.0, 1.11.23). Each digit can go beyond 9.
