@@ -38,8 +38,12 @@ export async function POST(req: Request) {
   }
   const rawGenre = body.genre as string | undefined;
   const rawLanguage = body.language as string | undefined;
+  const rawCoverCid = body.coverCid as string | undefined;
+  const rawIsNsfw = body.isNsfw as string | undefined;
   const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : null;
   const language = rawLanguage && (LANGUAGES as readonly string[]).includes(rawLanguage) ? rawLanguage : "English";
+  const coverCid = rawCoverCid && /^[a-zA-Z0-9]{46,64}$/.test(rawCoverCid) ? rawCoverCid : null;
+  const isNsfw = rawIsNsfw === "true";
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");
@@ -172,6 +176,8 @@ export async function POST(req: Request) {
     contract_address: STORY_FACTORY.toLowerCase(),
     genre,
     language,
+    cover_cid: coverCid,
+    is_nsfw: isNsfw,
   };
 
   const { error: dbError } = await supabase.from("storylines").upsert(
