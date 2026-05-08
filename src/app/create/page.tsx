@@ -72,6 +72,50 @@ function isStorylineExpired(s: Storyline): boolean {
   return Date.now() > new Date(s.last_plot_time).getTime() + DEADLINE_MS;
 }
 
+function CardPreview({ title, genre, coverCid }: { title: string; genre: string; coverCid: string | null }) {
+  const coverUrl = coverCid ? getCoverUrl(coverCid) : null;
+  return (
+    <div className="w-[180px] sm:w-[220px]">
+      <div className="relative overflow-hidden rounded-[var(--card-radius)] border border-border shadow-sm" style={{ aspectRatio: "2/3" }}>
+        {coverUrl ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
+            <div className="absolute right-0 bottom-0 left-0 px-2.5 pb-2.5">
+              <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2">
+                {title || "Untitled"}
+              </h3>
+              {genre && (
+                <span className="mt-1 inline-block rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90">
+                  {genre}
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0" style={FALLBACK_STYLES["A"]} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
+              <h3 className="font-heading text-sm font-semibold leading-tight text-[var(--fg)] line-clamp-3" style={{ maxWidth: "90%" }}>
+                {title || "Untitled"}
+              </h3>
+              <div className="mt-2 h-0.5 w-6 rounded-sm bg-[var(--accent)]" />
+            </div>
+            {genre && (
+              <div className="absolute top-2 left-2">
+                <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
+                  {genre}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CreatePageWrapper() {
   return (
     <Suspense>
@@ -101,6 +145,7 @@ function CreatePage() {
   const [coverUploading, setCoverUploading] = useState(false);
   const [coverError, setCoverError] = useState<string | null>(null);
   const [isNsfw, setIsNsfw] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const hasDeadline = true;
 
@@ -163,7 +208,7 @@ function CreatePage() {
   const newGenreValid = genre.length > 0;
   const newCanSubmit =
     newState === "idle" || newState === "error"
-      ? newTitleValid && newGenreValid && newValid
+      ? newTitleValid && newGenreValid && newValid && !coverUploading
       : false;
   const newBusy = newState !== "idle" && newState !== "error";
 
@@ -363,6 +408,7 @@ function CreatePage() {
 
       {/* ---- New Storyline Tab ---- */}
       {tab === "new" && (
+        <>
         <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_220px]">
         <div>
           {newPendingIntent && (
@@ -603,51 +649,32 @@ function CreatePage() {
           </form>
         </div>
 
-          {/* Live Card Preview */}
+          {/* Live Card Preview — desktop sidebar */}
           <div className="hidden lg:block">
             <div className="sticky top-6">
               <p className="text-muted mb-2 text-[11px] uppercase tracking-wider">Preview</p>
-              <div className="w-[220px]">
-                <div className="relative overflow-hidden rounded-[var(--card-radius)] border border-border shadow-sm" style={{ aspectRatio: "2/3" }}>
-                  {coverCid ? (
-                    <>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={getCoverUrl(coverCid)!} alt="" className="absolute inset-0 h-full w-full object-cover" />
-                      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
-                      <div className="absolute right-0 bottom-0 left-0 px-2.5 pb-2.5">
-                        <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2">
-                          {newTitle || "Untitled"}
-                        </h3>
-                        {genre && (
-                          <span className="mt-1 inline-block rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90">
-                            {genre}
-                          </span>
-                        )}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="absolute inset-0" style={FALLBACK_STYLES["A"]} />
-                      <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
-                        <h3 className="font-heading text-sm font-semibold leading-tight text-[var(--fg)] line-clamp-3" style={{ maxWidth: "90%" }}>
-                          {newTitle || "Untitled"}
-                        </h3>
-                        <div className="mt-2 h-0.5 w-6 rounded-sm bg-[var(--accent)]" />
-                      </div>
-                      {genre && (
-                        <div className="absolute top-2 left-2">
-                          <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
-                            {genre}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
+              <CardPreview title={newTitle} genre={genre} coverCid={coverCid} />
             </div>
           </div>
         </div>
+
+        {/* Live Card Preview — mobile collapsible */}
+        <div className="mt-4 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobilePreviewOpen((v) => !v)}
+            className="text-muted hover:text-foreground flex w-full items-center justify-between border-b border-border pb-2 text-[11px] uppercase tracking-wider transition-colors"
+          >
+            <span>Preview</span>
+            <span>{mobilePreviewOpen ? "▲" : "▼"}</span>
+          </button>
+          {mobilePreviewOpen && (
+            <div className="flex justify-center pt-3">
+              <CardPreview title={newTitle} genre={genre} coverCid={coverCid} />
+            </div>
+          )}
+        </div>
+        </>
       )}
 
       {/* ---- Add Plot Tab ---- */}
