@@ -45,7 +45,11 @@ export async function POST(req: Request) {
     return error("Message storylineId mismatch");
   }
 
-  if (Date.now() - msgTimestamp > MAX_TIMESTAMP_AGE_MS) {
+  const now = Date.now();
+  if (!Number.isFinite(msgTimestamp) || msgTimestamp > now + 30_000) {
+    return error("Invalid or future-dated timestamp", 401);
+  }
+  if (now - msgTimestamp > MAX_TIMESTAMP_AGE_MS) {
     return error("Signature expired (older than 5 minutes)", 401);
   }
 
@@ -102,7 +106,7 @@ export async function POST(req: Request) {
 
   if ("language" in body) {
     const l = body.language as string;
-    if (l && !(LANGUAGES as readonly string[]).includes(l)) {
+    if (!l || !(LANGUAGES as readonly string[]).includes(l)) {
       return error("Invalid language");
     }
     updates.language = l;
