@@ -262,7 +262,11 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
             </div>
 
             {/* NSFW toggle */}
-            <label className="flex cursor-pointer items-center gap-1.5 rounded-full border border-[var(--border)] px-2.5 py-1 text-[12px] font-medium text-[var(--muted)] transition-colors hover:text-[var(--fg)]">
+            <label className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
+              nsfw
+                ? "border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]"
+                : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--muted)] hover:text-[var(--fg)]"
+            }`}>
               <input
                 type="checkbox"
                 checked={nsfw}
