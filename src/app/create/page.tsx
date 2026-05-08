@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useMemo, useEffect } from "react";
+import { Suspense, useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { useSearchParams } from "next/navigation";
 import { useDraft } from "../../hooks/useDraft";
@@ -26,6 +26,8 @@ import { DropdownSelect } from "../../components/DropdownSelect";
 import { Select } from "../../components/Select";
 import { GENRES, LANGUAGES } from "../../../lib/genres";
 import { WritePreviewToggle, ContentPreview } from "../../components/StoryContent";
+import { FALLBACK_STYLES } from "../../components/StoryCard";
+import { getCoverUrl } from "../../../lib/cover";
 
 const genreOptions = [
   { value: "", label: "Select genre..." },
@@ -70,6 +72,50 @@ function isStorylineExpired(s: Storyline): boolean {
   return Date.now() > new Date(s.last_plot_time).getTime() + DEADLINE_MS;
 }
 
+function CardPreview({ title, genre, coverCid }: { title: string; genre: string; coverCid: string | null }) {
+  const coverUrl = coverCid ? getCoverUrl(coverCid) : null;
+  return (
+    <div className="w-[180px] sm:w-[220px]">
+      <div className="relative overflow-hidden rounded-[var(--card-radius)] border border-border shadow-sm" style={{ aspectRatio: "2/3" }}>
+        {coverUrl ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={coverUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
+            <div className="absolute right-0 bottom-0 left-0 px-2.5 pb-2.5">
+              <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2">
+                {title || "Untitled"}
+              </h3>
+              {genre && (
+                <span className="mt-1 inline-block rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90">
+                  {genre}
+                </span>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0" style={FALLBACK_STYLES["A"]} />
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-3 text-center">
+              <h3 className="font-heading text-sm font-semibold leading-tight text-[var(--fg)] line-clamp-3" style={{ maxWidth: "90%" }}>
+                {title || "Untitled"}
+              </h3>
+              <div className="mt-2 h-0.5 w-6 rounded-sm bg-[var(--accent)]" />
+            </div>
+            {genre && (
+              <div className="absolute top-2 left-2">
+                <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
+                  {genre}
+                </span>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CreatePageWrapper() {
   return (
     <Suspense>
@@ -95,7 +141,45 @@ function CreatePage() {
   const [language, setLanguage] = useState("English");
   const [newContent, setNewContent] = useState("");
   const [newPreviewTab, setNewPreviewTab] = useState<"write" | "preview">("write");
+  const [coverCid, setCoverCid] = useState<string | null>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [coverError, setCoverError] = useState<string | null>(null);
+  const [isNsfw, setIsNsfw] = useState(false);
+  const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
   const hasDeadline = true;
+
+  const handleCoverSelect = useCallback(async (file: File) => {
+    setCoverError(null);
+    const allowed = ["image/webp", "image/jpeg"];
+    if (!allowed.includes(file.type)) {
+      setCoverError("Only WebP and JPEG files are accepted.");
+      return;
+    }
+    if (file.size > 500 * 1024) {
+      setCoverError("File too large. Maximum size is 500KB.");
+      return;
+    }
+    setCoverUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload-cover", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setCoverCid(data.cid);
+    } catch (err) {
+      setCoverError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setCoverUploading(false);
+    }
+  }, []);
+
+  const handleCoverRemove = useCallback(() => {
+    setCoverCid(null);
+    setCoverError(null);
+    if (coverInputRef.current) coverInputRef.current.value = "";
+  }, []);
 
   const { data: creationFee = BigInt(0) } = useQuery({
     queryKey: ["mcv2-creation-fee"],
@@ -124,14 +208,14 @@ function CreatePage() {
   const newGenreValid = genre.length > 0;
   const newCanSubmit =
     newState === "idle" || newState === "error"
-      ? newTitleValid && newGenreValid && newValid
+      ? newTitleValid && newGenreValid && newValid && !coverUploading
       : false;
   const newBusy = newState !== "idle" && newState !== "error";
 
   // ---- New Storyline draft auto-save ----
   const newDraftValues = useMemo(
-    () => ({ title: newTitle, content: newContent, genre, language }),
-    [newTitle, newContent, genre, language],
+    () => ({ title: newTitle, content: newContent, genre, language, coverCid: coverCid ?? "" }),
+    [newTitle, newContent, genre, language, coverCid],
   );
   const newDraftSetters = useMemo(
     () => ({
@@ -139,6 +223,7 @@ function CreatePage() {
       content: setNewContent,
       genre: setGenre,
       language: setLanguage,
+      coverCid: (v: string) => setCoverCid(v || null),
     }),
     [],
   );
@@ -294,7 +379,7 @@ function CreatePage() {
   const noStoryline = chainStorylineId === null;
 
   return (
-    <div className="mx-auto max-w-2xl px-6 py-12">
+    <div className="mx-auto max-w-4xl px-6 py-12">
       <h1 className="font-heading text-2xl font-medium tracking-tight text-foreground">Create</h1>
 
       {/* Tab bar — pill style */}
@@ -324,8 +409,10 @@ function CreatePage() {
       {/* ---- New Storyline Tab ---- */}
       {tab === "new" && (
         <>
+        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_220px]">
+        <div>
           {newPendingIntent && (
-            <div className="mt-6">
+            <div className="mb-6">
               <RecoveryBanner
                 intent={newPendingIntent}
                 onRetry={newAttemptRetry}
@@ -350,13 +437,13 @@ function CreatePage() {
                     gas: BigInt(16_000_000),
                     value: creationFee,
                   }),
-                  metadata: { genre, language },
+                  metadata: { genre, language, ...(coverCid ? { coverCid } : {}), isNsfw: String(isNsfw) },
                   onIntentSave: newSaveIntent,
                   onTxConfirmed: newPersistTxHash,
                   onIndexed: newClearIntent,
                 });
             }}
-            className="mt-6 space-y-6"
+            className="space-y-6"
           >
             {newDraftRestored && (
               <div className="border-accent/30 bg-accent/5 text-accent flex items-center justify-between rounded border px-3 py-2 text-xs">
@@ -394,6 +481,72 @@ function CreatePage() {
               </div>
             </div>
 
+            {/* Cover Image Upload */}
+            <div>
+              <label className="text-foreground mb-1 block text-sm">Cover Image</label>
+              <p className="text-muted mb-2 text-[11px]">
+                Optional. WebP or JPEG, max 500KB.
+              </p>
+              {coverCid ? (
+                <div className="flex items-start gap-3">
+                  <div className="relative h-[120px] w-[80px] shrink-0 overflow-hidden rounded border border-border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={getCoverUrl(coverCid)!}
+                      alt="Cover preview"
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-muted break-all text-[10px] font-mono">{coverCid}</span>
+                    <button
+                      type="button"
+                      onClick={handleCoverRemove}
+                      disabled={newBusy}
+                      className="text-error hover:text-error/80 self-start text-[11px] transition-colors disabled:opacity-50"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onClick={() => !newBusy && !coverUploading && coverInputRef.current?.click()}
+                  onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const file = e.dataTransfer.files[0];
+                    if (file && !newBusy && !coverUploading) handleCoverSelect(file);
+                  }}
+                  className={`flex cursor-pointer flex-col items-center justify-center gap-1.5 rounded border border-dashed border-border px-4 py-6 transition-colors hover:border-accent ${
+                    newBusy || coverUploading ? "pointer-events-none opacity-50" : ""
+                  }`}
+                >
+                  {coverUploading ? (
+                    <span className="text-muted text-xs">Uploading...</span>
+                  ) : (
+                    <>
+                      <span className="text-muted text-xs">Drop image here or click to browse</span>
+                    </>
+                  )}
+                </div>
+              )}
+              <input
+                ref={coverInputRef}
+                type="file"
+                accept="image/webp,image/jpeg"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleCoverSelect(file);
+                }}
+              />
+              {coverError && (
+                <p className="text-error mt-1 text-[11px]">{coverError}</p>
+              )}
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-foreground mb-2 block text-sm">Genre</label>
@@ -414,6 +567,25 @@ function CreatePage() {
                   disabled={newBusy}
                 />
               </div>
+            </div>
+
+            {/* NSFW Toggle */}
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isNsfw}
+                  onChange={(e) => setIsNsfw(e.target.checked)}
+                  disabled={newBusy}
+                  className="h-4 w-4 rounded border-border accent-accent"
+                />
+                <span className="text-foreground text-sm">This story contains adult content (18+)</span>
+              </label>
+              {isNsfw && (
+                <p className="text-muted mt-1.5 ml-6 text-[11px]">
+                  Adult content will be hidden from the default browse view. Readers must opt-in to see it.
+                </p>
+              )}
             </div>
 
             <div>
@@ -475,6 +647,33 @@ function CreatePage() {
               {newBusy ? STATE_LABELS[newState] : "Publish Storyline"}
             </button>
           </form>
+        </div>
+
+          {/* Live Card Preview — desktop sidebar */}
+          <div className="hidden lg:block">
+            <div className="sticky top-6">
+              <p className="text-muted mb-2 text-[11px] uppercase tracking-wider">Preview</p>
+              <CardPreview title={newTitle} genre={genre} coverCid={coverCid} />
+            </div>
+          </div>
+        </div>
+
+        {/* Live Card Preview — mobile collapsible */}
+        <div className="mt-4 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setMobilePreviewOpen((v) => !v)}
+            className="text-muted hover:text-foreground flex w-full items-center justify-between border-b border-border pb-2 text-[11px] uppercase tracking-wider transition-colors"
+          >
+            <span>Preview</span>
+            <span>{mobilePreviewOpen ? "▲" : "▼"}</span>
+          </button>
+          {mobilePreviewOpen && (
+            <div className="flex justify-center pt-3">
+              <CardPreview title={newTitle} genre={genre} coverCid={coverCid} />
+            </div>
+          )}
+        </div>
         </>
       )}
 
