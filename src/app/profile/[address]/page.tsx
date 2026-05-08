@@ -955,6 +955,7 @@ function StoriesTab({
 }
 
 import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
+import { getCoverUrl } from "../../../../lib/cover";
 
 function StoryRow({
   storyline,
@@ -1043,8 +1044,18 @@ function StoryRow({
         className="group relative block overflow-hidden rounded-[var(--card-radius)] border border-border transition-transform hover:scale-[1.03]"
       >
         <div className="relative" style={{ aspectRatio: "2/3" }}>
-          <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]} />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(97%_0.008_70_/_0.6)_85%,oklch(97%_0.008_70_/_0.95)_100%)]" />
+          {(() => {
+            const coverUrl = getCoverUrl(storyline.cover_cid);
+            if (coverUrl) {
+              return (
+                <>
+                  <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+                </>
+              );
+            }
+            return <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]} />;
+          })()}
 
           {/* Top badges */}
           <div className="absolute top-2 left-2 z-[1] flex flex-wrap items-center gap-1">
@@ -1060,12 +1071,24 @@ function StoryRow({
             )}
           </div>
 
+          {/* Centered title for fallback, or bottom title for cover */}
+          {!storyline.cover_cid && (
+            <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center px-4 text-center">
+              <h3 className="font-heading text-sm font-semibold leading-tight text-[var(--fg)] line-clamp-3 sm:text-base" style={{ maxWidth: "90%" }}>
+                {storyline.title}
+              </h3>
+              <div className="mt-2 h-0.5 w-8 rounded-sm bg-[var(--accent)]" />
+            </div>
+          )}
+
           {/* Bottom info */}
           <div className="absolute bottom-0 left-0 right-0 z-[1] px-2.5 pb-2.5">
-            <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2 sm:text-[15px]">
-              {storyline.title}
-            </h3>
-            <div className="mt-1 flex items-center gap-2 text-[10px] text-[var(--muted)]">
+            {storyline.cover_cid && (
+              <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white line-clamp-2 sm:text-[15px]">
+                {storyline.title}
+              </h3>
+            )}
+            <div className={`${storyline.cover_cid ? "mt-1" : ""} flex items-center gap-2 text-[10px] ${storyline.cover_cid ? "text-white/60" : "text-[var(--muted)]"}`}>
               <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
               <span>·</span>
               <span>{formatViewCount(storyline.view_count)} views</span>
@@ -1636,18 +1659,36 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 className="relative overflow-hidden rounded-[var(--card-radius)] border border-border"
                 style={{ aspectRatio: "2/3" }}
               >
-                <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]} />
-                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(97%_0.008_70_/_0.6)_85%,oklch(97%_0.008_70_/_0.95)_100%)]" />
+                {(() => {
+                  const hCoverUrl = getCoverUrl(h.storyline.cover_cid);
+                  if (hCoverUrl) {
+                    return (
+                      <>
+                        <img src={hCoverUrl} alt={h.storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+                      </>
+                    );
+                  }
+                  return <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]} />;
+                })()}
                 <div className="absolute top-1.5 left-1.5 z-[1]">
                   <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
                     {h.storyline.genre || "Uncategorized"}
                   </span>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 z-[1] px-2 pb-2">
-                  <span className="font-heading text-xs font-semibold leading-tight text-[var(--fg)] line-clamp-2 sm:text-sm">
-                    {h.storyline.title}
-                  </span>
-                </div>
+                {!h.storyline.cover_cid && (
+                  <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center px-3 text-center">
+                    <span className="font-heading text-xs font-semibold leading-tight text-[var(--fg)] line-clamp-2 sm:text-sm">{h.storyline.title}</span>
+                    <div className="mt-1.5 h-0.5 w-6 rounded-sm bg-[var(--accent)]" />
+                  </div>
+                )}
+                {h.storyline.cover_cid && (
+                  <div className="absolute bottom-0 left-0 right-0 z-[1] px-2 pb-2">
+                    <span className="font-heading text-xs font-semibold leading-tight text-white line-clamp-2 sm:text-sm">
+                      {h.storyline.title}
+                    </span>
+                  </div>
+                )}
               </div>
             </Link>
             <div className="min-w-0 w-full sm:flex-1">

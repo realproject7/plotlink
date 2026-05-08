@@ -25,6 +25,7 @@ import { MobileActionBar } from "../../../components/MobileActionBar";
 import { MarketCapBox } from "../../../components/MarketCapBox";
 import { TokenPriceBox } from "../../../components/TokenPriceBox";
 import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
+import { getCoverUrl } from "../../../../lib/cover";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
 function deduplicateByPlotIndex(plots: Plot[]) {
@@ -170,7 +171,7 @@ export default async function StoryPage({ params }: { params: Params }) {
         <span className="text-foreground">{sl.title}</span>
       </nav>
 
-      <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} />
+      <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} coverUrl={getCoverUrl(sl.cover_cid) ?? undefined} />
 
       <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px] lg:items-start">
         {/* Story content — genesis + table of contents */}
@@ -346,17 +347,26 @@ function StoryHeader({
           style={{ aspectRatio: "2/3" }}
         >
           {coverUrl ? (
-            <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            <>
+              <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+              <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+              <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
+                <h2 className="font-heading text-[18px] font-semibold leading-tight text-white sm:text-[22px]">
+                  {storyline.title}
+                </h2>
+              </div>
+            </>
           ) : (
-            <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
+            <>
+              <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-5 text-center">
+                <h2 className="font-heading text-[22px] font-semibold leading-tight text-[var(--fg)]">
+                  {storyline.title}
+                </h2>
+                <div className="mt-3.5 h-0.5 w-8 rounded-sm bg-[var(--accent)]" />
+              </div>
+            </>
           )}
-          {/* Gradient overlay + title at bottom */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(97%_0.008_70_/_0.6)_85%,oklch(97%_0.008_70_/_0.95)_100%)]" />
-          <div className="absolute bottom-0 left-0 right-0 px-3 pb-3">
-            <h2 className="font-heading text-[18px] font-semibold leading-tight text-[var(--fg)] sm:text-[22px]">
-              {storyline.title}
-            </h2>
-          </div>
         </div>
       </div>
 

@@ -7,6 +7,7 @@ import { RESERVE_LABEL, STORY_FACTORY } from "../../../../../lib/contracts/const
 import { formatPrice } from "../../../../../lib/format";
 import { truncateAddress } from "../../../../../lib/utils";
 import { getPlotUsdPrice, formatUsdValue } from "../../../../../lib/usd-price";
+import { getCoverUrl } from "../../../../../lib/cover";
 
 export const runtime = "nodejs";
 
@@ -93,9 +94,72 @@ export async function GET(
     D: "#302820",
   };
 
+  const coverUrl = getCoverUrl(sl.cover_cid);
+
   const fonts = fontData
     ? [{ name: "Newsreader", data: fontData, weight: 500 as const }]
     : [];
+
+  const cardContent = coverUrl ? (
+    <div
+      style={{
+        width: "380px",
+        height: "520px",
+        display: "flex",
+        flexDirection: "column",
+        borderRadius: "12px",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={coverUrl} alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.85))", padding: "60px 28px 28px", display: "flex", flexDirection: "column", gap: "6px" }}>
+        {sl.genre && (
+          <div style={{ display: "flex", fontSize: "11px", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{sl.genre}</div>
+        )}
+        <div style={{ fontSize: titleDisplay.length > 30 ? "28px" : "34px", fontWeight: 500, color: "#fff", lineHeight: 1.25, display: "flex" }}>{titleDisplay}</div>
+        <div style={{ display: "flex", fontSize: "14px", color: "rgba(255,255,255,0.6)" }}>{plotLabel}</div>
+        {tvlDisplay && (
+          <div style={{ display: "flex", fontWeight: 500, color: "#e8a87c", fontSize: "14px" }}>{tvlDisplay}</div>
+        )}
+      </div>
+    </div>
+  ) : (
+    <div
+      style={{
+        width: "380px",
+        height: "520px",
+        display: "flex",
+        flexDirection: "column",
+        background: FALLBACK_BG[variant],
+        borderRadius: "12px",
+        border: "1px solid #3a332c",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", height: "3px", background: "linear-gradient(90deg, #b05c3a, #b05c3a80, transparent)" }} />
+      <div style={{ display: "flex", padding: "28px 28px 0" }}>
+        {sl.genre ? (
+          <div style={{ display: "flex", fontSize: "12px", color: "#b05c3a", backgroundColor: "rgba(176, 92, 58, 0.12)", borderRadius: "4px", padding: "4px 12px", textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500 }}>{sl.genre}</div>
+        ) : (
+          <div style={{ display: "flex" }} />
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", flex: 1, padding: "0 32px", textAlign: "center" }}>
+        <div style={{ width: "40px", height: "1px", background: "rgba(176, 92, 58, 0.4)", marginBottom: "20px", display: "flex" }} />
+        <div style={{ fontSize: titleDisplay.length > 30 ? "30px" : "36px", fontWeight: 500, color: "#ede4d6", lineHeight: 1.3, display: "flex", textAlign: "center", justifyContent: "center", maxWidth: "340px" }}>{titleDisplay}</div>
+        <div style={{ width: "40px", height: "1px", background: "rgba(176, 92, 58, 0.4)", marginTop: "20px", display: "flex" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px", padding: "0 28px 28px", fontSize: "14px", color: "#8a7e70" }}>
+        <div style={{ display: "flex" }}>{plotLabel}</div>
+        {tvlDisplay && (
+          <div style={{ display: "flex", fontWeight: 500, color: "#b05c3a" }}>{tvlDisplay}</div>
+        )}
+      </div>
+    </div>
+  );
 
   return new ImageResponse(
     (
@@ -111,124 +175,8 @@ export async function GET(
           fontFamily: fontData ? "Newsreader" : "Georgia, serif",
         }}
       >
-        {/* Cover card with deterministic fallback pattern */}
-        <div
-          style={{
-            width: "380px",
-            height: "520px",
-            display: "flex",
-            flexDirection: "column",
-            background: FALLBACK_BG[variant],
-            borderRadius: "12px",
-            border: "1px solid #3a332c",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {/* Accent strip at top */}
-          <div
-            style={{
-              display: "flex",
-              height: "3px",
-              background: "linear-gradient(90deg, #b05c3a, #b05c3a80, transparent)",
-            }}
-          />
+        {cardContent}
 
-          {/* Top: genre tag */}
-          <div
-            style={{
-              display: "flex",
-              padding: "28px 28px 0",
-            }}
-          >
-            {sl.genre ? (
-              <div
-                style={{
-                  display: "flex",
-                  fontSize: "12px",
-                  color: "#b05c3a",
-                  backgroundColor: "rgba(176, 92, 58, 0.12)",
-                  borderRadius: "4px",
-                  padding: "4px 12px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.12em",
-                  fontWeight: 500,
-                }}
-              >
-                {sl.genre}
-              </div>
-            ) : (
-              <div style={{ display: "flex" }} />
-            )}
-          </div>
-
-          {/* Center: title */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              flex: 1,
-              padding: "0 32px",
-              textAlign: "center",
-            }}
-          >
-            <div
-              style={{
-                width: "40px",
-                height: "1px",
-                background: "rgba(176, 92, 58, 0.4)",
-                marginBottom: "20px",
-                display: "flex",
-              }}
-            />
-            <div
-              style={{
-                fontSize: titleDisplay.length > 30 ? "30px" : "36px",
-                fontWeight: 500,
-                color: "#ede4d6",
-                lineHeight: 1.3,
-                display: "flex",
-                textAlign: "center",
-                justifyContent: "center",
-                maxWidth: "340px",
-              }}
-            >
-              {titleDisplay}
-            </div>
-            <div
-              style={{
-                width: "40px",
-                height: "1px",
-                background: "rgba(176, 92, 58, 0.4)",
-                marginTop: "20px",
-                display: "flex",
-              }}
-            />
-          </div>
-
-          {/* Bottom: stats */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: "6px",
-              padding: "0 28px 28px",
-              fontSize: "14px",
-              color: "#8a7e70",
-            }}
-          >
-            <div style={{ display: "flex" }}>{plotLabel}</div>
-            {tvlDisplay && (
-              <div style={{ display: "flex", fontWeight: 500, color: "#b05c3a" }}>
-                {tvlDisplay}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Below card: author + branding */}
         <div
           style={{
             display: "flex",
