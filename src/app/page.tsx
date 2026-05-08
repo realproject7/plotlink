@@ -13,14 +13,14 @@ const WRITER_VALUES: WriterFilterValue[] = ["all", "human", "agent"];
 
 const PAGE_SIZE = 24;
 
-type SearchParams = Promise<{ tab?: string; writer?: string; page?: string; genre?: string; lang?: string }>;
+type SearchParams = Promise<{ tab?: string; writer?: string; page?: string; genre?: string; lang?: string; nsfw?: string }>;
 
 export default async function Home({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  const { tab: rawTab, writer: rawWriter, page: rawPage, genre: rawGenre, lang: rawLang } = await searchParams;
+  const { tab: rawTab, writer: rawWriter, page: rawPage, genre: rawGenre, lang: rawLang, nsfw: rawNsfw } = await searchParams;
   const tab: Tab = TABS.includes(rawTab as Tab) ? (rawTab as Tab) : "trending";
   const writer: WriterFilterValue = WRITER_VALUES.includes(
     rawWriter as WriterFilterValue,
@@ -30,12 +30,13 @@ export default async function Home({
   const page = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
   const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : "all";
   const lang = rawLang && (LANGUAGES as readonly string[]).includes(rawLang) ? rawLang : "all";
+  const showNsfw = rawNsfw === "1";
 
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
   if (supabase) {
-    storylines = await queryTab(supabase, tab, writer, page, genre, lang);
+    storylines = await queryTab(supabase, tab, writer, page, genre, lang, showNsfw);
   }
 
   return (
@@ -50,7 +51,7 @@ export default async function Home({
         </p>
       </header>
 
-      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} />
+      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} showNsfw={showNsfw} />
 
       {/* Section label */}
       <h2 className="mt-4 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
@@ -65,7 +66,7 @@ export default async function Home({
         <div className="mt-8 flex items-center justify-center gap-4">
           {page > 1 && (
             <Link
-              href={buildPageHref(tab, writer, page - 1, genre, lang)}
+              href={buildPageHref(tab, writer, page - 1, genre, lang, showNsfw)}
               className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
             >
               &larr; Previous
@@ -74,7 +75,7 @@ export default async function Home({
           <span className="text-muted text-xs">Page {page}</span>
           {storylines.length === PAGE_SIZE && (
             <Link
-              href={buildPageHref(tab, writer, page + 1, genre, lang)}
+              href={buildPageHref(tab, writer, page + 1, genre, lang, showNsfw)}
               className="border-border text-muted hover:text-foreground rounded border px-4 py-2 text-xs transition-colors"
             >
               Next &rarr;
@@ -103,11 +104,12 @@ export default async function Home({
   );
 }
 
-function buildPageHref(tab: string, writer: string, page: number, genre: string, lang: string): string {
+function buildPageHref(tab: string, writer: string, page: number, genre: string, lang: string, showNsfw?: boolean): string {
   const params = new URLSearchParams({ tab });
   if (writer !== "all") params.set("writer", writer);
   if (genre !== "all") params.set("genre", genre);
   if (lang !== "all") params.set("lang", lang);
+  if (showNsfw) params.set("nsfw", "1");
   if (page > 1) params.set("page", String(page));
   return `/?${params.toString()}`;
 }
@@ -119,6 +121,7 @@ async function queryTab(
   page: number,
   genre: string,
   lang: string,
+  showNsfw: boolean,
 ): Promise<Storyline[]> {
   const from = (page - 1) * PAGE_SIZE;
   const to = from + PAGE_SIZE - 1;
@@ -129,6 +132,7 @@ async function queryTab(
     if (writer === "agent") filtered = filtered.eq("writer_type", 1);
     if (genre !== "all") filtered = filtered.eq("genre", genre);
     if (lang !== "all") filtered = filtered.eq("language", lang);
+    if (!showNsfw) filtered = filtered.eq("is_nsfw", false);
     return filtered;
   }
 
@@ -152,14 +156,14 @@ async function queryTab(
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
       const g = genre !== "all" ? genre : undefined;
       const l = lang !== "all" ? lang : undefined;
-      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from, g, l);
+      return getTrendingStorylines(supabase, PAGE_SIZE, wt, from, g, l, showNsfw);
     }
 
     case "mcap": {
       const wt = writer === "human" ? 0 : writer === "agent" ? 1 : undefined;
       const g = genre !== "all" ? genre : undefined;
       const l = lang !== "all" ? lang : undefined;
-      return getMcapStorylines(supabase, PAGE_SIZE, wt, from, g, l);
+      return getMcapStorylines(supabase, PAGE_SIZE, wt, from, g, l, showNsfw);
     }
   }
 }

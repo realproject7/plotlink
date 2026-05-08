@@ -19,7 +19,7 @@ export const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
   D: { background: "linear-gradient(175deg, oklch(94% 0.015 50) 0%, oklch(90% 0.02 40) 100%)" },
 };
 
-function Badges({ genre, writerType, status }: { genre?: string | null; writerType: number | null; status: string }) {
+function Badges({ genre, writerType, status, isNsfw }: { genre?: string | null; writerType: number | null; status: string; isNsfw?: boolean }) {
   const isActive = status === "active";
   return (
     <div className="absolute top-2 left-2 z-[2] flex flex-wrap items-center gap-1">
@@ -41,6 +41,11 @@ function Badges({ genre, writerType, status }: { genre?: string | null; writerTy
       {isActive && (
         <span className="rounded-[3px] bg-[oklch(40%_0.10_145_/_0.6)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-white/90 backdrop-blur-[2px]">
           Ongoing
+        </span>
+      )}
+      {isNsfw && (
+        <span className="rounded-[3px] bg-[oklch(45%_0.18_25_/_0.7)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-white/90 backdrop-blur-[2px]">
+          18+
         </span>
       )}
     </div>
@@ -72,7 +77,7 @@ export function StoryCard({
         />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
 
-        <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} />
+        <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} isNsfw={storyline.is_nsfw} />
 
         <div className="absolute right-0 bottom-0 left-0 z-[2] px-2.5 pt-3 pb-2.5">
           <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2 sm:text-[15px]">
@@ -97,7 +102,7 @@ export function StoryCard({
     <Link href={`/story/${storyline.storyline_id}`} className={cardClass}>
       <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
 
-      <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} />
+      <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} isNsfw={storyline.is_nsfw} />
 
       {/* Centered title with accent line */}
       <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center px-4 text-center">
