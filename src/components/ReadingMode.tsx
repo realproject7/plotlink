@@ -18,6 +18,36 @@ interface ReadingModeProps {
   onClose: () => void;
 }
 
+type FontSize = "small" | "medium" | "large";
+type LineHeight = "compact" | "normal" | "relaxed";
+
+const FONT_SIZE_CONFIG: Record<FontSize, { mobile: string; desktop: string; label: string }> = {
+  small:  { mobile: "16px", desktop: "17px", label: "A–" },
+  medium: { mobile: "18px", desktop: "20px", label: "A" },
+  large:  { mobile: "21px", desktop: "24px", label: "A+" },
+};
+
+const LINE_HEIGHT_CONFIG: Record<LineHeight, { value: string; label: string }> = {
+  compact: { value: "1.55", label: "Compact" },
+  normal:  { value: "1.75", label: "Normal" },
+  relaxed: { value: "2.0",  label: "Relaxed" },
+};
+
+const FONT_SIZES: FontSize[] = ["small", "medium", "large"];
+const LINE_HEIGHTS: LineHeight[] = ["compact", "normal", "relaxed"];
+
+function usePersistedState<T extends string>(key: string, fallback: T): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(() => {
+    if (typeof window === "undefined") return fallback;
+    return (localStorage.getItem(key) as T) || fallback;
+  });
+  const set = useCallback((v: T) => {
+    setValue(v);
+    localStorage.setItem(key, v);
+  }, [key]);
+  return [value, set];
+}
+
 export function ReadingMode({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   storylineId,
@@ -28,6 +58,7 @@ export function ReadingMode({
 }: ReadingModeProps) {
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
   const [showToc, setShowToc] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [flipDir, setFlipDir] = useState<"left" | "right" | null>(null);
   const [outgoingIdx, setOutgoingIdx] = useState<number | null>(null);
   const [outgoingScroll, setOutgoingScroll] = useState(0);
@@ -37,6 +68,9 @@ export function ReadingMode({
   const touchStartY = useRef(0);
   const flipping = useRef(false);
   const { isMiniApp } = usePlatformDetection();
+
+  const [fontSize, setFontSize] = usePersistedState<FontSize>("plotlink-reading-font-size", "medium");
+  const [lineHeight, setLineHeight] = usePersistedState<LineHeight>("plotlink-reading-line-height", "normal");
 
   const chapter = chapters[currentIdx];
   const outgoingChapter = outgoingIdx !== null ? chapters[outgoingIdx] : null;
@@ -50,19 +84,15 @@ export function ReadingMode({
   const navigate = useCallback((idx: number, dir: "left" | "right" | null) => {
     if (flipping.current) return;
     flipping.current = true;
-    // Capture scroll offset so the outgoing page can render at its old position
     const scrollOffset = contentRef.current?.scrollTop ?? 0;
     setOutgoingScroll(scrollOffset);
-    // Freeze container height so layout is stable during the flip
     if (stackRef.current) {
       stackRef.current.style.minHeight = `${stackRef.current.offsetHeight}px`;
     }
-    // Set outgoing, swap to incoming, and scroll to top immediately
     setOutgoingIdx(currentIdx);
     setFlipDir(dir);
     setCurrentIdx(idx);
     scrollToTop();
-    // After animation: unfreeze height, clean up
     setTimeout(() => {
       if (stackRef.current) {
         stackRef.current.style.minHeight = "";
@@ -90,7 +120,8 @@ export function ReadingMode({
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        if (showToc) setShowToc(false);
+        if (showSettings) setShowSettings(false);
+        else if (showToc) setShowToc(false);
         else onClose();
       }
       if (e.key === "ArrowLeft" && hasPrev) goPrev();
@@ -98,7 +129,7 @@ export function ReadingMode({
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [onClose, hasPrev, hasNext, goPrev, goNext, showToc]);
+  }, [onClose, hasPrev, hasNext, goPrev, goNext, showToc, showSettings]);
 
   // Lock body scroll when overlay is open
   useEffect(() => {
@@ -107,6 +138,20 @@ export function ReadingMode({
       document.body.style.overflow = "";
     };
   }, []);
+
+  const fsConfig = FONT_SIZE_CONFIG[fontSize];
+  const lhConfig = LINE_HEIGHT_CONFIG[lineHeight];
+
+  const readingStyle: React.CSSProperties = {
+    fontFamily: "var(--font-prose, var(--font-display, Georgia, serif))",
+    lineHeight: lhConfig.value,
+  };
+
+  const readingCss = `
+    .reading-prose { font-size: ${fsConfig.mobile}; }
+    .reading-prose .story-markdown { line-height: inherit; }
+    @media (min-width: 640px) { .reading-prose { font-size: ${fsConfig.desktop}; } }
+  `;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "var(--bg)" }}>
@@ -123,6 +168,16 @@ export function ReadingMode({
             {currentIdx + 1} / {chapters.length}
           </span>
           <button
+            onClick={() => { setShowSettings(!showSettings); setShowToc(false); }}
+            className={`text-lg transition-colors ${showSettings ? "text-accent" : "text-muted hover:text-foreground"}`}
+            title="Reading settings"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+            </svg>
+          </button>
+          <button
             onClick={onClose}
             className="text-muted hover:text-foreground text-lg transition-colors"
             title="Exit reading mode (Esc)"
@@ -131,6 +186,54 @@ export function ReadingMode({
           </button>
         </div>
       </div>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <div
+          className="flex flex-wrap items-center gap-4 px-4 py-2.5 sm:px-6"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          {/* Font size */}
+          <div className="flex items-center gap-2">
+            <span className="text-muted text-[11px]">Size</span>
+            <div className="flex rounded border border-[var(--border)]">
+              {FONT_SIZES.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setFontSize(s)}
+                  className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                    fontSize === s
+                      ? "bg-accent/15 text-accent"
+                      : "text-muted hover:text-foreground"
+                  } ${s !== "small" ? "border-l border-[var(--border)]" : ""}`}
+                >
+                  {FONT_SIZE_CONFIG[s].label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Line height */}
+          <div className="flex items-center gap-2">
+            <span className="text-muted text-[11px]">Spacing</span>
+            <div className="flex rounded border border-[var(--border)]">
+              {LINE_HEIGHTS.map((h) => (
+                <button
+                  key={h}
+                  onClick={() => setLineHeight(h)}
+                  className={`px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                    lineHeight === h
+                      ? "bg-accent/15 text-accent"
+                      : "text-muted hover:text-foreground"
+                  } ${h !== "compact" ? "border-l border-[var(--border)]" : ""}`}
+                >
+                  {LINE_HEIGHT_CONFIG[h].label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content area */}
       <div
@@ -143,7 +246,6 @@ export function ReadingMode({
         onTouchEnd={(e) => {
           const dx = e.changedTouches[0].clientX - touchStartX.current;
           const dy = e.changedTouches[0].clientY - touchStartY.current;
-          // Only trigger if horizontal swipe exceeds threshold and is more horizontal than vertical
           if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
             if (dx < 0) goNext();
             else goPrev();
@@ -154,11 +256,14 @@ export function ReadingMode({
           {/* Incoming page (underneath) */}
           <div className={`page-flip-page ${outgoingIdx !== null ? "page-incoming" : ""}`}>
             <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
-              {chapter?.content ? (
-                <StoryContent content={chapter.content} />
-              ) : (
-                <p className="text-muted text-sm italic">Content unavailable</p>
-              )}
+              <style>{readingCss}</style>
+              <div style={readingStyle} className="reading-prose">
+                {chapter?.content ? (
+                  <StoryContent content={chapter.content} />
+                ) : (
+                  <p className="text-muted text-sm italic">Content unavailable</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -174,11 +279,13 @@ export function ReadingMode({
               }}
             >
               <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
-                {outgoingChapter.content ? (
-                  <StoryContent content={outgoingChapter.content} />
-                ) : (
-                  <p className="text-muted text-sm italic">Content unavailable</p>
-                )}
+                <div style={readingStyle} className="reading-prose">
+                  {outgoingChapter.content ? (
+                    <StoryContent content={outgoingChapter.content} />
+                  ) : (
+                    <p className="text-muted text-sm italic">Content unavailable</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
