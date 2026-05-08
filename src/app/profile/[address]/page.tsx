@@ -689,15 +689,17 @@ function StoriesTab({
 }) {
   const { data: plotUsd } = usePlotUsdPrice();
   const { data: storylines = [], isLoading, error } = useQuery({
-    queryKey: ["profile-storylines", address],
+    queryKey: ["profile-storylines", address, isOwnProfile],
     queryFn: async () => {
       if (!supabase) return [];
-      const { data, error } = await supabase
+      let q = supabase
         .from("storylines")
         .select("*")
         .eq("writer_address", address)
         .eq("hidden", false)
-        .eq("contract_address", STORY_FACTORY.toLowerCase())
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!isOwnProfile) q = q.eq("is_nsfw", false);
+      const { data, error } = await q
         .order("block_timestamp", { ascending: false })
         .returns<Storyline[]>();
       if (error) throw error;
