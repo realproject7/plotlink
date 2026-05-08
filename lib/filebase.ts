@@ -66,6 +66,66 @@ export async function uploadToIPFS(
 }
 
 /**
+ * Upload binary data (e.g. images) to Filebase and return the CID.
+ */
+export async function uploadBinaryToIPFS(
+  data: Buffer | Uint8Array,
+  key: string,
+  contentType: string
+): Promise<string> {
+  const bucket = process.env.FILEBASE_BUCKET;
+  if (!bucket) {
+    throw new Error("Filebase not configured: Missing FILEBASE_BUCKET");
+  }
+
+  const s3 = getFilebaseClient();
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: data,
+      ContentType: contentType,
+    })
+  );
+
+  const head = await s3.send(
+    new HeadObjectCommand({ Bucket: bucket, Key: key })
+  );
+  const cid = head.Metadata?.cid;
+  if (!cid) {
+    throw new Error("Filebase response missing CID in metadata");
+  }
+
+  return cid;
+}
+
+/**
+ * Upload binary data to IPFS with retry logic.
+ */
+export async function uploadBinaryWithRetry(
+  data: Buffer | Uint8Array,
+  key: string,
+  contentType: string,
+  maxRetries = 3
+): Promise<string> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await uploadBinaryToIPFS(data, key, contentType);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error("Unknown error");
+      if (attempt < maxRetries) {
+        await new Promise((r) =>
+          setTimeout(r, Math.pow(2, attempt - 1) * 1000)
+        );
+      }
+    }
+  }
+  throw lastError || new Error("IPFS binary upload failed after retries");
+}
+
+/**
  * Upload content to IPFS with retry logic.
  *
  * 3 attempts with exponential backoff (1s, 2s, 4s).
