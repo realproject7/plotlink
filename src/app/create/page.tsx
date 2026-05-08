@@ -604,7 +604,7 @@ function CreatePage() {
                   disabled={newBusy}
                   rows={12}
                   placeholder="Write the genesis plot (500–10,000 characters)"
-                  className="bg-surface border-border text-foreground placeholder:text-muted font-prose w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
+                  className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
                 />
               ) : (
                 <ContentPreview content={newContent} />
@@ -779,7 +779,7 @@ function CreatePage() {
                   disabled={chainBusy || noStoryline}
                   rows={12}
                   placeholder={noStoryline ? "Select a storyline above to chain a plot" : "Write the next plot (500–10,000 characters)"}
-                  className="bg-surface border-border text-foreground placeholder:text-muted font-prose w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
+                  className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
                 />
               ) : (
                 <ContentPreview content={chainContent} />

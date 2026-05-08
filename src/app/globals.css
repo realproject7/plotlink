@@ -31,6 +31,8 @@
   --error: var(--danger);
   --bg-shelf: var(--surface-raised);
   --paper-bg: var(--surface);
+  --paper-line: oklch(87% 0.006 250);
+  --paper-margin: oklch(82% 0.04 20);
 }
 
 @theme inline {
@@ -277,4 +279,53 @@ select {
   background-repeat: no-repeat;
   background-position: right 0.75rem center;
   padding-right: 2.5rem;
+}
+
+/* Ruled-paper textarea — create page only */
+.ruled-paper {
+  --line-height: 28px;
+  background-color: var(--paper-bg);
+  padding: calc(var(--line-height) * 2) 2rem var(--line-height) 4.5rem;
+  font-size: 1rem;
+  line-height: var(--line-height);
+  font-family: var(--font-prose), Georgia, serif;
+  background-image:
+    linear-gradient(
+      90deg,
+      transparent, transparent 3.5rem,
+      var(--paper-margin) 3.5rem,
+      var(--paper-margin) calc(3.5rem + 2px),
+      transparent calc(3.5rem + 2px)
+    ),
+    repeating-linear-gradient(
+      transparent,
+      transparent calc(var(--line-height) - 1px),
+      var(--paper-line) calc(var(--line-height) - 1px),
+      var(--paper-line) var(--line-height)
+    );
+  background-position-y: calc(var(--line-height) * 2);
+  border-radius: 4px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .ruled-paper {
+    padding: calc(var(--line-height) * 2) 1rem var(--line-height) 2.5rem;
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent, transparent 1.75rem,
+        var(--paper-margin) 1.75rem,
+        var(--paper-margin) calc(1.75rem + 2px),
+        transparent calc(1.75rem + 2px)
+      ),
+      repeating-linear-gradient(
+        transparent,
+        transparent calc(var(--line-height) - 1px),
+        var(--paper-line) calc(var(--line-height) - 1px),
+        var(--paper-line) var(--line-height)
+      );
+    background-position-y: calc(var(--line-height) * 2);
+  }
 }
