@@ -3,7 +3,7 @@ export default function TermsPage() {
     <div className="mx-auto max-w-2xl px-6 py-12">
       <article className="prose prose-sm max-w-none font-prose">
         <h1>Terms of Service</h1>
-        <p className="text-muted"><strong>PlotLink &mdash; plotlink.xyz</strong><br />Last updated: April 24, 2026</p>
+        <p className="text-muted"><strong>PlotLink &mdash; plotlink.xyz</strong><br />Last updated: May 8, 2026</p>
 
         <h2>1. Overview</h2>
         <p>PlotLink is an open-source, on-chain storytelling protocol on Base (L2). It allows users to publish stories as on-chain tokens and support writers via bonding curves. PlotLink provides the interface &mdash; all transactions occur on public blockchains and are governed by smart contracts.</p>
@@ -40,11 +40,38 @@ export default function TermsPage() {
         </ul>
         <p>Published content is permanent and cannot be deleted from IPFS or the blockchain by PlotLink.</p>
 
-        <h2>6. PLOT Token</h2>
+        <h2>6. Adult Content Policy</h2>
+        <p>Stories may be marked as containing adult content (18+/NSFW) by the author at the time of publication. Adult content is hidden by default on the browse page and requires readers to opt-in to view it.</p>
+        <ul>
+          <li>Authors are responsible for accurately marking their content as adult-only when it contains material not suitable for general audiences</li>
+          <li>PlotLink reserves the right to flag or reclassify any story as adult-only if it determines the content is not suitable for general audiences</li>
+          <li>PlotLink may hide stories entirely, without prior notice, if their content violates applicable laws or regulations in its operating jurisdictions</li>
+        </ul>
+
+        <h2>7. Content Moderation</h2>
+        <p>PlotLink reserves the right to moderate content displayed on the platform at its discretion. Moderation actions may include:</p>
+        <ul>
+          <li>Flagging content as adult-only (NSFW)</li>
+          <li>Hiding stories from public view</li>
+          <li>Restricting access to specific content</li>
+        </ul>
+        <p>Story text is stored on IPFS and is immutable &mdash; PlotLink cannot alter or delete published content. However, PlotLink can control whether content is visible on the platform. Moderation decisions may be made without prior notice to the author.</p>
+        <p>Moderation affects platform visibility only. It does not affect on-chain data, token ownership, bonding curve mechanics, or any other blockchain state.</p>
+
+        <h2>8. Cover Image Policy</h2>
+        <p>Authors may upload book cover images for their stories. Cover images are subject to the following policies:</p>
+        <ul>
+          <li>Accepted formats are WebP and JPEG, with a maximum file size of 500KB</li>
+          <li>Cover images are stored on IPFS via Filebase and are publicly accessible once uploaded</li>
+          <li>Authors are responsible for ensuring cover images do not infringe any third-party copyright or intellectual property rights</li>
+          <li>PlotLink reserves the right to replace cover images that are deemed low quality, misleading, or inappropriate, without prior notice to the author</li>
+        </ul>
+
+        <h2>9. PLOT Token</h2>
         <p>PLOT is a <strong>utility token</strong> used within the PlotLink protocol. It serves as the reserve currency for minting and burning Story tokens via Mint Club V2 bonding curves. PLOT is not an investment, security, or financial instrument. PlotLink makes no representations about the value, future price, or return potential of PLOT.</p>
         <p>PLOT is minted and burned through Mint Club V2&apos;s bonding curve mechanism. PlotLink does not control the supply, price, or liquidity of PLOT.</p>
 
-        <h2>7. Story Tokens</h2>
+        <h2>10. Story Tokens</h2>
         <p>Each story published on PlotLink creates a Story token on a bonding curve. Story tokens are a <strong>mechanism for supporting writers</strong> &mdash; purchasing a Story token is a way to support the creator and participate in the story&apos;s community. Story tokens are not investments, securities, or financial instruments.</p>
         <ul>
           <li>Writers receive royalties (5%) on each mint as a reward for creating content</li>
@@ -53,7 +80,7 @@ export default function TermsPage() {
           <li>Purchasing a Story token does not create any obligation from the writer or PlotLink</li>
         </ul>
 
-        <h2>8. On-Chain Transactions</h2>
+        <h2>11. On-Chain Transactions</h2>
         <p>All transactions on PlotLink &mdash; including minting, burning, and swapping Story tokens &mdash; are executed on the Base blockchain via smart contracts. By using PlotLink, you acknowledge and agree that:</p>
         <ul>
           <li><strong>All on-chain transactions are final and irreversible.</strong> PlotLink cannot cancel, reverse, modify, or refund any transaction once it is submitted to the blockchain.</li>
@@ -66,28 +93,28 @@ export default function TermsPage() {
         </ul>
         <p>PlotLink earns no fees from token minting or burning. Creation fees are paid to Mint Club.</p>
 
-        <h2>9. Airdrop Campaign</h2>
+        <h2>12. Airdrop Campaign</h2>
         <p>The PLOT Big or Nothing Airdrop is a conditional distribution. Participation does not guarantee any token distribution. The airdrop pool may be partially or fully burned based on market conditions. PlotLink makes no guarantees about token value or distribution outcomes. The airdrop is not compensation, income, or a return on investment.</p>
 
-        <h2>10. AI Writing Tool</h2>
+        <h2>13. AI Writing Tool</h2>
         <p>PlotLink OWS is a local application that runs on your computer. It connects to third-party AI providers (Anthropic, OpenAI, etc.) using your own API keys. PlotLink does not process, store, or have access to your AI conversations or API keys.</p>
 
-        <h2>11. Third-Party Services</h2>
+        <h2>14. Third-Party Services</h2>
         <p>PlotLink integrates with third-party services including but not limited to Mint Club, Filebase (IPFS), Base network, and Farcaster. PlotLink is not responsible for the availability, accuracy, or conduct of these services.</p>
 
-        <h2>12. No Warranty</h2>
+        <h2>15. No Warranty</h2>
         <p>PlotLink is provided &ldquo;as is&rdquo; without warranties of any kind, express or implied. We do not guarantee uninterrupted access, error-free operation, or the accuracy of any displayed data (including prices, market caps, or token metrics).</p>
 
-        <h2>13. Limitation of Liability</h2>
+        <h2>16. Limitation of Liability</h2>
         <p>To the maximum extent permitted by law, PlotLink and its contributors shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including but not limited to loss of funds, tokens, or data.</p>
 
-        <h2>14. Modification</h2>
+        <h2>17. Modification</h2>
         <p>We may update these terms at any time. Continued use of PlotLink after changes constitutes acceptance.</p>
 
-        <h2>15. Governing Law</h2>
+        <h2>18. Governing Law</h2>
         <p>These terms are governed by the laws applicable to the user&apos;s jurisdiction. PlotLink does not operate as a registered entity in any specific jurisdiction.</p>
 
-        <h2>16. Contact</h2>
+        <h2>19. Contact</h2>
         <p>For questions about these terms, open an issue at <a href="https://github.com/realproject7/plotlink" target="_blank" rel="noopener noreferrer">github.com/realproject7/plotlink</a>.</p>
       </article>
     </div>
