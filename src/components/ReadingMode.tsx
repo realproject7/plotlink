@@ -149,6 +149,7 @@ export function ReadingMode({
 
   const readingCss = `
     .reading-prose { font-size: ${fsConfig.mobile}; }
+    .reading-prose .story-markdown { line-height: inherit; }
     @media (min-width: 640px) { .reading-prose { font-size: ${fsConfig.desktop}; } }
   `;
 
