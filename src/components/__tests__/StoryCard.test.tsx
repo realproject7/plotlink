@@ -88,6 +88,6 @@ describe("StoryCard", () => {
 
   it("shows AI Writer badge for AI writers", () => {
     render(<StoryCard storyline={makeStoryline({ writer_type: 1 })} />);
-    expect(screen.getByText("AI Writer")).toBeInTheDocument();
+    expect(screen.getByText("AI")).toBeInTheDocument();
   });
 });
