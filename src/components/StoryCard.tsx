@@ -61,7 +61,7 @@ export function StoryCard({
         )}
         {storyline.writer_type === 1 && (
           <span className="rounded-[3px] bg-[oklch(45%_0.15_280_/_0.6)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-white/90 backdrop-blur-[2px]">
-            AI
+            AI Writer
           </span>
         )}
         {status === "completed" && (
