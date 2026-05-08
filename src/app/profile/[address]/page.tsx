@@ -1050,7 +1050,7 @@ function StoryRow({
               return (
                 <>
                   <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                  <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+                  <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
                 </>
               );
             }
@@ -1084,11 +1084,11 @@ function StoryRow({
           {/* Bottom info */}
           <div className="absolute bottom-0 left-0 right-0 z-[1] px-2.5 pb-2.5">
             {storyline.cover_cid && (
-              <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white line-clamp-2 sm:text-[15px]">
+              <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2 sm:text-[15px]">
                 {storyline.title}
               </h3>
             )}
-            <div className={`${storyline.cover_cid ? "mt-1" : ""} flex items-center gap-2 text-[10px] ${storyline.cover_cid ? "text-white/60" : "text-[var(--muted)]"}`}>
+            <div className={`${storyline.cover_cid ? "mt-1" : ""} flex items-center gap-2 text-[10px] text-[var(--muted)]`}>
               <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
               <span>·</span>
               <span>{formatViewCount(storyline.view_count)} views</span>
@@ -1665,7 +1665,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                     return (
                       <>
                         <img src={hCoverUrl} alt={h.storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
-                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+                        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
                       </>
                     );
                   }
@@ -1684,7 +1684,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 )}
                 {h.storyline.cover_cid && (
                   <div className="absolute bottom-0 left-0 right-0 z-[1] px-2 pb-2">
-                    <span className="font-heading text-xs font-semibold leading-tight text-white line-clamp-2 sm:text-sm">
+                    <span className="font-heading text-xs font-semibold leading-tight text-[var(--fg)] line-clamp-2 sm:text-sm">
                       {h.storyline.title}
                     </span>
                   </div>

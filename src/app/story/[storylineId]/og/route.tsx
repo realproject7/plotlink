@@ -114,14 +114,14 @@ export async function GET(
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={coverUrl} alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.85))", padding: "60px 28px 28px", display: "flex", flexDirection: "column", gap: "6px" }}>
+      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(to bottom, transparent, rgba(250,248,245,0.85))", padding: "60px 28px 28px", display: "flex", flexDirection: "column", gap: "6px" }}>
         {sl.genre && (
-          <div style={{ display: "flex", fontSize: "11px", color: "rgba(255,255,255,0.7)", textTransform: "uppercase", letterSpacing: "0.1em" }}>{sl.genre}</div>
+          <div style={{ display: "flex", fontSize: "11px", color: "#6a5e50", textTransform: "uppercase", letterSpacing: "0.1em" }}>{sl.genre}</div>
         )}
-        <div style={{ fontSize: titleDisplay.length > 30 ? "28px" : "34px", fontWeight: 500, color: "#fff", lineHeight: 1.25, display: "flex" }}>{titleDisplay}</div>
-        <div style={{ display: "flex", fontSize: "14px", color: "rgba(255,255,255,0.6)" }}>{plotLabel}</div>
+        <div style={{ fontSize: titleDisplay.length > 30 ? "28px" : "34px", fontWeight: 500, color: "#1a1a1a", lineHeight: 1.25, display: "flex" }}>{titleDisplay}</div>
+        <div style={{ display: "flex", fontSize: "14px", color: "#8a7e70" }}>{plotLabel}</div>
         {tvlDisplay && (
-          <div style={{ display: "flex", fontWeight: 500, color: "#e8a87c", fontSize: "14px" }}>{tvlDisplay}</div>
+          <div style={{ display: "flex", fontWeight: 500, color: "#b05c3a", fontSize: "14px" }}>{tvlDisplay}</div>
         )}
       </div>
     </div>

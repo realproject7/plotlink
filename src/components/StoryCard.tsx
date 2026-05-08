@@ -70,20 +70,20 @@ export function StoryCard({
           loading="lazy"
           className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_60%,oklch(98%_0.005_80_/_0.75)_80%,oklch(96%_0.01_80_/_0.95)_100%)]" />
 
         <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} />
 
         <div className="absolute right-0 bottom-0 left-0 z-[2] px-2.5 pt-3 pb-2.5">
-          <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white line-clamp-2 sm:text-[15px]">
+          <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-[var(--fg)] line-clamp-2 sm:text-[15px]">
             {storyline.title}
           </h3>
-          <div className="mt-[3px] text-[11px] text-white/80">
+          <div className="mt-[3px] text-[11px] text-[var(--muted)]">
             <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
           </div>
           {storyline.token_address && (
             <div className="mt-1.5">
-              <span className="font-mono text-[10px] tabular-nums text-white/50 [&_.font-semibold]:text-white">
+              <span className="font-mono text-[10px] tabular-nums text-[var(--muted)] [&_.font-semibold]:text-[var(--fg)]">
                 <StoryCardTVL tokenAddress={storyline.token_address} />
               </span>
             </div>
