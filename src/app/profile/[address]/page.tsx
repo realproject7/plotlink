@@ -954,19 +954,7 @@ function StoriesTab({
   );
 }
 
-type FallbackVariant = "A" | "B" | "C" | "D";
-
-function hashToVariant(id: number): FallbackVariant {
-  const variants: FallbackVariant[] = ["A", "B", "C", "D"];
-  return variants[((id * 2654435761) >>> 0) % 4];
-}
-
-const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
-  A: { background: "radial-gradient(ellipse at 30% 20%, oklch(28% 0.04 40), oklch(16% 0.02 50))" },
-  B: { background: "repeating-linear-gradient(135deg, oklch(18% 0.018 50) 0px, oklch(18% 0.018 50) 8px, oklch(22% 0.02 45) 8px, oklch(22% 0.02 45) 16px)" },
-  C: { background: "conic-gradient(from 180deg at 50% 50%, oklch(20% 0.03 220), oklch(18% 0.02 50), oklch(20% 0.03 220))" },
-  D: { background: "oklch(20% 0.025 50)" },
-};
+import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
 
 function StoryRow({
   storyline,
@@ -1055,34 +1043,29 @@ function StoryRow({
         className="group relative block overflow-hidden rounded-[var(--card-radius)] border border-border transition-transform hover:scale-[1.03]"
       >
         <div className="relative" style={{ aspectRatio: "2/3" }}>
-          <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]}>
-            <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-              <div className="mb-2 h-px w-8 bg-accent/40" />
-              <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-white">
-                {storyline.title}
-              </span>
-              <div className="mt-2 h-px w-8 bg-accent/40" />
-            </div>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/0 to-transparent" />
+          <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]} />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,oklch(0%_0_0_/_0.85)_92%)]" />
 
-          {/* Status badge */}
-          <div className="absolute top-2 right-2">
+          {/* Top badges */}
+          <div className="absolute top-2 left-2 z-[1] flex flex-wrap items-center gap-1">
+            <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
+              {storyline.genre || "Uncategorized"}
+            </span>
             {storyline.sunset ? (
-              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-white/60 backdrop-blur-sm">complete</span>
+              <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider text-white/60 backdrop-blur-[2px]">Complete</span>
             ) : isExpired ? (
-              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-danger backdrop-blur-sm">expired</span>
+              <span className="rounded-[3px] bg-[oklch(50%_0.18_25_/_0.6)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">Expired</span>
             ) : (
-              <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold text-success backdrop-blur-sm">active</span>
+              <span className="rounded-[3px] bg-[oklch(40%_0.10_145_/_0.6)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">Active</span>
             )}
           </div>
 
-          {/* Bottom overlay: genre + stats */}
-          <div className="absolute bottom-0 left-0 right-0 p-3 space-y-1.5">
-            <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
-              {storyline.genre || "Uncategorized"}
-            </span>
-            <div className="flex items-center gap-2 text-[10px] text-white/80">
+          {/* Bottom info */}
+          <div className="absolute bottom-0 left-0 right-0 z-[1] px-2.5 pb-2.5">
+            <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white line-clamp-2 sm:text-[15px]">
+              {storyline.title}
+            </h3>
+            <div className="mt-1 flex items-center gap-2 text-[10px] text-white/60">
               <span>{storyline.plot_count} {storyline.plot_count === 1 ? "plot" : "plots"}</span>
               <span>·</span>
               <span>{formatViewCount(storyline.view_count)} views</span>
@@ -1653,19 +1636,16 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 className="relative overflow-hidden rounded-[var(--card-radius)] border border-border"
                 style={{ aspectRatio: "2/3" }}
               >
-                <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]}>
-                  <div className="flex h-full flex-col items-center justify-center px-3 text-center">
-                    <div className="mb-2 h-px w-6 bg-accent/40" />
-                    <span className="font-heading text-sm sm:text-base font-medium leading-tight tracking-tight text-white">
-                      {h.storyline.title}
-                    </span>
-                    <div className="mt-2 h-px w-6 bg-accent/40" />
-                  </div>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-2">
-                  <span className="rounded-sm bg-black/50 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-white backdrop-blur-sm">
+                <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]} />
+                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,oklch(0%_0_0_/_0.85)_92%)]" />
+                <div className="absolute top-1.5 left-1.5 z-[1]">
+                  <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
                     {h.storyline.genre || "Uncategorized"}
+                  </span>
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 z-[1] px-2 pb-2">
+                  <span className="font-heading text-xs font-semibold leading-tight text-white line-clamp-2 sm:text-sm">
+                    {h.storyline.title}
                   </span>
                 </div>
               </div>

@@ -53,7 +53,7 @@ export default async function Home({
       <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} />
 
       {/* Section label */}
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+      <h2 className="mt-4 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
         Explore Stories
       </h2>
 

@@ -51,6 +51,6 @@ describe("FilterBar", () => {
   it("active sort tab is highlighted", () => {
     render(<FilterBar {...defaultProps} tab="trending" />);
     const trendingBtn = screen.getByText("Trending");
-    expect(trendingBtn).toHaveClass("bg-accent");
+    expect(trendingBtn).toHaveClass("font-semibold");
   });
 });
