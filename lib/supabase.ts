@@ -64,6 +64,8 @@ export interface Database {
           contract_address: string;
           genre: string | null;
           language: string;
+          cover_cid: string | null;
+          is_nsfw: boolean;
         };
         Insert: {
           id?: never;
@@ -85,6 +87,8 @@ export interface Database {
           contract_address: string;
           genre?: string | null;
           language?: string;
+          cover_cid?: string | null;
+          is_nsfw?: boolean;
         };
         Update: {
           id?: never;
@@ -106,6 +110,8 @@ export interface Database {
           contract_address?: string;
           genre?: string | null;
           language?: string;
+          cover_cid?: string | null;
+          is_nsfw?: boolean;
         };
         Relationships: [];
       };
