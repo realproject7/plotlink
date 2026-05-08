@@ -1411,19 +1411,18 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
 
   // Fetch on-chain token holdings
   const { data: holdings, isLoading: holdingsLoading } = useQuery({
-    queryKey: ["profile-holdings", address],
+    queryKey: ["profile-holdings", address, isOwnProfile],
     queryFn: async (): Promise<PortfolioHolding[]> => {
       if (!supabase) return [];
 
-      // Scan all storylines with tokens to catch holdings acquired via
-      // direct transfers, not just indexed trades
-      const { data: storylines } = await supabase
+      let q = supabase
         .from("storylines")
         .select("*")
         .eq("hidden", false)
         .neq("token_address", "")
-        .eq("contract_address", STORY_FACTORY.toLowerCase())
-        .returns<Storyline[]>();
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      if (!isOwnProfile) q = q.eq("is_nsfw", false);
+      const { data: storylines } = await q.returns<Storyline[]>();
       if (!storylines || storylines.length === 0) return [];
 
       // Multicall balanceOf for all storyline tokens
