@@ -1044,7 +1044,7 @@ function StoryRow({
       >
         <div className="relative" style={{ aspectRatio: "2/3" }}>
           <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(storyline.storyline_id)]} />
-          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,oklch(0%_0_0_/_0.85)_92%)]" />
+          <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
 
           {/* Top badges */}
           <div className="absolute top-2 left-2 z-[1] flex flex-wrap items-center gap-1">
@@ -1637,7 +1637,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
                 style={{ aspectRatio: "2/3" }}
               >
                 <div className="absolute inset-0" style={FALLBACK_STYLES[hashToVariant(h.storyline.storyline_id)]} />
-                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,oklch(0%_0_0_/_0.85)_92%)]" />
+                <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
                 <div className="absolute top-1.5 left-1.5 z-[1]">
                   <span className="rounded-[3px] bg-[oklch(0%_0_0_/_0.45)] px-[5px] py-[1px] text-[8px] font-medium uppercase tracking-wider text-white/90 backdrop-blur-[2px]">
                     {h.storyline.genre || "Uncategorized"}

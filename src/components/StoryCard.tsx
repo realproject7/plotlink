@@ -50,7 +50,7 @@ export function StoryCard({
       )}
 
       {/* Bottom gradient overlay */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_45%,oklch(0%_0_0_/_0.85)_92%)]" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_70%,oklch(0%_0_0_/_0.5)_85%,oklch(0%_0_0_/_0.88)_100%)]" />
 
       {/* Top badges */}
       <div className="absolute top-2 left-2 z-[2] flex flex-wrap items-center gap-1">
@@ -81,12 +81,12 @@ export function StoryCard({
         <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white line-clamp-2 sm:text-[15px]">
           {storyline.title}
         </h3>
-        <div className="mt-[3px] text-[11px] text-white/60">
+        <div className="mt-[3px] text-[11px] text-white/80">
           <WriterIdentityClient address={storyline.writer_address} writerType={storyline.writer_type} />
         </div>
         {storyline.token_address && (
           <div className="mt-1.5">
-            <span className="font-mono text-[10px] tabular-nums text-white/50">
+            <span className="font-mono text-[10px] tabular-nums text-white/50 [&_.font-semibold]:text-white [&_.font-semibold]:font-semibold">
               <StoryCardTVL tokenAddress={storyline.token_address} />
             </span>
           </div>
