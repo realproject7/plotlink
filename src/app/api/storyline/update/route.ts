@@ -11,6 +11,8 @@ function error(message: string, status = 400) {
   return NextResponse.json({ error: message }, { status });
 }
 
+const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS?.toLowerCase();
+
 export async function POST(req: Request) {
   const body = await req.json();
   const {
@@ -23,6 +25,7 @@ export async function POST(req: Request) {
     genre?: string;
     language?: string;
     isNsfw?: boolean;
+    hidden?: boolean;
     signature?: string;
     message?: string;
   };
@@ -81,8 +84,11 @@ export async function POST(req: Request) {
     return error("Storyline not found", 404);
   }
 
-  if (storyline.writer_address.toLowerCase() !== recoveredAddress) {
-    return error("Signature address does not match storyline author", 401);
+  const isAuthor = storyline.writer_address.toLowerCase() === recoveredAddress;
+  const isAdmin = !!ADMIN_WALLET && recoveredAddress === ADMIN_WALLET;
+
+  if (!isAuthor && !isAdmin) {
+    return error("Unauthorized", 401);
   }
 
   const updates: Partial<Database["public"]["Tables"]["storylines"]["Update"]> =
@@ -114,6 +120,13 @@ export async function POST(req: Request) {
 
   if ("isNsfw" in body) {
     updates.is_nsfw = Boolean(body.isNsfw);
+  }
+
+  if ("hidden" in body) {
+    if (!isAdmin) {
+      return error("Only admin can update the hidden field", 403);
+    }
+    updates.hidden = Boolean(body.hidden);
   }
 
   if (Object.keys(updates).length === 0) {
