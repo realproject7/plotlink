@@ -150,7 +150,7 @@ export function StoryEditPanel({
       {/* Cover Image */}
       <div>
         <label className="text-foreground mb-1 block text-xs font-medium">Cover Image</label>
-        <p className="text-muted mb-2 text-[10px]">WebP or JPEG, max 500KB.</p>
+        <p className="text-muted mb-2 text-[10px]">WebP or JPEG, max 500KB. Recommended: 600×900px (2:3 portrait).</p>
         {coverUrl ? (
           <div className="flex items-start gap-3">
             <div className="relative h-[90px] w-[60px] shrink-0 overflow-hidden rounded border border-border">
