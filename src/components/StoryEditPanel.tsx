@@ -34,7 +34,10 @@ export function StoryEditPanel({
   const router = useRouter();
   const { signMessageAsync } = useSignMessage();
 
+  const ADMIN_WALLET = process.env.NEXT_PUBLIC_ADMIN_WALLET_ADDRESS?.toLowerCase();
   const isAuthor = address?.toLowerCase() === writerAddress.toLowerCase();
+  const isAdmin = !!(ADMIN_WALLET && address?.toLowerCase() === ADMIN_WALLET);
+  const canEdit = isAuthor || isAdmin;
   const [editing, setEditing] = useState(false);
   const [genre, setGenre] = useState(currentGenre ?? "");
   const [language, setLanguage] = useState(currentLanguage ?? "English");
@@ -121,7 +124,7 @@ export function StoryEditPanel({
     setEditing(false);
   };
 
-  if (!isAuthor) return null;
+  if (!canEdit) return null;
 
   if (!editing) {
     return (
