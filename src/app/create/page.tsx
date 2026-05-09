@@ -484,8 +484,11 @@ function CreatePage() {
             {/* Cover Image Upload */}
             <div>
               <label className="text-foreground mb-1 block text-sm">Cover Image</label>
-              <p className="text-muted mb-2 text-[11px]">
+              <p className="text-muted mb-1 text-[11px]">
                 Optional. WebP or JPEG, max 500KB. Recommended: 600×900px (2:3 portrait).
+              </p>
+              <p className="text-muted mb-2 text-[10px]">
+                PlotLink may replace or remove cover images that violate our Terms or do not meet quality guidelines.
               </p>
               {coverCid ? (
                 <div className="flex items-start gap-3">
