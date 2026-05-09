@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
+import { recoverMessageAddress } from "viem";
 import { uploadBinaryWithRetry } from "../../../../lib/filebase";
 
 const MAX_FILE_SIZE = 500 * 1024; // 500KB
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
+const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
 
 const ALLOWED_MIME_TYPES = new Set(["image/webp", "image/jpeg"]);
 
-const ipRequestLog = new Map<string, number[]>();
+const walletRequestLog = new Map<string, number[]>();
 
-function checkRateLimit(ip: string): boolean {
+function checkRateLimit(wallet: string): boolean {
   const now = Date.now();
-  const timestamps = ipRequestLog.get(ip) ?? [];
+  const timestamps = walletRequestLog.get(wallet) ?? [];
   const recent = timestamps.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
   if (recent.length >= RATE_LIMIT_MAX) return false;
   recent.push(now);
-  ipRequestLog.set(ip, recent);
+  walletRequestLog.set(wallet, recent);
   return true;
 }
 
@@ -25,7 +27,6 @@ function validateMagicBytes(buffer: Uint8Array, mimeType: string): boolean {
       buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
   }
   if (mimeType === "image/webp") {
-    // RIFF at bytes 0-3, WEBP at bytes 8-11
     return buffer.length >= 12 &&
       buffer[0] === 0x52 && buffer[1] === 0x49 && buffer[2] === 0x46 && buffer[3] === 0x46 &&
       buffer[8] === 0x57 && buffer[9] === 0x45 && buffer[10] === 0x42 && buffer[11] === 0x50;
@@ -34,20 +35,57 @@ function validateMagicBytes(buffer: Uint8Array, mimeType: string): boolean {
 }
 
 export async function POST(req: NextRequest) {
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown";
-
-  if (!checkRateLimit(ip)) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded. Max 5 uploads per minute." },
-      { status: 429 }
-    );
-  }
-
   try {
     const formData = await req.formData();
+
+    const message = formData.get("message");
+    const signature = formData.get("signature");
+
+    if (typeof message !== "string" || typeof signature !== "string") {
+      return NextResponse.json(
+        { error: "Missing wallet signature. Please connect your wallet and try again." },
+        { status: 401 }
+      );
+    }
+
+    const timestampMatch = message.match(/Timestamp:\s*(\d+)/);
+    if (!timestampMatch) {
+      return NextResponse.json(
+        { error: "Invalid message format." },
+        { status: 401 }
+      );
+    }
+
+    const timestamp = Number(timestampMatch[1]);
+    const expectedMessage = `PlotLink: Upload cover image\nTimestamp: ${timestamp}`;
+    if (message !== expectedMessage) {
+      return NextResponse.json(
+        { error: "Invalid message format." },
+        { status: 401 }
+      );
+    }
+
+    const age = Date.now() - timestamp;
+    if (age > SIGNATURE_MAX_AGE_MS || age < -30_000) {
+      return NextResponse.json(
+        { error: "Signature expired. Please try again." },
+        { status: 401 }
+      );
+    }
+
+    const signer = await recoverMessageAddress({
+      message,
+      signature: signature as `0x${string}`,
+    });
+    const walletKey = signer.toLowerCase();
+
+    if (!checkRateLimit(walletKey)) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded. Max 5 uploads per minute." },
+        { status: 429 }
+      );
+    }
+
     const file = formData.get("file");
 
     if (!file || !(file instanceof File)) {

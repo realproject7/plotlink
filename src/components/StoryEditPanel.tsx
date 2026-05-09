@@ -62,8 +62,14 @@ export function StoryEditPanel({
     }
     setCoverUploading(true);
     try {
+      const timestamp = Date.now();
+      const message = `PlotLink: Upload cover image\nTimestamp: ${timestamp}`;
+      const signature = await signMessageAsync({ message });
+
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("message", message);
+      formData.append("signature", signature);
       const res = await fetch("/api/upload-cover", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -73,7 +79,7 @@ export function StoryEditPanel({
     } finally {
       setCoverUploading(false);
     }
-  }, []);
+  }, [signMessageAsync]);
 
   const handleSave = async () => {
     setSaveError(null);
