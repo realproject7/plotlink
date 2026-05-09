@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense, useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useAccount } from "wagmi";
+import { useAccount, useSignMessage } from "wagmi";
 import { useSearchParams } from "next/navigation";
 import { useDraft } from "../../hooks/useDraft";
 import { useQuery } from "@tanstack/react-query";
@@ -127,6 +127,7 @@ export default function CreatePageWrapper() {
 function CreatePage() {
   const searchParams = useSearchParams();
   const { address, isConnected } = useAccount();
+  const { signMessageAsync } = useSignMessage();
 
   // Tab selection from query params
   const initialTab: Tab =
@@ -151,6 +152,10 @@ function CreatePage() {
 
   const handleCoverSelect = useCallback(async (file: File) => {
     setCoverError(null);
+    if (!isConnected) {
+      setCoverError("Connect your wallet to upload a cover image.");
+      return;
+    }
     const allowed = ["image/webp", "image/jpeg"];
     if (!allowed.includes(file.type)) {
       setCoverError("Only WebP and JPEG files are accepted.");
@@ -162,8 +167,14 @@ function CreatePage() {
     }
     setCoverUploading(true);
     try {
+      const timestamp = Date.now();
+      const message = `PlotLink: Upload cover image\nTimestamp: ${timestamp}`;
+      const signature = await signMessageAsync({ message });
+
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("message", message);
+      formData.append("signature", signature);
       const res = await fetch("/api/upload-cover", { method: "POST", body: formData });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Upload failed");
@@ -173,7 +184,7 @@ function CreatePage() {
     } finally {
       setCoverUploading(false);
     }
-  }, []);
+  }, [isConnected, signMessageAsync]);
 
   const handleCoverRemove = useCallback(() => {
     setCoverCid(null);
