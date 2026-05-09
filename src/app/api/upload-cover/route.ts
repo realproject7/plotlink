@@ -57,7 +57,16 @@ export async function POST(req: NextRequest) {
     }
 
     const timestamp = Number(timestampMatch[1]);
-    if (Date.now() - timestamp > SIGNATURE_MAX_AGE_MS) {
+    const expectedMessage = `PlotLink: Upload cover image\nTimestamp: ${timestamp}`;
+    if (message !== expectedMessage) {
+      return NextResponse.json(
+        { error: "Invalid message format." },
+        { status: 401 }
+      );
+    }
+
+    const age = Date.now() - timestamp;
+    if (age > SIGNATURE_MAX_AGE_MS || age < -30_000) {
       return NextResponse.json(
         { error: "Signature expired. Please try again." },
         { status: 401 }
