@@ -23,18 +23,24 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
   const { profile } = useConnectedIdentity();
 
   // Auto-connect when inside a mini app (Farcaster or Base App)
+  // Base App: always re-attempt on mount (webview may not persist localStorage)
+  // Farcaster: only attempt once (wagmi reconnect handles persistence)
   useEffect(() => {
     if (platformLoading || platform === "web") return;
-    if (autoConnectAttempted.current || isConnected) return;
-    autoConnectAttempted.current = true;
+    if (isConnected) return;
 
-    if (platform === "base" && typeof window !== "undefined" && window.ethereum) {
-      const injectedConnector = connectors.find((c) => c.type === "injected");
-      if (injectedConnector) {
-        connect({ connector: injectedConnector });
-        return;
+    if (platform === "base") {
+      if (typeof window !== "undefined" && window.ethereum) {
+        const injectedConnector = connectors.find((c) => c.type === "injected");
+        if (injectedConnector) {
+          connect({ connector: injectedConnector });
+          return;
+        }
       }
     }
+
+    if (autoConnectAttempted.current) return;
+    autoConnectAttempted.current = true;
 
     const farcasterConnector = connectors.find((c) => c.type === "farcasterMiniApp");
     if (farcasterConnector) {

@@ -6,6 +6,7 @@ import { RainbowKitProvider, type Theme } from "@rainbow-me/rainbowkit";
 import { config } from "../../lib/wagmi";
 import { useState, Suspense } from "react";
 import { useReferralCapture } from "../hooks/useReferralCapture";
+import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 import "@rainbow-me/rainbowkit/styles.css";
 
@@ -71,6 +72,12 @@ function ReferralCapture() {
   return null;
 }
 
+function PlatformGate({ children }: { children: React.ReactNode }) {
+  const { isLoading } = usePlatformDetection();
+  if (isLoading) return null;
+  return <>{children}</>;
+}
+
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
     () =>
@@ -107,7 +114,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <Suspense fallback={null}>
             <ReferralCapture />
           </Suspense>
-          {children}
+          <PlatformGate>{children}</PlatformGate>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
