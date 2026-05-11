@@ -25,8 +25,11 @@ export function FarcasterMiniApp() {
     import("@farcaster/miniapp-sdk").then(async ({ sdk }) => {
       if (cancelled) return;
 
-      // Dismiss splash screen
-      sdk.actions.ready();
+      try {
+        sdk.actions.ready();
+      } catch {
+        // May fail in Base App where Farcaster host frame doesn't exist
+      }
 
       // Check if user has already added the miniapp
       const context = await sdk.context;
