@@ -1,35 +1,52 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 export function CoverLightbox({ src, alt }: { src: string; alt: string }) {
-  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  const close = useCallback(() => setOpen(false), []);
+  const open = useCallback(() => {
+    setClosing(false);
+    setVisible(true);
+  }, []);
+
+  const close = useCallback(() => {
+    setClosing(true);
+    timerRef.current = setTimeout(() => {
+      setVisible(false);
+      setClosing(false);
+    }, 150);
+  }, []);
 
   useEffect(() => {
-    if (!open) return;
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  useEffect(() => {
+    if (!visible || closing) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") close();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, close]);
+  }, [visible, closing, close]);
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={open}
         className="absolute inset-0 cursor-pointer"
         aria-label="View full cover image"
       >
         <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover" />
       </button>
 
-      {open && (
+      {visible && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-[fadeIn_150ms_ease-out]"
+          className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm ${closing ? "animate-[fadeOut_150ms_ease-in_forwards]" : "animate-[fadeIn_150ms_ease-out]"}`}
           onClick={close}
         >
           <button
@@ -46,7 +63,7 @@ export function CoverLightbox({ src, alt }: { src: string; alt: string }) {
             src={src}
             alt={alt}
             onClick={(e) => e.stopPropagation()}
-            className="max-h-[90vh] max-w-[90vw] rounded-md object-contain animate-[scaleIn_150ms_ease-out]"
+            className={`max-h-[90vh] max-w-[90vw] rounded-md object-contain ${closing ? "animate-[scaleOut_150ms_ease-in_forwards]" : "animate-[scaleIn_150ms_ease-out]"}`}
           />
         </div>
       )}
