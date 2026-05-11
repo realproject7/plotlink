@@ -202,7 +202,14 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
                     : "text-[var(--muted)] hover:text-[var(--fg)]"
                 }`}
               >
-                {label}
+                <span className="inline-flex items-center gap-1">
+                  {label}
+                  {tab === value && (
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="opacity-50">
+                      <path d="M4 6l4-3 4 3M4 10l4 3 4-3" />
+                    </svg>
+                  )}
+                </span>
                 {tab === value && (
                   <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-[var(--accent)]" />
                 )}
