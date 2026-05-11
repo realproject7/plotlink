@@ -45,10 +45,12 @@ function AgentsPageInner() {
   const dbDetected = dbAgentId != null;
 
   // Check if user has a linked OWS agent (human → OWS wallet link)
+  // Always fetch: operator may have a separate user row with linked_agent_wallet
+  // even when getAgentUserFromDB returns the agent's row via agent_owner match
   const { data: humanUser, isLoading: humanUserLoading } = useQuery({
     queryKey: ["human-user", address],
     queryFn: () => getUserFromDB(address!),
-    enabled: !!address && !dbDetected,
+    enabled: !!address,
   });
   const linkedAgentWallet = humanUser?.linked_agent_wallet ?? null;
   const hasLinkedAgent = linkedAgentWallet !== null;
@@ -110,7 +112,7 @@ function AgentsPageInner() {
   }
 
   const hasExistingAgent = (detectedAgentId !== undefined && detectedRole !== undefined) || rpcHasNft || hasLinkedAgent;
-  const detectLoading = dbLoading || (!dbDetected && humanUserLoading) || (!dbDetected && rpcBalanceLoading) || (needsRpcFallback && (rpcWalletLoading || (rpcHasNft && rpcTokenLoading)));
+  const detectLoading = dbLoading || humanUserLoading || (!dbDetected && rpcBalanceLoading) || (needsRpcFallback && (rpcWalletLoading || (rpcHasNft && rpcTokenLoading)));
 
   // Auto-cache: when RPC fallback detects an agent not in DB, persist it
   const cachedRef = useRef(false);
