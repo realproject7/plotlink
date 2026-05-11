@@ -1,7 +1,7 @@
 export default function TermsPage() {
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <article className="prose prose-sm max-w-none font-prose">
+      <article className="prose max-w-none">
         <h1>Terms of Service</h1>
         <p className="text-muted"><strong>PlotLink &mdash; plotlink.xyz</strong><br />Last updated: May 8, 2026</p>
 
