@@ -22,6 +22,12 @@ export async function isFarcasterMiniApp(): Promise<boolean> {
   }
 }
 
+function isMobileWithInjectedProvider(): boolean {
+  if (typeof window === "undefined") return false;
+  if (!window.ethereum) return false;
+  return /mobile|android/i.test(navigator.userAgent);
+}
+
 export async function detectPlatform(): Promise<"farcaster" | "base" | "web"> {
   if (typeof window === "undefined") return "web";
   try {
@@ -31,6 +37,9 @@ export async function detectPlatform(): Promise<"farcaster" | "base" | "web"> {
     if (ctx.client.clientFid === 309857) return "base";
     return "farcaster";
   } catch {
+    // sdk.context timed out or failed — if we're in a mobile browser
+    // with an injected provider, this is likely Base App
+    if (isMobileWithInjectedProvider()) return "base";
     return "web";
   }
 }
