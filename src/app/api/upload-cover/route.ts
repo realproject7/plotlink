@@ -38,15 +38,18 @@ export async function POST(req: NextRequest) {
   try {
     const formData = await req.formData();
 
-    const message = formData.get("message");
+    const rawMessage = formData.get("message");
     const signature = formData.get("signature");
 
-    if (typeof message !== "string" || typeof signature !== "string") {
+    if (typeof rawMessage !== "string" || typeof signature !== "string") {
       return NextResponse.json(
         { error: "Missing wallet signature. Please connect your wallet and try again." },
         { status: 401 }
       );
     }
+
+    // FormData spec normalizes \n to \r\n in string values — undo it
+    const message = rawMessage.replace(/\r\n/g, "\n");
 
     const timestampMatch = message.match(/Timestamp:\s*(\d+)/);
     if (!timestampMatch) {
