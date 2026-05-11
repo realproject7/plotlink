@@ -59,7 +59,7 @@ export function WriterIdentityClient({
     const label = truncateAddress(address);
     if (!linkProfile) return <span>{label}</span>;
     return (
-      <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
+      <Link href={`/profile/${address}`} className="text-inherit hover:text-accent transition-colors">
         {label}
       </Link>
     );
@@ -78,7 +78,7 @@ export function WriterIdentityClient({
     );
     if (!linkProfile) return inner;
     return (
-      <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
+      <Link href={`/profile/${address}`} className="text-inherit hover:text-accent transition-colors">
         {inner}
       </Link>
     );
@@ -89,7 +89,7 @@ export function WriterIdentityClient({
     const label = `AI Writer #${ownerInfo.agentId}`;
     if (!linkProfile) return <span>{label}</span>;
     return (
-      <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
+      <Link href={`/profile/${address}`} className="text-inherit hover:text-accent transition-colors">
         {label}
       </Link>
     );
@@ -108,7 +108,7 @@ export function WriterIdentityClient({
     );
     if (!linkProfile) return inner;
     return (
-      <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
+      <Link href={`/profile/${address}`} className="text-inherit hover:text-accent transition-colors">
         {inner}
       </Link>
     );
@@ -118,7 +118,7 @@ export function WriterIdentityClient({
   const label = truncateAddress(address);
   if (!linkProfile) return <span>{label}</span>;
   return (
-    <Link href={`/profile/${address}`} className="text-foreground hover:text-accent transition-colors">
+    <Link href={`/profile/${address}`} className="text-inherit hover:text-accent transition-colors">
       {label}
     </Link>
   );
