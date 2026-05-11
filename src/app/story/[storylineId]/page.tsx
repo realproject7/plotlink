@@ -25,6 +25,7 @@ import { MobileActionBar } from "../../../components/MobileActionBar";
 import { MarketCapBox } from "../../../components/MarketCapBox";
 import { TokenPriceBox } from "../../../components/TokenPriceBox";
 import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
+import { CoverLightbox } from "../../../components/CoverLightbox";
 import { getCoverUrl } from "../../../../lib/cover";
 import { StoryEditPanel } from "../../../components/StoryEditPanel";
 
@@ -357,7 +358,7 @@ function StoryHeader({
           style={{ aspectRatio: "2/3" }}
         >
           {coverUrl ? (
-            <img src={coverUrl} alt={storyline.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+            <CoverLightbox src={coverUrl} alt={storyline.title} />
           ) : (
             <>
               <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
