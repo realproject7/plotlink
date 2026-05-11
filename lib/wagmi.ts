@@ -1,4 +1,5 @@
 import { http, createConfig } from "wagmi";
+import { injected } from "wagmi/connectors";
 import { base, baseSepolia } from "wagmi/chains";
 import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
 import { connectorsForWallets } from "@rainbow-me/rainbowkit";
@@ -46,7 +47,7 @@ const walletConnectors = connectorsForWallets(
   },
 );
 
-const connectors = walletConnectors;
+const connectors = [injected(), ...walletConnectors];
 
 export const config = createConfig({
   chains: [base, baseSepolia],

@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { detectPlatform } from "../../lib/farcaster-detect";
 
 export type Platform = "farcaster" | "base" | "web";
-
-/** Base App's client FID in the Farcaster protocol */
-const BASE_APP_CLIENT_FID = 309857;
 
 export function usePlatformDetection() {
   const [platform, setPlatform] = useState<Platform>("web");
@@ -14,20 +12,9 @@ export function usePlatformDetection() {
   useEffect(() => {
     let cancelled = false;
 
-    import("@farcaster/miniapp-sdk")
-      .then(async ({ sdk }) => {
-        if (cancelled) return;
-        const context = await sdk.context;
-        if (!context?.client || cancelled) return;
-
-        if (context.client.clientFid === BASE_APP_CLIENT_FID) {
-          setPlatform("base");
-        } else {
-          setPlatform("farcaster");
-        }
-      })
-      .catch(() => {
-        // SDK not available = web browser
+    detectPlatform()
+      .then((p) => {
+        if (!cancelled) setPlatform(p);
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);

@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
-import { isFarcasterMiniApp } from "../../lib/farcaster-detect";
 import { truncateAddress } from "../../lib/utils";
 import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
+import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 interface ConnectWalletProps {
   onNavigate?: () => void;
@@ -19,25 +19,28 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
   const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
   const autoConnectAttempted = useRef(false);
-  const [inMiniApp, setInMiniApp] = useState(false);
+  const { platform, isLoading: platformLoading } = usePlatformDetection();
   const { profile } = useConnectedIdentity();
 
-  // Detect Farcaster mini app context once on mount
+  // Auto-connect when inside a mini app (Farcaster or Base App)
   useEffect(() => {
-    isFarcasterMiniApp().then(setInMiniApp);
-  }, []);
-
-  // Auto-connect with the Farcaster connector when inside a mini app
-  useEffect(() => {
-    if (!inMiniApp) return;
+    if (platformLoading || platform === "web") return;
     if (autoConnectAttempted.current || isConnected) return;
     autoConnectAttempted.current = true;
 
-    const farcasterConnector = connectors.find((c) => c.type === "farcasterMiniApp");
-    if (!farcasterConnector) return;
+    if (platform === "base" && typeof window !== "undefined" && window.ethereum) {
+      const injectedConnector = connectors.find((c) => c.type === "injected");
+      if (injectedConnector) {
+        connect({ connector: injectedConnector });
+        return;
+      }
+    }
 
-    connect({ connector: farcasterConnector });
-  }, [inMiniApp, connectors, connect, isConnected]);
+    const farcasterConnector = connectors.find((c) => c.type === "farcasterMiniApp");
+    if (farcasterConnector) {
+      connect({ connector: farcasterConnector });
+    }
+  }, [platform, platformLoading, connectors, connect, isConnected]);
 
   // Connected state
   if (isConnected && address) {
