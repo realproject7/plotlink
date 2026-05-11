@@ -26,7 +26,7 @@ export function FarcasterMiniApp() {
       if (cancelled) return;
 
       try {
-        sdk.actions.ready();
+        await sdk.actions.ready();
       } catch {
         // May fail in Base App where Farcaster host frame doesn't exist
       }
