@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useConnect } from "wagmi";
+import { useState, useEffect, useRef } from "react";
+import { useAccount, useConnect } from "wagmi";
 import { detectPlatform } from "../../lib/farcaster-detect";
 import type { Platform } from "../hooks/usePlatformDetection";
 
@@ -13,6 +13,8 @@ export function FrameProvider({ children }: FrameProviderProps) {
   const [isReady, setIsReady] = useState(false);
   const [platform, setPlatform] = useState<Platform>("web");
   const { connect, connectors } = useConnect();
+  const { isConnected } = useAccount();
+  const connectAttempted = useRef(false);
 
   useEffect(() => {
     detectPlatform().then((p) => {
@@ -22,7 +24,8 @@ export function FrameProvider({ children }: FrameProviderProps) {
   }, []);
 
   useEffect(() => {
-    if (!isReady || platform === "web") return;
+    if (!isReady || platform === "web" || isConnected || connectAttempted.current) return;
+    connectAttempted.current = true;
 
     if (platform === "base") {
       const injectedConnector = connectors.find((c) => c.type === "injected");
@@ -38,7 +41,7 @@ export function FrameProvider({ children }: FrameProviderProps) {
         connect({ connector: farcasterConnector });
       }
     }
-  }, [isReady, platform, connectors, connect]);
+  }, [isReady, platform, isConnected, connectors, connect]);
 
   if (!isReady) {
     return (
@@ -48,9 +51,9 @@ export function FrameProvider({ children }: FrameProviderProps) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#faf8f5",
+          background: "#0a0a0a",
           fontFamily: "system-ui, sans-serif",
-          color: "#666",
+          color: "#666666",
           fontSize: "14px",
         }}
       >
