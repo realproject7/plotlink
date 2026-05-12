@@ -17,16 +17,20 @@ export function ShareToFarcaster({
   const { platform, isLoading } = usePlatformDetection();
 
   const handleShare = useCallback(async () => {
-    const { sdk } = await import("@farcaster/miniapp-sdk");
+    try {
+      const { sdk } = await import("@farcaster/miniapp-sdk");
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const storyUrl = `${appUrl}/story/${storylineId}`;
+      const appUrl =
+        process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      const storyUrl = `${appUrl}/story/${storylineId}`;
 
-    await sdk.actions.composeCast({
-      text: `Check out "${title}" on PlotLink`,
-      embeds: [storyUrl],
-    });
+      await sdk.actions.composeCast({
+        text: `Check out "${title}" on PlotLink`,
+        embeds: [storyUrl],
+      });
+    } catch {
+      // SDK call failed — silently ignore
+    }
   }, [storylineId, title]);
 
   if (isLoading || platform !== "farcaster") return null;

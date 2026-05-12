@@ -31,8 +31,10 @@ export function FarcasterMiniApp() {
         // May fail in Base App where Farcaster host frame doesn't exist
       }
 
-      // Check if user has already added the miniapp
-      const context = await sdk.context;
+      const context = await Promise.race([
+        sdk.context,
+        new Promise<null>((r) => setTimeout(() => r(null), 3000)),
+      ]);
       if (cancelled || !context?.client) return;
 
       // Save existing notification token if user already added
