@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { useAccount, useDisconnect } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import Link from "next/link";
 import { truncateAddress } from "../../lib/utils";
 import { useConnectedIdentity } from "../hooks/useConnectedIdentity";
-import { usePlatformDetection } from "../hooks/usePlatformDetection";
 
 interface ConnectWalletProps {
   onNavigate?: () => void;
@@ -16,37 +14,8 @@ interface ConnectWalletProps {
 
 export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) {
   const { address, isConnected } = useAccount();
-  const { connect, connectors } = useConnect();
   const { disconnect } = useDisconnect();
-  const autoConnectAttempted = useRef(false);
-  const { platform, isLoading: platformLoading } = usePlatformDetection();
   const { profile } = useConnectedIdentity();
-
-  // Auto-connect when inside a mini app (Farcaster or Base App)
-  // Base App: always re-attempt on mount (webview may not persist localStorage)
-  // Farcaster: only attempt once (wagmi reconnect handles persistence)
-  useEffect(() => {
-    if (platformLoading || platform === "web") return;
-    if (isConnected) return;
-
-    if (platform === "base") {
-      if (typeof window !== "undefined" && window.ethereum) {
-        const injectedConnector = connectors.find((c) => c.type === "injected");
-        if (injectedConnector) {
-          connect({ connector: injectedConnector });
-          return;
-        }
-      }
-    }
-
-    if (autoConnectAttempted.current) return;
-    autoConnectAttempted.current = true;
-
-    const farcasterConnector = connectors.find((c) => c.type === "farcasterMiniApp");
-    if (farcasterConnector) {
-      connect({ connector: farcasterConnector });
-    }
-  }, [platform, platformLoading, connectors, connect, isConnected]);
 
   // Connected state
   if (isConnected && address) {

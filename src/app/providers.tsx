@@ -6,6 +6,7 @@ import { RainbowKitProvider, type Theme } from "@rainbow-me/rainbowkit";
 import { config } from "../../lib/wagmi";
 import { useState, Suspense } from "react";
 import { useReferralCapture } from "../hooks/useReferralCapture";
+import { FrameProvider } from "../components/FrameProvider";
 import "@rainbow-me/rainbowkit/styles.css";
 
 // PlotLink-themed RainbowKit theme using CSS vars
@@ -103,10 +104,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
             ),
           }}
         >
-          <Suspense fallback={null}>
-            <ReferralCapture />
-          </Suspense>
-          {children}
+          <FrameProvider>
+            <Suspense fallback={null}>
+              <ReferralCapture />
+            </Suspense>
+            {children}
+          </FrameProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
