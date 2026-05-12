@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount, useBalance, useWriteContract } from "wagmi";
+import { useAccount, useBalance, useWriteContract, useSendCalls } from "wagmi";
+import { getCallsStatus } from "@wagmi/core";
 import { useQuery } from "@tanstack/react-query";
-import { parseUnits, formatUnits, type Address } from "viem";
+import { parseUnits, formatUnits, encodeFunctionData, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { mcv2BondAbi, erc20Abi } from "../../lib/price";
 import { formatTokenAmount } from "../../lib/format";
@@ -15,6 +16,8 @@ import { getZapQuote, buildZapMintTx } from "../../lib/zap";
 import { indexFetch } from "../../lib/index-fetch";
 import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../lib/usd-price";
+import { useWalletCapabilities } from "../hooks/useWalletCapabilities";
+import { config } from "../../lib/wagmi";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
@@ -58,6 +61,20 @@ function getTokenAddress(payToken: PayToken): Address {
 
 const ETH_GAS_BUFFER = BigInt("1000000000000000"); // 0.001 ETH reserved for gas
 
+async function waitForBundleTxHash(bundleId: string): Promise<string | null> {
+  for (let i = 0; i < 60; i++) {
+    const status = await getCallsStatus(config, { id: bundleId });
+    if (status.receipts?.[0]?.transactionHash) {
+      return status.receipts[0].transactionHash;
+    }
+    if (status.status === "success") {
+      return status.receipts?.[0]?.transactionHash ?? null;
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return null;
+}
+
 export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const { address, isConnected } = useAccount();
   const [tab, setTab] = useState<Tab>("buy");
@@ -68,6 +85,8 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const [txHash, setTxHash] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const { sendCallsAsync } = useSendCalls();
+  const { supportsBatching } = useWalletCapabilities();
   const { data: plotUsd } = usePlotUsdPrice();
   const { data: ethBalanceData, refetch: refetchEthBalance } = useBalance({ address });
 
@@ -313,7 +332,6 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       if (tab === "buy" && isZapMode && zapQuote) {
         const fromToken = getTokenAddress(payToken);
 
-        // ERC-20 zap tokens need approval to ZAP_PLOTLINK first
         if (isErc20ZapMode) {
           const allowance = await publicClient.readContract({
             address: fromToken,
@@ -322,27 +340,59 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
             args: [address, ZAP_PLOTLINK],
           });
 
-          if (allowance < zapQuote.fromTokenAmount) {
-            setTxState("approving");
-            const approveHash = await writeContractAsync({
-              address: fromToken,
-              abi: erc20Abi,
-              functionName: "approve",
-              args: [ZAP_PLOTLINK, zapQuote.fromTokenAmount],
-            });
-            await publicClient.waitForTransactionReceipt({ hash: approveHash });
-          }
-        }
+          const tx = buildZapMintTx(fromToken, tokenAddress, parsedAmount, "exact-output", zapQuote);
+          const needsApproval = allowance < zapQuote.fromTokenAmount;
 
-        setTxState("confirming");
-        const tx = buildZapMintTx(fromToken, tokenAddress, parsedAmount, "exact-output", zapQuote);
-        const hash = await retryOnNonceError(() => writeContractAsync(tx));
-        setTxHash(hash);
-        tradeHash = hash;
-        setTxState("pending");
-        await publicClient.waitForTransactionReceipt({ hash });
+          if (needsApproval && supportsBatching) {
+            setTxState("confirming");
+            const { id } = await sendCallsAsync({
+              calls: [
+                {
+                  to: fromToken,
+                  data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [ZAP_PLOTLINK, zapQuote.fromTokenAmount] }),
+                },
+                {
+                  to: tx.address,
+                  data: encodeFunctionData({ abi: tx.abi, functionName: tx.functionName, args: [...tx.args] }),
+                  value: tx.value,
+                },
+              ],
+            });
+            setTxState("pending");
+            const bundleTxHash = await waitForBundleTxHash(id);
+            if (bundleTxHash) {
+              setTxHash(bundleTxHash);
+              tradeHash = bundleTxHash;
+            }
+          } else {
+            if (needsApproval) {
+              setTxState("approving");
+              const approveHash = await writeContractAsync({
+                address: fromToken,
+                abi: erc20Abi,
+                functionName: "approve",
+                args: [ZAP_PLOTLINK, zapQuote.fromTokenAmount],
+              });
+              await publicClient.waitForTransactionReceipt({ hash: approveHash });
+            }
+
+            setTxState("confirming");
+            const hash = await retryOnNonceError(() => writeContractAsync(tx));
+            setTxHash(hash);
+            tradeHash = hash;
+            setTxState("pending");
+            await publicClient.waitForTransactionReceipt({ hash });
+          }
+        } else {
+          setTxState("confirming");
+          const tx = buildZapMintTx(fromToken, tokenAddress, parsedAmount, "exact-output", zapQuote);
+          const hash = await retryOnNonceError(() => writeContractAsync(tx));
+          setTxHash(hash);
+          tradeHash = hash;
+          setTxState("pending");
+          await publicClient.waitForTransactionReceipt({ hash });
+        }
       } else if (tab === "buy" && isPlotMode && estimate) {
-        // PLOT mode: approve PLOT_TOKEN -> MCV2_Bond.mint
         const maxCost = applySlippage(estimate, true);
 
         const allowance = await publicClient.readContract({
@@ -352,31 +402,54 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           args: [address, MCV2_BOND],
         });
 
-        if (allowance < maxCost) {
-          setTxState("approving");
-          const approveHash = await writeContractAsync({
-            address: PLOT_TOKEN,
-            abi: erc20Abi,
-            functionName: "approve",
-            args: [MCV2_BOND, maxCost],
-          });
-          await publicClient.waitForTransactionReceipt({ hash: approveHash });
-        }
+        const needsApproval = allowance < maxCost;
 
-        setTxState("confirming");
-        const hash = await retryOnNonceError(() => writeContractAsync({
-          address: MCV2_BOND,
-          abi: mcv2BondAbi,
-          functionName: "mint",
-          args: [tokenAddress, parsedAmount, maxCost, address],
-          gas: BigInt(2_000_000),
-        }));
-        setTxHash(hash);
-        tradeHash = hash;
-        setTxState("pending");
-        await publicClient.waitForTransactionReceipt({ hash });
+        if (needsApproval && supportsBatching) {
+          setTxState("confirming");
+          const { id } = await sendCallsAsync({
+            calls: [
+              {
+                to: PLOT_TOKEN,
+                data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [MCV2_BOND, maxCost] }),
+              },
+              {
+                to: MCV2_BOND,
+                data: encodeFunctionData({ abi: mcv2BondAbi, functionName: "mint", args: [tokenAddress, parsedAmount, maxCost, address] }),
+              },
+            ],
+          });
+          setTxState("pending");
+          const bundleTxHash = await waitForBundleTxHash(id);
+          if (bundleTxHash) {
+            setTxHash(bundleTxHash);
+            tradeHash = bundleTxHash;
+          }
+        } else {
+          if (needsApproval) {
+            setTxState("approving");
+            const approveHash = await writeContractAsync({
+              address: PLOT_TOKEN,
+              abi: erc20Abi,
+              functionName: "approve",
+              args: [MCV2_BOND, maxCost],
+            });
+            await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          }
+
+          setTxState("confirming");
+          const hash = await retryOnNonceError(() => writeContractAsync({
+            address: MCV2_BOND,
+            abi: mcv2BondAbi,
+            functionName: "mint",
+            args: [tokenAddress, parsedAmount, maxCost, address],
+            gas: BigInt(2_000_000),
+          }));
+          setTxHash(hash);
+          tradeHash = hash;
+          setTxState("pending");
+          await publicClient.waitForTransactionReceipt({ hash });
+        }
       } else if (tab === "sell" && estimate) {
-        // Sell: approve storyline token -> burn -> receive PLOT_TOKEN
         const minRefund = applySlippage(estimate, false);
 
         const allowance = await publicClient.readContract({
@@ -386,29 +459,53 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
           args: [address, MCV2_BOND],
         });
 
-        if (allowance < parsedAmount) {
-          setTxState("approving");
-          const approveHash = await writeContractAsync({
-            address: tokenAddress,
-            abi: erc20Abi,
-            functionName: "approve",
-            args: [MCV2_BOND, parsedAmount],
-          });
-          await publicClient.waitForTransactionReceipt({ hash: approveHash });
-        }
+        const needsApproval = allowance < parsedAmount;
 
-        setTxState("confirming");
-        const hash = await retryOnNonceError(() => writeContractAsync({
-          address: MCV2_BOND,
-          abi: mcv2BondAbi,
-          functionName: "burn",
-          args: [tokenAddress, parsedAmount, minRefund, address],
-          gas: BigInt(2_000_000),
-        }));
-        setTxHash(hash);
-        tradeHash = hash;
-        setTxState("pending");
-        await publicClient.waitForTransactionReceipt({ hash });
+        if (needsApproval && supportsBatching) {
+          setTxState("confirming");
+          const { id } = await sendCallsAsync({
+            calls: [
+              {
+                to: tokenAddress,
+                data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [MCV2_BOND, parsedAmount] }),
+              },
+              {
+                to: MCV2_BOND,
+                data: encodeFunctionData({ abi: mcv2BondAbi, functionName: "burn", args: [tokenAddress, parsedAmount, minRefund, address] }),
+              },
+            ],
+          });
+          setTxState("pending");
+          const bundleTxHash = await waitForBundleTxHash(id);
+          if (bundleTxHash) {
+            setTxHash(bundleTxHash);
+            tradeHash = bundleTxHash;
+          }
+        } else {
+          if (needsApproval) {
+            setTxState("approving");
+            const approveHash = await writeContractAsync({
+              address: tokenAddress,
+              abi: erc20Abi,
+              functionName: "approve",
+              args: [MCV2_BOND, parsedAmount],
+            });
+            await publicClient.waitForTransactionReceipt({ hash: approveHash });
+          }
+
+          setTxState("confirming");
+          const hash = await retryOnNonceError(() => writeContractAsync({
+            address: MCV2_BOND,
+            abi: mcv2BondAbi,
+            functionName: "burn",
+            args: [tokenAddress, parsedAmount, minRefund, address],
+            gas: BigInt(2_000_000),
+          }));
+          setTxHash(hash);
+          tradeHash = hash;
+          setTxState("pending");
+          await publicClient.waitForTransactionReceipt({ hash });
+        }
       } else {
         return;
       }
@@ -425,7 +522,7 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");
     }
-  }, [address, parsedAmount, estimate, zapQuote, tab, payToken, isZapMode, isPlotMode, isErc20ZapMode, tokenAddress, writeContractAsync, refetchBalance]);
+  }, [address, parsedAmount, estimate, zapQuote, tab, payToken, isZapMode, isPlotMode, isErc20ZapMode, tokenAddress, writeContractAsync, sendCallsAsync, supportsBatching, refetchBalance]);
 
   const reset = useCallback(() => {
     setTxState("idle");
