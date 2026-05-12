@@ -35,9 +35,13 @@ export const metadata: Metadata = {
   title: appName,
   description: appDescription,
   icons: {
-    icon: "/favicon.png",
-    apple: "/icon.png",
+    icon: [
+      { url: "/favicon.png" },
+      { url: "/plotlink-logo-symbol.svg", type: "image/svg+xml" },
+    ],
+    apple: { url: "/icon.png", sizes: "180x180" },
   },
+  manifest: "/manifest.json",
   openGraph: {
     title: appName,
     description: appDescription,
