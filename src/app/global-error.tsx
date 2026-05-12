@@ -14,9 +14,9 @@ export default function GlobalError({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0a0a0a",
+          background: "#faf8f5",
           fontFamily: "system-ui, sans-serif",
-          color: "#999999",
+          color: "#666666",
           textAlign: "center",
           padding: "24px",
         }}
@@ -28,8 +28,8 @@ export default function GlobalError({
           <button
             onClick={reset}
             style={{
-              background: "#00ff88",
-              color: "#0a0a0a",
+              background: "#333333",
+              color: "#ffffff",
               border: "none",
               borderRadius: "4px",
               padding: "8px 16px",
