@@ -3,6 +3,7 @@ import { Newsreader, Geist_Mono } from "next/font/google";
 import { Providers } from "./providers";
 import { NavBar } from "../components/NavBar";
 import { Footer } from "../components/Footer";
+import { FarcasterMiniApp } from "../components/FarcasterMiniApp";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -27,7 +28,6 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#faf8f5",
 };
 
 export const metadata: Metadata = {
@@ -68,6 +68,7 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: appName,
   },
+  themeColor,
   other: {
     "base:app_id": "69c257e93c2c56b9bbd2f62a",
     "fc:miniapp": JSON.stringify({
@@ -93,12 +94,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ backgroundColor: "#faf8f5", colorScheme: "light" }}>
-      <body
-        style={{ backgroundColor: "#faf8f5" }}
-        className={`${newsreader.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en">
+      <body className={`${newsreader.variable} ${geistMono.variable} antialiased`}>
         <Providers>
+          <FarcasterMiniApp />
           <NavBar />
           <div className="pt-11 min-h-screen">{children}</div>
           <Footer />
