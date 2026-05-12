@@ -17,6 +17,10 @@ export function FrameProvider({ children }: FrameProviderProps) {
   const connectAttempted = useRef(false);
 
   useEffect(() => {
+    if (typeof window !== "undefined" && !window.ethereum && window.self === window.top) {
+      setIsReady(true);
+      return;
+    }
     detectPlatform().then((p) => {
       setPlatform(p);
       setIsReady(true);
