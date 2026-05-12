@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useWriteContract, useSendCalls } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
-import { parseUnits, formatUnits } from "viem";
+import { parseUnits, formatUnits, encodeFunctionData } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
 import { erc20Abi } from "../../lib/price";
 import { formatTokenAmount } from "../../lib/format";
@@ -11,6 +11,7 @@ import { storyFactoryAbi } from "../../lib/contracts/abi";
 import { STORY_FACTORY, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../lib/contracts/constants";
 import { indexFetch } from "../../lib/index-fetch";
 import { FarcasterAvatar } from "./FarcasterAvatar";
+import { useWalletCapabilities } from "../hooks/useWalletCapabilities";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
 
@@ -27,6 +28,8 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
   const [txHash, setTxHash] = useState<string | null>(null);
 
   const { writeContractAsync } = useWriteContract();
+  const { sendCallsAsync } = useSendCalls();
+  const { supportsBatching } = useWalletCapabilities();
 
   const parsedAmount =
     amount && !isNaN(Number(amount)) && Number(amount) > 0
@@ -58,7 +61,6 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
       setError(null);
       setTxHash(null);
 
-      // Check allowance for PLOT_TOKEN → StoryFactory
       const allowance = await publicClient.readContract({
         address: PLOT_TOKEN,
         abi: erc20Abi,
@@ -66,33 +68,54 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
         args: [address, STORY_FACTORY],
       });
 
-      if (allowance < parsedAmount) {
-        setTxState("approving");
-        const approveHash = await writeContractAsync({
-          address: PLOT_TOKEN,
-          abi: erc20Abi,
-          functionName: "approve",
-          args: [STORY_FACTORY, parsedAmount],
+      const needsApproval = allowance < parsedAmount;
+      let donateHash: string;
+
+      if (needsApproval && supportsBatching) {
+        setTxState("confirming");
+        const { id } = await sendCallsAsync({
+          calls: [
+            {
+              to: PLOT_TOKEN,
+              data: encodeFunctionData({ abi: erc20Abi, functionName: "approve", args: [STORY_FACTORY, parsedAmount] }),
+            },
+            {
+              to: STORY_FACTORY,
+              data: encodeFunctionData({ abi: storyFactoryAbi, functionName: "donate", args: [BigInt(storylineId), parsedAmount] }),
+            },
+          ],
         });
-        await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        donateHash = id;
+        setTxHash(id);
+      } else {
+        if (needsApproval) {
+          setTxState("approving");
+          const approveHash = await writeContractAsync({
+            address: PLOT_TOKEN,
+            abi: erc20Abi,
+            functionName: "approve",
+            args: [STORY_FACTORY, parsedAmount],
+          });
+          await publicClient.waitForTransactionReceipt({ hash: approveHash });
+        }
+
+        setTxState("confirming");
+        const hash = await writeContractAsync({
+          address: STORY_FACTORY,
+          abi: storyFactoryAbi,
+          functionName: "donate",
+          args: [BigInt(storylineId), parsedAmount],
+          gas: BigInt(150_000),
+        });
+        donateHash = hash;
+        setTxHash(hash);
+
+        setTxState("pending");
+        await publicClient.waitForTransactionReceipt({ hash });
       }
 
-      // Call donate()
-      setTxState("confirming");
-      const hash = await writeContractAsync({
-        address: STORY_FACTORY,
-        abi: storyFactoryAbi,
-        functionName: "donate",
-        args: [BigInt(storylineId), parsedAmount],
-        gas: BigInt(150_000),
-      });
-      setTxHash(hash);
-
-      setTxState("pending");
-      await publicClient.waitForTransactionReceipt({ hash });
-
       setTxState("indexing");
-      const indexRes = await indexFetch("/api/index/donation", { txHash: hash });
+      const indexRes = await indexFetch("/api/index/donation", { txHash: donateHash });
       if (!indexRes.ok) {
         throw new Error("Donation sent on-chain but indexing failed. It will appear after the next backfill.");
       }
@@ -104,7 +127,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
       setError(err instanceof Error ? err.message : "Transaction failed");
       setTxState("error");
     }
-  }, [address, parsedAmount, storylineId, writeContractAsync, refetchBalance]);
+  }, [address, parsedAmount, storylineId, writeContractAsync, sendCallsAsync, supportsBatching, refetchBalance]);
 
   const reset = useCallback(() => {
     setTxState("idle");
