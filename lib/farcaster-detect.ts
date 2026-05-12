@@ -13,6 +13,7 @@ function isMobileWithInjectedProvider(): boolean {
 
 export async function isFarcasterMiniApp(): Promise<boolean> {
   if (typeof window === "undefined") return false;
+  if (isMobileWithInjectedProvider()) return false;
   try {
     const { sdk } = await import("@farcaster/miniapp-sdk");
     const ctx = await withTimeout(sdk.context, 3000, null);
@@ -25,22 +26,13 @@ export async function isFarcasterMiniApp(): Promise<boolean> {
 export async function detectPlatform(): Promise<"farcaster" | "base" | "web"> {
   if (typeof window === "undefined") return "web";
 
-  // Fast path: mobile browser with injected provider is Base App
+  // Base App: mobile + injected provider → skip SDK import entirely
+  // Warpcast does NOT inject window.ethereum, so this is a safe distinguisher
   if (isMobileWithInjectedProvider()) {
-    try {
-      const { sdk } = await import("@farcaster/miniapp-sdk");
-      const ctx = await withTimeout(sdk.context, 1000, null);
-      if (ctx?.client) {
-        if (ctx.client.clientFid === 309857) return "base";
-        return "farcaster";
-      }
-    } catch {
-      // SDK failed — fall through to Base App detection
-    }
     return "base";
   }
 
-  // Standard path: desktop or non-injected mobile
+  // Only import SDK when NOT in Base App (desktop or Warpcast)
   try {
     const { sdk } = await import("@farcaster/miniapp-sdk");
     const ctx = await withTimeout(sdk.context, 3000, null);
