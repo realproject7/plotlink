@@ -418,9 +418,12 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               },
             ],
           });
-          setTxHash(id);
-          tradeHash = id;
-          setTxState("done");
+          setTxState("pending");
+          const bundleTxHash = await waitForBundleTxHash(id);
+          if (bundleTxHash) {
+            setTxHash(bundleTxHash);
+            tradeHash = bundleTxHash;
+          }
         } else {
           if (needsApproval) {
             setTxState("approving");
@@ -472,9 +475,12 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
               },
             ],
           });
-          setTxHash(id);
-          tradeHash = id;
-          setTxState("done");
+          setTxState("pending");
+          const bundleTxHash = await waitForBundleTxHash(id);
+          if (bundleTxHash) {
+            setTxHash(bundleTxHash);
+            tradeHash = bundleTxHash;
+          }
         } else {
           if (needsApproval) {
             setTxState("approving");
