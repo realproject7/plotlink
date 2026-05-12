@@ -1,10 +1,8 @@
 /**
- * ETH → PLOT swap quote via Uniswap V4 Quoter for Base App users.
+ * ETH → PLOT swap for Base App users.
  *
- * Provides price estimates for the swap widget. Execution uses
- * the Uniswap web UI within Base App's webview, since the Universal
- * Router's V4 swap encoding requires the Uniswap SDK for proper
- * action/param serialization.
+ * Uses the V4 Quoter for price estimates and the V3 SwapRouter02
+ * for execution. SwapRouter02 auto-wraps ETH when msg.value is sent.
  */
 
 import { type Address, parseAbi } from "viem";
@@ -12,12 +10,17 @@ import { browserClient as publicClient } from "./rpc";
 import { UNISWAP_V4_QUOTER, PLOT_TOKEN } from "./contracts/constants";
 
 const WETH = "0x4200000000000000000000000000000000000006" as const;
+const SWAP_ROUTER_02 = "0x2626664c2603336E57B271c5C0b26F421741e481" as const;
 const SLIPPAGE_BPS = 300;
 
 const quoterAbi = parseAbi([
   "struct PoolKey { address currency0; address currency1; uint24 fee; int24 tickSpacing; address hooks; }",
   "struct QuoteExactSingleParams { PoolKey poolKey; bool zeroForOne; uint128 exactAmount; bytes hookData; }",
   "function quoteExactInputSingle(QuoteExactSingleParams calldata params) external returns (uint256 amountOut, uint256 gasEstimate)",
+]);
+
+export const swapRouterAbi = parseAbi([
+  "function exactInputSingle((address tokenIn, address tokenOut, uint24 fee, address recipient, uint256 amountIn, uint256 amountOutMinimum, uint160 sqrtPriceLimitX96) params) external payable returns (uint256 amountOut)",
 ]);
 
 const POOL_KEY = {
@@ -56,4 +59,24 @@ export async function getSwapQuote(ethAmount: bigint): Promise<SwapQuote> {
     amountOut - (amountOut * BigInt(SLIPPAGE_BPS)) / BigInt(10000);
 
   return { amountIn: ethAmount, amountOut, amountOutMin };
+}
+
+export function buildSwapTx(quote: SwapQuote, recipient: Address) {
+  return {
+    address: SWAP_ROUTER_02 as Address,
+    abi: swapRouterAbi,
+    functionName: "exactInputSingle" as const,
+    args: [
+      {
+        tokenIn: WETH,
+        tokenOut: PLOT_TOKEN,
+        fee: 10000,
+        recipient,
+        amountIn: quote.amountIn,
+        amountOutMinimum: quote.amountOutMin,
+        sqrtPriceLimitX96: BigInt(0),
+      },
+    ] as const,
+    value: quote.amountIn,
+  };
 }
