@@ -18,18 +18,15 @@ export function FarcasterMiniApp() {
   const { platform, isLoading } = usePlatformDetection();
 
   useEffect(() => {
-    if (isLoading || platform !== "farcaster") return;
-
+    if (isLoading) return;
     let cancelled = false;
 
     import("@farcaster/miniapp-sdk").then(async ({ sdk }) => {
       if (cancelled) return;
 
-      try {
-        await sdk.actions.ready();
-      } catch {
-        // May fail in Base App where Farcaster host frame doesn't exist
-      }
+      sdk.actions.ready().catch(() => {});
+
+      if (platform !== "farcaster") return;
 
       const context = await Promise.race([
         sdk.context,
@@ -37,7 +34,6 @@ export function FarcasterMiniApp() {
       ]);
       if (cancelled || !context?.client) return;
 
-      // Save existing notification token if user already added
       if (context.client.added && context.client.notificationDetails) {
         saveTokenClientSide(
           context.user?.fid,
@@ -46,19 +42,14 @@ export function FarcasterMiniApp() {
       }
 
       if (!context.client.added) {
-        // Trigger native add/notification modal
         try {
           const result = await sdk.actions.addMiniApp();
           if (result?.notificationDetails) {
             saveTokenClientSide(context.user?.fid, result.notificationDetails);
           }
-        } catch {
-          // User dismissed or SDK error — no action needed
-        }
+        } catch {}
       }
-    }).catch(() => {
-      // Not in a Farcaster context — silently ignore
-    });
+    }).catch(() => {});
 
     return () => {
       cancelled = true;
