@@ -1,4 +1,4 @@
-import { http, createConfig, createStorage, cookieStorage } from "wagmi";
+import { http, createConfig } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { base, baseSepolia } from "wagmi/chains";
 import { farcasterMiniApp } from "@farcaster/miniapp-wagmi-connector";
@@ -56,7 +56,6 @@ export const config = createConfig({
     [base.id]: IS_MAINNET ? createFallbackTransport() : http(),
     [baseSepolia.id]: IS_MAINNET ? http() : createFallbackTransport(),
   },
-  storage: createStorage({ storage: cookieStorage }),
   ssr: true,
   ...(DATA_SUFFIX ? { dataSuffix: DATA_SUFFIX } : {}),
 });
