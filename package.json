@@ -1,6 +1,6 @@
 {
   "name": "plotlink",
-  "version": "1.25.1",
+  "version": "1.25.2",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -17,8 +17,8 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1009.0",
     "@farcaster/miniapp-node": "^0.1.13",
-    "@farcaster/miniapp-sdk": "^0.3.0",
-    "@farcaster/miniapp-wagmi-connector": "^2.0.0",
+    "@farcaster/miniapp-sdk": "^0.2.3",
+    "@farcaster/miniapp-wagmi-connector": "^1.1.0",
     "@openzeppelin/merkle-tree": "^1.0.8",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@supabase/supabase-js": "^2.99.1",
