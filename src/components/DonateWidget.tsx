@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, useWriteContract, useSendCalls } from "wagmi";
+import { getCallsStatus } from "@wagmi/core";
 import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, encodeFunctionData } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
@@ -12,6 +13,7 @@ import { STORY_FACTORY, PLOT_TOKEN, RESERVE_LABEL, EXPLORER_URL } from "../../li
 import { indexFetch } from "../../lib/index-fetch";
 import { FarcasterAvatar } from "./FarcasterAvatar";
 import { useWalletCapabilities } from "../hooks/useWalletCapabilities";
+import { config } from "../../lib/wagmi";
 
 type TxState = "idle" | "approving" | "confirming" | "pending" | "indexing" | "done" | "error";
 
@@ -69,7 +71,7 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
       });
 
       const needsApproval = allowance < parsedAmount;
-      let donateHash: string;
+      let donateHash = "";
 
       if (needsApproval && supportsBatching) {
         setTxState("confirming");
@@ -85,8 +87,21 @@ export function DonateWidget({ storylineId, writerAddress }: DonateWidgetProps) 
             },
           ],
         });
-        donateHash = id;
-        setTxHash(id);
+        setTxState("pending");
+        for (let i = 0; i < 60; i++) {
+          const status = await getCallsStatus(config, { id });
+          if (status.receipts?.[0]?.transactionHash) {
+            donateHash = status.receipts[0].transactionHash;
+            setTxHash(donateHash);
+            break;
+          }
+          if (status.status === "success") {
+            donateHash = status.receipts?.[0]?.transactionHash ?? id;
+            setTxHash(donateHash);
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 1000));
+        }
       } else {
         if (needsApproval) {
           setTxState("approving");

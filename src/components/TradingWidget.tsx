@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useAccount, useBalance, useWriteContract, useSendCalls } from "wagmi";
+import { getCallsStatus } from "@wagmi/core";
 import { useQuery } from "@tanstack/react-query";
 import { parseUnits, formatUnits, encodeFunctionData, type Address } from "viem";
 import { browserClient as publicClient } from "../../lib/rpc";
@@ -16,6 +17,7 @@ import { indexFetch } from "../../lib/index-fetch";
 import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../lib/usd-price";
 import { useWalletCapabilities } from "../hooks/useWalletCapabilities";
+import { config } from "../../lib/wagmi";
 
 type Tab = "buy" | "sell";
 type TxState = "idle" | "approving" | "confirming" | "pending" | "done" | "error";
@@ -58,6 +60,20 @@ function getTokenAddress(payToken: PayToken): Address {
 }
 
 const ETH_GAS_BUFFER = BigInt("1000000000000000"); // 0.001 ETH reserved for gas
+
+async function waitForBundleTxHash(bundleId: string): Promise<string | null> {
+  for (let i = 0; i < 60; i++) {
+    const status = await getCallsStatus(config, { id: bundleId });
+    if (status.receipts?.[0]?.transactionHash) {
+      return status.receipts[0].transactionHash;
+    }
+    if (status.status === "success") {
+      return status.receipts?.[0]?.transactionHash ?? null;
+    }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return null;
+}
 
 export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
   const { address, isConnected } = useAccount();
@@ -342,9 +358,12 @@ export function TradingWidget({ tokenAddress }: { tokenAddress: Address }) {
                 },
               ],
             });
-            setTxHash(id);
-            tradeHash = id;
-            setTxState("done");
+            setTxState("pending");
+            const bundleTxHash = await waitForBundleTxHash(id);
+            if (bundleTxHash) {
+              setTxHash(bundleTxHash);
+              tradeHash = bundleTxHash;
+            }
           } else {
             if (needsApproval) {
               setTxState("approving");
