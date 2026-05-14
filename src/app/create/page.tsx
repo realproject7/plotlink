@@ -162,8 +162,8 @@ function CreatePage() {
       setCoverError("Only WebP and JPEG files are accepted.");
       return;
     }
-    if (file.size > 500 * 1024) {
-      setCoverError("File too large. Maximum size is 500KB.");
+    if (file.size > 1024 * 1024) {
+      setCoverError("File too large. Maximum size is 1MB.");
       return;
     }
     setCoverUploading(true);
@@ -497,7 +497,7 @@ function CreatePage() {
             <div>
               <label className="text-foreground mb-1 block text-sm">Cover Image</label>
               <p className="text-muted mb-1 text-[11px]">
-                Optional. WebP or JPEG, max 500KB. Recommended: 600×900px (2:3 portrait).
+                Optional. WebP or JPEG, max 1MB. Recommended: 600×900px (2:3 portrait).
               </p>
               <p className="text-muted mb-2 text-[10px]">
                 PlotLink may replace or remove cover images that violate our Terms or do not meet quality guidelines.

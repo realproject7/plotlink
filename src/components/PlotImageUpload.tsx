@@ -34,8 +34,8 @@ export function PlotImageUpload({ disabled }: PlotImageUploadProps) {
       setError("Only WebP and JPEG accepted.");
       return;
     }
-    if (file.size > 500 * 1024) {
-      setError("Max 500KB.");
+    if (file.size > 1024 * 1024) {
+      setError("Max 1MB.");
       return;
     }
 
@@ -122,7 +122,7 @@ export function PlotImageUpload({ disabled }: PlotImageUploadProps) {
               <span className="text-muted text-xs">Drop image here or click to browse</span>
             )}
           </div>
-          <p className="text-muted text-[10px]">WebP or JPEG, max 500KB</p>
+          <p className="text-muted text-[10px]">WebP or JPEG, max 1MB</p>
 
           {error && <p className="text-[11px] text-error">{error}</p>}
 

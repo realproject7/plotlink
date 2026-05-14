@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { recoverMessageAddress } from "viem";
 import { uploadBinaryWithRetry } from "../../../../lib/filebase";
 
-const MAX_FILE_SIZE = 500 * 1024;
+const MAX_FILE_SIZE = 1024 * 1024; // 1MB
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
 const SIGNATURE_MAX_AGE_MS = 5 * 60 * 1000;
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
 
     if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
-        { error: `File too large. Maximum size is ${MAX_FILE_SIZE / 1024}KB.` },
+        { error: "File too large. Maximum size is 1MB." },
         { status: 400 }
       );
     }
