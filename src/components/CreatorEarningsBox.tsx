@@ -17,6 +17,7 @@ export function CreatorEarningsBox({ earningsPlot, writerAddress }: CreatorEarni
   const { data: plotUsd } = usePlotUsdPrice();
   const usdValue = plotUsd ? earningsPlot * plotUsd : null;
 
+  // Wallet-wide unclaimed (contract doesn't expose per-story unclaimed)
   const { data: unclaimed } = useQuery({
     queryKey: ["unclaimed-royalties", writerAddress],
     queryFn: async () => {
@@ -34,21 +35,19 @@ export function CreatorEarningsBox({ earningsPlot, writerAddress }: CreatorEarni
   const unclaimedFloat = unclaimed ? parseFloat(formatUnits(unclaimed, 18)) : 0;
   const unclaimedUsd = plotUsd && unclaimedFloat > 0 ? formatUsdValue(unclaimedFloat * plotUsd) : null;
 
-  if (earningsPlot === 0) return <div className="text-foreground text-sm font-bold">$0</div>;
-
-  const plotLabel = `${formatTruncated(earningsPlot)} ${RESERVE_LABEL}`;
+  const plotLabel = earningsPlot > 0 ? `${formatTruncated(earningsPlot)} ${RESERVE_LABEL}` : null;
 
   return (
     <>
       <div className="text-foreground text-sm font-bold">
-        {usdValue !== null ? formatUsdValue(usdValue) : plotLabel}
+        {earningsPlot === 0 ? "$0" : usdValue !== null ? formatUsdValue(usdValue) : plotLabel}
       </div>
-      {usdValue !== null && (
+      {earningsPlot > 0 && usdValue !== null && (
         <div className="text-muted text-[10px]">{plotLabel}</div>
       )}
       {unclaimedFloat > 0 && (
         <div className="text-muted text-[10px]">
-          {unclaimedUsd ?? `${formatTruncated(unclaimedFloat)} ${RESERVE_LABEL}`} unclaimed
+          {unclaimedUsd ?? `${formatTruncated(unclaimedFloat)} ${RESERVE_LABEL}`} unclaimed (all stories)
         </div>
       )}
     </>
