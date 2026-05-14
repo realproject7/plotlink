@@ -26,6 +26,7 @@ import { DropdownSelect } from "../../components/DropdownSelect";
 import { Select } from "../../components/Select";
 import { GENRES, LANGUAGES } from "../../../lib/genres";
 import { WritePreviewToggle, ContentPreview } from "../../components/StoryContent";
+import { PlotImageUpload } from "../../components/PlotImageUpload";
 import { FALLBACK_STYLES } from "../../components/StoryCard";
 import { getCoverUrl } from "../../../lib/cover";
 
@@ -607,10 +608,18 @@ function CreatePage() {
               <p className="text-muted mb-2 text-[11px]">
                 The opening of your storyline — write a synopsis or introduction, or jump straight into the story. Markdown supported.
               </p>
-              <WritePreviewToggle
-                activeTab={newPreviewTab}
-                onTabChange={setNewPreviewTab}
-              />
+              <div className="flex items-center gap-2">
+                <WritePreviewToggle
+                  activeTab={newPreviewTab}
+                  onTabChange={setNewPreviewTab}
+                />
+                {newPreviewTab === "write" && (
+                  <PlotImageUpload
+                    disabled={newBusy}
+                    onInsert={(md) => setNewContent((prev) => prev + md)}
+                  />
+                )}
+              </div>
               {newPreviewTab === "write" ? (
                 <textarea
                   value={newContent}
@@ -782,10 +791,18 @@ function CreatePage() {
 
             <div>
               <label className="text-foreground mb-2 block text-sm">Next Chapter</label>
-              <WritePreviewToggle
-                activeTab={chainPreviewTab}
-                onTabChange={setChainPreviewTab}
-              />
+              <div className="flex items-center gap-2">
+                <WritePreviewToggle
+                  activeTab={chainPreviewTab}
+                  onTabChange={setChainPreviewTab}
+                />
+                {chainPreviewTab === "write" && (
+                  <PlotImageUpload
+                    disabled={chainBusy || noStoryline}
+                    onInsert={(md) => setChainContent((prev) => prev + md)}
+                  />
+                )}
+              </div>
               {chainPreviewTab === "write" ? (
                 <textarea
                   value={chainContent}
