@@ -1466,40 +1466,18 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
             let lastTraded: string | null = null;
             let firstTraded: string | null = null;
             if (supabase) {
-              const { data: firstMint } = await supabase
+              const { data: trades } = await supabase
                 .from("trade_history")
-                .select("price_per_token, block_timestamp")
-                .eq("user_address", address)
-                .eq("storyline_id", sl.storyline_id)
-                .eq("event_type", "mint")
-                .eq("contract_address", MCV2_BOND.toLowerCase())
-                .order("block_timestamp", { ascending: true })
-                .limit(1);
-              if (firstMint && firstMint.length > 0) {
-                entryPrice = firstMint[0].price_per_token;
-              }
-              // First trade of any type (mint or transfer-in)
-              const { data: firstTrade } = await supabase
-                .from("trade_history")
-                .select("block_timestamp")
+                .select("event_type, price_per_token, block_timestamp")
                 .eq("user_address", address)
                 .eq("storyline_id", sl.storyline_id)
                 .eq("contract_address", MCV2_BOND.toLowerCase())
-                .order("block_timestamp", { ascending: true })
-                .limit(1);
-              if (firstTrade && firstTrade.length > 0) {
-                firstTraded = firstTrade[0].block_timestamp;
-              }
-              const { data: lastTrade } = await supabase
-                .from("trade_history")
-                .select("block_timestamp")
-                .eq("user_address", address)
-                .eq("storyline_id", sl.storyline_id)
-                .eq("contract_address", MCV2_BOND.toLowerCase())
-                .order("block_timestamp", { ascending: false })
-                .limit(1);
-              if (lastTrade && lastTrade.length > 0) {
-                lastTraded = lastTrade[0].block_timestamp;
+                .order("block_timestamp", { ascending: true });
+              if (trades && trades.length > 0) {
+                const firstMint = trades.find(t => t.event_type === "mint");
+                entryPrice = firstMint?.price_per_token ?? null;
+                firstTraded = trades[0].block_timestamp;
+                lastTraded = trades[trades.length - 1].block_timestamp;
               }
             }
 
