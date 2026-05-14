@@ -61,7 +61,7 @@ export default function TermsPage() {
         <h2>8. Cover Image Policy</h2>
         <p>Authors may upload book cover images for their stories. Cover images are subject to the following policies:</p>
         <ul>
-          <li>Accepted formats are WebP and JPEG, with a maximum file size of 500KB</li>
+          <li>Accepted formats are WebP and JPEG, with a maximum file size of 1MB</li>
           <li>Cover images are stored on IPFS via Filebase and are publicly accessible once uploaded</li>
           <li>Authors are responsible for ensuring cover images do not infringe any third-party copyright or intellectual property rights</li>
           <li>PlotLink reserves the right to replace cover images that are deemed low quality, misleading, or inappropriate, without prior notice to the author</li>
