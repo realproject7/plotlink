@@ -651,7 +651,7 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
 /** Wrapper that enumerates all agents owned by the connected wallet */
-export function AgentManageAll({ onRegister }: { onRegister?: () => void } = {}) {
+export function AgentManageAll({ onRegister, linkedAgentWallet }: { onRegister?: () => void; linkedAgentWallet?: string | null } = {}) {
   const { address } = useAccount();
 
   const { data: balance, isLoading: balanceLoading } = useReadContract({
@@ -729,7 +729,18 @@ export function AgentManageAll({ onRegister }: { onRegister?: () => void } = {})
   const isSelfAgent = selfAgentId !== undefined && selfAgentId > BigInt(0);
   const selfInList = agents.some((a) => a.agentId === selfAgentId);
 
-  const isLoading = balanceLoading || tokensLoading || metaLoading;
+  // Look up agent ID for a linked OWS wallet (operator doesn't hold the NFT)
+  const { data: linkedAgentId, isLoading: linkedLoading } = useReadContract({
+    address: ERC8004_REGISTRY,
+    abi: erc8004Abi,
+    functionName: "agentIdByWallet",
+    args: linkedAgentWallet ? [linkedAgentWallet as Address] : undefined,
+    query: { enabled: !!linkedAgentWallet },
+  });
+  const hasLinkedAgent = linkedAgentId !== undefined && linkedAgentId > BigInt(0);
+  const linkedInList = agents.some((a) => a.agentId === linkedAgentId) || (isSelfAgent && selfAgentId === linkedAgentId);
+
+  const isLoading = balanceLoading || tokensLoading || metaLoading || linkedLoading;
 
   if (isLoading) {
     return (
@@ -739,7 +750,7 @@ export function AgentManageAll({ onRegister }: { onRegister?: () => void } = {})
     );
   }
 
-  const hasAgents = agents.length > 0 || (isSelfAgent && !selfInList);
+  const hasAgents = agents.length > 0 || (isSelfAgent && !selfInList) || (hasLinkedAgent && !linkedInList);
 
   if (!hasAgents) {
     return (
@@ -766,6 +777,9 @@ export function AgentManageAll({ onRegister }: { onRegister?: () => void } = {})
       ))}
       {isSelfAgent && !selfInList && (
         <AgentManage agentId={selfAgentId} role="agentWallet" source="direct" />
+      )}
+      {hasLinkedAgent && !linkedInList && (
+        <AgentManage agentId={linkedAgentId} role="owner" source="ows" />
       )}
     </div>
   );
