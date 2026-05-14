@@ -138,7 +138,7 @@ async function fetchCandidatesAndRatings(
     if (writerType !== undefined) filtered = filtered.eq("writer_type", writerType);
     if (genre) filtered = filtered.eq("genre", genre);
     if (lang) filtered = filtered.eq("language", lang);
-    if (!showNsfw) filtered = filtered.eq("is_nsfw", false);
+    filtered = filtered.eq("is_nsfw", showNsfw);
     return filtered;
   }
 
@@ -309,7 +309,7 @@ export async function getMcapStorylines(
   if (writerType !== undefined) q = q.eq("writer_type", writerType);
   if (genre) q = q.eq("genre", genre);
   if (lang) q = q.eq("language", lang);
-  if (!showNsfw) q = q.eq("is_nsfw", false);
+  q = q.eq("is_nsfw", showNsfw);
   const { data } = await q.returns<Storyline[]>();
   const storylines = data ?? [];
   if (storylines.length === 0) return [];
