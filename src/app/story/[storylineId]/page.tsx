@@ -11,8 +11,8 @@ import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { StoryContent } from "../../../components/StoryContent";
 import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
-import { getTokenPrice, getStoryEarnings, type TokenPriceInfo } from "../../../../lib/price";
-import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
+import { getTokenPrice, getCreatorEarnings, type TokenPriceInfo } from "../../../../lib/price";
+import { RESERVE_LABEL, STORY_FACTORY, PLOT_TOKEN } from "../../../../lib/contracts/constants";
 import { formatPrice, formatSupply } from "../../../../lib/format";
 import { type Address } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
@@ -161,7 +161,7 @@ export default async function StoryPage({ params }: { params: Params }) {
   const sl = storyline as Storyline;
   const [priceInfo, earningsPlot] = await Promise.all([
     sl.token_address ? getTokenPrice(sl.token_address as Address) : null,
-    sl.token_address ? getStoryEarnings(sl.token_address as Address, supabase) : 0,
+    sl.writer_address ? getCreatorEarnings(sl.writer_address as Address, PLOT_TOKEN) : 0,
   ]);
 
   return (
@@ -324,7 +324,7 @@ function StoryHeader({
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
         <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Creator Earnings</div>
         <div className="text-[15px] font-semibold tabular-nums text-foreground">
-          <CreatorEarningsBox earningsPlot={earningsPlot} writerAddress={storyline.writer_address as Address} />
+          <CreatorEarningsBox earningsPlot={earningsPlot} />
         </div>
       </div>
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
