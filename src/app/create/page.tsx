@@ -149,6 +149,8 @@ function CreatePage() {
   const [isNsfw, setIsNsfw] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const newContentRef = useRef<HTMLTextAreaElement>(null);
+  const chainContentRef = useRef<HTMLTextAreaElement>(null);
   const hasDeadline = true;
 
   const handleCoverSelect = useCallback(async (file: File) => {
@@ -615,13 +617,15 @@ function CreatePage() {
                 />
                 {newPreviewTab === "write" && (
                   <PlotImageUpload
+                    textareaRef={newContentRef}
                     disabled={newBusy}
-                    onInsert={(md) => setNewContent((prev) => prev + md)}
+                    onInsert={(updater) => setNewContent(updater)}
                   />
                 )}
               </div>
               {newPreviewTab === "write" ? (
                 <textarea
+                  ref={newContentRef}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   disabled={newBusy}
@@ -798,13 +802,15 @@ function CreatePage() {
                 />
                 {chainPreviewTab === "write" && (
                   <PlotImageUpload
+                    textareaRef={chainContentRef}
                     disabled={chainBusy || noStoryline}
-                    onInsert={(md) => setChainContent((prev) => prev + md)}
+                    onInsert={(updater) => setChainContent(updater)}
                   />
                 )}
               </div>
               {chainPreviewTab === "write" ? (
                 <textarea
+                  ref={chainContentRef}
                   value={chainContent}
                   onChange={(e) => setChainContent(e.target.value)}
                   disabled={chainBusy || noStoryline}

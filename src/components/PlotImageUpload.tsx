@@ -1,14 +1,15 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 
 interface PlotImageUploadProps {
-  onInsert: (markdown: string) => void;
+  textareaRef: RefObject<HTMLTextAreaElement | null>;
+  onInsert: (updater: (prev: string) => string) => void;
   disabled?: boolean;
 }
 
-export function PlotImageUpload({ onInsert, disabled }: PlotImageUploadProps) {
+export function PlotImageUpload({ textareaRef, onInsert, disabled }: PlotImageUploadProps) {
   const { isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
   const [uploading, setUploading] = useState(false);
@@ -31,6 +32,8 @@ export function PlotImageUpload({ onInsert, disabled }: PlotImageUploadProps) {
       return;
     }
 
+    const cursorPos = textareaRef.current?.selectionStart ?? -1;
+
     setUploading(true);
     try {
       const timestamp = Date.now();
@@ -47,7 +50,14 @@ export function PlotImageUpload({ onInsert, disabled }: PlotImageUploadProps) {
       if (!res.ok) throw new Error(data.error || "Upload failed");
 
       const alt = file.name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
-      onInsert(`\n![${alt}](${data.url})\n`);
+      const md = `\n![${alt}](${data.url})\n`;
+
+      onInsert((prev) => {
+        if (cursorPos >= 0 && cursorPos <= prev.length) {
+          return prev.slice(0, cursorPos) + md + prev.slice(cursorPos);
+        }
+        return prev + md;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
     } finally {
