@@ -650,29 +650,39 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
 
 const ZERO_ADDR = "0x0000000000000000000000000000000000000000";
 
+interface AgentManageAllProps {
+  onRegister?: () => void;
+  detectedAgentId?: bigint;
+  detectedRole?: "owner" | "agentWallet";
+  linkedAgentWallet?: string | null;
+}
+
 /** Wrapper that enumerates all agents owned by the connected wallet */
-export function AgentManageAll({ onRegister, linkedAgentWallet }: { onRegister?: () => void; linkedAgentWallet?: string | null } = {}) {
+export function AgentManageAll({ onRegister, detectedAgentId, detectedRole, linkedAgentWallet }: AgentManageAllProps) {
   const { address } = useAccount();
+
+  // Skip on-chain enumeration when DB already resolved the agent
+  const skipOnChain = detectedAgentId !== undefined;
 
   const { data: balance, isLoading: balanceLoading } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "balanceOf",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: !!address && !skipOnChain },
   });
 
   const agentCount = balance !== undefined ? Number(balance) : 0;
 
   const tokenIndexCalls = useMemo(() => {
-    if (!address || agentCount === 0) return [];
+    if (!address || agentCount === 0 || skipOnChain) return [];
     return Array.from({ length: agentCount }, (_, i) => ({
       address: ERC8004_REGISTRY,
       abi: erc8004Abi,
       functionName: "tokenOfOwnerByIndex" as const,
       args: [address, BigInt(i)] as const,
     }));
-  }, [address, agentCount]);
+  }, [address, agentCount, skipOnChain]);
 
   const { data: tokenResults, isLoading: tokensLoading } = useReadContracts({
     contracts: tokenIndexCalls,
@@ -718,29 +728,24 @@ export function AgentManageAll({ onRegister, linkedAgentWallet }: { onRegister?:
     });
   }, [agentIds, metaResults]);
 
-  // Also check if connected wallet is an agent wallet
+  // Also check if connected wallet is an agent wallet (only when no DB data)
   const { data: selfAgentId } = useReadContract({
     address: ERC8004_REGISTRY,
     abi: erc8004Abi,
     functionName: "agentIdByWallet",
     args: address ? [address] : undefined,
-    query: { enabled: !!address },
+    query: { enabled: !!address && !skipOnChain },
   });
   const isSelfAgent = selfAgentId !== undefined && selfAgentId > BigInt(0);
   const selfInList = agents.some((a) => a.agentId === selfAgentId);
 
-  // Look up agent ID for a linked OWS wallet (operator doesn't hold the NFT)
-  const { data: linkedAgentId, isLoading: linkedLoading } = useReadContract({
-    address: ERC8004_REGISTRY,
-    abi: erc8004Abi,
-    functionName: "agentIdByWallet",
-    args: linkedAgentWallet ? [linkedAgentWallet as Address] : undefined,
-    query: { enabled: !!linkedAgentWallet },
-  });
-  const hasLinkedAgent = linkedAgentId !== undefined && linkedAgentId > BigInt(0);
-  const linkedInList = agents.some((a) => a.agentId === linkedAgentId) || (isSelfAgent && selfAgentId === linkedAgentId);
+  // DB-detected agent: use directly without on-chain enumeration
+  const dbAgentRole = detectedAgentId !== undefined
+    ? (linkedAgentWallet ? "linked" as const : detectedRole === "agentWallet" ? "agentWallet" as const : "owner" as const)
+    : undefined;
+  const dbAgentInOnChainList = agents.some((a) => a.agentId === detectedAgentId);
 
-  const isLoading = balanceLoading || tokensLoading || metaLoading || linkedLoading;
+  const isLoading = !skipOnChain && (balanceLoading || tokensLoading || metaLoading);
 
   if (isLoading) {
     return (
@@ -750,7 +755,7 @@ export function AgentManageAll({ onRegister, linkedAgentWallet }: { onRegister?:
     );
   }
 
-  const hasAgents = agents.length > 0 || (isSelfAgent && !selfInList) || (hasLinkedAgent && !linkedInList);
+  const hasAgents = agents.length > 0 || (isSelfAgent && !selfInList) || (detectedAgentId !== undefined && !dbAgentInOnChainList);
 
   if (!hasAgents) {
     return (
@@ -778,8 +783,8 @@ export function AgentManageAll({ onRegister, linkedAgentWallet }: { onRegister?:
       {isSelfAgent && !selfInList && (
         <AgentManage agentId={selfAgentId} role="agentWallet" source="direct" />
       )}
-      {hasLinkedAgent && !linkedInList && (
-        <AgentManage agentId={linkedAgentId} role="linked" source="ows" />
+      {detectedAgentId !== undefined && !dbAgentInOnChainList && (
+        <AgentManage agentId={detectedAgentId} role={dbAgentRole!} source={linkedAgentWallet ? "ows" : "direct"} />
       )}
     </div>
   );
