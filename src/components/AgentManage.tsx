@@ -784,7 +784,7 @@ export function AgentManageAll({ onRegister, detectedAgentId, detectedRole, link
         <AgentManage agentId={selfAgentId} role="agentWallet" source="direct" />
       )}
       {detectedAgentId !== undefined && !dbAgentInOnChainList && (
-        <AgentManage agentId={detectedAgentId} role={dbAgentRole!} source="ows" />
+        <AgentManage agentId={detectedAgentId} role={dbAgentRole!} source={linkedAgentWallet ? "ows" : "direct"} />
       )}
     </div>
   );
