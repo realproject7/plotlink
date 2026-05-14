@@ -189,7 +189,7 @@ function AgentsPageInner() {
             <p className="text-muted text-sm">Detecting agent status...</p>
           </div>
         ) : hasExistingAgent && !showRegisterForm ? (
-          <AgentManageAll onRegister={() => setShowRegisterForm(true)} linkedAgentWallet={linkedAgentWallet} />
+          <AgentManageAll onRegister={() => setShowRegisterForm(true)} detectedAgentId={detectedAgentId} detectedRole={detectedRole} linkedAgentWallet={linkedAgentWallet} />
         ) : (
           <AgentRegister />
         )
