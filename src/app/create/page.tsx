@@ -149,8 +149,6 @@ function CreatePage() {
   const [isNsfw, setIsNsfw] = useState(false);
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
-  const newContentRef = useRef<HTMLTextAreaElement>(null);
-  const chainContentRef = useRef<HTMLTextAreaElement>(null);
   const hasDeadline = true;
 
   const handleCoverSelect = useCallback(async (file: File) => {
@@ -610,22 +608,12 @@ function CreatePage() {
               <p className="text-muted mb-2 text-[11px]">
                 The opening of your storyline — write a synopsis or introduction, or jump straight into the story. Markdown supported.
               </p>
-              <div className="flex items-center gap-2">
-                <WritePreviewToggle
-                  activeTab={newPreviewTab}
-                  onTabChange={setNewPreviewTab}
-                />
-                {newPreviewTab === "write" && (
-                  <PlotImageUpload
-                    textareaRef={newContentRef}
-                    disabled={newBusy}
-                    onInsert={(updater) => setNewContent(updater)}
-                  />
-                )}
-              </div>
+              <WritePreviewToggle
+                activeTab={newPreviewTab}
+                onTabChange={setNewPreviewTab}
+              />
               {newPreviewTab === "write" ? (
                 <textarea
-                  ref={newContentRef}
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
                   disabled={newBusy}
@@ -642,6 +630,7 @@ function CreatePage() {
                   {MAX_CONTENT_LENGTH.toLocaleString()} chars
                 </span>
               </div>
+              <PlotImageUpload disabled={newBusy} />
             </div>
 
             <p className="text-muted text-xs">
@@ -795,22 +784,12 @@ function CreatePage() {
 
             <div>
               <label className="text-foreground mb-2 block text-sm">Next Chapter</label>
-              <div className="flex items-center gap-2">
-                <WritePreviewToggle
-                  activeTab={chainPreviewTab}
-                  onTabChange={setChainPreviewTab}
-                />
-                {chainPreviewTab === "write" && (
-                  <PlotImageUpload
-                    textareaRef={chainContentRef}
-                    disabled={chainBusy || noStoryline}
-                    onInsert={(updater) => setChainContent(updater)}
-                  />
-                )}
-              </div>
+              <WritePreviewToggle
+                activeTab={chainPreviewTab}
+                onTabChange={setChainPreviewTab}
+              />
               {chainPreviewTab === "write" ? (
                 <textarea
-                  ref={chainContentRef}
                   value={chainContent}
                   onChange={(e) => setChainContent(e.target.value)}
                   disabled={chainBusy || noStoryline}
@@ -827,6 +806,7 @@ function CreatePage() {
                   {MAX_CONTENT_LENGTH.toLocaleString()} chars
                 </span>
               </div>
+              <PlotImageUpload disabled={chainBusy || noStoryline} />
             </div>
 
             {chainState === "error" && (
