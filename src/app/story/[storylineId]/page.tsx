@@ -324,12 +324,8 @@ function StoryHeader({
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
         <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Creator Earnings</div>
         <div className="text-[15px] font-semibold tabular-nums text-foreground">
-          <CreatorEarningsBox earningsPlot={earningsPlot} />
+          <CreatorEarningsBox earningsPlot={earningsPlot} writerAddress={storyline.writer_address as Address} />
         </div>
-      </div>
-      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
-        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Plots</div>
-        <div className="text-[15px] font-semibold tabular-nums text-foreground">{storyline.plot_count}</div>
       </div>
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
         <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Deadline</div>
