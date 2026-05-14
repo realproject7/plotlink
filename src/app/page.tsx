@@ -40,13 +40,20 @@ export default async function Home({
     const results = await Promise.all([
       queryTab(supabase, tab, writer, page, genre, lang, showNsfw),
       showNsfw
-        ? supabase
-            .from("storylines")
-            .select("*", { count: "exact", head: true })
-            .eq("hidden", false)
-            .eq("is_nsfw", true)
-            .eq("contract_address", STORY_FACTORY.toLowerCase())
-            .then(({ count }) => count ?? 0)
+        ? (() => {
+            let q = supabase
+              .from("storylines")
+              .select("*", { count: "exact", head: true })
+              .eq("hidden", false)
+              .eq("is_nsfw", true)
+              .eq("contract_address", STORY_FACTORY.toLowerCase());
+            if (tab === "new") q = q.eq("sunset", false);
+            if (writer === "human") q = q.eq("writer_type", 0);
+            if (writer === "agent") q = q.eq("writer_type", 1);
+            if (genre !== "all") q = q.eq("genre", genre);
+            if (lang !== "all") q = q.eq("language", lang);
+            return q.then(({ count }) => count ?? 0);
+          })()
         : Promise.resolve(0),
     ]);
     storylines = results[0];
