@@ -28,6 +28,7 @@ import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
 import { CoverLightbox } from "../../../components/CoverLightbox";
 import { getCoverUrl } from "../../../../lib/cover";
 import { StoryEditPanel } from "../../../components/StoryEditPanel";
+import { CreatorEarningsBox } from "../../../components/CreatorEarningsBox";
 
 /** Deduplicate plots by plot_index, keeping the first occurrence. */
 function deduplicateByPlotIndex(plots: Plot[]) {
@@ -315,6 +316,12 @@ function StoryHeader({
         <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Supply</div>
         <div className="text-[15px] font-semibold tabular-nums text-foreground">
           {formatSupply(priceInfo.totalSupply)}
+        </div>
+      </div>
+      <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
+        <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Creator Earnings</div>
+        <div className="text-[15px] font-semibold tabular-nums text-foreground">
+          <CreatorEarningsBox writerAddress={storyline.writer_address as Address} />
         </div>
       </div>
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
