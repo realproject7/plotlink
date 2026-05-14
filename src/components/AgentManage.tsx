@@ -36,7 +36,7 @@ const SET_WALLET_TYPES = {
 
 interface AgentManageProps {
   agentId: bigint;
-  role: "owner" | "agentWallet";
+  role: "owner" | "agentWallet" | "linked";
   source?: "ows" | "direct";
 }
 
@@ -336,7 +336,7 @@ export function AgentManage({ agentId, role, source }: AgentManageProps) {
               )}
             </div>
             <p className="text-muted mt-0.5 text-xs">
-              {role === "owner" ? "You own this agent" : "Your wallet is bound to this agent"}
+              {role === "owner" ? "You own this agent" : role === "linked" ? "Linked OWS agent" : "Your wallet is bound to this agent"}
             </p>
           </div>
           {isOwner && !editing && (
@@ -779,7 +779,7 @@ export function AgentManageAll({ onRegister, linkedAgentWallet }: { onRegister?:
         <AgentManage agentId={selfAgentId} role="agentWallet" source="direct" />
       )}
       {hasLinkedAgent && !linkedInList && (
-        <AgentManage agentId={linkedAgentId} role="owner" source="ows" />
+        <AgentManage agentId={linkedAgentId} role="linked" source="ows" />
       )}
     </div>
   );
