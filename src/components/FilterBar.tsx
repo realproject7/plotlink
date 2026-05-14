@@ -25,6 +25,7 @@ interface FilterBarProps {
   tab: string;
   totalCount?: number;
   showNsfw?: boolean;
+  nsfwCount?: number;
 }
 
 function buildHref(params: { tab: string; writer: string; genre: string; lang: string; nsfw?: boolean }) {
@@ -150,7 +151,7 @@ function FilterSheet({ open, ...props }: { open: boolean; onClose: () => void; w
   return <FilterSheetContent {...props} />;
 }
 
-export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = false }: FilterBarProps) {
+export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = false, nsfwCount = 0 }: FilterBarProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const nsfw = showNsfw;
@@ -311,6 +312,18 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
             )}
           </button>
         </div>
+
+        {/* NSFW filter feedback */}
+        {nsfw && nsfwCount === 0 && (
+          <p className="mt-2 text-[11px] text-[var(--muted)]">
+            No 18+ stories found — all current stories are safe for work.
+          </p>
+        )}
+        {nsfw && nsfwCount > 0 && (
+          <p className="mt-2 text-[11px] text-[var(--muted)]">
+            Showing {nsfwCount} {nsfwCount === 1 ? "mature story" : "mature stories"} alongside regular content.
+          </p>
+        )}
 
         {/* Mobile active filter chips */}
         {activeChips.length > 0 && (

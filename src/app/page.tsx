@@ -35,8 +35,22 @@ export default async function Home({
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
+  let nsfwCount = 0;
   if (supabase) {
-    storylines = await queryTab(supabase, tab, writer, page, genre, lang, showNsfw);
+    const results = await Promise.all([
+      queryTab(supabase, tab, writer, page, genre, lang, showNsfw),
+      showNsfw
+        ? supabase
+            .from("storylines")
+            .select("*", { count: "exact", head: true })
+            .eq("hidden", false)
+            .eq("is_nsfw", true)
+            .eq("contract_address", STORY_FACTORY.toLowerCase())
+            .then(({ count }) => count ?? 0)
+        : Promise.resolve(0),
+    ]);
+    storylines = results[0];
+    nsfwCount = results[1];
   }
 
   return (
@@ -51,7 +65,7 @@ export default async function Home({
         </p>
       </header>
 
-      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} showNsfw={showNsfw} />
+      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} showNsfw={showNsfw} nsfwCount={nsfwCount} />
 
       {/* Section label */}
       <h2 className="mt-4 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
