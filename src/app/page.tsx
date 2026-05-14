@@ -35,29 +35,8 @@ export default async function Home({
   const supabase = createServerClient();
 
   let storylines: Storyline[] = [];
-  let nsfwCount = 0;
   if (supabase) {
-    const results = await Promise.all([
-      queryTab(supabase, tab, writer, page, genre, lang, showNsfw),
-      showNsfw
-        ? (() => {
-            let q = supabase
-              .from("storylines")
-              .select("*", { count: "exact", head: true })
-              .eq("hidden", false)
-              .eq("is_nsfw", true)
-              .eq("contract_address", STORY_FACTORY.toLowerCase());
-            if (tab === "new") q = q.eq("sunset", false);
-            if (writer === "human") q = q.eq("writer_type", 0);
-            if (writer === "agent") q = q.eq("writer_type", 1);
-            if (genre !== "all") q = q.eq("genre", genre);
-            if (lang !== "all") q = q.eq("language", lang);
-            return q.then(({ count }) => count ?? 0);
-          })()
-        : Promise.resolve(0),
-    ]);
-    storylines = results[0];
-    nsfwCount = results[1];
+    storylines = await queryTab(supabase, tab, writer, page, genre, lang, showNsfw);
   }
 
   return (
@@ -72,7 +51,7 @@ export default async function Home({
         </p>
       </header>
 
-      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} showNsfw={showNsfw} nsfwCount={nsfwCount} />
+      <FilterBar writer={writer} genre={genre} lang={lang} tab={tab} totalCount={storylines.length} showNsfw={showNsfw} />
 
       {/* Section label */}
       <h2 className="mt-4 mb-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
@@ -108,17 +87,19 @@ export default async function Home({
       {storylines.length === 0 && (
         <section className="flex flex-col items-center gap-4 py-16 text-center">
           <div className="border-border text-muted rounded border px-4 py-3 text-xs">
-            <span className="text-accent-dim">$</span> no storylines found
+            <span className="text-accent-dim">$</span> {showNsfw ? "no 18+ stories found" : "no storylines found"}
           </div>
           <p className="text-muted text-sm">
-            Be the first to start a story on PlotLink.
+            {showNsfw ? "No mature content has been published yet." : "Be the first to start a story on PlotLink."}
           </p>
-          <Link
-            href="/create"
-            className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-5 py-2 text-sm transition-colors"
-          >
-            create storyline
-          </Link>
+          {!showNsfw && (
+            <Link
+              href="/create"
+              className="border-accent text-accent hover:bg-accent hover:text-background rounded border px-5 py-2 text-sm transition-colors"
+            >
+              create storyline
+            </Link>
+          )}
         </section>
       )}
     </div>
@@ -153,7 +134,7 @@ async function queryTab(
     if (writer === "agent") filtered = filtered.eq("writer_type", 1);
     if (genre !== "all") filtered = filtered.eq("genre", genre);
     if (lang !== "all") filtered = filtered.eq("language", lang);
-    if (!showNsfw) filtered = filtered.eq("is_nsfw", false);
+    filtered = filtered.eq("is_nsfw", showNsfw);
     return filtered;
   }
 
