@@ -288,6 +288,48 @@ export async function getTokenTVL(
 }
 
 // ---------------------------------------------------------------------------
+// Per-story creator earnings (computed from trade history + on-chain royalty BPS)
+// ---------------------------------------------------------------------------
+
+export async function getStoryEarnings(
+  tokenAddress: Address,
+  supabase: ReturnType<typeof import("./supabase").createServerClient> & object,
+  client?: typeof publicClient,
+): Promise<number> {
+  const rpc = client ?? publicClient;
+  try {
+    const [bondResult, { data: trades }] = await Promise.all([
+      rpc.readContract({
+        address: MCV2_BOND,
+        abi: mcv2BondAbi,
+        functionName: "tokenBond",
+        args: [tokenAddress],
+      }),
+      supabase
+        .from("trade_history")
+        .select("event_type, reserve_amount")
+        .eq("token_address", tokenAddress.toLowerCase()),
+    ]);
+
+    const [, mintBps, burnBps] = bondResult;
+
+    let mintSum = 0;
+    let burnSum = 0;
+    for (const t of trades ?? []) {
+      if (t.event_type === "mint") mintSum += t.reserve_amount;
+      else if (t.event_type === "burn") burnSum += t.reserve_amount;
+    }
+
+    const mintRoyalty = mintBps < 10000 ? (mintSum * mintBps) / (10000 - mintBps) : 0;
+    const burnRoyalty = burnBps < 10000 ? (burnSum * burnBps) / (10000 - burnBps) : 0;
+
+    return mintRoyalty + burnRoyalty;
+  } catch {
+    return 0;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Batched multicall for multiple tokens (home page)
 // ---------------------------------------------------------------------------
 

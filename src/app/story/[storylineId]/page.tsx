@@ -11,7 +11,7 @@ import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareButtons } from "../../../components/ShareButtons";
 import { StoryContent } from "../../../components/StoryContent";
 import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
-import { getTokenPrice, type TokenPriceInfo } from "../../../../lib/price";
+import { getTokenPrice, getStoryEarnings, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../lib/contracts/constants";
 import { formatPrice, formatSupply } from "../../../../lib/format";
 import { type Address } from "viem";
@@ -159,9 +159,10 @@ export default async function StoryPage({ params }: { params: Params }) {
   const chapters = plots.filter((p) => p.plot_index > 0);
 
   const sl = storyline as Storyline;
-  const priceInfo = sl.token_address
-    ? await getTokenPrice(sl.token_address as Address)
-    : null;
+  const [priceInfo, earningsPlot] = await Promise.all([
+    sl.token_address ? getTokenPrice(sl.token_address as Address) : null,
+    sl.token_address ? getStoryEarnings(sl.token_address as Address, supabase) : 0,
+  ]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 pb-24 lg:pb-10">
@@ -174,7 +175,7 @@ export default async function StoryPage({ params }: { params: Params }) {
         <span className="text-foreground">{sl.title}</span>
       </nav>
 
-      <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} coverUrl={getCoverUrl(sl.cover_cid) ?? undefined} />
+      <StoryHeader storyline={storyline} priceInfo={priceInfo} storylineId={id} coverUrl={getCoverUrl(sl.cover_cid) ?? undefined} earningsPlot={earningsPlot} />
 
       <StoryEditPanel
         storylineId={id}
@@ -279,11 +280,13 @@ function StoryHeader({
   priceInfo,
   storylineId,
   coverUrl,
+  earningsPlot = 0,
 }: {
   storyline: Storyline;
   priceInfo: TokenPriceInfo | null;
   storylineId: number;
   coverUrl?: string;
+  earningsPlot?: number;
 }) {
   const createdTs = storyline.block_timestamp ? new Date(storyline.block_timestamp) : null;
   const createdDate = createdTs
@@ -321,7 +324,7 @@ function StoryHeader({
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
         <div className="text-[10px] font-medium uppercase tracking-[0.04em] text-muted mb-1">Creator Earnings</div>
         <div className="text-[15px] font-semibold tabular-nums text-foreground">
-          <CreatorEarningsBox writerAddress={storyline.writer_address as Address} />
+          <CreatorEarningsBox earningsPlot={earningsPlot} />
         </div>
       </div>
       <div className="rounded-[var(--card-radius)] border border-border bg-surface px-3 py-2.5">
