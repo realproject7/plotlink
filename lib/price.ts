@@ -288,50 +288,23 @@ export async function getTokenTVL(
 }
 
 // ---------------------------------------------------------------------------
-// Per-story creator earnings (computed from trade history + on-chain royalty BPS)
+// Creator earnings from on-chain getRoyaltyInfo (balance + claimed = total)
 // ---------------------------------------------------------------------------
 
-// MCV2 Mint/Burn events emit reserve_amount as the NET reserve (pool-side):
-//   Mint: user pays reserveAmount + royalty; reserveAmount enters the pool.
-//   Burn: pool releases refundAmount + royalty; user receives refundAmount.
-// So reserve_amount in trade_history is net-of-royalty.
-// To recover royalty: royalty = net * bps / (10000 - bps).
-export async function getStoryEarnings(
-  tokenAddress: Address,
-  supabase: ReturnType<typeof import("./supabase").createServerClient> & object,
+export async function getCreatorEarnings(
+  writerAddress: Address,
+  reserveToken: Address,
   client?: typeof publicClient,
 ): Promise<number> {
   const rpc = client ?? publicClient;
   try {
-    const [bondResult, mintResult, burnResult] = await Promise.all([
-      rpc.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "tokenBond",
-        args: [tokenAddress],
-      }),
-      supabase
-        .from("trade_history")
-        .select("reserve_amount.sum()")
-        .eq("token_address", tokenAddress.toLowerCase())
-        .eq("event_type", "mint")
-        .single(),
-      supabase
-        .from("trade_history")
-        .select("reserve_amount.sum()")
-        .eq("token_address", tokenAddress.toLowerCase())
-        .eq("event_type", "burn")
-        .single(),
-    ]);
-
-    const [, mintBps, burnBps] = bondResult;
-    const mintSum = (mintResult.data as unknown as { sum: number | null })?.sum ?? 0;
-    const burnSum = (burnResult.data as unknown as { sum: number | null })?.sum ?? 0;
-
-    const mintRoyalty = mintBps < 10000 ? (mintSum * mintBps) / (10000 - mintBps) : 0;
-    const burnRoyalty = burnBps < 10000 ? (burnSum * burnBps) / (10000 - burnBps) : 0;
-
-    return mintRoyalty + burnRoyalty;
+    const [balance, claimed] = await rpc.readContract({
+      address: MCV2_BOND,
+      abi: mcv2BondAbi,
+      functionName: "getRoyaltyInfo",
+      args: [writerAddress, reserveToken],
+    });
+    return parseFloat(formatUnits(balance + claimed, 18));
   } catch {
     return 0;
   }

@@ -1,40 +1,16 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { formatUnits, type Address } from "viem";
-import { browserClient } from "../../lib/rpc";
-import { mcv2BondAbi } from "../../lib/price";
-import { MCV2_BOND, PLOT_TOKEN, RESERVE_LABEL } from "../../lib/contracts/constants";
+import { RESERVE_LABEL } from "../../lib/contracts/constants";
 import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 import { formatUsdValue } from "../../lib/usd-price";
 
 interface CreatorEarningsBoxProps {
   earningsPlot: number;
-  writerAddress: Address;
 }
 
-export function CreatorEarningsBox({ earningsPlot, writerAddress }: CreatorEarningsBoxProps) {
+export function CreatorEarningsBox({ earningsPlot }: CreatorEarningsBoxProps) {
   const { data: plotUsd } = usePlotUsdPrice();
   const usdValue = plotUsd ? earningsPlot * plotUsd : null;
-
-  // Wallet-wide unclaimed (contract doesn't expose per-story unclaimed)
-  const { data: unclaimed } = useQuery({
-    queryKey: ["unclaimed-royalties", writerAddress],
-    queryFn: async () => {
-      const [balance] = await browserClient.readContract({
-        address: MCV2_BOND,
-        abi: mcv2BondAbi,
-        functionName: "getRoyaltyInfo",
-        args: [writerAddress, PLOT_TOKEN],
-      });
-      return balance;
-    },
-    refetchInterval: 30_000,
-  });
-
-  const unclaimedFloat = unclaimed ? parseFloat(formatUnits(unclaimed, 18)) : 0;
-  const unclaimedUsd = plotUsd && unclaimedFloat > 0 ? formatUsdValue(unclaimedFloat * plotUsd) : null;
-
   const plotLabel = earningsPlot > 0 ? `${formatTruncated(earningsPlot)} ${RESERVE_LABEL}` : null;
 
   return (
@@ -44,11 +20,6 @@ export function CreatorEarningsBox({ earningsPlot, writerAddress }: CreatorEarni
       </div>
       {earningsPlot > 0 && usdValue !== null && (
         <div className="text-muted text-[10px]">{plotLabel}</div>
-      )}
-      {unclaimedFloat > 0 && (
-        <div className="text-muted text-[10px]">
-          {unclaimedUsd ?? `${formatTruncated(unclaimedFloat)} ${RESERVE_LABEL}`} unclaimed (all stories)
-        </div>
       )}
     </>
   );
