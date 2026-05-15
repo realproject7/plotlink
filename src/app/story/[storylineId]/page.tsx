@@ -166,6 +166,7 @@ export default async function StoryPage({ params }: { params: Params }) {
       .from("donations")
       .select("amount.sum()")
       .eq("storyline_id", id)
+      .eq("contract_address", STORY_FACTORY.toLowerCase())
       .single(),
   ]);
   const donationsWei = (donationsResult.data as unknown as { sum: string | null })?.sum;
