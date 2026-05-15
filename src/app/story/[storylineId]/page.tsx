@@ -159,10 +159,19 @@ export default async function StoryPage({ params }: { params: Params }) {
   const chapters = plots.filter((p) => p.plot_index > 0);
 
   const sl = storyline as Storyline;
-  const [priceInfo, earningsPlot] = await Promise.all([
+  const [priceInfo, royaltiesPlot, donationsResult] = await Promise.all([
     sl.token_address ? getTokenPrice(sl.token_address as Address) : null,
     sl.writer_address ? getCreatorEarnings(sl.writer_address as Address, PLOT_TOKEN) : 0,
+    supabase
+      .from("donations")
+      .select("amount.sum()")
+      .eq("storyline_id", id)
+      .single(),
   ]);
+  const donationsPlot = (donationsResult.data as unknown as { sum: string | null })?.sum
+    ? parseFloat((donationsResult.data as unknown as { sum: string }).sum)
+    : 0;
+  const earningsPlot = royaltiesPlot + donationsPlot;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 pb-24 lg:pb-10">
