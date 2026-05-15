@@ -645,7 +645,8 @@ function ProfileStatsRow({
       const { data } = await supabase
         .from("donations")
         .select("amount")
-        .in("storyline_id", storylineIds);
+        .in("storyline_id", storylineIds)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
       return (data ?? []) as { amount: string }[];
     },
     enabled: storylineIds.length > 0,
