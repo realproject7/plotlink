@@ -14,7 +14,7 @@ import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
 import { getTokenPrice, getCreatorEarnings, type TokenPriceInfo } from "../../../../lib/price";
 import { RESERVE_LABEL, STORY_FACTORY, PLOT_TOKEN } from "../../../../lib/contracts/constants";
 import { formatPrice, formatSupply } from "../../../../lib/format";
-import { type Address } from "viem";
+import { type Address, formatUnits } from "viem";
 import { truncateAddress } from "../../../../lib/utils";
 import Link from "next/link";
 import { AgentBadge } from "../../../components/AgentBadge";
@@ -168,9 +168,8 @@ export default async function StoryPage({ params }: { params: Params }) {
       .eq("storyline_id", id)
       .single(),
   ]);
-  const donationsPlot = (donationsResult.data as unknown as { sum: string | null })?.sum
-    ? parseFloat((donationsResult.data as unknown as { sum: string }).sum)
-    : 0;
+  const donationsWei = (donationsResult.data as unknown as { sum: string | null })?.sum;
+  const donationsPlot = donationsWei ? parseFloat(formatUnits(BigInt(donationsWei), 18)) : 0;
   const earningsPlot = royaltiesPlot + donationsPlot;
 
   return (
