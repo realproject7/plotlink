@@ -119,7 +119,7 @@ function CardPreview({ title, genre, coverCid }: { title: string; genre: string;
 
 export default function CreatePageWrapper() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="p-6 text-center text-muted">Loading…</div>}>
       <CreatePage />
     </Suspense>
   );

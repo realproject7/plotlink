@@ -4,20 +4,17 @@ test.describe("Create Storyline Page", () => {
   test("form renders with all fields", async ({ page }) => {
     await page.goto("/create");
 
-    // Check for form fields — title, genre, language, genesis plot
-    // May show connect-wallet prompt instead if not connected
     const titleInput = page.getByPlaceholder(/title/i).or(page.locator("input[name='title']"));
-    const hasForm = await titleInput.isVisible({ timeout: 5000 }).catch(() => false);
-    const hasConnectPrompt = await page.getByText(/connect/i).first().isVisible({ timeout: 3000 }).catch(() => false);
+    const connectPrompt = page.getByText(/connect your wallet/i).first();
 
-    expect(hasForm || hasConnectPrompt).toBe(true);
+    await expect(titleInput.or(connectPrompt)).toBeVisible({ timeout: 15000 });
+
+    const hasForm = await titleInput.isVisible();
 
     if (hasForm) {
-      // Check for genre selector
       const genreField = page.locator("select, [role='combobox'], button").filter({ hasText: /genre/i });
       expect(await genreField.count()).toBeGreaterThan(0);
 
-      // Check for textarea (genesis plot)
       const textarea = page.locator("textarea");
       expect(await textarea.count()).toBeGreaterThan(0);
     }
