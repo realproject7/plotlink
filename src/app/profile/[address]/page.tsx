@@ -56,17 +56,17 @@ export default function ProfilePage() {
   const linkedAgentMeta = fullProfile?.linkedAgentMeta ?? null;
   const isAgent = !profileLoading && agentMeta !== null && !isAgentOwner;
 
-  // Cumulative claimed royalties (on-chain)
-  const { data: claimedRoyalties } = useQuery({
-    queryKey: ["profile-claimed-royalties", address],
+  // Total royalties: unclaimed + claimed (on-chain)
+  const { data: totalRoyalties } = useQuery({
+    queryKey: ["profile-total-royalties", address],
     queryFn: async () => {
-      const [, claimed] = await browserClient.readContract({
+      const [balance, claimed] = await browserClient.readContract({
         address: MCV2_BOND,
         abi: mcv2BondAbi,
         functionName: "getRoyaltyInfo",
         args: [address as Address, PLOT_TOKEN],
       });
-      return claimed;
+      return balance + claimed;
     },
   });
 
@@ -151,7 +151,7 @@ export default function ProfilePage() {
         isAgent={isAgent}
         isAgentOwner={isAgentOwner}
         linkedAgentMeta={linkedAgentMeta}
-        claimedRoyalties={claimedRoyalties ?? null}
+        totalRoyalties={totalRoyalties ?? null}
         plotBalance={plotBalance ?? null}
         plotUsdPrice={plotUsdPrice ?? null}
         dbUser={dbUser ?? null}
@@ -188,7 +188,7 @@ export default function ProfilePage() {
           agentMeta={agentMeta ?? null}
           isOwnProfile={isOwnProfile}
           connectedAddress={connectedAddress ?? null}
-          claimedRoyalties={claimedRoyalties}
+          totalRoyalties={totalRoyalties}
         />
       )}
       {tab === "portfolio" && <PortfolioTab address={address} isOwnProfile={isOwnProfile} />}
@@ -216,7 +216,7 @@ function ProfileHeader({
   isAgent,
   isAgentOwner,
   linkedAgentMeta,
-  claimedRoyalties,
+  totalRoyalties,
   plotBalance,
   plotUsdPrice,
   dbUser,
@@ -235,7 +235,7 @@ function ProfileHeader({
   isAgent: boolean;
   isAgentOwner: boolean;
   linkedAgentMeta: AgentMetadata | null;
-  claimedRoyalties: bigint | null;
+  totalRoyalties: bigint | null;
   plotBalance: bigint | null;
   plotUsdPrice: number | null;
   dbUser: User | null;
@@ -321,7 +321,7 @@ function ProfileHeader({
       {/* Stats row */}
       <ProfileStatsRow
         address={address}
-        claimedRoyalties={claimedRoyalties}
+        totalRoyalties={totalRoyalties}
         plotBalance={plotBalance}
         plotUsdPrice={plotUsdPrice}
       />
@@ -549,11 +549,11 @@ function ProfileHeader({
               )}
             </div>
           )}
-          {claimedRoyalties != null && claimedRoyalties > BigInt(0) && (
+          {totalRoyalties != null && totalRoyalties > BigInt(0) && (
             <div className="text-muted mt-1.5 text-[11px]">
-              Royalties: <span className="text-success font-medium">{formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL}</span>
+              Creator Earnings: <span className="text-success font-medium">{formatPrice(formatUnits(totalRoyalties, 18))} {RESERVE_LABEL}</span>
               {plotUsdPrice != null && (
-                <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsdPrice)})</span>
+                <span className="text-muted"> (≈ {formatUsdValue(Number(formatUnits(totalRoyalties, 18)) * plotUsdPrice)})</span>
               )}
             </div>
           )}
@@ -614,12 +614,12 @@ function CopyButton({ text }: { text: string }) {
 
 function ProfileStatsRow({
   address,
-  claimedRoyalties,
+  totalRoyalties,
   plotBalance,
   plotUsdPrice,
 }: {
   address: string;
-  claimedRoyalties: bigint | null;
+  totalRoyalties: bigint | null;
   plotBalance: bigint | null;
   plotUsdPrice: number | null;
 }) {
@@ -637,10 +637,27 @@ function ProfileStatsRow({
     },
   });
 
+  const storylineIds = storylines?.map((s) => s.storyline_id) ?? [];
+  const { data: donationsData } = useQuery({
+    queryKey: ["profile-stats-donations", address, storylineIds],
+    queryFn: async () => {
+      if (!supabase || storylineIds.length === 0) return [];
+      const { data } = await supabase
+        .from("donations")
+        .select("amount")
+        .in("storyline_id", storylineIds)
+        .eq("contract_address", STORY_FACTORY.toLowerCase());
+      return (data ?? []) as { amount: string }[];
+    },
+    enabled: storylineIds.length > 0,
+  });
+
   const storyCount = storylines?.length ?? 0;
   const totalReaders = storylines?.reduce((sum, s) => sum + (s.view_count ?? 0), 0) ?? 0;
-  const royaltiesStr = claimedRoyalties != null && claimedRoyalties > BigInt(0)
-    ? `${formatPrice(formatUnits(claimedRoyalties, 18))} ${RESERVE_LABEL}`
+  const donationsTotal = donationsData?.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0)) ?? BigInt(0);
+  const combinedEarnings = (totalRoyalties ?? BigInt(0)) + donationsTotal;
+  const earningsStr = combinedEarnings > BigInt(0)
+    ? `${formatPrice(formatUnits(combinedEarnings, 18))} ${RESERVE_LABEL}`
     : "—";
   const balanceStr = plotBalance != null
     ? formatCompact(Number(formatUnits(plotBalance, 18)))
@@ -657,8 +674,8 @@ function ProfileStatsRow({
         <div className="text-muted text-[9px]">Total Readers</div>
       </div>
       <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
-        <div className="text-foreground text-sm font-bold truncate">{royaltiesStr}</div>
-        <div className="text-muted text-[9px]">Royalties</div>
+        <div className="text-foreground text-sm font-bold truncate">{earningsStr}</div>
+        <div className="text-muted text-[9px]">Creator Earnings</div>
       </div>
       <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
         <div className="text-foreground text-sm font-bold">{balanceStr}</div>
@@ -678,14 +695,14 @@ function StoriesTab({
   agentMeta,
   isOwnProfile,
   connectedAddress,
-  claimedRoyalties,
+  totalRoyalties,
 }: {
   address: string;
   isAgent: boolean;
   agentMeta: AgentMetadata | null;
   isOwnProfile: boolean;
   connectedAddress: string | null;
-  claimedRoyalties?: bigint;
+  totalRoyalties?: bigint;
 }) {
   const { data: plotUsd } = usePlotUsdPrice();
   const { data: storylines = [], isLoading, error } = useQuery({
@@ -896,14 +913,14 @@ function StoriesTab({
             <span className="text-foreground font-medium">—</span>
           )}
         </div>
-        {claimedRoyalties !== undefined && claimedRoyalties > BigInt(0) && (
+        {totalRoyalties !== undefined && totalRoyalties > BigInt(0) && (
           <div className="border-border rounded border px-3 py-1.5">
-            <span className="text-muted">Royalties Claimed:</span>{" "}
+            <span className="text-muted">Creator Earnings:</span>{" "}
             <span className="text-foreground font-medium">
-              {plotUsd != null ? formatUsdValue(Number(formatUnits(claimedRoyalties, 18)) * plotUsd) : `${formatPrice(formatUnits(claimedRoyalties, 18))} ${RESERVE_LABEL}`}
+              {plotUsd != null ? formatUsdValue(Number(formatUnits(totalRoyalties, 18)) * plotUsd) : `${formatPrice(formatUnits(totalRoyalties, 18))} ${RESERVE_LABEL}`}
             </span>
             {plotUsd != null && (
-              <span className="text-muted"> ({formatPrice(formatUnits(claimedRoyalties, 18))} {RESERVE_LABEL})</span>
+              <span className="text-muted"> ({formatPrice(formatUnits(totalRoyalties, 18))} {RESERVE_LABEL})</span>
             )}
           </div>
         )}
