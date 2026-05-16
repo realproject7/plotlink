@@ -24,9 +24,12 @@ import Link from "next/link";
 import { ConnectWallet } from "../../components/ConnectWallet";
 import { DropdownSelect } from "../../components/DropdownSelect";
 import { Select } from "../../components/Select";
-import { GENRES, LANGUAGES } from "../../../lib/genres";
+import { GENRES, LANGUAGES, CONTENT_TYPES } from "../../../lib/genres";
 import { WritePreviewToggle, ContentPreview } from "../../components/StoryContent";
 import { PlotImageUpload } from "../../components/PlotImageUpload";
+import { CartoonUploader } from "../../components/CartoonUploader";
+import { CartoonPreview } from "../../components/CartoonPreview";
+import { generateCartoonMarkdown, type CartoonPanel } from "../../../lib/cartoon-markdown";
 import { FALLBACK_STYLES } from "../../components/StoryCard";
 import { getCoverUrl } from "../../../lib/cover";
 
@@ -138,10 +141,12 @@ function CreatePage() {
   const [tab, setTab] = useState<Tab>(initialTab);
 
   // ---- New Storyline state ----
+  const [contentType, setContentType] = useState<"fiction" | "cartoon">("fiction");
   const [newTitle, setNewTitle] = useState("");
   const [genre, setGenre] = useState("");
   const [language, setLanguage] = useState("English");
   const [newContent, setNewContent] = useState("");
+  const [cartoonPanels, setCartoonPanels] = useState<CartoonPanel[]>([]);
   const [newPreviewTab, setNewPreviewTab] = useState<"write" | "preview">("write");
   const [coverCid, setCoverCid] = useState<string | null>(null);
   const [coverUploading, setCoverUploading] = useState(false);
@@ -150,6 +155,9 @@ function CreatePage() {
   const [mobilePreviewOpen, setMobilePreviewOpen] = useState(false);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const hasDeadline = true;
+
+  const cartoonMarkdown = useMemo(() => generateCartoonMarkdown(cartoonPanels), [cartoonPanels]);
+  const effectiveContent = contentType === "cartoon" ? cartoonMarkdown : newContent;
 
   const handleCoverSelect = useCallback(async (file: File) => {
     setCoverError(null);
@@ -214,13 +222,14 @@ function CreatePage() {
     clearIntent: newClearIntent,
     attemptRetry: newAttemptRetry,
   } = usePublishIntent();
-  const { valid: newValid, charCount: newCharCount } = validateContentLength(newContent);
+  const { valid: newValid, charCount: newCharCount } = validateContentLength(effectiveContent);
   const MAX_TITLE_LENGTH = 60;
   const newTitleValid = newTitle.trim().length > 0 && newTitle.length <= MAX_TITLE_LENGTH;
   const newGenreValid = genre.length > 0;
+  const cartoonHasImages = contentType === "cartoon" ? cartoonPanels.length > 0 : true;
   const newCanSubmit =
     newState === "idle" || newState === "error"
-      ? newTitleValid && newGenreValid && newValid && !coverUploading
+      ? newTitleValid && newGenreValid && newValid && !coverUploading && cartoonHasImages
       : false;
   const newBusy = newState !== "idle" && newState !== "error";
 
@@ -438,7 +447,7 @@ function CreatePage() {
               e.preventDefault();
               if (newCanSubmit)
                 execute({
-                  content: newContent,
+                  content: effectiveContent,
                   uploadKeyPrefix: "plotlink/genesis",
                   indexerRoute: "/api/index/storyline",
                   buildWriteCall: (cid, contentHash) => ({
@@ -449,7 +458,7 @@ function CreatePage() {
                     gas: BigInt(16_000_000),
                     value: creationFee,
                   }),
-                  metadata: { genre, language, ...(coverCid ? { coverCid } : {}), isNsfw: String(isNsfw) },
+                  metadata: { genre, language, contentType, ...(coverCid ? { coverCid } : {}), isNsfw: String(isNsfw) },
                   onIntentSave: newSaveIntent,
                   onTxConfirmed: newPersistTxHash,
                   onIndexed: newClearIntent,
@@ -584,6 +593,28 @@ function CreatePage() {
               </div>
             </div>
 
+            {/* Content Type Selector */}
+            <div>
+              <label className="text-foreground mb-2 block text-sm">Content Type</label>
+              <div className="flex gap-1.5">
+                {CONTENT_TYPES.map((ct) => (
+                  <button
+                    key={ct}
+                    type="button"
+                    onClick={() => setContentType(ct)}
+                    disabled={newBusy}
+                    className={`rounded-full px-4 py-1.5 text-xs font-medium capitalize transition-colors ${
+                      contentType === ct
+                        ? "bg-accent text-white"
+                        : "bg-surface border border-border text-muted hover:text-foreground"
+                    } disabled:opacity-50`}
+                  >
+                    {ct}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* NSFW Toggle */}
             <div>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -603,35 +634,63 @@ function CreatePage() {
               )}
             </div>
 
-            <div>
-              <label className="text-foreground mb-1 block text-sm">Opening Chapter</label>
-              <p className="text-muted mb-2 text-[11px]">
-                The opening of your storyline — write a synopsis or introduction, or jump straight into the story. Markdown supported.
-              </p>
-              <WritePreviewToggle
-                activeTab={newPreviewTab}
-                onTabChange={setNewPreviewTab}
-              />
-              {newPreviewTab === "write" ? (
-                <textarea
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  disabled={newBusy}
-                  rows={12}
-                  placeholder="Write the genesis plot (500–10,000 characters)"
-                  className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
+            {/* Content: Fiction (text) or Cartoon (images) */}
+            {contentType === "fiction" ? (
+              <div>
+                <label className="text-foreground mb-1 block text-sm">Opening Chapter</label>
+                <p className="text-muted mb-2 text-[11px]">
+                  The opening of your storyline — write a synopsis or introduction, or jump straight into the story. Markdown supported.
+                </p>
+                <WritePreviewToggle
+                  activeTab={newPreviewTab}
+                  onTabChange={setNewPreviewTab}
                 />
-              ) : (
-                <ContentPreview content={newContent} />
-              )}
-              <div className="mt-1 flex justify-between text-xs">
-                <span className={newContent.length > 0 && !newValid ? "text-error" : "text-muted"}>
-                  {newCharCount.toLocaleString()} / {MIN_CONTENT_LENGTH.toLocaleString()}&ndash;
-                  {MAX_CONTENT_LENGTH.toLocaleString()} chars
-                </span>
+                {newPreviewTab === "write" ? (
+                  <textarea
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    disabled={newBusy}
+                    rows={12}
+                    placeholder="Write the genesis plot (500–10,000 characters)"
+                    className="ruled-paper border-border text-foreground placeholder:text-muted w-full resize-y rounded border focus:border-accent focus:outline-none disabled:opacity-50"
+                  />
+                ) : (
+                  <ContentPreview content={newContent} />
+                )}
+                <div className="mt-1 flex justify-between text-xs">
+                  <span className={newContent.length > 0 && !newValid ? "text-error" : "text-muted"}>
+                    {newCharCount.toLocaleString()} / {MIN_CONTENT_LENGTH.toLocaleString()}&ndash;
+                    {MAX_CONTENT_LENGTH.toLocaleString()} chars
+                  </span>
+                </div>
+                <PlotImageUpload disabled={newBusy} />
               </div>
-              <PlotImageUpload disabled={newBusy} />
-            </div>
+            ) : (
+              <div>
+                <label className="text-foreground mb-1 block text-sm">Cartoon Panels</label>
+                <p className="text-muted mb-2 text-[11px]">
+                  Upload images in reading order. Drag to reorder. Max 20 images, WebP/JPEG only, 1MB each.
+                </p>
+                <CartoonUploader
+                  panels={cartoonPanels}
+                  onChange={setCartoonPanels}
+                  disabled={newBusy}
+                />
+                <div className="mt-3">
+                  <p className="text-muted mb-1 text-[11px] font-medium">Preview</p>
+                  <CartoonPreview panels={cartoonPanels} />
+                </div>
+                <div className="mt-2 flex justify-between text-xs">
+                  <span className={cartoonPanels.length > 0 && !newValid ? "text-error" : "text-muted"}>
+                    {newCharCount.toLocaleString()} / {MIN_CONTENT_LENGTH.toLocaleString()}&ndash;
+                    {MAX_CONTENT_LENGTH.toLocaleString()} chars (generated markdown)
+                  </span>
+                  {cartoonPanels.length > 0 && !cartoonHasImages && (
+                    <span className="text-error">At least one image is required</span>
+                  )}
+                </div>
+              </div>
+            )}
 
             <p className="text-muted text-xs">
               All storylines have a 7-day deadline &mdash; the story sunsets if no new plot is added within 7 days.
