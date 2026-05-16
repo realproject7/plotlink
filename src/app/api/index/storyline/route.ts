@@ -10,7 +10,7 @@ import {
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
 import { detectWriterType } from "../../../../../lib/contracts/erc8004";
 import { hashContent } from "../../../../../lib/content";
-import { GENRES, LANGUAGES } from "../../../../../lib/genres";
+import { GENRES, LANGUAGES, CONTENT_TYPES } from "../../../../../lib/genres";
 import type { Database } from "../../../../../lib/supabase";
 import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
 import { awardWritePoints } from "../../../../../lib/airdrop/award";
@@ -40,10 +40,18 @@ export async function POST(req: Request) {
   const rawLanguage = body.language as string | undefined;
   const rawCoverCid = body.coverCid as string | undefined;
   const rawIsNsfw = body.isNsfw as string | undefined;
+  const rawContentType = body.contentType as string | undefined;
   const genre = rawGenre && (GENRES as readonly string[]).includes(rawGenre) ? rawGenre : null;
   const language = rawLanguage && (LANGUAGES as readonly string[]).includes(rawLanguage) ? rawLanguage : "English";
   const coverCid = rawCoverCid && /^[a-zA-Z0-9]{46,64}$/.test(rawCoverCid) ? rawCoverCid : null;
   const isNsfw = rawIsNsfw === "true";
+
+  if ("contentType" in body) {
+    if (typeof rawContentType !== "string" || !(CONTENT_TYPES as readonly string[]).includes(rawContentType)) {
+      return error("Invalid contentType; allowed values: fiction, cartoon");
+    }
+  }
+  const contentType = rawContentType && (CONTENT_TYPES as readonly string[]).includes(rawContentType) ? rawContentType : "fiction";
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");
@@ -178,6 +186,7 @@ export async function POST(req: Request) {
     language,
     cover_cid: coverCid,
     is_nsfw: isNsfw,
+    content_type: contentType,
   };
 
   const { error: dbError } = await supabase.from("storylines").upsert(

@@ -66,6 +66,7 @@ export interface Database {
           language: string;
           cover_cid: string | null;
           is_nsfw: boolean;
+          content_type: string;
         };
         Insert: {
           id?: never;
@@ -89,6 +90,7 @@ export interface Database {
           language?: string;
           cover_cid?: string | null;
           is_nsfw?: boolean;
+          content_type?: string;
         };
         Update: {
           id?: never;
@@ -112,6 +114,7 @@ export interface Database {
           language?: string;
           cover_cid?: string | null;
           is_nsfw?: boolean;
+          content_type?: string;
         };
         Relationships: [];
       };

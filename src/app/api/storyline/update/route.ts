@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { recoverMessageAddress } from "viem";
 import { createServerClient } from "../../../../../lib/supabase";
 import { STORY_FACTORY } from "../../../../../lib/contracts/constants";
-import { GENRES, LANGUAGES } from "../../../../../lib/genres";
+import { GENRES, LANGUAGES, CONTENT_TYPES } from "../../../../../lib/genres";
 import type { Database } from "../../../../../lib/supabase";
 
 const MAX_TIMESTAMP_AGE_MS = 5 * 60 * 1000;
@@ -120,6 +120,17 @@ export async function POST(req: Request) {
 
   if ("isNsfw" in body) {
     updates.is_nsfw = Boolean(body.isNsfw);
+  }
+
+  if ("contentType" in body) {
+    if (!isAdmin) {
+      return error("Only admin can update the contentType field", 403);
+    }
+    const ct = body.contentType as string;
+    if (!(CONTENT_TYPES as readonly string[]).includes(ct)) {
+      return error("Invalid contentType; allowed values: fiction, cartoon");
+    }
+    updates.content_type = ct;
   }
 
   if ("hidden" in body) {
