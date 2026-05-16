@@ -153,7 +153,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
 
       {/* Plot content */}
       {p.content ? (
-        <StoryContent content={p.content} />
+        <StoryContent content={p.content} contentType={sl.content_type} />
       ) : (
         <p className="text-muted text-sm italic">
           Content unavailable (CID: {p.content_cid})

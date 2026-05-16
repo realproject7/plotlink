@@ -35,7 +35,38 @@ const sanitizeSchema = {
   },
 };
 
-export function StoryContent({ content }: { content: string }) {
+export function StoryContent({ content, contentType }: { content: string; contentType?: string }) {
+  if (contentType === "cartoon") {
+    return (
+      <div className="cartoon-reader mx-auto max-w-2xl">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, remarkBreaks]}
+          rehypePlugins={[[rehypeSanitize, sanitizeSchema]]}
+          components={{
+            img: ({ src, alt }) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={src}
+                alt={alt || ""}
+                loading="lazy"
+                className="mx-auto w-full rounded"
+              />
+            ),
+            p: ({ children }) => (
+              <div className="my-1">{children}</div>
+            ),
+            hr: () => <div className="my-2" />,
+            strong: ({ children }) => (
+              <p className="text-foreground text-xs font-semibold text-center pt-3 pb-1">{children}</p>
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
+  }
+
   return (
     <div className="story-markdown font-prose text-foreground leading-7">
       <ReactMarkdown
