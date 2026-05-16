@@ -46,10 +46,12 @@ export async function POST(req: Request) {
   const coverCid = rawCoverCid && /^[a-zA-Z0-9]{46,64}$/.test(rawCoverCid) ? rawCoverCid : null;
   const isNsfw = rawIsNsfw === "true";
 
-  if (rawContentType && !(CONTENT_TYPES as readonly string[]).includes(rawContentType)) {
-    return error("Invalid contentType; allowed values: fiction, cartoon");
+  if ("contentType" in body) {
+    if (typeof rawContentType !== "string" || !(CONTENT_TYPES as readonly string[]).includes(rawContentType)) {
+      return error("Invalid contentType; allowed values: fiction, cartoon");
+    }
   }
-  const contentType = rawContentType || "fiction";
+  const contentType = rawContentType && (CONTENT_TYPES as readonly string[]).includes(rawContentType) ? rawContentType : "fiction";
 
   if (!txHash || !/^0x[0-9a-fA-F]{64}$/.test(txHash)) {
     return error("Missing or invalid txHash");
