@@ -202,12 +202,14 @@ export default async function StoryPage({ params }: { params: Params }) {
             <>
               <GenesisSection
                 plot={genesis}
+                contentType={sl.content_type}
                 readingMode={
                   <ReadingModeWrapper
                     storylineId={id}
                     storylineTitle={sl.title}
                     chapters={deduplicateByPlotIndex(plots)}
                     initialPlotIndex={0}
+                    contentType={sl.content_type}
                   />
                 }
               />
@@ -448,7 +450,7 @@ function StoryHeader({
   );
 }
 
-function GenesisSection({ plot, readingMode }: { plot: Plot; readingMode?: React.ReactNode }) {
+function GenesisSection({ plot, contentType, readingMode }: { plot: Plot; contentType?: string; readingMode?: React.ReactNode }) {
   return (
     <section id="genesis">
       <ViewTracker storylineId={plot.storyline_id} plotIndex={0} />
@@ -466,7 +468,7 @@ function GenesisSection({ plot, readingMode }: { plot: Plot; readingMode?: React
         {readingMode && <span className="ml-auto">{readingMode}</span>}
       </div>
       {plot.content ? (
-        <StoryContent content={plot.content} />
+        <StoryContent content={plot.content} contentType={contentType} />
       ) : (
         <p className="text-muted text-sm italic">
           Content unavailable (CID: {plot.content_cid})

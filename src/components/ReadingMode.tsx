@@ -15,6 +15,7 @@ interface ReadingModeProps {
   storylineTitle: string;
   chapters: Chapter[];
   initialChapterIndex: number;
+  contentType?: string;
   onClose: () => void;
 }
 
@@ -54,6 +55,7 @@ export function ReadingMode({
   storylineTitle,
   chapters,
   initialChapterIndex,
+  contentType,
   onClose,
 }: ReadingModeProps) {
   const [currentIdx, setCurrentIdx] = useState(initialChapterIndex);
@@ -259,7 +261,7 @@ export function ReadingMode({
               <style>{readingCss}</style>
               <div style={readingStyle} className="reading-prose">
                 {chapter?.content ? (
-                  <StoryContent content={chapter.content} />
+                  <StoryContent content={chapter.content} contentType={contentType} />
                 ) : (
                   <p className="text-muted text-sm italic">Content unavailable</p>
                 )}
@@ -281,7 +283,7 @@ export function ReadingMode({
               <div className="mx-auto max-w-[720px] px-6 py-8 sm:px-8 sm:py-12">
                 <div style={readingStyle} className="reading-prose">
                   {outgoingChapter.content ? (
-                    <StoryContent content={outgoingChapter.content} />
+                    <StoryContent content={outgoingChapter.content} contentType={contentType} />
                   ) : (
                     <p className="text-muted text-sm italic">Content unavailable</p>
                   )}
