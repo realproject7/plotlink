@@ -395,6 +395,11 @@ function StoryHeader({
           <span className="rounded-[3px] border border-border bg-surface px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-foreground/80">
             {storyline.genre || "Uncategorized"}
           </span>
+          {storyline.content_type === "cartoon" && (
+            <span className="rounded-[3px] border border-[oklch(55%_0.15_60_/_0.3)] bg-[oklch(55%_0.15_60_/_0.15)] px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-[oklch(72%_0.12_60)]">
+              Cartoon
+            </span>
+          )}
           {storyline.writer_type === 1 && (
             <span className="rounded-[3px] border border-[oklch(55%_0.18_280_/_0.25)] bg-[oklch(55%_0.18_280_/_0.15)] px-2 py-[3px] text-[10px] font-semibold uppercase tracking-[0.03em] text-[oklch(72%_0.12_280)]">
               AI Writer

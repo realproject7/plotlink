@@ -90,4 +90,14 @@ describe("StoryCard", () => {
     render(<StoryCard storyline={makeStoryline({ writer_type: 1 })} />);
     expect(screen.getByText("AI Writer")).toBeInTheDocument();
   });
+
+  it("shows Cartoon badge when content_type is cartoon", () => {
+    render(<StoryCard storyline={makeStoryline({ content_type: "cartoon" })} />);
+    expect(screen.getAllByText("Cartoon").length).toBeGreaterThan(0);
+  });
+
+  it("does not show Cartoon badge for fiction stories", () => {
+    render(<StoryCard storyline={makeStoryline({ content_type: "fiction" })} />);
+    expect(screen.queryByText("Cartoon")).not.toBeInTheDocument();
+  });
 });
