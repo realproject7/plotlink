@@ -99,9 +99,22 @@ export async function POST(req: NextRequest) {
     }
 
     const files: File[] = [];
+    const indexedFiles: { index: number; file: File }[] = [];
     for (const [key, value] of formData.entries()) {
-      if (key === "files" && value instanceof File) {
+      if (!(value instanceof File)) continue;
+      if (key === "files" || key === "files[]") {
         files.push(value);
+      } else {
+        const m = key.match(/^file[_\[]?(\d+)\]?$/);
+        if (m) {
+          indexedFiles.push({ index: Number(m[1]), file: value });
+        }
+      }
+    }
+    if (indexedFiles.length > 0) {
+      indexedFiles.sort((a, b) => a.index - b.index);
+      for (const { file } of indexedFiles) {
+        files.push(file);
       }
     }
 

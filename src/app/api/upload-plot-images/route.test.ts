@@ -134,6 +134,34 @@ describe("POST /api/upload-plot-images", () => {
     expect(json.results[1].mimeType).toBe("image/webp");
   });
 
+  it("accepts file_0, file_1 naming convention", async () => {
+    const fd = new FormData();
+    const ts = Date.now();
+    fd.set("message", `PlotLink: Upload plot images\nTimestamp: ${ts}`);
+    fd.set("signature", "0xfakesig");
+    fd.append("file_0", new File([JPEG_BYTES], "a.jpg", { type: "image/jpeg" }));
+    fd.append("file_1", new File([WEBP_BYTES], "b.webp", { type: "image/webp" }));
+    const res = await POST(makeRequest(fd));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.results).toHaveLength(2);
+    expect(json.results[0].index).toBe(0);
+    expect(json.results[1].index).toBe(1);
+  });
+
+  it("accepts files[] naming convention", async () => {
+    const fd = new FormData();
+    const ts = Date.now();
+    fd.set("message", `PlotLink: Upload plot images\nTimestamp: ${ts}`);
+    fd.set("signature", "0xfakesig");
+    fd.append("files[]", new File([JPEG_BYTES], "a.jpg", { type: "image/jpeg" }));
+    fd.append("files[]", new File([WEBP_BYTES], "b.webp", { type: "image/webp" }));
+    const res = await POST(makeRequest(fd));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.results).toHaveLength(2);
+  });
+
   it("rate limits at 3 batch requests per minute", async () => {
     const fixedWallet: `0x${string}` = "0xRATELIMITTEST000000000000000000000000000";
     mockedRecover.mockResolvedValue(fixedWallet);
