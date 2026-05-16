@@ -209,6 +209,7 @@ export default async function StoryPage({ params }: { params: Params }) {
                     storylineTitle={sl.title}
                     chapters={deduplicateByPlotIndex(plots)}
                     initialPlotIndex={0}
+                    contentType={sl.content_type}
                   />
                 }
               />

@@ -18,11 +18,13 @@ export function ReadingModeWrapper({
   storylineTitle,
   chapters,
   initialPlotIndex,
+  contentType,
 }: {
   storylineId: number;
   storylineTitle: string;
   chapters: Chapter[];
   initialPlotIndex: number;
+  contentType?: string;
 }) {
   const [active, setActive] = useState(false);
 
@@ -39,6 +41,7 @@ export function ReadingModeWrapper({
           storylineTitle={storylineTitle}
           chapters={chapters}
           initialChapterIndex={initialIdx >= 0 ? initialIdx : 0}
+          contentType={contentType}
           onClose={() => setActive(false)}
         />
       )}

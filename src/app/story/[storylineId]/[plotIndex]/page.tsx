@@ -130,6 +130,7 @@ export default async function PlotDetailPage({ params }: { params: Params }) {
             storylineTitle={sl.title}
             chapters={deduplicateByPlotIndex(allPlots)}
             initialPlotIndex={pidx}
+            contentType={sl.content_type}
           />
         </div>
         <div className="text-muted mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs">
