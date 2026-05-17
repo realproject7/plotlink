@@ -190,13 +190,14 @@ export function FilterBar({ writer, genre, lang, contentType, tab, totalCount, s
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("lang") || urlParams.has("nsfw")) return;
+    if (urlParams.has("lang") || urlParams.has("nsfw") || urlParams.has("type")) return;
     try {
       const savedLang = localStorage.getItem("plotlink_lang");
       const savedContentType = localStorage.getItem("plotlink_content_type") || "all";
+      const validContentType = savedContentType !== "all" && (CONTENT_TYPES as readonly string[]).includes(savedContentType) ? savedContentType : "all";
       const savedNsfw = localStorage.getItem("plotlink_nsfw") === "1";
-      if ((savedLang && savedLang !== "all" && (LANGUAGES as readonly string[]).includes(savedLang)) || savedNsfw || (savedContentType !== "all" && (CONTENT_TYPES as readonly string[]).includes(savedContentType))) {
-        router.replace(buildHref({ tab, writer, genre, lang: savedLang && savedLang !== "all" ? savedLang : lang, contentType: savedContentType !== "all" ? savedContentType : contentType, nsfw: savedNsfw }));
+      if ((savedLang && savedLang !== "all" && (LANGUAGES as readonly string[]).includes(savedLang)) || savedNsfw || validContentType !== "all") {
+        router.replace(buildHref({ tab, writer, genre, lang: savedLang && savedLang !== "all" ? savedLang : lang, contentType: validContentType !== "all" ? validContentType : contentType, nsfw: savedNsfw }));
       }
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
