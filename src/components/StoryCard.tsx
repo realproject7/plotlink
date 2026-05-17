@@ -19,7 +19,7 @@ export const FALLBACK_STYLES: Record<FallbackVariant, React.CSSProperties> = {
   D: { background: "linear-gradient(175deg, oklch(94% 0.015 50) 0%, oklch(90% 0.02 40) 100%)" },
 };
 
-function Badges({ genre, writerType, status, contentType }: { genre?: string | null; writerType: number | null; status: string; contentType?: string }) {
+function Badges({ genre, writerType, status }: { genre?: string | null; writerType: number | null; status: string }) {
   const isActive = status === "active";
   return (
     <div className="absolute top-2 left-2 z-[2] flex flex-wrap items-center gap-1">
@@ -43,11 +43,19 @@ function Badges({ genre, writerType, status, contentType }: { genre?: string | n
           Ongoing
         </span>
       )}
-      {contentType === "cartoon" && (
-        <span className="rounded-[3px] bg-[oklch(50%_0.15_60_/_0.65)] px-[7px] py-[2px] text-[10px] font-medium uppercase tracking-wider leading-[1.4] text-white/90 backdrop-blur-[2px]">
-          Cartoon
-        </span>
-      )}
+    </div>
+  );
+}
+
+function CartoonIndicator({ contentType }: { contentType?: string }) {
+  if (contentType !== "cartoon") return null;
+  return (
+    <div className="absolute bottom-2 left-2 z-[2] flex h-5 w-5 items-center justify-center rounded bg-[oklch(0%_0_0_/_0.5)] backdrop-blur-[2px]" title="Cartoon">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="1" y="1" width="14" height="14" rx="1.5" />
+        <line x1="8" y1="1" x2="8" y2="15" />
+        <line x1="1" y1="8" x2="8" y2="8" />
+      </svg>
     </div>
   );
 }
@@ -86,8 +94,9 @@ export function StoryCard({
         />
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent_40%,oklch(0%_0_0_/_0.15)_60%,oklch(0%_0_0_/_0.55)_80%,oklch(0%_0_0_/_0.78)_100%)]" />
 
-        <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} contentType={storyline.content_type} />
+        <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} />
         <NsfwBadge isNsfw={storyline.is_nsfw} />
+        <CartoonIndicator contentType={storyline.content_type} />
 
         <div className="absolute right-0 bottom-0 left-0 z-[2] px-2.5 pt-3 pb-2.5">
           <h3 className="font-heading text-[13px] font-semibold leading-[1.25] text-white drop-shadow-[0_1px_2px_oklch(0%_0_0_/_0.6)] line-clamp-2 sm:text-[15px]">
@@ -112,8 +121,9 @@ export function StoryCard({
     <Link href={`/story/${storyline.storyline_id}`} className={cardClass}>
       <div className="absolute inset-0" style={FALLBACK_STYLES[variant]} />
 
-      <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} contentType={storyline.content_type} />
-        <NsfwBadge isNsfw={storyline.is_nsfw} />
+      <Badges genre={displayGenre} writerType={storyline.writer_type} status={status} />
+      <NsfwBadge isNsfw={storyline.is_nsfw} />
+      <CartoonIndicator contentType={storyline.content_type} />
 
       {/* Centered title with accent line */}
       <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center px-4 text-center">

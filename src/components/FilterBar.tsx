@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { GENRES, LANGUAGES } from "../../lib/genres";
+import { GENRES, LANGUAGES, CONTENT_TYPES } from "../../lib/genres";
 
 const SORT_OPTIONS = [
   { value: "new", label: "New" },
@@ -18,20 +18,30 @@ const WRITER_OPTIONS = [
 
 export type WriterFilterValue = "all" | "human" | "agent";
 
+const CONTENT_TYPE_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "fiction", label: "Fiction" },
+  { value: "cartoon", label: "Cartoon" },
+] as const;
+
+export type ContentTypeFilterValue = "all" | "fiction" | "cartoon";
+
 interface FilterBarProps {
   writer: string;
   genre: string;
   lang: string;
+  contentType: string;
   tab: string;
   totalCount?: number;
   showNsfw?: boolean;
 }
 
-function buildHref(params: { tab: string; writer: string; genre: string; lang: string; nsfw?: boolean }) {
+function buildHref(params: { tab: string; writer: string; genre: string; lang: string; contentType: string; nsfw?: boolean }) {
   const sp = new URLSearchParams({ tab: params.tab });
   if (params.writer !== "all") sp.set("writer", params.writer);
   if (params.genre !== "all") sp.set("genre", params.genre);
   if (params.lang !== "all") sp.set("lang", params.lang);
+  if (params.contentType !== "all") sp.set("type", params.contentType);
   if (params.nsfw) sp.set("nsfw", "1");
   return `/?${sp.toString()}`;
 }
@@ -41,6 +51,7 @@ function FilterSheetContent({
   writer,
   genre,
   lang,
+  contentType,
   nsfw,
   onApply,
 }: {
@@ -48,12 +59,14 @@ function FilterSheetContent({
   writer: string;
   genre: string;
   lang: string;
+  contentType: string;
   nsfw: boolean;
-  onApply: (w: string, g: string, l: string, nsfw: boolean) => void;
+  onApply: (w: string, g: string, l: string, ct: string, nsfw: boolean) => void;
 }) {
   const [localWriter, setLocalWriter] = useState(writer);
   const [localGenre, setLocalGenre] = useState(genre);
   const [localLang, setLocalLang] = useState(lang);
+  const [localContentType, setLocalContentType] = useState(contentType);
   const [localNsfw, setLocalNsfw] = useState(nsfw);
 
   useEffect(() => {
@@ -79,6 +92,26 @@ function FilterSheetContent({
                   onClick={() => setLocalWriter(value)}
                   className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
                     localWriter === value
+                      ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-bg)]"
+                      : "border-[var(--border)] text-[var(--muted)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Content Type */}
+          <div>
+            <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.06em] text-[var(--muted)]">Type</div>
+            <div className="flex gap-1.5">
+              {CONTENT_TYPE_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setLocalContentType(value)}
+                  className={`rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors ${
+                    localContentType === value
                       ? "border-[var(--accent)] text-[var(--accent)] bg-[var(--accent-bg)]"
                       : "border-[var(--border)] text-[var(--muted)]"
                   }`}
@@ -134,7 +167,7 @@ function FilterSheetContent({
 
           {/* Apply */}
           <button
-            onClick={() => { onApply(localWriter, localGenre, localLang, localNsfw); onClose(); }}
+            onClick={() => { onApply(localWriter, localGenre, localLang, localContentType, localNsfw); onClose(); }}
             className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
           >
             Apply Filters
@@ -145,46 +178,50 @@ function FilterSheetContent({
   );
 }
 
-function FilterSheet({ open, ...props }: { open: boolean; onClose: () => void; writer: string; genre: string; lang: string; nsfw: boolean; onApply: (w: string, g: string, l: string, nsfw: boolean) => void }) {
+function FilterSheet({ open, ...props }: { open: boolean; onClose: () => void; writer: string; genre: string; lang: string; contentType: string; nsfw: boolean; onApply: (w: string, g: string, l: string, ct: string, nsfw: boolean) => void }) {
   if (!open) return null;
   return <FilterSheetContent {...props} />;
 }
 
-export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = false }: FilterBarProps) {
+export function FilterBar({ writer, genre, lang, contentType, tab, totalCount, showNsfw = false }: FilterBarProps) {
   const router = useRouter();
   const [sheetOpen, setSheetOpen] = useState(false);
   const nsfw = showNsfw;
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.has("lang") || urlParams.has("nsfw")) return;
+    if (urlParams.has("lang") || urlParams.has("nsfw") || urlParams.has("type")) return;
     try {
       const savedLang = localStorage.getItem("plotlink_lang");
+      const savedContentType = localStorage.getItem("plotlink_content_type") || "all";
+      const validContentType = savedContentType !== "all" && (CONTENT_TYPES as readonly string[]).includes(savedContentType) ? savedContentType : "all";
       const savedNsfw = localStorage.getItem("plotlink_nsfw") === "1";
-      if ((savedLang && savedLang !== "all" && (LANGUAGES as readonly string[]).includes(savedLang)) || savedNsfw) {
-        router.replace(buildHref({ tab, writer, genre, lang: savedLang && savedLang !== "all" ? savedLang : lang, nsfw: savedNsfw }));
+      if ((savedLang && savedLang !== "all" && (LANGUAGES as readonly string[]).includes(savedLang)) || savedNsfw || validContentType !== "all") {
+        router.replace(buildHref({ tab, writer, genre, lang: savedLang && savedLang !== "all" ? savedLang : lang, contentType: validContentType !== "all" ? validContentType : contentType, nsfw: savedNsfw }));
       }
     } catch {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  function navigate(params: { tab: string; writer: string; genre: string; lang: string; nsfw?: boolean }) {
+  function navigate(params: { tab: string; writer: string; genre: string; lang: string; contentType: string; nsfw?: boolean }) {
     try {
       localStorage.setItem("plotlink_lang", params.lang);
+      localStorage.setItem("plotlink_content_type", params.contentType);
       localStorage.setItem("plotlink_nsfw", params.nsfw ? "1" : "0");
     } catch {}
     router.push(buildHref(params));
   }
 
-  const handleApplyFilters = useCallback((w: string, g: string, l: string, n: boolean) => {
-    navigate({ tab, writer: w, genre: g, lang: l, nsfw: n });
+  const handleApplyFilters = useCallback((w: string, g: string, l: string, ct: string, n: boolean) => {
+    navigate({ tab, writer: w, genre: g, lang: l, contentType: ct, nsfw: n });
   }, [tab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const activeFilterCount = [writer !== "all", genre !== "all", lang !== "all", nsfw].filter(Boolean).length;
+  const activeFilterCount = [writer !== "all", genre !== "all", lang !== "all", contentType !== "all", nsfw].filter(Boolean).length;
   const activeChips: { label: string; clear: () => void }[] = [];
-  if (writer !== "all") activeChips.push({ label: `Writer: ${writer}`, clear: () => navigate({ tab, writer: "all", genre, lang, nsfw }) });
-  if (genre !== "all") activeChips.push({ label: genre, clear: () => navigate({ tab, writer, genre: "all", lang, nsfw }) });
-  if (lang !== "all") activeChips.push({ label: lang, clear: () => navigate({ tab, writer, genre, lang: "all", nsfw }) });
-  if (nsfw) activeChips.push({ label: "19+", clear: () => navigate({ tab, writer, genre, lang, nsfw: false }) });
+  if (writer !== "all") activeChips.push({ label: `Writer: ${writer}`, clear: () => navigate({ tab, writer: "all", genre, lang, contentType, nsfw }) });
+  if (contentType !== "all") activeChips.push({ label: contentType === "cartoon" ? "Cartoon" : "Fiction", clear: () => navigate({ tab, writer, genre, lang, contentType: "all", nsfw }) });
+  if (genre !== "all") activeChips.push({ label: genre, clear: () => navigate({ tab, writer, genre: "all", lang, contentType, nsfw }) });
+  if (lang !== "all") activeChips.push({ label: lang, clear: () => navigate({ tab, writer, genre, lang: "all", contentType, nsfw }) });
+  if (nsfw) activeChips.push({ label: "19+", clear: () => navigate({ tab, writer, genre, lang, contentType, nsfw: false }) });
 
   return (
     <>
@@ -195,7 +232,7 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
             {SORT_OPTIONS.map(({ value, label }) => (
               <button
                 key={value}
-                onClick={() => navigate({ tab: value, writer, genre, lang, nsfw })}
+                onClick={() => navigate({ tab: value, writer, genre, lang, contentType, nsfw })}
                 className={`relative px-3 py-2 text-[13px] font-medium transition-colors sm:text-sm ${
                   tab === value
                     ? "font-semibold text-[var(--fg)]"
@@ -224,9 +261,26 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
               {WRITER_OPTIONS.map(({ value, label }) => (
                 <button
                   key={value}
-                  onClick={() => navigate({ tab, writer: value, genre, lang, nsfw })}
+                  onClick={() => navigate({ tab, writer: value, genre, lang, contentType, nsfw })}
                   className={`rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors ${
                     writer === value
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--muted)] hover:text-[var(--fg)]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Content type pills */}
+            <div className="flex items-center rounded-full border border-[var(--border)] p-0.5">
+              {CONTENT_TYPE_OPTIONS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => navigate({ tab, writer, genre, lang, contentType: value, nsfw })}
+                  className={`rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors ${
+                    contentType === value
                       ? "bg-[var(--accent)] text-white"
                       : "text-[var(--muted)] hover:text-[var(--fg)]"
                   }`}
@@ -240,7 +294,7 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
             <div className="relative">
               <select
                 value={genre}
-                onChange={(e) => navigate({ tab, writer, genre: e.target.value, lang, nsfw })}
+                onChange={(e) => navigate({ tab, writer, genre: e.target.value, lang, contentType, nsfw })}
                 className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors focus:border-[var(--accent)] focus:outline-none ${
                   genre !== "all"
                     ? "border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]"
@@ -256,7 +310,7 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
             <div className="relative">
               <select
                 value={lang}
-                onChange={(e) => navigate({ tab, writer, genre, lang: e.target.value, nsfw })}
+                onChange={(e) => navigate({ tab, writer, genre, lang: e.target.value, contentType, nsfw })}
                 className={`rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors focus:border-[var(--accent)] focus:outline-none ${
                   lang !== "all"
                     ? "border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]"
@@ -322,6 +376,7 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
         writer={writer}
         genre={genre}
         lang={lang}
+        contentType={contentType}
         nsfw={nsfw}
         onApply={handleApplyFilters}
       />

@@ -14,6 +14,7 @@ const defaultProps = {
   writer: "all",
   genre: "all",
   lang: "all",
+  contentType: "all",
   tab: "new",
 };
 
@@ -31,7 +32,7 @@ describe("FilterBar", () => {
 
   it("renders writer pill buttons", () => {
     render(<FilterBar {...defaultProps} />);
-    expect(screen.getByText("All")).toBeInTheDocument();
+    expect(screen.getAllByText("All").length).toBeGreaterThan(0);
     expect(screen.getByText("Human")).toBeInTheDocument();
     expect(screen.getByText("Agent")).toBeInTheDocument();
   });

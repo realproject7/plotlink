@@ -128,6 +128,7 @@ async function fetchCandidatesAndRatings(
   writerType?: number,
   genre?: string,
   lang?: string,
+  contentType?: string,
   showNsfw = false,
 ) {
   function applyBase(q: ReturnType<typeof supabase.from>) {
@@ -138,6 +139,7 @@ async function fetchCandidatesAndRatings(
     if (writerType !== undefined) filtered = filtered.eq("writer_type", writerType);
     if (genre) filtered = filtered.eq("genre", genre);
     if (lang) filtered = filtered.eq("language", lang);
+    if (contentType) filtered = filtered.eq("content_type", contentType);
     filtered = filtered.eq("is_nsfw", showNsfw);
     return filtered;
   }
@@ -249,9 +251,10 @@ export async function getTrendingStorylines(
   offset = 0,
   genre?: string,
   lang?: string,
+  contentType?: string,
   showNsfw = false,
 ): Promise<RankedStoryline[]> {
-  const { storylines, ratingMap, userMap } = await fetchCandidatesAndRatings(supabase, writerType, genre, lang, showNsfw);
+  const { storylines, ratingMap, userMap } = await fetchCandidatesAndRatings(supabase, writerType, genre, lang, contentType, showNsfw);
   if (storylines.length === 0) return [];
 
   const enriched = await Promise.all(
@@ -297,6 +300,7 @@ export async function getMcapStorylines(
   offset = 0,
   genre?: string,
   lang?: string,
+  contentType?: string,
   showNsfw = false,
 ): Promise<Storyline[]> {
   // Fetch all eligible stories — MCap needs the full set, not a recency-biased subset
@@ -309,6 +313,7 @@ export async function getMcapStorylines(
   if (writerType !== undefined) q = q.eq("writer_type", writerType);
   if (genre) q = q.eq("genre", genre);
   if (lang) q = q.eq("language", lang);
+  if (contentType) q = q.eq("content_type", contentType);
   q = q.eq("is_nsfw", showNsfw);
   const { data } = await q.returns<Storyline[]>();
   const storylines = data ?? [];
