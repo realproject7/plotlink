@@ -16,6 +16,7 @@ import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
 import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
+import { useNsfwPreference } from "../../../hooks/useNsfwPreference";
 import { formatUsdValue } from "../../../../lib/usd-price";
 import { DisconnectButton } from "../../../components/ConnectWallet";
 import { GENRES, LANGUAGES } from "../../../../lib/genres";
@@ -709,7 +710,7 @@ function StoriesTab({
   connectedAddress: string | null;
   totalRoyalties?: bigint;
 }) {
-  const showNsfw = typeof window !== "undefined" && localStorage.getItem("plotlink_nsfw") === "1";
+  const [showNsfw] = useNsfwPreference();
   const { data: plotUsd } = usePlotUsdPrice();
   const { data: storylines = [], isLoading, error } = useQuery({
     queryKey: ["profile-storylines", address, isOwnProfile, showNsfw],
@@ -1430,7 +1431,7 @@ interface PortfolioHolding {
 }
 
 function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile: boolean }) {
-  const showNsfw = typeof window !== "undefined" && localStorage.getItem("plotlink_nsfw") === "1";
+  const [showNsfw] = useNsfwPreference();
   const { data: plotUsd } = usePlotUsdPrice();
 
   // Fetch on-chain token holdings

@@ -6,6 +6,7 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import Image from "next/image";
 import { ConnectWallet } from "./ConnectWallet";
+import { useNsfwPreference } from "../hooks/useNsfwPreference";
 
 export function NavBar() {
   const pathname = usePathname();
@@ -14,15 +15,11 @@ export function NavBar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { address, isConnected } = useAccount();
 
-  const [showNsfw, setShowNsfw] = useState(() => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem("plotlink_nsfw") === "1";
-  });
+  const [showNsfw, setNsfw] = useNsfwPreference();
 
   const toggleNsfw = () => {
     const next = !showNsfw;
-    setShowNsfw(next);
-    localStorage.setItem("plotlink_nsfw", next ? "1" : "0");
+    setNsfw(next);
     if (pathname === "/") {
       const sp = new URLSearchParams(searchParams.toString());
       if (next) sp.set("nsfw", "1"); else sp.delete("nsfw");
