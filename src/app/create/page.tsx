@@ -625,7 +625,7 @@ function CreatePage() {
                   disabled={newBusy}
                   className="h-4 w-4 rounded border-border accent-accent"
                 />
-                <span className="text-foreground text-sm">This story contains adult content (18+)</span>
+                <span className="text-foreground text-sm">This story contains adult content (19+)</span>
               </label>
               {isNsfw && (
                 <p className="text-muted mt-1.5 ml-6 text-[11px]">

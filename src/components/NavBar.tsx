@@ -2,15 +2,30 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import Image from "next/image";
 import { ConnectWallet } from "./ConnectWallet";
+import { useNsfwPreference } from "../hooks/useNsfwPreference";
 
 export function NavBar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { address, isConnected } = useAccount();
+
+  const [showNsfw, setNsfw] = useNsfwPreference();
+
+  const toggleNsfw = () => {
+    const next = !showNsfw;
+    setNsfw(next);
+    if (pathname === "/") {
+      const sp = new URLSearchParams(searchParams.toString());
+      if (next) sp.set("nsfw", "1"); else sp.delete("nsfw");
+      router.replace(`/?${sp.toString()}`);
+    }
+  };
 
   const dashboardHref = isConnected && address
     ? `/profile/${address}`
@@ -50,6 +65,20 @@ export function NavBar() {
             Plot<span className="text-accent">Link</span>
           </span>
         </Link>
+
+        {/* 19+ NSFW toggle pill */}
+        <button
+          type="button"
+          onClick={toggleNsfw}
+          className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
+            showNsfw
+              ? "bg-[oklch(45%_0.18_25)] text-white"
+              : "border border-border text-muted hover:text-foreground"
+          }`}
+          title={showNsfw ? "Hide 19+ content" : "Show 19+ content"}
+        >
+          19+
+        </button>
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">

@@ -24,7 +24,7 @@ import { CommentSection } from "../../../components/CommentSection";
 import { MobileActionBar } from "../../../components/MobileActionBar";
 import { MarketCapBox } from "../../../components/MarketCapBox";
 import { TokenPriceBox } from "../../../components/TokenPriceBox";
-import { FALLBACK_STYLES, hashToVariant } from "../../../components/StoryCard";
+import { FALLBACK_STYLES, hashToVariant, NsfwBadge } from "../../../components/StoryCard";
 import { CoverLightbox } from "../../../components/CoverLightbox";
 import { getCoverUrl } from "../../../../lib/cover";
 import { StoryEditPanel } from "../../../components/StoryEditPanel";
@@ -387,6 +387,7 @@ function StoryHeader({
               </div>
             </>
           )}
+          <NsfwBadge isNsfw={storyline.is_nsfw} />
         </div>
       </div>
 

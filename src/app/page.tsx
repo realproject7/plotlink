@@ -87,7 +87,7 @@ export default async function Home({
       {storylines.length === 0 && (
         <section className="flex flex-col items-center gap-4 py-16 text-center">
           <div className="border-border text-muted rounded border px-4 py-3 text-xs">
-            <span className="text-accent-dim">$</span> {showNsfw ? "no 18+ stories found" : "no storylines found"}
+            <span className="text-accent-dim">$</span> {showNsfw ? "no 19+ stories found" : "no storylines found"}
           </div>
           <p className="text-muted text-sm">
             {showNsfw ? "No mature content has been published yet." : "Be the first to start a story on PlotLink."}

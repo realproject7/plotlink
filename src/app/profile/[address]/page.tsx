@@ -16,6 +16,7 @@ import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
 import { usePlotUsdPrice } from "../../../hooks/usePlotUsdPrice";
+import { useNsfwPreference } from "../../../hooks/useNsfwPreference";
 import { formatUsdValue } from "../../../../lib/usd-price";
 import { DisconnectButton } from "../../../components/ConnectWallet";
 import { GENRES, LANGUAGES } from "../../../../lib/genres";
@@ -709,9 +710,10 @@ function StoriesTab({
   connectedAddress: string | null;
   totalRoyalties?: bigint;
 }) {
+  const [showNsfw] = useNsfwPreference();
   const { data: plotUsd } = usePlotUsdPrice();
   const { data: storylines = [], isLoading, error } = useQuery({
-    queryKey: ["profile-storylines", address, isOwnProfile],
+    queryKey: ["profile-storylines", address, isOwnProfile, showNsfw],
     queryFn: async () => {
       if (!supabase) return [];
       let q = supabase
@@ -720,7 +722,7 @@ function StoriesTab({
         .eq("writer_address", address)
         .eq("hidden", false)
         .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (!isOwnProfile) q = q.eq("is_nsfw", false);
+      if (!isOwnProfile && !showNsfw) q = q.eq("is_nsfw", false);
       const { data, error } = await q
         .order("block_timestamp", { ascending: false })
         .returns<Storyline[]>();
@@ -1429,11 +1431,12 @@ interface PortfolioHolding {
 }
 
 function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile: boolean }) {
+  const [showNsfw] = useNsfwPreference();
   const { data: plotUsd } = usePlotUsdPrice();
 
   // Fetch on-chain token holdings
   const { data: holdings, isLoading: holdingsLoading } = useQuery({
-    queryKey: ["profile-holdings", address, isOwnProfile],
+    queryKey: ["profile-holdings", address, isOwnProfile, showNsfw],
     queryFn: async (): Promise<PortfolioHolding[]> => {
       if (!supabase) return [];
 
@@ -1443,7 +1446,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
         .eq("hidden", false)
         .neq("token_address", "")
         .eq("contract_address", STORY_FACTORY.toLowerCase());
-      if (!isOwnProfile) q = q.eq("is_nsfw", false);
+      if (!isOwnProfile && !showNsfw) q = q.eq("is_nsfw", false);
       const { data: storylines } = await q.returns<Storyline[]>();
       if (!storylines || storylines.length === 0) return [];
 
