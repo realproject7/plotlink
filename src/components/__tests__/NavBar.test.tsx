@@ -12,6 +12,8 @@ vi.mock("next/link", () => ({
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
+  useSearchParams: () => ({ toString: () => "" }),
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
 }));
 
 vi.mock("../ConnectWallet", () => ({

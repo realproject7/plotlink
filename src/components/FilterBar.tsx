@@ -128,7 +128,7 @@ function FilterSheetContent({
                 onChange={(e) => setLocalNsfw(e.target.checked)}
                 className="h-4 w-4 rounded border-[var(--border)] accent-[var(--accent)]"
               />
-              <span className="text-sm text-[var(--fg)]">Show 18+ content</span>
+              <span className="text-sm text-[var(--fg)]">Show 19+ content</span>
             </label>
           </div>
 
@@ -184,7 +184,7 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
   if (writer !== "all") activeChips.push({ label: `Writer: ${writer}`, clear: () => navigate({ tab, writer: "all", genre, lang, nsfw }) });
   if (genre !== "all") activeChips.push({ label: genre, clear: () => navigate({ tab, writer, genre: "all", lang, nsfw }) });
   if (lang !== "all") activeChips.push({ label: lang, clear: () => navigate({ tab, writer, genre, lang: "all", nsfw }) });
-  if (nsfw) activeChips.push({ label: "18+", clear: () => navigate({ tab, writer, genre, lang, nsfw: false }) });
+  if (nsfw) activeChips.push({ label: "19+", clear: () => navigate({ tab, writer, genre, lang, nsfw: false }) });
 
   return (
     <>
@@ -267,21 +267,6 @@ export function FilterBar({ writer, genre, lang, tab, totalCount, showNsfw = fal
                 {LANGUAGES.map((l) => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
-
-            {/* NSFW toggle */}
-            <label className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-medium transition-colors ${
-              nsfw
-                ? "border-[var(--accent)] bg-[var(--accent-bg)] text-[var(--accent)]"
-                : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--muted)] hover:text-[var(--fg)]"
-            }`}>
-              <input
-                type="checkbox"
-                checked={nsfw}
-                onChange={(e) => navigate({ tab, writer, genre, lang, nsfw: e.target.checked })}
-                className="h-3 w-3 rounded accent-[var(--accent)]"
-              />
-              18+
-            </label>
 
             {/* Result count */}
             {totalCount !== undefined && (

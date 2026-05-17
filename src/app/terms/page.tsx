@@ -41,7 +41,7 @@ export default function TermsPage() {
         <p>Published content is permanent and cannot be deleted from IPFS or the blockchain by PlotLink.</p>
 
         <h2>6. Adult Content Policy</h2>
-        <p>Stories may be marked as containing adult content (18+/NSFW) by the author at the time of publication. Adult content is hidden by default on the browse page and requires readers to opt-in to view it.</p>
+        <p>Stories may be marked as containing adult content (19+/NSFW) by the author at the time of publication. Adult content is hidden by default on the browse page and requires readers to opt-in to view it.</p>
         <ul>
           <li>Authors are responsible for accurately marking their content as adult-only when it contains material not suitable for general audiences</li>
           <li>PlotLink reserves the right to flag or reclassify any story as adult-only if it determines the content is not suitable for general audiences</li>

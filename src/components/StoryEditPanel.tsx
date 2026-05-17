@@ -247,7 +247,7 @@ export function StoryEditPanel({
             disabled={saving}
             className="h-3.5 w-3.5 rounded border-border accent-accent"
           />
-          <span className="text-foreground text-xs">This story contains adult content (18+)</span>
+          <span className="text-foreground text-xs">This story contains adult content (19+)</span>
         </label>
         {isNsfw && (
           <p className="text-muted mt-1 ml-5.5 text-[10px]">
