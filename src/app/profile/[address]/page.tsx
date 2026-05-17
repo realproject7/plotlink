@@ -656,9 +656,9 @@ function ProfileStatsRow({
   const totalReaders = storylines?.reduce((sum, s) => sum + (s.view_count ?? 0), 0) ?? 0;
   const donationsTotal = donationsData?.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0)) ?? BigInt(0);
   const combinedEarnings = (totalRoyalties ?? BigInt(0)) + donationsTotal;
-  const earningsStr = combinedEarnings > BigInt(0)
-    ? `${formatPrice(formatUnits(combinedEarnings, 18))} ${RESERVE_LABEL}`
-    : "—";
+  const earningsPlot = Number(formatUnits(combinedEarnings, 18));
+  const earningsUsd = plotUsdPrice ? earningsPlot * plotUsdPrice : null;
+  const earningsPlotStr = earningsPlot > 0 ? `${formatPrice(formatUnits(combinedEarnings, 18))} ${RESERVE_LABEL}` : null;
   const balanceStr = plotBalance != null
     ? formatCompact(Number(formatUnits(plotBalance, 18)))
     : "—";
@@ -674,7 +674,12 @@ function ProfileStatsRow({
         <div className="text-muted text-[9px]">Total Readers</div>
       </div>
       <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
-        <div className="text-foreground text-sm font-bold truncate">{earningsStr}</div>
+        <div className="text-foreground text-sm font-bold truncate">
+          {earningsPlot === 0 ? "$0" : earningsUsd !== null ? formatUsdValue(earningsUsd) : earningsPlotStr}
+        </div>
+        {earningsPlot > 0 && earningsUsd !== null && (
+          <div className="text-muted text-[10px] truncate">{earningsPlotStr}</div>
+        )}
         <div className="text-muted text-[9px]">Creator Earnings</div>
       </div>
       <div className="bg-surface-raised rounded-[var(--card-radius)] border border-border px-3 py-2 text-center">
