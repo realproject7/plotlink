@@ -52,7 +52,7 @@ function Badges({ genre, writerType, status, contentType }: { genre?: string | n
   );
 }
 
-function NsfwBadge({ isNsfw }: { isNsfw?: boolean }) {
+export function NsfwBadge({ isNsfw }: { isNsfw?: boolean }) {
   if (!isNsfw) return null;
   return (
     <div className="absolute top-2 right-2 z-[2] flex h-6 w-6 items-center justify-center rounded-full border-2 border-white/80 bg-[oklch(45%_0.18_25)] text-[9px] font-bold text-white shadow-sm">
