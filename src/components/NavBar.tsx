@@ -49,36 +49,39 @@ export function NavBar() {
   return (
     <nav className="fixed top-0 right-0 left-0 z-50 border-b border-[var(--border)] bg-[var(--bg)]/95 backdrop-blur-sm">
       <div className="mx-auto flex h-11 max-w-[var(--grid-max)] items-center justify-between px-4">
-        {/* Logo */}
-        <Link
-          href="/"
-          className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
-        >
-          <Image
-            src="/plotlink-logo-symbol.svg"
-            alt=""
-            width={20}
-            height={24}
-            className="h-5 w-auto"
-          />
-          <span className="font-heading text-[20px] font-medium tracking-tight text-foreground">
-            Plot<span className="text-accent">Link</span>
-          </span>
-        </Link>
+        {/* Logo + 19+ toggle cluster */}
+        <div className="flex items-center">
+          <Link
+            href="/"
+            className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
+          >
+            <Image
+              src="/plotlink-logo-symbol.svg"
+              alt=""
+              width={20}
+              height={24}
+              className="h-5 w-auto"
+            />
+            <span className="font-heading text-[20px] font-medium tracking-tight text-foreground">
+              Plot<span className="text-accent">Link</span>
+            </span>
+          </Link>
 
-        {/* 19+ NSFW toggle pill */}
-        <button
-          type="button"
-          onClick={toggleNsfw}
-          className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
-            showNsfw
-              ? "bg-[oklch(45%_0.18_25)] text-white"
-              : "border border-border text-muted hover:text-foreground"
-          }`}
-          title={showNsfw ? "Hide 19+ content" : "Show 19+ content"}
-        >
-          19+
-        </button>
+          {/* 19+ NSFW toggle — round circle icon */}
+          <button
+            type="button"
+            onClick={toggleNsfw}
+            className={`ml-1.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold leading-none transition-colors ${
+              showNsfw
+                ? "bg-red-600 text-white"
+                : "bg-neutral-700 text-neutral-400 hover:bg-neutral-600 hover:text-neutral-300"
+            }`}
+            title={showNsfw ? "Hide 19+ content" : "Show 19+ content"}
+            aria-pressed={showNsfw}
+          >
+            19
+          </button>
+        </div>
 
         {/* Desktop nav links */}
         <div className="hidden items-center gap-1 md:flex">
