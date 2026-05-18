@@ -66,18 +66,19 @@ export function NavBar() {
           </span>
         </Link>
 
-        {/* 19+ NSFW toggle pill */}
+        {/* 19+ NSFW toggle — round circle icon */}
         <button
           type="button"
           onClick={toggleNsfw}
-          className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold transition-colors ${
+          className={`ml-1.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold leading-none transition-colors ${
             showNsfw
-              ? "bg-[oklch(45%_0.18_25)] text-white"
-              : "border border-border text-muted hover:text-foreground"
+              ? "bg-red-600 text-white"
+              : "bg-neutral-700 text-neutral-400 hover:bg-neutral-600 hover:text-neutral-300"
           }`}
           title={showNsfw ? "Hide 19+ content" : "Show 19+ content"}
+          aria-pressed={showNsfw}
         >
-          19+
+          19
         </button>
 
         {/* Desktop nav links */}
