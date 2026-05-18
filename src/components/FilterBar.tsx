@@ -322,6 +322,17 @@ export function FilterBar({ writer, genre, lang, contentType, tab, totalCount, s
               </select>
             </div>
 
+            {/* 19+ checkbox */}
+            <label className="flex cursor-pointer items-center gap-1.5 text-[12px] font-medium text-[var(--muted)] hover:text-[var(--fg)] transition-colors">
+              <input
+                type="checkbox"
+                checked={nsfw}
+                onChange={(e) => navigate({ tab, writer, genre, lang, contentType, nsfw: e.target.checked })}
+                className="h-3.5 w-3.5 rounded border-[var(--border)] accent-[var(--accent)]"
+              />
+              19+
+            </label>
+
             {/* Result count */}
             {totalCount !== undefined && (
               <span className="ml-1 text-[12px] tabular-nums text-[var(--muted)]">
