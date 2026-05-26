@@ -4,7 +4,6 @@ import { createServerClient, type Storyline } from "../../../../../lib/supabase"
 import { getTokenTVL } from "../../../../../lib/price";
 import { getFarcasterProfile } from "../../../../../lib/actions";
 import { RESERVE_LABEL, STORY_FACTORY } from "../../../../../lib/contracts/constants";
-import { formatPrice } from "../../../../../lib/format";
 import { truncateAddress } from "../../../../../lib/utils";
 import { getPlotUsdPrice, formatUsdValue } from "../../../../../lib/usd-price";
 import { getCoverUrl } from "../../../../../lib/cover";
@@ -134,7 +133,6 @@ export async function GET(
         {coverSection}
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 48px 48px 40px" }}>
-          {!coverUrl && <div style={{ marginBottom: "12px", display: "flex" }}>{badgeElements}</div>}
 
           <div style={{ fontSize: titleDisplay.length > 35 ? "32px" : "38px", fontWeight: 500, color: "#1a1a1a", lineHeight: 1.25, display: "flex", marginBottom: "12px" }}>
             {titleDisplay}
