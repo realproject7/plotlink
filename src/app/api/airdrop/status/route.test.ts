@@ -1,9 +1,7 @@
 // @vitest-environment node
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 const mockPriceSingle = vi.fn();
-let activationCallIdx = 0;
-
 vi.mock("../../../../../lib/supabase", () => ({
   createServerClient: () => ({
     from: (table: string) => {
@@ -11,7 +9,6 @@ vi.mock("../../../../../lib/supabase", () => ({
         return { select: () => ({ order: () => ({ limit: () => ({ single: mockPriceSingle }) }) }) };
       }
       if (table === "pl_activations") {
-        const idx = activationCallIdx++;
         const allCount = 15;
         const eligibleCount = 12;
         return {
@@ -53,7 +50,6 @@ vi.mock("../../../../../lib/usd-price", () => ({ getPlotUsdPrice: () => Promise.
 
 import { GET } from "./route";
 
-beforeEach(() => { activationCallIdx = 0; });
 
 describe("GET /api/airdrop/status", () => {
   it("returns v5 shape with milestones + activation counts + env_check", async () => {
