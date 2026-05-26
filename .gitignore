@@ -2,6 +2,7 @@
 
 # internal docs (operational queues, proposals, roadmaps — never commit)
 docs/
+!docs/airdrop-contracts.md
 
 # archive (data exports, scored CSVs — never commit)
 archive/
@@ -58,6 +59,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/lib/
+broadcast/
+
 # claude code
 .claude/worktrees/
 AGENTS.md
@@ -68,3 +75,6 @@ playwright-report/
 
 # supabase temp
 supabase/.temp/
+
+reviewer-token
+*-token
