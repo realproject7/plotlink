@@ -136,7 +136,7 @@ function ClaimCardInner({ address }: { address: string }) {
     return (
       <div className="border-border rounded border p-6 text-center">
         <h2 className="text-accent mb-2 text-sm font-bold uppercase tracking-wider">Campaign Complete</h2>
-        <p className="text-muted text-xs">You weren't eligible for this campaign.</p>
+        <p className="text-muted text-xs">You were not eligible for this campaign.</p>
       </div>
     );
   }
