@@ -1,4 +1,5 @@
-export const REFERRAL_STORAGE_KEY = "plotlink_ref";
+import { REFERRAL_STORAGE_KEY } from "../../src/hooks/useReferralCapture";
+export { REFERRAL_STORAGE_KEY };
 
 export async function handleInboundReferral(
   message: string,

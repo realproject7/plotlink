@@ -1,11 +1,14 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
-import { ActivationFlow } from "./ActivationFlow";
+import userEvent from "@testing-library/user-event";
+
+const mockSignMessageAsync = vi.fn().mockResolvedValue("0xmocksig");
+const mockHandleInboundReferral = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("wagmi", () => ({
   useAccount: () => ({ address: "0xABC123", chainId: 8453 }),
-  useSignMessage: () => ({ signMessageAsync: vi.fn().mockResolvedValue("0xmocksig") }),
+  useSignMessage: () => ({ signMessageAsync: mockSignMessageAsync }),
 }));
 
 vi.mock("siwe", () => ({
@@ -14,10 +17,16 @@ vi.mock("siwe", () => ({
   },
 }));
 
+vi.mock("../../../lib/airdrop/activation-helpers", () => ({
+  handleInboundReferral: (...args: unknown[]) => mockHandleInboundReferral(...args),
+}));
+
 let activationStatus = { x_handle_confirmed_at: null as string | null, x_follow_at: null as string | null, fc_verified_at: null, activated_at: null };
 
 beforeEach(() => {
   activationStatus = { x_handle_confirmed_at: null, x_follow_at: null, fc_verified_at: null, activated_at: null };
+  mockSignMessageAsync.mockResolvedValue("0xmocksig");
+  mockHandleInboundReferral.mockResolvedValue(undefined);
   vi.stubGlobal("fetch", vi.fn(async () => ({
     ok: true,
     status: 200,
@@ -25,7 +34,12 @@ beforeEach(() => {
   } as Response)));
 });
 
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.unstubAllGlobals();
+});
+
+import { ActivationFlow } from "./ActivationFlow";
 
 describe("ActivationFlow", () => {
   it("renders step 1 (SIWE sign) when not activated", async () => {
@@ -57,6 +71,44 @@ describe("ActivationFlow", () => {
     await waitFor(() => {
       const dones = screen.getAllByText(/Done/i);
       expect(dones.length).toBeGreaterThan(0);
+    });
+  });
+
+  it("clicking Sign & Activate calls signMessageAsync and handleInboundReferral", async () => {
+    render(<ActivationFlow />);
+    const btns = await waitFor(() => screen.getAllByText("Sign & Activate"));
+    await userEvent.click(btns[0]);
+
+    await waitFor(() => {
+      expect(mockSignMessageAsync).toHaveBeenCalledWith({ message: "mock-siwe-message" });
+    });
+
+    await waitFor(() => {
+      expect(mockHandleInboundReferral).toHaveBeenCalledWith("mock-siwe-message", "0xmocksig");
+    });
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/@handle/i)).toBeDefined();
+    });
+  });
+
+  it("shows error when signature rejected by user", async () => {
+    mockSignMessageAsync.mockRejectedValue(new Error("User rejected the request"));
+    render(<ActivationFlow />);
+    const btns = await waitFor(() => screen.getAllByText("Sign & Activate"));
+    await userEvent.click(btns[0]);
+    await waitFor(() => {
+      expect(screen.getByText(/Signature rejected/i)).toBeDefined();
+    });
+  });
+
+  it("shows generic error on non-rejection sign failure", async () => {
+    mockSignMessageAsync.mockRejectedValue(new Error("Unknown wallet error"));
+    render(<ActivationFlow />);
+    const btns = await waitFor(() => screen.getAllByText("Sign & Activate"));
+    await userEvent.click(btns[0]);
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to sign/i)).toBeDefined();
     });
   });
 });
