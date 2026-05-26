@@ -21,9 +21,13 @@ function verifyCron(req: Request): boolean {
   return authHeader === `Bearer ${secret}`;
 }
 
-export async function POST(req: Request) {
+async function handler(req: Request) {
   if (!verifyCron(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (process.env.NEXT_PUBLIC_AIRDROP_PAUSED === "1") {
+    return NextResponse.json({ paused: true });
   }
 
   const supabase = createServerClient();
@@ -170,4 +174,12 @@ export async function POST(req: Request) {
     message: "Points synced",
     processed: { buys: buyCount, referrals: referralCount },
   });
+}
+
+export async function GET(req: Request) {
+  return handler(req);
+}
+
+export async function POST(req: Request) {
+  return handler(req);
 }
