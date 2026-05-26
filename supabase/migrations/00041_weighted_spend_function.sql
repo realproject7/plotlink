@@ -51,11 +51,11 @@ AS $$
       COALESCE(qr.ref_count, 0) AS qualified_refs,
       eb.has_fc_bonus,
       LEAST(
-        1 + (COALESCE(qr.ref_count, 0) + eb.has_fc_bonus) * p_multiplier_per_ref,
+        1 + LEAST(COALESCE(qr.ref_count, 0) + eb.has_fc_bonus, 10) * p_multiplier_per_ref,
         p_multiplier_cap
       ) AS multiplier,
       eb.buy_volume * LEAST(
-        1 + (COALESCE(qr.ref_count, 0) + eb.has_fc_bonus) * p_multiplier_per_ref,
+        1 + LEAST(COALESCE(qr.ref_count, 0) + eb.has_fc_bonus, 10) * p_multiplier_per_ref,
         p_multiplier_cap
       ) AS weighted_spend
     FROM eligible_buys eb

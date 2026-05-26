@@ -245,6 +245,32 @@ describe("weightedSpendQuery against PGlite", () => {
     expect(Number(rows[1].community_total)).toBe(300);
   });
 
+  it("ref count input capped at 10 (11 refs same as 10)", async () => {
+    await resetFixtures();
+    const refInserts = Array.from({ length: 11 }, (_, i) =>
+      `('ref${i}', '2026-07-01')`
+    ).join(",");
+    const buyInserts = Array.from({ length: 11 }, (_, i) =>
+      `('ref${i}', 'buy', 60, '${IN_CAMPAIGN}')`
+    ).join(",");
+    const relInserts = Array.from({ length: 11 }, (_, i) =>
+      `('alice', 'ref${i}')`
+    ).join(",");
+
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES
+        ('alice', '2026-07-01'), ${refInserts};
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('alice', 'buy', 100, '${IN_CAMPAIGN}'), ${buyInserts};
+      INSERT INTO pl_referrals (referrer_address, referred_address) VALUES ${relInserts};
+    `);
+
+    const rows = await runQuery(config);
+    const alice = rows.find(r => r.address === "alice")!;
+    expect(Number(alice.qualified_refs)).toBe(11);
+    expect(Number(alice.multiplier)).toBe(3.0);
+  });
+
   it("multiplier is capped at REFERRAL_MULTIPLIER_CAP", async () => {
     await resetFixtures();
     const refInserts = Array.from({ length: 20 }, (_, i) =>
