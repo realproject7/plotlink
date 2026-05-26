@@ -1,7 +1,10 @@
-import { describe, expect, it } from "vitest";
-import { weightedSpendQuery, computeWeightedSpend } from "./sql";
+// @vitest-environment node
+import { describe, expect, it, beforeAll, afterAll } from "vitest";
+import { PGlite } from "@electric-sql/pglite";
+import { weightedSpendQuery } from "./sql";
 import type { AirdropConfig } from "./config";
-import type { Activation, BuyPoint, Referral } from "./sql";
+
+let db: PGlite;
 
 function buildConfig(overrides: Partial<AirdropConfig> = {}): AirdropConfig {
   return {
@@ -33,211 +36,235 @@ function buildConfig(overrides: Partial<AirdropConfig> = {}): AirdropConfig {
   };
 }
 
-describe("weightedSpendQuery", () => {
-  it("returns parameterized sql with campaign window and config values", () => {
-    const config = buildConfig();
-    const { sql, params } = weightedSpendQuery(config);
-
-    expect(params).toEqual([
-      "2026-07-01T00:00:00.000Z",
-      "2026-10-01T00:00:00.000Z",
-      50, 0.2, 3.0,
-    ]);
-    expect(sql).toContain("pl_activations");
-    expect(sql).toContain("activated_at IS NOT NULL");
-    expect(sql).toContain("is_blacklisted = FALSE");
-    expect(sql).toContain("SUM(w.weighted_spend) OVER ()");
-  });
-
-  it("same SQL structure for TEST vs PROD, different params", () => {
-    const prod = weightedSpendQuery(buildConfig());
-    const test = weightedSpendQuery(buildConfig({
-      CAMPAIGN_START: new Date("2026-06-01T12:00:00Z"),
-      CAMPAIGN_END: new Date("2026-06-01T12:05:00Z"),
-      MIN_REFERRAL_THRESHOLD: 1,
-    }));
-    expect(prod.sql).toBe(test.sql);
-    expect(prod.params).not.toEqual(test.params);
-  });
+beforeAll(async () => {
+  db = new PGlite();
+  await db.exec(`
+    CREATE TABLE pl_activations (
+      address TEXT PRIMARY KEY,
+      fid BIGINT,
+      activated_at TIMESTAMPTZ,
+      is_blacklisted BOOLEAN NOT NULL DEFAULT FALSE
+    );
+    CREATE TABLE pl_points (
+      id SERIAL PRIMARY KEY,
+      address TEXT NOT NULL,
+      action TEXT NOT NULL,
+      points NUMERIC NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    );
+    CREATE TABLE pl_referrals (
+      id SERIAL PRIMARY KEY,
+      referrer_address TEXT NOT NULL,
+      referred_address TEXT NOT NULL
+    );
+  `);
 });
 
-describe("computeWeightedSpend", () => {
-  const config = buildConfig();
-  const inCampaign = "2026-08-01T00:00:00Z";
+afterAll(async () => {
+  await db.close();
+});
 
-  it("100 PLOT + 2 qualified refs + FC bonus → multiplier 1.6, weighted 160", () => {
-    const activations: Activation[] = [
-      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: 123 },
-      { address: "ref1", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "ref2", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
-      { address: "ref1", action: "buy", points: 60, created_at: inCampaign },
-      { address: "ref2", action: "buy", points: 80, created_at: inCampaign },
-    ];
-    const refs: Referral[] = [
-      { referrer_address: "alice", referred_address: "ref1" },
-      { referrer_address: "alice", referred_address: "ref2" },
-    ];
+async function resetFixtures() {
+  await db.exec("DELETE FROM pl_referrals; DELETE FROM pl_points; DELETE FROM pl_activations;");
+}
 
-    const rows = computeWeightedSpend(config, activations, buys, refs);
+async function runQuery(config: AirdropConfig) {
+  const { sql, params } = weightedSpendQuery(config);
+  const result = await db.query(sql, params);
+  return result.rows as Array<{
+    address: string;
+    buy_volume: number;
+    qualified_refs: number;
+    has_fc_bonus: number;
+    multiplier: number;
+    weighted_spend: number;
+    community_total: number;
+  }>;
+}
+
+const IN_CAMPAIGN = "2026-08-01T00:00:00Z";
+const config = buildConfig();
+
+describe("weightedSpendQuery against PGlite", () => {
+  it("100 PLOT + 2 qualified refs + FC bonus → multiplier 1.6, weighted 160", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, fid, activated_at) VALUES
+        ('alice', 123, '2026-07-01'),
+        ('ref1', NULL, '2026-07-01'),
+        ('ref2', NULL, '2026-07-01');
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('alice', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('ref1', 'buy', 60, '${IN_CAMPAIGN}'),
+        ('ref2', 'buy', 80, '${IN_CAMPAIGN}');
+      INSERT INTO pl_referrals (referrer_address, referred_address) VALUES
+        ('alice', 'ref1'),
+        ('alice', 'ref2');
+    `);
+
+    const rows = await runQuery(config);
     const alice = rows.find(r => r.address === "alice")!;
 
-    expect(alice.buy_volume).toBe(100);
-    expect(alice.qualified_refs).toBe(2);
-    expect(alice.has_fc_bonus).toBe(1);
-    expect(alice.multiplier).toBe(1.6);
-    expect(alice.weighted_spend).toBe(160);
+    expect(Number(alice.buy_volume)).toBe(100);
+    expect(Number(alice.qualified_refs)).toBe(2);
+    expect(Number(alice.has_fc_bonus)).toBe(1);
+    expect(Number(alice.multiplier)).toBeCloseTo(1.6);
+    expect(Number(alice.weighted_spend)).toBeCloseTo(160);
   });
 
-  it("excludes blacklisted wallets from results", () => {
-    const activations: Activation[] = [
-      { address: "good", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "bad", activated_at: "2026-07-01", is_blacklisted: true, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "good", action: "buy", points: 100, created_at: inCampaign },
-      { address: "bad", action: "buy", points: 100, created_at: inCampaign },
-    ];
+  it("excludes blacklisted wallets from results", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at, is_blacklisted) VALUES
+        ('good', '2026-07-01', FALSE),
+        ('bad', '2026-07-01', TRUE);
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('good', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('bad', 'buy', 100, '${IN_CAMPAIGN}');
+    `);
 
-    const rows = computeWeightedSpend(config, activations, buys, []);
+    const rows = await runQuery(config);
     expect(rows).toHaveLength(1);
     expect(rows[0].address).toBe("good");
   });
 
-  it("excludes non-activated wallets from results", () => {
-    const activations: Activation[] = [
-      { address: "active", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "pending", activated_at: null, is_blacklisted: false, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "active", action: "buy", points: 100, created_at: inCampaign },
-      { address: "pending", action: "buy", points: 100, created_at: inCampaign },
-    ];
+  it("excludes non-activated wallets from results", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES
+        ('active', '2026-07-01'),
+        ('pending', NULL);
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('active', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('pending', 'buy', 100, '${IN_CAMPAIGN}');
+    `);
 
-    const rows = computeWeightedSpend(config, activations, buys, []);
+    const rows = await runQuery(config);
     expect(rows).toHaveLength(1);
     expect(rows[0].address).toBe("active");
   });
 
-  it("qualified_refs excludes non-activated referees", () => {
-    const activations: Activation[] = [
-      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "bob", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "charlie", activated_at: null, is_blacklisted: false, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
-      { address: "bob", action: "buy", points: 60, created_at: inCampaign },
-      { address: "charlie", action: "buy", points: 60, created_at: inCampaign },
-    ];
-    const refs: Referral[] = [
-      { referrer_address: "alice", referred_address: "bob" },
-      { referrer_address: "alice", referred_address: "charlie" },
-    ];
+  it("qualified_refs excludes non-activated referees", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES
+        ('alice', '2026-07-01'),
+        ('bob', '2026-07-01'),
+        ('charlie', NULL);
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('alice', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('bob', 'buy', 60, '${IN_CAMPAIGN}'),
+        ('charlie', 'buy', 60, '${IN_CAMPAIGN}');
+      INSERT INTO pl_referrals (referrer_address, referred_address) VALUES
+        ('alice', 'bob'),
+        ('alice', 'charlie');
+    `);
 
-    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const rows = await runQuery(config);
     const alice = rows.find(r => r.address === "alice")!;
-    expect(alice.qualified_refs).toBe(1);
+    expect(Number(alice.qualified_refs)).toBe(1);
   });
 
-  it("qualified_refs excludes blacklisted referees", () => {
-    const activations: Activation[] = [
-      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "dave", activated_at: "2026-07-01", is_blacklisted: true, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
-      { address: "dave", action: "buy", points: 60, created_at: inCampaign },
-    ];
-    const refs: Referral[] = [
-      { referrer_address: "alice", referred_address: "dave" },
-    ];
+  it("qualified_refs excludes blacklisted referees", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at, is_blacklisted) VALUES
+        ('alice', '2026-07-01', FALSE),
+        ('dave', '2026-07-01', TRUE);
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('alice', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('dave', 'buy', 60, '${IN_CAMPAIGN}');
+      INSERT INTO pl_referrals (referrer_address, referred_address) VALUES
+        ('alice', 'dave');
+    `);
 
-    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const rows = await runQuery(config);
     const alice = rows.find(r => r.address === "alice")!;
-    expect(alice.qualified_refs).toBe(0);
+    expect(Number(alice.qualified_refs)).toBe(0);
   });
 
-  it("qualified_refs excludes under-threshold referees (49 < 50)", () => {
-    const activations: Activation[] = [
-      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "low", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "high", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
-      { address: "low", action: "buy", points: 49, created_at: inCampaign },
-      { address: "high", action: "buy", points: 50, created_at: inCampaign },
-    ];
-    const refs: Referral[] = [
-      { referrer_address: "alice", referred_address: "low" },
-      { referrer_address: "alice", referred_address: "high" },
-    ];
+  it("qualified_refs excludes under-threshold referees (49 < 50)", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES
+        ('alice', '2026-07-01'),
+        ('low', '2026-07-01'),
+        ('high', '2026-07-01');
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('alice', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('low', 'buy', 49, '${IN_CAMPAIGN}'),
+        ('high', 'buy', 50, '${IN_CAMPAIGN}');
+      INSERT INTO pl_referrals (referrer_address, referred_address) VALUES
+        ('alice', 'low'),
+        ('alice', 'high');
+    `);
 
-    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const rows = await runQuery(config);
     const alice = rows.find(r => r.address === "alice")!;
-    expect(alice.qualified_refs).toBe(1);
+    expect(Number(alice.qualified_refs)).toBe(1);
   });
 
-  it("TEST vs PROD campaign windows produce different buy_volume", () => {
-    const prodConfig = buildConfig();
+  it("TEST vs PROD campaign windows produce different buy_volume", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES ('alice', '2026-06-01');
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('alice', 'buy', 50, '2026-06-01T00:02:00Z'),
+        ('alice', 'buy', 75, '${IN_CAMPAIGN}');
+    `);
+
     const testConfig = buildConfig({
       CAMPAIGN_START: new Date("2026-06-01T00:00:00Z"),
       CAMPAIGN_END: new Date("2026-06-01T00:05:00Z"),
     });
 
-    const activations: Activation[] = [
-      { address: "alice", activated_at: "2026-06-01", is_blacklisted: false, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "alice", action: "buy", points: 50, created_at: "2026-06-01T00:02:00Z" },
-      { address: "alice", action: "buy", points: 75, created_at: "2026-08-01T00:00:00Z" },
-    ];
+    const testRows = await runQuery(testConfig);
+    const prodRows = await runQuery(config);
 
-    const testRows = computeWeightedSpend(testConfig, activations, buys, []);
-    const prodRows = computeWeightedSpend(prodConfig, activations, buys, []);
-
-    expect(testRows[0].buy_volume).toBe(50);
-    expect(prodRows[0].buy_volume).toBe(75);
+    expect(Number(testRows[0].buy_volume)).toBe(50);
+    expect(Number(prodRows[0].buy_volume)).toBe(75);
   });
 
-  it("community_total sums all weighted_spend", () => {
-    const activations: Activation[] = [
-      { address: "a", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-      { address: "b", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
-    ];
-    const buys: BuyPoint[] = [
-      { address: "a", action: "buy", points: 100, created_at: inCampaign },
-      { address: "b", action: "buy", points: 200, created_at: inCampaign },
-    ];
+  it("community_total sums all weighted_spend across rows", async () => {
+    await resetFixtures();
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES
+        ('a', '2026-07-01'),
+        ('b', '2026-07-01');
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('a', 'buy', 100, '${IN_CAMPAIGN}'),
+        ('b', 'buy', 200, '${IN_CAMPAIGN}');
+    `);
 
-    const rows = computeWeightedSpend(config, activations, buys, []);
-    expect(rows[0].community_total).toBe(300);
-    expect(rows[1].community_total).toBe(300);
+    const rows = await runQuery(config);
+    expect(Number(rows[0].community_total)).toBe(300);
+    expect(Number(rows[1].community_total)).toBe(300);
   });
 
-  it("multiplier is capped at REFERRAL_MULTIPLIER_CAP", () => {
-    const activations: Activation[] = [
-      { address: "whale", activated_at: "2026-07-01", is_blacklisted: false, fid: 1 },
-      ...Array.from({ length: 20 }, (_, i) => ({
-        address: `ref${i}`, activated_at: "2026-07-01" as string | null, is_blacklisted: false, fid: null,
-      })),
-    ];
-    const buys: BuyPoint[] = [
-      { address: "whale", action: "buy", points: 100, created_at: inCampaign },
-      ...Array.from({ length: 20 }, (_, i) => ({
-        address: `ref${i}`, action: "buy", points: 60, created_at: inCampaign,
-      })),
-    ];
-    const refs: Referral[] = Array.from({ length: 20 }, (_, i) => ({
-      referrer_address: "whale", referred_address: `ref${i}`,
-    }));
+  it("multiplier is capped at REFERRAL_MULTIPLIER_CAP", async () => {
+    await resetFixtures();
+    const refInserts = Array.from({ length: 20 }, (_, i) =>
+      `('ref${i}', '2026-07-01')`
+    ).join(",");
+    const buyInserts = Array.from({ length: 20 }, (_, i) =>
+      `('ref${i}', 'buy', 60, '${IN_CAMPAIGN}')`
+    ).join(",");
+    const relInserts = Array.from({ length: 20 }, (_, i) =>
+      `('whale', 'ref${i}')`
+    ).join(",");
 
-    const rows = computeWeightedSpend(config, activations, buys, refs);
+    await db.exec(`
+      INSERT INTO pl_activations (address, activated_at) VALUES
+        ('whale', '2026-07-01'), ${refInserts};
+      UPDATE pl_activations SET fid = 1 WHERE address = 'whale';
+      INSERT INTO pl_points (address, action, points, created_at) VALUES
+        ('whale', 'buy', 100, '${IN_CAMPAIGN}'), ${buyInserts};
+      INSERT INTO pl_referrals (referrer_address, referred_address) VALUES ${relInserts};
+    `);
+
+    const rows = await runQuery(config);
     const whale = rows.find(r => r.address === "whale")!;
-    expect(whale.multiplier).toBe(3.0);
-    expect(whale.weighted_spend).toBe(300);
+    expect(Number(whale.multiplier)).toBe(3.0);
+    expect(Number(whale.weighted_spend)).toBeCloseTo(300);
   });
 });
