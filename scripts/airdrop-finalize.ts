@@ -20,6 +20,7 @@ import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 import { writeFileSync } from "fs";
 import { getAirdropConfig } from "../lib/airdrop/config";
 import { weightedSpendQuery } from "../lib/airdrop/sql";
+import { validateTwapSamples, OVERRIDE_ENV } from "../lib/airdrop/twap";
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -45,7 +46,13 @@ async function computeTwap(): Promise<number> {
     .lte("recorded_at", endDate.toISOString().slice(0, 10));
 
   if (error) throw new Error(`Failed to fetch daily prices: ${error.message}`);
-  if (!data || data.length === 0) throw new Error("No daily price entries found for TWAP window");
+
+  const validation = validateTwapSamples(
+    data?.length ?? 0,
+    process.env[OVERRIDE_ENV] === "1",
+  );
+  if (!validation.ok) throw new Error(validation.error);
+  if (validation.warning) console.warn(`Warning: ${validation.warning}`);
 
   const sum = data.reduce((acc, row) => acc + Number(row.mcap_usd), 0);
   const twap = sum / data.length;
