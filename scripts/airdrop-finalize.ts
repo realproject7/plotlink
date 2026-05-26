@@ -19,6 +19,7 @@ import { parseUnits } from "viem";
 import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 import { writeFileSync } from "fs";
 import { getAirdropConfig } from "../lib/airdrop/config";
+import { weightedSpendQuery } from "../lib/airdrop/sql";
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -62,12 +63,15 @@ function determineMilestone(twapMcap: number): { tier: string; pct: number } {
 }
 
 async function fetchWeightedSpend() {
+  const { params } = weightedSpendQuery(config);
+  const [campStart, campEnd, minThreshold, perRef, cap] = params;
+
   const { data, error } = await supabase.rpc("weighted_spend", {
-    p_campaign_start: config.CAMPAIGN_START.toISOString(),
-    p_campaign_end: config.CAMPAIGN_END.toISOString(),
-    p_min_referral_threshold: config.MIN_REFERRAL_THRESHOLD,
-    p_multiplier_per_ref: config.REFERRAL_MULTIPLIER_PER_REF,
-    p_multiplier_cap: config.REFERRAL_MULTIPLIER_CAP,
+    p_campaign_start: String(campStart),
+    p_campaign_end: String(campEnd),
+    p_min_referral_threshold: Number(minThreshold),
+    p_multiplier_per_ref: Number(perRef),
+    p_multiplier_cap: Number(cap),
   });
 
   if (error) throw new Error(`weighted_spend RPC failed: ${error.message}`);
@@ -160,7 +164,7 @@ async function storeProofs(
   for (let i = 0; i < entries.length; i += 100) {
     const batch = entries.slice(i, i + 100);
     const { error } = await supabase.from("pl_airdrop_proofs").upsert(batch, { onConflict: "address" });
-    if (error) console.error(`Failed to store proofs batch ${i}: ${error.message}`);
+    if (error) throw new Error(`Failed to store proofs batch ${i}: ${error.message}`);
   }
 
   console.log(`${entries.length} proofs stored in pl_airdrop_proofs`);
