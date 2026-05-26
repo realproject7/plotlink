@@ -1,22 +1,28 @@
 // @vitest-environment node
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const mockPriceSingle = vi.fn();
-const mockActivationCount = vi.fn();
-const mockEligibleCount = vi.fn();
+let activationCallIdx = 0;
 
 vi.mock("../../../../../lib/supabase", () => ({
   createServerClient: () => ({
     from: (table: string) => {
-      if (table === "pl_daily_prices") return { select: () => ({ order: () => ({ limit: () => ({ single: mockPriceSingle }) }) }) };
+      if (table === "pl_daily_prices") {
+        return { select: () => ({ order: () => ({ limit: () => ({ single: mockPriceSingle }) }) }) };
+      }
       if (table === "pl_activations") {
+        const idx = activationCallIdx++;
+        const allCount = 15;
+        const eligibleCount = 12;
         return {
-          select: (_cols: string, opts?: { count?: string; head?: boolean }) => {
-            if (opts?.count) {
-              return { not: () => ({ eq: mockEligibleCount, count: mockActivationCount.mockReturnValue({ count: 10 }) }) };
-            }
-            return {};
-          },
+          select: () => ({
+            not: () => {
+              const base = Promise.resolve({ count: allCount });
+              return Object.assign(base, {
+                eq: () => Promise.resolve({ count: eligibleCount }),
+              });
+            },
+          }),
         };
       }
       return {};
@@ -47,26 +53,25 @@ vi.mock("../../../../../lib/usd-price", () => ({ getPlotUsdPrice: () => Promise.
 
 import { GET } from "./route";
 
+beforeEach(() => { activationCallIdx = 0; });
+
 describe("GET /api/airdrop/status", () => {
   it("returns v5 shape with milestones + activation counts + env_check", async () => {
     mockPriceSingle.mockResolvedValue({ data: { price_usd: 0.037, mcap_usd: 37000 } });
-    mockActivationCount.mockResolvedValue({ count: 15 });
-    mockEligibleCount.mockResolvedValue({ count: 12 });
 
     const res = await GET();
     expect(res.status).toBe(200);
     const data = await res.json();
-    expect(data.milestones).toBeDefined();
-    expect(data.milestones.bronze).toBeDefined();
-    expect(data.milestones.diamond).toBeDefined();
+    expect(data.milestones.bronze.mcap).toBe(100_000);
+    expect(data.milestones.diamond.mcap).toBe(10_000_000);
     expect(data.poolAmount).toBe(200_000);
+    expect(data.activation_count).toBe(15);
+    expect(data.eligible_activation_count).toBe(12);
     expect(typeof data.env_check.all_present).toBe("boolean");
   });
 
   it("env_check.all_present is false when required env vars missing", async () => {
     mockPriceSingle.mockResolvedValue({ data: null });
-    mockActivationCount.mockResolvedValue({ count: 0 });
-    mockEligibleCount.mockResolvedValue({ count: 0 });
 
     const res = await GET();
     const data = await res.json();
