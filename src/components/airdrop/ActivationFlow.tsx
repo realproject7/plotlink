@@ -25,7 +25,11 @@ function StepIndicator({ state, label }: { state: StepState; label: string }) {
   );
 }
 
-export function ActivationFlow() {
+interface ActivationFlowProps {
+  onActivated?: () => void;
+}
+
+export function ActivationFlow({ onActivated }: ActivationFlowProps) {
   const { address, chainId } = useAccount();
   const { signMessageAsync } = useSignMessage();
 
@@ -210,6 +214,8 @@ export function ActivationFlow() {
       }
       if (res.ok) {
         setXFollowed(true);
+        const data = await res.json();
+        if (data.activated) onActivated?.();
       }
     } catch {
       // non-blocking

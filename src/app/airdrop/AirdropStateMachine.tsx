@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { CampaignHero } from "../../components/airdrop/CampaignHero";
 import { ActivationFlow } from "../../components/airdrop/ActivationFlow";
@@ -38,6 +38,10 @@ const needsFetch = !IS_PAUSED && !MERKLE_CLAIM_ADDRESS && !FINAL_BURN_TX;
 export function AirdropStateMachine() {
   const { address, isConnected } = useAccount();
   const [fetchResult, setFetchResult] = useState<{ activatedAt: string | null; done: boolean }>({ activatedAt: null, done: !needsFetch });
+
+  const onActivated = useCallback(() => {
+    setFetchResult({ activatedAt: new Date().toISOString(), done: true });
+  }, []);
 
   useEffect(() => {
     if (!needsFetch || !isConnected || !address) return;
@@ -107,7 +111,7 @@ export function AirdropStateMachine() {
               <p className="text-muted text-sm">Connect your wallet to get started.</p>
             </div>
           ) : (
-            <ActivationFlow />
+            <ActivationFlow onActivated={onActivated} />
           )}
         </div>
       </>
