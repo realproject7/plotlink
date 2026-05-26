@@ -47,6 +47,20 @@ async function computeTwap(): Promise<number> {
   if (error) throw new Error(`Failed to fetch daily prices: ${error.message}`);
   if (!data || data.length === 0) throw new Error("No daily price entries found for TWAP window");
 
+  const EXPECTED_SAMPLES = 7;
+  const MINIMUM_SAMPLES = 5;
+  const OVERRIDE_ENV = "AIRDROP_FINALIZE_ALLOW_PARTIAL_TWAP";
+
+  if (data.length < MINIMUM_SAMPLES && process.env[OVERRIDE_ENV] !== "1") {
+    throw new Error(
+      `TWAP requires >=${MINIMUM_SAMPLES} daily samples, got ${data.length}. ` +
+      `Investigate pl_daily_prices cron coverage OR set ${OVERRIDE_ENV}=1 to proceed with partial data.`,
+    );
+  }
+  if (data.length < EXPECTED_SAMPLES) {
+    console.warn(`Warning: TWAP using ${data.length} samples (expected ${EXPECTED_SAMPLES}). Verify pl_daily_prices cron coverage.`);
+  }
+
   const sum = data.reduce((acc, row) => acc + Number(row.mcap_usd), 0);
   const twap = sum / data.length;
   console.log(`TWAP (${data.length} days): $${twap.toLocaleString()}`);
