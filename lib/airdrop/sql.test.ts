@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { weightedSpendQuery } from "./sql";
+import { describe, expect, it } from "vitest";
+import { weightedSpendQuery, computeWeightedSpend } from "./sql";
 import type { AirdropConfig } from "./config";
+import type { Activation, BuyPoint, Referral } from "./sql";
 
 function buildConfig(overrides: Partial<AirdropConfig> = {}): AirdropConfig {
   return {
@@ -33,87 +34,210 @@ function buildConfig(overrides: Partial<AirdropConfig> = {}): AirdropConfig {
 }
 
 describe("weightedSpendQuery", () => {
-  it("returns sql and params with correct campaign window", () => {
+  it("returns parameterized sql with campaign window and config values", () => {
     const config = buildConfig();
     const { sql, params } = weightedSpendQuery(config);
 
-    expect(params[0]).toBe("2026-07-01T00:00:00.000Z");
-    expect(params[1]).toBe("2026-10-01T00:00:00.000Z");
-    expect(params[2]).toBe(50);
-    expect(params[3]).toBe(0.2);
-    expect(params[4]).toBe(3.0);
+    expect(params).toEqual([
+      "2026-07-01T00:00:00.000Z",
+      "2026-10-01T00:00:00.000Z",
+      50, 0.2, 3.0,
+    ]);
     expect(sql).toContain("pl_activations");
-    expect(sql).toContain("pl_points");
-    expect(sql).toContain("pl_referrals");
-  });
-
-  it("includes eligibility filter for activated + not blacklisted", () => {
-    const { sql } = weightedSpendQuery(buildConfig());
-    expect(sql).toContain("a.activated_at IS NOT NULL");
-    expect(sql).toContain("a.is_blacklisted = FALSE");
-  });
-
-  it("filters buy points within campaign window using params", () => {
-    const { sql } = weightedSpendQuery(buildConfig());
-    expect(sql).toContain("p.created_at >= $1");
-    expect(sql).toContain("p.created_at <= $2");
-  });
-
-  it("qualified_refs uses MIN_REFERRAL_THRESHOLD param", () => {
-    const { sql } = weightedSpendQuery(buildConfig());
-    expect(sql).toContain("eb.buy_volume >= $3");
-  });
-
-  it("qualified_refs joins against eligible_buys (same eligibility filter)", () => {
-    const { sql } = weightedSpendQuery(buildConfig());
-    expect(sql).toContain("JOIN eligible_buys eb ON r.referred_address = eb.address");
-  });
-
-  it("multiplier uses REFERRAL_MULTIPLIER_PER_REF and CAP params", () => {
-    const { sql } = weightedSpendQuery(buildConfig());
-    expect(sql).toContain("$4");
-    expect(sql).toContain("$5");
-    expect(sql).toContain("LEAST");
-  });
-
-  it("includes community_total as window function", () => {
-    const { sql } = weightedSpendQuery(buildConfig());
+    expect(sql).toContain("activated_at IS NOT NULL");
+    expect(sql).toContain("is_blacklisted = FALSE");
     expect(sql).toContain("SUM(w.weighted_spend) OVER ()");
   });
 
-  it("produces different params for TEST vs PROD config", () => {
-    const prodConfig = buildConfig();
-    const testConfig = buildConfig({
+  it("same SQL structure for TEST vs PROD, different params", () => {
+    const prod = weightedSpendQuery(buildConfig());
+    const test = weightedSpendQuery(buildConfig({
       CAMPAIGN_START: new Date("2026-06-01T12:00:00Z"),
       CAMPAIGN_END: new Date("2026-06-01T12:05:00Z"),
       MIN_REFERRAL_THRESHOLD: 1,
-    });
-
-    const prod = weightedSpendQuery(prodConfig);
-    const test = weightedSpendQuery(testConfig);
-
-    expect(prod.params[0]).not.toBe(test.params[0]);
-    expect(prod.params[1]).not.toBe(test.params[1]);
-    expect(prod.params[2]).not.toBe(test.params[2]);
+    }));
     expect(prod.sql).toBe(test.sql);
+    expect(prod.params).not.toEqual(test.params);
+  });
+});
+
+describe("computeWeightedSpend", () => {
+  const config = buildConfig();
+  const inCampaign = "2026-08-01T00:00:00Z";
+
+  it("100 PLOT + 2 qualified refs + FC bonus → multiplier 1.6, weighted 160", () => {
+    const activations: Activation[] = [
+      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: 123 },
+      { address: "ref1", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "ref2", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
+      { address: "ref1", action: "buy", points: 60, created_at: inCampaign },
+      { address: "ref2", action: "buy", points: 80, created_at: inCampaign },
+    ];
+    const refs: Referral[] = [
+      { referrer_address: "alice", referred_address: "ref1" },
+      { referrer_address: "alice", referred_address: "ref2" },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const alice = rows.find(r => r.address === "alice")!;
+
+    expect(alice.buy_volume).toBe(100);
+    expect(alice.qualified_refs).toBe(2);
+    expect(alice.has_fc_bonus).toBe(1);
+    expect(alice.multiplier).toBe(1.6);
+    expect(alice.weighted_spend).toBe(160);
   });
 
-  it("multiplier example: 2 refs + FC bonus + 0.2 per ref → 1.6", () => {
-    const config = buildConfig();
-    const refCount = 2;
-    const fcBonus = 1;
-    const expected = 1 + (refCount + fcBonus) * config.REFERRAL_MULTIPLIER_PER_REF;
-    expect(expected).toBe(1.6);
-    expect(expected).toBeLessThanOrEqual(config.REFERRAL_MULTIPLIER_CAP);
+  it("excludes blacklisted wallets from results", () => {
+    const activations: Activation[] = [
+      { address: "good", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "bad", activated_at: "2026-07-01", is_blacklisted: true, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "good", action: "buy", points: 100, created_at: inCampaign },
+      { address: "bad", action: "buy", points: 100, created_at: inCampaign },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, []);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].address).toBe("good");
+  });
+
+  it("excludes non-activated wallets from results", () => {
+    const activations: Activation[] = [
+      { address: "active", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "pending", activated_at: null, is_blacklisted: false, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "active", action: "buy", points: 100, created_at: inCampaign },
+      { address: "pending", action: "buy", points: 100, created_at: inCampaign },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, []);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].address).toBe("active");
+  });
+
+  it("qualified_refs excludes non-activated referees", () => {
+    const activations: Activation[] = [
+      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "bob", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "charlie", activated_at: null, is_blacklisted: false, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
+      { address: "bob", action: "buy", points: 60, created_at: inCampaign },
+      { address: "charlie", action: "buy", points: 60, created_at: inCampaign },
+    ];
+    const refs: Referral[] = [
+      { referrer_address: "alice", referred_address: "bob" },
+      { referrer_address: "alice", referred_address: "charlie" },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const alice = rows.find(r => r.address === "alice")!;
+    expect(alice.qualified_refs).toBe(1);
+  });
+
+  it("qualified_refs excludes blacklisted referees", () => {
+    const activations: Activation[] = [
+      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "dave", activated_at: "2026-07-01", is_blacklisted: true, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
+      { address: "dave", action: "buy", points: 60, created_at: inCampaign },
+    ];
+    const refs: Referral[] = [
+      { referrer_address: "alice", referred_address: "dave" },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const alice = rows.find(r => r.address === "alice")!;
+    expect(alice.qualified_refs).toBe(0);
+  });
+
+  it("qualified_refs excludes under-threshold referees (49 < 50)", () => {
+    const activations: Activation[] = [
+      { address: "alice", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "low", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "high", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "alice", action: "buy", points: 100, created_at: inCampaign },
+      { address: "low", action: "buy", points: 49, created_at: inCampaign },
+      { address: "high", action: "buy", points: 50, created_at: inCampaign },
+    ];
+    const refs: Referral[] = [
+      { referrer_address: "alice", referred_address: "low" },
+      { referrer_address: "alice", referred_address: "high" },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const alice = rows.find(r => r.address === "alice")!;
+    expect(alice.qualified_refs).toBe(1);
+  });
+
+  it("TEST vs PROD campaign windows produce different buy_volume", () => {
+    const prodConfig = buildConfig();
+    const testConfig = buildConfig({
+      CAMPAIGN_START: new Date("2026-06-01T00:00:00Z"),
+      CAMPAIGN_END: new Date("2026-06-01T00:05:00Z"),
+    });
+
+    const activations: Activation[] = [
+      { address: "alice", activated_at: "2026-06-01", is_blacklisted: false, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "alice", action: "buy", points: 50, created_at: "2026-06-01T00:02:00Z" },
+      { address: "alice", action: "buy", points: 75, created_at: "2026-08-01T00:00:00Z" },
+    ];
+
+    const testRows = computeWeightedSpend(testConfig, activations, buys, []);
+    const prodRows = computeWeightedSpend(prodConfig, activations, buys, []);
+
+    expect(testRows[0].buy_volume).toBe(50);
+    expect(prodRows[0].buy_volume).toBe(75);
+  });
+
+  it("community_total sums all weighted_spend", () => {
+    const activations: Activation[] = [
+      { address: "a", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+      { address: "b", activated_at: "2026-07-01", is_blacklisted: false, fid: null },
+    ];
+    const buys: BuyPoint[] = [
+      { address: "a", action: "buy", points: 100, created_at: inCampaign },
+      { address: "b", action: "buy", points: 200, created_at: inCampaign },
+    ];
+
+    const rows = computeWeightedSpend(config, activations, buys, []);
+    expect(rows[0].community_total).toBe(300);
+    expect(rows[1].community_total).toBe(300);
   });
 
   it("multiplier is capped at REFERRAL_MULTIPLIER_CAP", () => {
-    const config = buildConfig();
-    const refCount = 20;
-    const fcBonus = 1;
-    const uncapped = 1 + (refCount + fcBonus) * config.REFERRAL_MULTIPLIER_PER_REF;
-    const capped = Math.min(uncapped, config.REFERRAL_MULTIPLIER_CAP);
-    expect(uncapped).toBeGreaterThan(config.REFERRAL_MULTIPLIER_CAP);
-    expect(capped).toBe(3.0);
+    const activations: Activation[] = [
+      { address: "whale", activated_at: "2026-07-01", is_blacklisted: false, fid: 1 },
+      ...Array.from({ length: 20 }, (_, i) => ({
+        address: `ref${i}`, activated_at: "2026-07-01" as string | null, is_blacklisted: false, fid: null,
+      })),
+    ];
+    const buys: BuyPoint[] = [
+      { address: "whale", action: "buy", points: 100, created_at: inCampaign },
+      ...Array.from({ length: 20 }, (_, i) => ({
+        address: `ref${i}`, action: "buy", points: 60, created_at: inCampaign,
+      })),
+    ];
+    const refs: Referral[] = Array.from({ length: 20 }, (_, i) => ({
+      referrer_address: "whale", referred_address: `ref${i}`,
+    }));
+
+    const rows = computeWeightedSpend(config, activations, buys, refs);
+    const whale = rows.find(r => r.address === "whale")!;
+    expect(whale.multiplier).toBe(3.0);
+    expect(whale.weighted_spend).toBe(300);
   });
 });
