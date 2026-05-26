@@ -74,8 +74,11 @@ export function MilestoneClimb({ dimmed }: MilestoneClimbProps) {
     share: projection?.projected_share[tier] ?? 0,
   }));
 
+  const minMcap = tierData[0].mcap;
   const maxMcap = tierData[tierData.length - 1].mcap;
-  const clampedFdv = Math.min(currentFdv, maxMcap * 1.1);
+  const logMin = Math.log10(minMcap * 0.5);
+  const logMax = Math.log10(maxMcap * 1.5);
+  const logRange = logMax - logMin;
 
   const svgW = 300;
   const svgH = 160;
@@ -85,10 +88,12 @@ export function MilestoneClimb({ dimmed }: MilestoneClimbProps) {
   const chartH = svgH - padY * 2;
 
   function xPos(mcap: number) {
-    return padX + (Math.log10(Math.max(mcap, 1)) / Math.log10(maxMcap * 1.1)) * chartW;
+    const logVal = Math.log10(Math.max(mcap, 1));
+    const normalized = Math.max(0, Math.min(1, (logVal - logMin) / logRange));
+    return padX + normalized * chartW;
   }
 
-  const fdvX = xPos(clampedFdv);
+  const fdvX = xPos(currentFdv);
   const lineY = padY + chartH * 0.5;
 
   return (

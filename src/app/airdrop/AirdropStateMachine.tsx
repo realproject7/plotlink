@@ -105,7 +105,7 @@ export function AirdropStateMachine() {
     return (
       <>
         <CampaignHero />
-        <div className="mt-8">
+        <div className="mt-8 space-y-4">
           {!isConnected ? (
             <div className="border-border rounded border p-8 text-center">
               <p className="text-muted text-sm">Connect your wallet to get started.</p>
@@ -113,6 +113,7 @@ export function AirdropStateMachine() {
           ) : (
             <ActivationFlow onActivated={onActivated} />
           )}
+          <MilestoneClimb dimmed />
         </div>
       </>
     );
