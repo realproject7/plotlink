@@ -108,6 +108,25 @@ describe("verifySiweRequest", () => {
     if (!result.ok) expect(result.error).toBe("expired");
   });
 
+  it("rejects message without issuedAt", async () => {
+    const { verifySiweRequest } = await import("./siwe-verify");
+    const rawMsg = [
+      "plotlink.xyz wants you to sign in with your Ethereum account:",
+      account.address,
+      "",
+      "PlotLink Buy-Back Sprint activation",
+      "",
+      "URI: https://plotlink.xyz/airdrop",
+      "Version: 1",
+      "Chain ID: 8453",
+      "Nonce: abcd1234",
+    ].join("\n");
+    const sig = await account.signMessage({ message: rawMsg });
+    const result = await verifySiweRequest(rawMsg, sig);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(["missing_issued_at", "invalid_message"]).toContain(result.error);
+  });
+
   it("rejects unparseable message", async () => {
     const { verifySiweRequest } = await import("./siwe-verify");
     const result = await verifySiweRequest("not a siwe message", "0x1234");

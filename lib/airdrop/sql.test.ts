@@ -59,7 +59,7 @@ beforeAll(async () => {
     );
   `);
   const migrationSql = await import("fs").then(fs =>
-    fs.readFileSync(new URL("../../supabase/migrations/00040_weighted_spend_function.sql", import.meta.url), "utf-8")
+    fs.readFileSync(new URL("../../supabase/migrations/00041_weighted_spend_function.sql", import.meta.url), "utf-8")
   );
   await db.exec(migrationSql.replace(/GRANT[^;]*;/, ""));
 });

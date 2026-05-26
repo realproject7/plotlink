@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "../MerkleClaim.sol";
+import "../src/MerkleClaim.sol";
 
 contract MockPLOT is ERC20 {
     constructor() ERC20("PLOT", "PLOT") {

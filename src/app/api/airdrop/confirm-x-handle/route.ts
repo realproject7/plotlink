@@ -40,7 +40,10 @@ export async function POST(req: Request) {
     xUserId = user.x_user_id;
     confirmedAt = new Date().toISOString();
   } catch {
-    // R16 graceful degrade: twitterapi.io down → pending row without UNIQUE lock
+    return NextResponse.json(
+      { error: "X verification temporarily unavailable. Please retry shortly." },
+      { status: 503 },
+    );
   }
 
   const { error: upsertErr } = await supabase

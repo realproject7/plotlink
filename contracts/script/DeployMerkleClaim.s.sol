@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import "../MerkleClaim.sol";
+import "../src/MerkleClaim.sol";
 
 contract DeployMerkleClaim is Script {
     function run() external {
