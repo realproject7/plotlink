@@ -43,3 +43,15 @@ forge script contracts/script/DeployMerkleClaim.s.sol \
   --broadcast \
   --private-key $DEPLOYER_PRIVATE_KEY
 ```
+
+## Settlement (finalize)
+
+```bash
+npx tsx scripts/airdrop-finalize.ts [--dry-run]
+```
+
+Emergency override for partial TWAP data (<5 daily price samples):
+
+```bash
+AIRDROP_FINALIZE_ALLOW_PARTIAL_TWAP=1 npx tsx scripts/airdrop-finalize.ts
+```
