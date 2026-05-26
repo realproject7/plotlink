@@ -71,8 +71,8 @@ describe("POST /api/airdrop/referral-code", () => {
 describe("GET /api/airdrop/referral-code", () => {
   it("remains unauthenticated — returns code without auth headers", async () => {
     mockSelectCode.mockResolvedValue({ data: { code: "mycode", is_farcaster_username: false } });
-    const req = new Request("http://localhost/api/airdrop/referral-code?address=0xabc") as any;
-    req.nextUrl = new URL("http://localhost/api/airdrop/referral-code?address=0xabc");
+    const url = new URL("http://localhost/api/airdrop/referral-code?address=0xabc");
+    const req = Object.assign(new Request(url), { nextUrl: url });
 
     const res = await GET(req);
     expect(res.status).toBe(200);
@@ -83,8 +83,8 @@ describe("GET /api/airdrop/referral-code", () => {
 
   it("returns { code: null } for unknown address", async () => {
     mockSelectCode.mockResolvedValue({ data: null });
-    const req = new Request("http://localhost/api/airdrop/referral-code?address=0xnone") as any;
-    req.nextUrl = new URL("http://localhost/api/airdrop/referral-code?address=0xnone");
+    const url = new URL("http://localhost/api/airdrop/referral-code?address=0xnone");
+    const req = Object.assign(new Request(url), { nextUrl: url });
 
     const res = await GET(req);
     expect(res.status).toBe(200);
