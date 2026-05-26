@@ -9,7 +9,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { nanoid } from "nanoid";
 import { createServerClient } from "../../../../../lib/supabase";
-import { verifyWalletOwnership } from "../../../../../lib/airdrop/verify-wallet";
+import { verifySiweRequest } from "../../../../../lib/airdrop/siwe-verify";
 import { checkRateLimit, getClientIp } from "../../../../../lib/rate-limit";
 
 export async function GET(req: NextRequest) {
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   }
 
   let message: string;
-  let signature: `0x${string}`;
+  let signature: string;
   let useFarcasterUsername: boolean;
   try {
     const body = await req.json();
@@ -60,10 +60,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  const address = await verifyWalletOwnership(message, signature);
-  if (!address) {
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  const auth = await verifySiweRequest(message, signature);
+  if (!auth.ok) {
+    return NextResponse.json({ error: auth.error }, { status: 401 });
   }
+  const address = auth.address;
 
   // Check for existing code (immutable once set)
   const { data: existing } = await supabase
