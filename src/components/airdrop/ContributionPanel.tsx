@@ -30,32 +30,30 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
 
 export function ContributionPanel() {
   const { address, isConnected } = useAccount();
-  const [data, setData] = useState<ProjectionData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [fetchState, setFetchState] = useState<{
+    data: ProjectionData | null;
+    error: string | null;
+    done: boolean;
+  }>({ data: null, error: null, done: !isConnected });
 
   useEffect(() => {
-    if (!isConnected || !address) {
-      setLoading(false);
-      return;
-    }
+    if (!isConnected || !address) return;
 
     let cancelled = false;
-    setLoading(true);
-    setError(null);
-
     fetch(`/api/airdrop/projection?address=${address.toLowerCase()}`)
       .then(res => {
         if (res.status === 404) return null;
         if (!res.ok) throw new Error("Failed to load");
         return res.json();
       })
-      .then(d => { if (!cancelled) setData(d); })
-      .catch(() => { if (!cancelled) setError("Failed to load contribution data."); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      .then(d => { if (!cancelled) setFetchState({ data: d, error: null, done: true }); })
+      .catch(() => { if (!cancelled) setFetchState({ data: null, error: "Failed to load contribution data.", done: true }); });
 
-    return () => { cancelled = true; };
+    return () => { cancelled = true; setFetchState({ data: null, error: null, done: false }); };
   }, [isConnected, address]);
+
+  const { data, error } = fetchState;
+  const loading = isConnected && !fetchState.done;
 
   if (loading) {
     return (
