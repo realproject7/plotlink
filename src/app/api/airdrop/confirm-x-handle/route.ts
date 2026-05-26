@@ -31,7 +31,6 @@ export async function POST(req: Request) {
 
   let xUserId: string | null = null;
   let confirmedAt: string | null = null;
-  let apiDown = false;
 
   try {
     const user = await lookupXUser(username);
@@ -41,7 +40,7 @@ export async function POST(req: Request) {
     xUserId = user.x_user_id;
     confirmedAt = new Date().toISOString();
   } catch {
-    apiDown = true;
+    // R16 graceful degrade: twitterapi.io down → pending row without UNIQUE lock
   }
 
   const { error: upsertErr } = await supabase
