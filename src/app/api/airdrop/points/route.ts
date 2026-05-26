@@ -15,14 +15,18 @@ export async function GET(req: NextRequest) {
 
   const config = getAirdropConfig();
 
-  const { data: points } = await supabase
-    .from("pl_points")
-    .select("action, points")
-    .eq("address", address);
+  const [pointsRes, allPointsRes, streakRes, referralCodeRes, referredByRes, referredCountRes] = await Promise.all([
+    supabase.from("pl_points").select("action, points").eq("address", address),
+    supabase.from("pl_points").select("points"),
+    supabase.from("pl_streaks").select("current_streak, last_checkin, longest_streak").eq("address", address).single(),
+    supabase.from("pl_referral_codes").select("code, is_farcaster_username").eq("address", address).single(),
+    supabase.from("pl_referrals").select("referral_code").eq("referred_address", address).single(),
+    supabase.from("pl_referrals").select("id", { count: "exact", head: true }).eq("referrer_address", address),
+  ]);
 
   const breakdown = { buy: 0, referral: 0, write: 0, rate: 0 };
   let totalPoints = 0;
-  for (const row of points ?? []) {
+  for (const row of pointsRes.data ?? []) {
     const action = row.action as keyof typeof breakdown;
     if (action in breakdown) {
       breakdown[action] += row.points;
@@ -30,11 +34,14 @@ export async function GET(req: NextRequest) {
     totalPoints += row.points;
   }
 
-  const { data: allPoints } = await supabase
-    .from("pl_points")
-    .select("points");
-  const globalTotal = (allPoints ?? []).reduce((sum, r) => sum + r.points, 0);
+  const globalTotal = (allPointsRes.data ?? []).reduce((sum, r) => sum + r.points, 0);
   const sharePercent = globalTotal > 0 ? (totalPoints / globalTotal) * 100 : 0;
+
+  const currentStreak = streakRes.data?.current_streak ?? 0;
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  const checkedInToday = streakRes.data?.last_checkin
+    ? new Date(streakRes.data.last_checkin).toISOString().slice(0, 10) === todayUtc
+    : false;
 
   const estimatedAirdrop = sharePercent > 0
     ? {
@@ -56,17 +63,17 @@ export async function GET(req: NextRequest) {
       rate: Math.round(breakdown.rate * 100) / 100,
     },
     streak: {
-      currentStreak: 0,
+      currentStreak,
       boostPercent: 0,
       nextTier: null,
-      checkedInToday: false,
-      lastCheckin: null,
+      checkedInToday,
+      lastCheckin: streakRes.data?.last_checkin ?? null,
     },
     referral: {
-      code: null,
-      isFarcasterUsername: false,
-      referredBy: null,
-      referredUsersCount: 0,
+      code: referralCodeRes.data?.code ?? null,
+      isFarcasterUsername: referralCodeRes.data?.is_farcaster_username ?? false,
+      referredBy: referredByRes.data?.referral_code ?? null,
+      referredUsersCount: referredCountRes.count ?? 0,
     },
     estimatedAirdrop,
     buy_volume_plot: breakdown.buy,
