@@ -797,6 +797,24 @@ export interface Database {
         Args: { p_key: string; p_max_requests: number; p_window_ms: number };
         Returns: boolean;
       };
+      weighted_spend: {
+        Args: {
+          p_campaign_start: string;
+          p_campaign_end: string;
+          p_min_referral_threshold: number;
+          p_multiplier_per_ref: number;
+          p_multiplier_cap: number;
+        };
+        Returns: Array<{
+          address: string;
+          buy_volume: number;
+          qualified_refs: number;
+          has_fc_bonus: number;
+          multiplier: number;
+          weighted_spend: number;
+          community_total: number;
+        }>;
+      };
     };
     Enums: {
       [_ in never]: never;
