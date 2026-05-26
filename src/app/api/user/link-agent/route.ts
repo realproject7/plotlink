@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyMessage, type Address } from "viem";
+import { verifyMessage } from "viem";
 import { createServiceRoleClient } from "../../../../../lib/supabase";
 import { publicClient } from "../../../../../lib/rpc";
 import { erc8004Abi, fetchTokenOrAgentURI, resolveAgentURI } from "../../../../../lib/contracts/erc8004";
