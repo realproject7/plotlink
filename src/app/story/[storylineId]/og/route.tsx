@@ -8,6 +8,7 @@ import { formatPrice } from "../../../../../lib/format";
 import { truncateAddress } from "../../../../../lib/utils";
 import { getPlotUsdPrice, formatUsdValue } from "../../../../../lib/usd-price";
 import { getCoverUrl } from "../../../../../lib/cover";
+import { getStoryStatus } from "../../../../../lib/story-status";
 
 export const runtime = "nodejs";
 
@@ -67,7 +68,8 @@ export async function GET(
   const titleDisplay = sl.title.length > 60 ? `${sl.title.slice(0, 57)}...` : sl.title;
   const isAi = sl.writer_type === 1;
   const authorName = isAi ? "P7 AI Writer" : (fcProfile ? `@${fcProfile.username}` : truncateAddress(sl.writer_address));
-  const status = sl.sunset ? "Complete" : "Ongoing";
+  const storyStatus = getStoryStatus(sl);
+  const statusLabel = storyStatus === "completed" ? "Complete" : storyStatus === "active" ? "Ongoing" : null;
   const coverUrl = getCoverUrl(sl.cover_cid);
   const variants: FallbackVariant[] = ["A", "B", "C", "D"];
   const variant = variants[((id * 2654435761) >>> 0) % 4];
@@ -95,11 +97,11 @@ export async function GET(
     letterSpacing: "0.08em",
   });
 
-  const badges = (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginBottom: "12px" }}>
+  const badgeElements = (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
       {sl.genre && <span style={badgeStyle(BADGE_COLORS.genre)}>{sl.genre}</span>}
       {isAi && <span style={badgeStyle(BADGE_COLORS.ai)}>AI Writer</span>}
-      <span style={badgeStyle(BADGE_COLORS.status)}>{status}</span>
+      {statusLabel && <span style={badgeStyle(BADGE_COLORS.status)}>{statusLabel}</span>}
       {sl.content_type === "cartoon" && <span style={badgeStyle(BADGE_COLORS.cartoon)}>Cartoon</span>}
       {sl.is_nsfw && <span style={badgeStyle(BADGE_COLORS.nsfw)}>18+</span>}
     </div>
@@ -109,18 +111,14 @@ export async function GET(
     <div style={{ width: "460px", height: "100%", display: "flex", position: "relative", overflow: "hidden" }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={coverUrl} alt="" style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", objectFit: "cover" }} />
-      <div style={{ position: "absolute", top: "16px", left: "16px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
-        {sl.genre && <span style={badgeStyle(BADGE_COLORS.genre)}>{sl.genre}</span>}
-        {isAi && <span style={badgeStyle(BADGE_COLORS.ai)}>AI Writer</span>}
-        <span style={badgeStyle(BADGE_COLORS.status)}>{status}</span>
+      <div style={{ position: "absolute", top: "16px", left: "16px", display: "flex" }}>
+        {badgeElements}
       </div>
     </div>
   ) : (
     <div style={{ width: "460px", height: "100%", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", background: FALLBACK_HEX[variant].bg, position: "relative" }}>
-      <div style={{ position: "absolute", top: "16px", left: "16px", display: "flex", flexWrap: "wrap", gap: "6px" }}>
-        {sl.genre && <span style={badgeStyle(BADGE_COLORS.genre)}>{sl.genre}</span>}
-        {isAi && <span style={badgeStyle(BADGE_COLORS.ai)}>AI Writer</span>}
-        <span style={badgeStyle(BADGE_COLORS.status)}>{status}</span>
+      <div style={{ position: "absolute", top: "16px", left: "16px", display: "flex" }}>
+        {badgeElements}
       </div>
       <div style={{ width: "50px", height: "1px", background: "rgba(0,0,0,0.15)", display: "flex" }} />
       <div style={{ fontSize: "28px", fontWeight: 500, color: "#4a4038", marginTop: "16px", textAlign: "center", padding: "0 32px", display: "flex", maxWidth: "400px" }}>
@@ -136,7 +134,7 @@ export async function GET(
         {coverSection}
 
         <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", padding: "48px 48px 48px 40px" }}>
-          {coverUrl && badges}
+          {!coverUrl && <div style={{ marginBottom: "12px", display: "flex" }}>{badgeElements}</div>}
 
           <div style={{ fontSize: titleDisplay.length > 35 ? "32px" : "38px", fontWeight: 500, color: "#1a1a1a", lineHeight: 1.25, display: "flex", marginBottom: "12px" }}>
             {titleDisplay}
