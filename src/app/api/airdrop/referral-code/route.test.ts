@@ -28,6 +28,7 @@ vi.mock("nanoid", () => ({ nanoid: () => "testcode" }));
 
 import { GET, POST } from "./route";
 import { verifySiweRequest } from "../../../../../lib/airdrop/siwe-verify";
+import { NextRequest } from "next/server";
 
 function makePostReq(body: unknown) {
   return new Request("http://localhost/api/airdrop/referral-code", {
@@ -71,8 +72,7 @@ describe("POST /api/airdrop/referral-code", () => {
 describe("GET /api/airdrop/referral-code", () => {
   it("remains unauthenticated — returns code without auth headers", async () => {
     mockSelectCode.mockResolvedValue({ data: { code: "mycode", is_farcaster_username: false } });
-    const url = new URL("http://localhost/api/airdrop/referral-code?address=0xabc");
-    const req = Object.assign(new Request(url), { nextUrl: url });
+    const req = new NextRequest("http://localhost/api/airdrop/referral-code?address=0xabc");
 
     const res = await GET(req);
     expect(res.status).toBe(200);
@@ -83,8 +83,7 @@ describe("GET /api/airdrop/referral-code", () => {
 
   it("returns { code: null } for unknown address", async () => {
     mockSelectCode.mockResolvedValue({ data: null });
-    const url = new URL("http://localhost/api/airdrop/referral-code?address=0xnone");
-    const req = Object.assign(new Request(url), { nextUrl: url });
+    const req = new NextRequest("http://localhost/api/airdrop/referral-code?address=0xnone");
 
     const res = await GET(req);
     expect(res.status).toBe(200);
