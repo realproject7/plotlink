@@ -44,25 +44,34 @@ export function ConnectWallet({ onNavigate, compact }: ConnectWalletProps = {}) 
       );
     }
 
-    // Full mode: pill with PFP + @username or truncated address
+    // Full mode: pill with PFP + truncated address + disconnect
     return (
-      <Link
-        href={`/profile/${address}`}
-        onClick={onNavigate}
-        className="border-border text-accent inline-flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
-      >
-        {profile?.pfpUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={profile.pfpUrl}
-            alt=""
-            width={18}
-            height={18}
-            className="rounded-full"
-          />
-        )}
-        {displayAddr}
-      </Link>
+      <div className="inline-flex items-center gap-1.5">
+        <Link
+          href={`/profile/${address}`}
+          onClick={onNavigate}
+          className="border-border text-accent inline-flex items-center gap-1.5 rounded border px-3 py-1 text-xs font-medium hover:opacity-80 transition-opacity"
+        >
+          {profile?.pfpUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={profile.pfpUrl}
+              alt=""
+              width={18}
+              height={18}
+              className="rounded-full"
+            />
+          )}
+          {displayAddr}
+        </Link>
+        <button
+          onClick={() => disconnect()}
+          className="text-muted hover:text-foreground text-[10px] transition-colors"
+          title="Disconnect wallet"
+        >
+          ✕
+        </button>
+      </div>
     );
   }
 

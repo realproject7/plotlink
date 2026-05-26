@@ -6,6 +6,7 @@ import { connectorsForWallets } from "@rainbow-me/rainbowkit";
 import type { Wallet } from "@rainbow-me/rainbowkit";
 import {
   metaMaskWallet,
+  coinbaseWallet,
   baseAccount,
   trustWallet,
   rainbowWallet,
@@ -34,6 +35,7 @@ const walletConnectors = connectorsForWallets(
       wallets: [
         farcasterWallet,
         metaMaskWallet,
+        coinbaseWallet,
         baseAccount,
         trustWallet,
         rainbowWallet,
