@@ -5,7 +5,7 @@ import { useAccount } from "wagmi";
 
 export function ReferralCTA() {
   const { address, isConnected } = useAccount();
-  const [code, setCode] = useState<string | null>(null);
+  const [fetchState, setFetchState] = useState<{ code: string | null; addr: string | null }>({ code: null, addr: null });
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -14,10 +14,12 @@ export function ReferralCTA() {
     let cancelled = false;
     fetch(`/api/airdrop/referral-code?address=${address.toLowerCase()}`)
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (!cancelled && d?.code) setCode(d.code); })
-      .catch(() => {});
+      .then(d => { if (!cancelled) setFetchState({ code: d?.code ?? null, addr: address.toLowerCase() }); })
+      .catch(() => { if (!cancelled) setFetchState({ code: null, addr: address.toLowerCase() }); });
     return () => { cancelled = true; };
   }, [isConnected, address]);
+
+  const code = fetchState.addr === address?.toLowerCase() ? fetchState.code : null;
 
   if (!code) {
     return (
