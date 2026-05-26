@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { type Hex, decodeEventLog, formatUnits } from "viem";
-import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
+import { publicClient } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
 import { mcv2BondEventAbi } from "../../../../../lib/contracts/abi";
 import { MCV2_BOND, ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";

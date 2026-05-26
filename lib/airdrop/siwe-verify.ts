@@ -27,16 +27,18 @@ export async function verifySiweRequest(
     return { ok: false, error: "statement_mismatch" };
   }
 
-  if (parsed.issuedAt) {
-    const issuedAt = new Date(parsed.issuedAt);
-    const now = new Date();
-    const ageMin = (now.getTime() - issuedAt.getTime()) / 60_000;
-    if (ageMin > config.SIGNATURE_FRESHNESS_MIN) {
-      return { ok: false, error: "expired" };
-    }
-    if (ageMin < -1) {
-      return { ok: false, error: "issued_in_future" };
-    }
+  if (!parsed.issuedAt) {
+    return { ok: false, error: "missing_issued_at" };
+  }
+
+  const issuedAt = new Date(parsed.issuedAt);
+  const now = new Date();
+  const ageMin = (now.getTime() - issuedAt.getTime()) / 60_000;
+  if (ageMin > config.SIGNATURE_FRESHNESS_MIN) {
+    return { ok: false, error: "expired" };
+  }
+  if (ageMin < -1) {
+    return { ok: false, error: "issued_in_future" };
   }
 
   try {

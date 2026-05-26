@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "../../../../../lib/supabase";
 import { ZAP_PLOTLINK } from "../../../../../lib/contracts/constants";
-import { AIRDROP_CONFIG } from "../../../../../lib/airdrop/config";
+import { getAirdropConfig } from "../../../../../lib/airdrop/config";
 import { computeBuyPoints } from "../../../../../lib/airdrop/points";
 
 function verifyCron(req: Request): boolean {
@@ -27,8 +27,9 @@ async function handler(req: Request) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
   }
 
+  const config = getAirdropConfig(new Date());
   const now = new Date();
-  if (now > AIRDROP_CONFIG.CAMPAIGN_END) {
+  if (now > config.CAMPAIGN_END) {
     return NextResponse.json({ message: "Campaign ended, no points awarded" });
   }
 
@@ -38,8 +39,8 @@ async function handler(req: Request) {
     .from("trade_history")
     .select("id, user_address, reserve_amount, block_timestamp")
     .eq("event_type", "mint")
-    .gte("block_timestamp", AIRDROP_CONFIG.CAMPAIGN_START.toISOString())
-    .lte("block_timestamp", AIRDROP_CONFIG.CAMPAIGN_END.toISOString())
+    .gte("block_timestamp", config.CAMPAIGN_START.toISOString())
+    .lte("block_timestamp", config.CAMPAIGN_END.toISOString())
     .not("user_address", "is", null);
 
   if (tradesErr) {

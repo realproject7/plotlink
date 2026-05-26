@@ -79,17 +79,12 @@ describe("POST /api/airdrop/confirm-x-handle", () => {
     expect(res.status).toBe(409);
   });
 
-  it("R16: writes pending row when twitterapi.io throws", async () => {
+  it("R16: returns 503 when twitterapi.io throws (no stuck state)", async () => {
     vi.mocked(verifySiweRequest).mockResolvedValue({ ok: true, address: "0xabc" });
     vi.mocked(lookupXUser).mockRejectedValue(new Error("network error"));
 
     const res = await POST(makeReq({ message: "m", signature: "s", username: "downuser" }));
-    expect(res.status).toBe(200);
-    expect(mockUpsert).toHaveBeenCalledWith(
-      expect.objectContaining({ x_handle_confirmed_at: null, x_user_id: null }),
-      expect.anything(),
-    );
-    const data = await res.json();
-    expect(data.confirmed).toBe(false);
+    expect(res.status).toBe(503);
+    expect(mockUpsert).not.toHaveBeenCalled();
   });
 });

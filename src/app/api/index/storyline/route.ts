@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { type Hex, decodeEventLog, encodeEventTopics } from "viem";
-import { publicClient, getReceiptWithRetry } from "../../../../../lib/rpc";
+import { publicClient } from "../../../../../lib/rpc";
 import { createServerClient } from "../../../../../lib/supabase";
 import { validateRecentTx } from "../../../../../lib/index-auth";
 import {

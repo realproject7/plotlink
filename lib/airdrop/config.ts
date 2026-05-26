@@ -58,7 +58,7 @@ function getSiweCommon() {
     SIWE_STATEMENT: "PlotLink Buy-Back Sprint activation" as const,
     SIWE_CHAIN_ID: 8453 as const,
     PLOTLINK_X_HANDLE: "plotlinkxyz" as const,
-    PLOTLINK_FC_FID: Number(process.env.NEXT_PUBLIC_PLOTLINK_FC_FID) || 0,
+    PLOTLINK_FC_FID: Number(process.env.PLOTLINK_FC_FID) || 0,
   };
 }
 

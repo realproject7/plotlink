@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @typescript-eslint/no-unused-vars, @next/next/no-img-element, react-hooks/set-state-in-effect */
 
 import { useState, useCallback, useEffect } from "react";
 import { useParams, useSearchParams } from "next/navigation";
@@ -11,7 +12,7 @@ import { STORY_FACTORY, RESERVE_LABEL, EXPLORER_URL, MCV2_BOND, PLOT_TOKEN } fro
 import { getFullUserProfile, getFarcasterProfile } from "../../../../lib/actions";
 import { truncateAddress } from "../../../../lib/utils";
 import { formatPrice, formatSupply } from "../../../../lib/format";
-import { getTokenPrice, mcv2BondAbi, erc20Abi, type TokenPriceInfo, get24hPriceChange, getTokenTVL } from "../../../../lib/price";
+import { getTokenPrice, mcv2BondAbi, erc20Abi, get24hPriceChange, getTokenTVL } from "../../../../lib/price";
 import { browserClient } from "../../../../lib/rpc";
 import type { FarcasterProfile } from "../../../../lib/farcaster";
 import type { AgentMetadata } from "../../../../lib/contracts/erc8004";
@@ -20,7 +21,7 @@ import { useNsfwPreference } from "../../../hooks/useNsfwPreference";
 import { formatUsdValue } from "../../../../lib/usd-price";
 import { DisconnectButton } from "../../../components/ConnectWallet";
 import { GENRES, LANGUAGES } from "../../../../lib/genres";
-import { DeadlineCountdown, DEADLINE_MS } from "../../../components/DeadlineCountdown";
+import { DEADLINE_MS } from "../../../components/DeadlineCountdown";
 import { ClaimRoyalties } from "../../../components/ClaimRoyalties";
 import { WriterTradingStats } from "../../../components/WriterTradingStats";
 import { DropdownSelect } from "../../../components/DropdownSelect";
@@ -270,7 +271,6 @@ function ProfileHeader({
       <div className="flex items-start gap-4">
         {/* For AI agents, use owner's PFP; otherwise use own Farcaster PFP */}
         {(hasOwner && ownerFcProfile?.pfpUrl) || fcProfile?.pfpUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={(hasOwner && ownerFcProfile?.pfpUrl) ? ownerFcProfile.pfpUrl : fcProfile!.pfpUrl!}
             alt=""
@@ -468,7 +468,6 @@ function ProfileHeader({
                   <span className="text-muted text-[10px] font-medium uppercase tracking-wider">Operated by</span>
                   <div className="mt-1 flex items-center gap-2">
                     {ownerFcProfile?.pfpUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={ownerFcProfile.pfpUrl} alt="" width={20} height={20} className="rounded-full" />
                     )}
                     <Link href={`/profile/${ownerAddress}`} className="text-accent hover:underline text-xs font-medium">
@@ -838,7 +837,7 @@ function StoriesTab({
   });
 
   // Claimable royalties (own profile only)
-  const { data: royaltyInfo } = useQuery({
+  const { data: _royaltyInfo } = useQuery({
     queryKey: ["profile-royalties", address],
     queryFn: async () => {
       const [balance, claimed] = await browserClient.readContract({
@@ -1045,18 +1044,15 @@ function StoryRow({
   const [isExpired, setIsExpired] = useState(false);
   useEffect(() => {
     if (storyline.sunset || !storyline.has_deadline || !storyline.last_plot_time) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when props change (e.g. deadline extension)
       setIsExpired(false);
       return;
     }
     const expiryTime = new Date(storyline.last_plot_time).getTime() + DEADLINE_MS;
     const remaining = expiryTime - Date.now();
     if (remaining <= 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync for already-expired storylines
       setIsExpired(true);
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset in case props changed from expired to active
     setIsExpired(false);
     const timeout = setTimeout(() => setIsExpired(true), remaining);
     return () => clearTimeout(timeout);
@@ -1536,9 +1532,9 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
   const {
     data: donationPages,
     isLoading: donGivenLoading,
-    isFetchingNextPage: donFetchingNext,
-    fetchNextPage: donFetchNext,
-    hasNextPage: donHasNext,
+    isFetchingNextPage: _donFetchingNext,
+    fetchNextPage: _donFetchNext,
+    hasNextPage: _donHasNext,
   } = useInfiniteQuery({
     queryKey: ["profile-donations-given", address],
     queryFn: async ({ pageParam = 0 }) => {
@@ -1562,7 +1558,7 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
     enabled: isOwnProfile,
   });
   const donationsGiven = donationPages?.pages.flatMap((p) => p.rows) ?? [];
-  const donationTotalCount = donationPages?.pages[0]?.totalCount ?? 0;
+  const _donationTotalCount = donationPages?.pages[0]?.totalCount ?? 0;
 
   // Aggregate donations received as writer
   const { data: donationsReceived, isLoading: donRecvLoading } = useQuery({
@@ -1596,12 +1592,12 @@ function PortfolioTab({ address, isOwnProfile }: { address: string; isOwnProfile
   if (isLoading) return <p className="text-muted mt-8 text-sm">Loading...</p>;
 
   const hasHoldings = holdings && holdings.length > 0;
-  const hasDonationsGiven = donationsGiven.length > 0;
-  const hasDonationsReceived = donationsReceived && donationsReceived.count > 0;
+  const _hasDonationsGiven = donationsGiven.length > 0;
+  const _hasDonationsReceived = donationsReceived && donationsReceived.count > 0;
 
   const totalValue = holdings?.reduce((sum, h) => sum + h.value, BigInt(0)) ?? BigInt(0);
   const reserveDecimals = holdings && holdings.length > 0 ? holdings[0].reserveDecimals : 18;
-  const totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
+  const _totalDonated = donationsGiven.reduce((sum, d) => sum + BigInt(d.amount), BigInt(0));
 
   // Compute portfolio-level cost basis % change (only if all holdings have entry prices)
   const portfolioCostPct = (() => {

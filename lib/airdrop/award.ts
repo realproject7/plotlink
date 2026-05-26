@@ -1,14 +1,5 @@
-export async function awardWritePoints(
-  _writerAddress: string,
-  _storylineId: number,
-  _timestamp?: Date,
-): Promise<void> {
-  return;
-}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function awardWritePoints(writerAddress: string, storylineId: number, timestamp?: Date): Promise<void> {}
 
-export async function awardRatePoints(
-  _raterAddress: string,
-  _storylineId: number,
-): Promise<void> {
-  return;
-}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function awardRatePoints(raterAddress: string, storylineId: number): Promise<void> {}
