@@ -44,6 +44,16 @@ forge script contracts/script/DeployMerkleClaim.s.sol \
   --private-key $DEPLOYER_PRIVATE_KEY
 ```
 
+## Weighted Spend SQL Helper (T2.4b hybrid pattern)
+
+The weighted spend computation uses a hybrid of T0.1's option A (TS config) and option B (DB function):
+
+- **`lib/airdrop/sql.ts`** — TS wrapper `weightedSpendQuery(config)` returns `{sql, params}`. Config values (campaign dates, thresholds, multiplier params) flow from `getAirdropConfig()` at call time, supporting test-fast/test-full/prod modes.
+- **`supabase/migrations/00041_weighted_spend_function.sql`** — Postgres function `weighted_spend(...)` is the single canonical SQL definition. All consumers (finalize script, /projection, /leaderboard) call this function.
+- **`lib/airdrop/sql.ts:weightedSpendQuery()`** returns `SELECT * FROM weighted_spend($1, $2, $3, $4, $5)` — the TS wrapper delegates to the DB function.
+
+This avoids both option A's risk (SQL string drift across consumers) and option B's downside (DB-resident config table).
+
 ## Settlement (finalize)
 
 ```bash
