@@ -33,29 +33,27 @@ function deriveState(
   return "mining";
 }
 
+const needsFetch = !IS_PAUSED && !MERKLE_CLAIM_ADDRESS && !FINAL_BURN_TX;
+
 export function AirdropStateMachine() {
   const { address, isConnected } = useAccount();
   const [activatedAt, setActivatedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(needsFetch && isConnected);
 
   useEffect(() => {
-    if (IS_PAUSED || MERKLE_CLAIM_ADDRESS || FINAL_BURN_TX) {
-      setLoading(false);
-      return;
-    }
-
-    if (!isConnected || !address) {
+    if (!needsFetch || !isConnected || !address) {
       setActivatedAt(null);
-      setLoading(false);
       return;
     }
 
+    let cancelled = false;
     setLoading(true);
     fetch(`/api/airdrop/activation-status?address=${address.toLowerCase()}`)
       .then(res => res.json())
-      .then(data => setActivatedAt(data.activated_at ?? null))
-      .catch(() => setActivatedAt(null))
-      .finally(() => setLoading(false));
+      .then(data => { if (!cancelled) setActivatedAt(data.activated_at ?? null); })
+      .catch(() => { if (!cancelled) setActivatedAt(null); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
   }, [isConnected, address]);
 
   const state = deriveState(isConnected, activatedAt);
