@@ -58,6 +58,12 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/lib/
+broadcast/
+
 # claude code
 .claude/worktrees/
 AGENTS.md
@@ -68,3 +74,6 @@ playwright-report/
 
 # supabase temp
 supabase/.temp/
+
+reviewer-token
+*-token

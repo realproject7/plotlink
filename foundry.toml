@@ -1,0 +1,8 @@
+[profile.default]
+src = "contracts"
+test = "contracts/test"
+script = "contracts/script"
+out = "contracts/out"
+cache_path = "contracts/cache"
+libs = ["contracts/lib"]
+solc = "0.8.20"
