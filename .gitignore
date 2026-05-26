@@ -2,6 +2,7 @@
 
 # internal docs (operational queues, proposals, roadmaps — never commit)
 docs/
+!docs/airdrop-contracts.md
 
 # archive (data exports, scored CSVs — never commit)
 archive/
