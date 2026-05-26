@@ -37,24 +37,21 @@ const needsFetch = !IS_PAUSED && !MERKLE_CLAIM_ADDRESS && !FINAL_BURN_TX;
 
 export function AirdropStateMachine() {
   const { address, isConnected } = useAccount();
-  const [activatedAt, setActivatedAt] = useState<string | null>(null);
-  const [loading, setLoading] = useState(needsFetch && isConnected);
+  const [fetchResult, setFetchResult] = useState<{ activatedAt: string | null; done: boolean }>({ activatedAt: null, done: !needsFetch });
 
   useEffect(() => {
-    if (!needsFetch || !isConnected || !address) {
-      setActivatedAt(null);
-      return;
-    }
+    if (!needsFetch || !isConnected || !address) return;
 
     let cancelled = false;
-    setLoading(true);
     fetch(`/api/airdrop/activation-status?address=${address.toLowerCase()}`)
       .then(res => res.json())
-      .then(data => { if (!cancelled) setActivatedAt(data.activated_at ?? null); })
-      .catch(() => { if (!cancelled) setActivatedAt(null); })
-      .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
+      .then(data => { if (!cancelled) setFetchResult({ activatedAt: data.activated_at ?? null, done: true }); })
+      .catch(() => { if (!cancelled) setFetchResult({ activatedAt: null, done: true }); });
+    return () => { cancelled = true; setFetchResult({ activatedAt: null, done: false }); };
   }, [isConnected, address]);
+
+  const activatedAt = (needsFetch && isConnected) ? fetchResult.activatedAt : null;
+  const loading = needsFetch && isConnected && !fetchResult.done;
 
   const state = deriveState(isConnected, activatedAt);
 
