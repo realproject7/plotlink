@@ -4,7 +4,7 @@ import { UserPoints } from "../../components/airdrop/UserPoints";
 import { ClaimPanel } from "../../components/airdrop/ClaimPanel";
 import { Leaderboard } from "../../components/airdrop/Leaderboard";
 import { WeeklySnapshots } from "../../components/airdrop/WeeklySnapshots";
-import { AIRDROP_CONFIG } from "../../../lib/airdrop/config";
+import { getAirdropConfig } from "../../../lib/airdrop/config";
 
 export const metadata: Metadata = {
   title: "PLOT Big or Nothing Airdrop | PlotLink",
@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default function AirdropPage() {
-  const campaignEnded = new Date() > AIRDROP_CONFIG.CAMPAIGN_END;
+  const campaignEnded = new Date() > getAirdropConfig().CAMPAIGN_END;
 
   return (
     <main className="mx-auto max-w-[var(--page-max)] px-6 py-8 pb-24 lg:pb-8">
