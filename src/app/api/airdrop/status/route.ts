@@ -1,12 +1,27 @@
-/**
- * Campaign status overview (#885)
- * GET /api/airdrop/status — no auth required
- */
-
 import { NextResponse } from "next/server";
 import { createServerClient } from "../../../../../lib/supabase";
-import { AIRDROP_CONFIG } from "../../../../../lib/airdrop/config";
+import { getAirdropConfig } from "../../../../../lib/airdrop/config";
 import { getPlotUsdPrice } from "../../../../../lib/usd-price";
+
+function checkEnvConfig(): boolean {
+  const secrets = [
+    process.env.TWITTERAPI_IO_KEY,
+    process.env.NEYNAR_API_KEY,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    process.env.CRON_SECRET,
+  ];
+  if (secrets.some(s => !s)) return false;
+
+  const config = getAirdropConfig();
+  if (!config.SIWE_DOMAIN || !config.SIWE_URI || !config.SIWE_STATEMENT) return false;
+  if (!config.SIWE_CHAIN_ID || !config.PLOTLINK_X_HANDLE) return false;
+  if (!config.PLOTLINK_FC_FID) return false;
+  if (config.POOL_AMOUNT <= 0) return false;
+  if (config.CAMPAIGN_START >= config.CAMPAIGN_END) return false;
+  if (!config.MILESTONES.BRONZE || !config.MILESTONES.SILVER || !config.MILESTONES.GOLD || !config.MILESTONES.DIAMOND) return false;
+
+  return true;
+}
 
 export async function GET() {
   const supabase = createServerClient();
@@ -14,64 +29,62 @@ export async function GET() {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 500 });
   }
 
+  const config = getAirdropConfig();
   const now = new Date();
-  const start = AIRDROP_CONFIG.CAMPAIGN_START;
-  const end = AIRDROP_CONFIG.CAMPAIGN_END;
+  const start = config.CAMPAIGN_START;
+  const end = config.CAMPAIGN_END;
   const totalMs = end.getTime() - start.getTime();
   const elapsedMs = Math.max(0, now.getTime() - start.getTime());
   const remainingMs = Math.max(0, end.getTime() - now.getTime());
 
-  // Latest price: try pl_daily_prices first, fall back to live price
-  const { data: latestPrice } = await supabase
-    .from("pl_daily_prices")
-    .select("price_usd, mcap_usd")
-    .order("recorded_at", { ascending: false })
-    .limit(1)
-    .single();
+  const [priceRes, activationRes, eligibleRes] = await Promise.all([
+    supabase
+      .from("pl_daily_prices")
+      .select("price_usd, mcap_usd")
+      .order("recorded_at", { ascending: false })
+      .limit(1)
+      .single(),
+    supabase
+      .from("pl_activations")
+      .select("address", { count: "exact", head: true })
+      .not("activated_at", "is", null),
+    supabase
+      .from("pl_activations")
+      .select("address", { count: "exact", head: true })
+      .not("activated_at", "is", null)
+      .eq("is_blacklisted", false),
+  ]);
 
-  // Live price fallback when daily snapshots haven't been recorded yet
+  const latestPrice = priceRes.data;
   const livePriceUsd = latestPrice?.price_usd ?? (await getPlotUsdPrice());
 
-  // Total points earned + unique participants
-  const { data: allPoints } = await supabase
-    .from("pl_points")
-    .select("address, points");
-
-  let totalPointsEarned = 0;
-  const uniqueAddresses = new Set<string>();
-  for (const row of allPoints ?? []) {
-    totalPointsEarned += row.points;
-    uniqueAddresses.add(row.address);
-  }
-  const totalParticipants = uniqueAddresses.size;
-
-  // Milestone status — use stored FDV or compute from live price
   const MAX_SUPPLY = 1_000_000;
   const currentFdv = latestPrice?.mcap_usd
     ? Number(latestPrice.mcap_usd)
     : livePriceUsd
       ? livePriceUsd * MAX_SUPPLY
       : 0;
+
   const milestones = {
     bronze: {
-      mcap: AIRDROP_CONFIG.MILESTONES.BRONZE.mcap,
-      pct: AIRDROP_CONFIG.MILESTONES.BRONZE.pct,
-      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.BRONZE.mcap,
+      mcap: config.MILESTONES.BRONZE.mcap,
+      pct: config.MILESTONES.BRONZE.pct,
+      reached: currentFdv >= config.MILESTONES.BRONZE.mcap,
     },
     silver: {
-      mcap: AIRDROP_CONFIG.MILESTONES.SILVER.mcap,
-      pct: AIRDROP_CONFIG.MILESTONES.SILVER.pct,
-      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.SILVER.mcap,
+      mcap: config.MILESTONES.SILVER.mcap,
+      pct: config.MILESTONES.SILVER.pct,
+      reached: currentFdv >= config.MILESTONES.SILVER.mcap,
     },
     gold: {
-      mcap: AIRDROP_CONFIG.MILESTONES.GOLD.mcap,
-      pct: AIRDROP_CONFIG.MILESTONES.GOLD.pct,
-      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.GOLD.mcap,
+      mcap: config.MILESTONES.GOLD.mcap,
+      pct: config.MILESTONES.GOLD.pct,
+      reached: currentFdv >= config.MILESTONES.GOLD.mcap,
     },
     diamond: {
-      mcap: AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
-      pct: AIRDROP_CONFIG.MILESTONES.DIAMOND.pct,
-      reached: currentFdv >= AIRDROP_CONFIG.MILESTONES.DIAMOND.mcap,
+      mcap: config.MILESTONES.DIAMOND.mcap,
+      pct: config.MILESTONES.DIAMOND.pct,
+      reached: currentFdv >= config.MILESTONES.DIAMOND.mcap,
     },
   };
 
@@ -80,13 +93,14 @@ export async function GET() {
     campaignEnd: end.toISOString().slice(0, 10),
     timeRemainingDays: Math.ceil(remainingMs / (1000 * 60 * 60 * 24)),
     timeElapsedPercent: totalMs > 0 ? Math.min(100, Math.round((elapsedMs / totalMs) * 100)) : 0,
-    poolAmount: AIRDROP_CONFIG.POOL_AMOUNT,
+    poolAmount: config.POOL_AMOUNT,
     currentFdv,
     latestPriceUsd: livePriceUsd ?? null,
     milestones,
-    totalPointsEarned,
-    totalParticipants,
-    lockerTx: AIRDROP_CONFIG.LOCKER_TX,
+    activation_count: activationRes.count ?? 0,
+    eligible_activation_count: eligibleRes.count ?? 0,
+    env_check: { all_present: checkEnvConfig() },
+    lockerTx: config.LOCKER_TX,
   }, {
     headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=30" },
   });

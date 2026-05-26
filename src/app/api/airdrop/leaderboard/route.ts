@@ -1,10 +1,6 @@
-/**
- * Points leaderboard (#885)
- * GET /api/airdrop/leaderboard?address=0x... (optional)
- */
-
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "../../../../../lib/supabase";
+import { getAirdropConfig } from "../../../../../lib/airdrop/config";
 
 export async function GET(req: NextRequest) {
   const supabase = createServerClient();
@@ -16,37 +12,39 @@ export async function GET(req: NextRequest) {
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(50, Math.max(1, parseInt(req.nextUrl.searchParams.get("limit") ?? "20", 10) || 20));
 
-  // Aggregate points per address
-  const { data: allPoints } = await supabase
-    .from("pl_points")
-    .select("address, points");
+  const config = getAirdropConfig();
 
-  if (!allPoints || allPoints.length === 0) {
-    return NextResponse.json({ entries: [], userRank: null, totalParticipants: 0, page: 1, totalPages: 0, limit });
+  const { data: rows, error } = await supabase.rpc("weighted_spend", {
+    p_campaign_start: config.CAMPAIGN_START.toISOString(),
+    p_campaign_end: config.CAMPAIGN_END.toISOString(),
+    p_min_referral_threshold: config.MIN_REFERRAL_THRESHOLD,
+    p_multiplier_per_ref: config.REFERRAL_MULTIPLIER_PER_REF,
+    p_multiplier_cap: config.REFERRAL_MULTIPLIER_CAP,
+  });
+
+  if (error) {
+    console.error("[leaderboard] weighted_spend RPC failed:", error.message);
+    return NextResponse.json({ error: "Failed to compute leaderboard" }, { status: 500 });
   }
 
-  // Sum points by address
-  const pointsByAddress = new Map<string, number>();
-  let globalTotal = 0;
-  for (const row of allPoints) {
-    const addr = row.address.toLowerCase();
-    pointsByAddress.set(addr, (pointsByAddress.get(addr) ?? 0) + row.points);
-    globalTotal += row.points;
-  }
+  const allRows = (rows ?? []) as Array<{
+    address: string;
+    weighted_spend: number;
+    buy_volume: number;
+    qualified_refs: number;
+    has_fc_bonus: number;
+    multiplier: number;
+    community_total: number;
+  }>;
 
-  // Sort descending by points
-  const sorted = [...pointsByAddress.entries()]
-    .sort((a, b) => b[1] - a[1]);
+  const sorted = [...allRows].sort((a, b) => Number(b.weighted_spend) - Number(a.weighted_spend));
 
-  // Paginate
-  const totalParticipants = pointsByAddress.size;
+  const totalParticipants = sorted.length;
   const totalPages = Math.ceil(totalParticipants / limit);
   const start = (page - 1) * limit;
   const pageSlice = sorted.slice(start, start + limit);
 
-  // Look up usernames for current page
-  const pageAddresses = pageSlice.map(([addr]) => addr);
-
+  const pageAddresses = pageSlice.map(r => r.address);
   const { data: users } = await supabase
     .from("pl_referral_codes")
     .select("address, code, is_farcaster_username")
@@ -56,18 +54,22 @@ export async function GET(req: NextRequest) {
     (users ?? []).map((u) => [u.address.toLowerCase(), u.is_farcaster_username ? u.code : null]),
   );
 
-  const entries = pageSlice.map(([addr, pts], i) => ({
+  const communityTotal = Number(sorted[0]?.community_total ?? 0);
+
+  const entries = pageSlice.map((row, i) => ({
     rank: start + i + 1,
-    address: addr,
-    username: usernameMap.get(addr) ?? null,
-    totalPoints: Math.round(pts * 100) / 100,
-    sharePercent: globalTotal > 0 ? Math.round((pts / globalTotal) * 10000) / 100 : 0,
+    address: row.address,
+    username: usernameMap.get(row.address) ?? null,
+    weighted_spend: Number(row.weighted_spend),
+    totalPoints: Number(row.weighted_spend),
+    buy_volume: Number(row.buy_volume),
+    multiplier: Number(row.multiplier),
+    sharePercent: communityTotal > 0 ? Math.round((Number(row.weighted_spend) / communityTotal) * 10000) / 100 : 0,
   }));
 
-  // Find user's rank if requested
   let userRank: number | null = null;
   if (userAddress) {
-    const idx = sorted.findIndex(([addr]) => addr === userAddress);
+    const idx = sorted.findIndex(r => r.address === userAddress);
     userRank = idx >= 0 ? idx + 1 : null;
   }
 
