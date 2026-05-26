@@ -169,7 +169,7 @@ function ClaimCardInner({ address }: { address: string }) {
 
       {projection && (
         <div className="border-b border-[var(--border)] pb-4 space-y-2">
-          <div className="text-muted text-[10px] uppercase tracking-wider">How your share was calculated</div>
+          <div className="text-muted text-[10px] uppercase tracking-wider">Live contribution breakdown <span className="normal-case">(may not reflect final settlement)</span></div>
           <div className="text-foreground text-xs space-y-1">
             <div>{projection.buy_volume.toLocaleString()} PLOT spent × {projection.multiplier.toFixed(1)}× multiplier</div>
             <div className="text-muted text-[10px]">
