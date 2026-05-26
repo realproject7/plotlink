@@ -14,6 +14,8 @@
   --success:       oklch(45% 0.14 145);
   --burn:          oklch(50% 0.20 25);
   --dist:          oklch(45% 0.16 145);
+  --gold-1:        #FFE07A;
+  --gold-2:        #D9A847;
 
   --font-display: 'Newsreader', 'Iowan Old Style', Georgia, serif;
   --font-body:    -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
