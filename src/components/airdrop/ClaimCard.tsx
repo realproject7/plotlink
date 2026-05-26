@@ -167,18 +167,38 @@ function ClaimCardInner({ address }: { address: string }) {
     <div className="border-border rounded border p-6 space-y-5">
       <h2 className="text-accent text-sm font-bold uppercase tracking-wider">Claim Your PLOT</h2>
 
-      {projection && (
-        <div className="border-b border-[var(--border)] pb-4 space-y-2">
-          <div className="text-muted text-[10px] uppercase tracking-wider">Breakdown</div>
-          <div className="text-foreground text-xs space-y-1">
-            <div>{projection.buy_volume.toLocaleString()} PLOT spent × {projection.multiplier.toFixed(1)}× multiplier</div>
-            <div className="text-muted text-[10px]">
-              ({projection.qualified_refs} refs{projection.has_fc_bonus ? " + FC bonus" : ""})
+      {projection && (() => {
+        const proofAmountNum = Number(amountFormatted);
+        const projectedShare = projection.community_total > 0
+          ? projection.weighted_spend / projection.community_total
+          : 0;
+        const impliedAmount = projectedShare > 0 ? projectedShare : 0;
+        const delta = proofAmountNum > 0 && impliedAmount > 0
+          ? Math.abs(proofAmountNum - impliedAmount) / proofAmountNum
+          : 0;
+        const isStale = delta > 0.01 && impliedAmount > 0;
+
+        return (
+          <div className="border-b border-[var(--border)] pb-4 space-y-2">
+            <div className="text-muted text-[10px] uppercase tracking-wider">
+              Breakdown {isStale && <span className="text-[var(--danger)]">(stale — may not reflect final settlement)</span>}
             </div>
-            <div>= {projection.weighted_spend.toLocaleString()} weighted spend</div>
+            {!isStale ? (
+              <div className="text-foreground text-xs space-y-1">
+                <div>{projection.buy_volume.toLocaleString()} PLOT spent × {projection.multiplier.toFixed(1)}× multiplier</div>
+                <div className="text-muted text-[10px]">
+                  ({projection.qualified_refs} refs{projection.has_fc_bonus ? " + FC bonus" : ""})
+                </div>
+                <div>= {projection.weighted_spend.toLocaleString()} weighted spend</div>
+              </div>
+            ) : (
+              <div className="text-muted text-xs">
+                Breakdown unavailable — claim amount below is from the finalized settlement.
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       <div className="text-center space-y-3">
         <div>
