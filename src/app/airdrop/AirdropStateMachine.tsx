@@ -8,6 +8,7 @@ import { ContributionPanel } from "../../components/airdrop/ContributionPanel";
 import { ReferralCTA } from "../../components/airdrop/ReferralCTA";
 import { MilestoneClimb } from "../../components/airdrop/MilestoneClimb";
 import { ClaimCard } from "../../components/airdrop/ClaimCard";
+import { ClaimPanel } from "../../components/airdrop/ClaimPanel";
 
 type AirdropState =
   | "paused"
@@ -16,26 +17,19 @@ type AirdropState =
   | "settlement-normal"
   | "settlement-final-burn";
 
+const IS_PAUSED = process.env.NEXT_PUBLIC_AIRDROP_PAUSED === "1";
+const MERKLE_CLAIM_ADDRESS = process.env.NEXT_PUBLIC_MERKLE_CLAIM_ADDRESS;
+const FINAL_BURN_TX = process.env.NEXT_PUBLIC_AIRDROP_FINAL_BURN_TX;
+const FINAL_STATE = process.env.NEXT_PUBLIC_AIRDROP_FINAL_STATE as "sub_bronze" | "zero_recipient" | undefined;
+
 function deriveState(
   isConnected: boolean,
   activatedAt: string | null,
 ): AirdropState {
-  if (process.env.NEXT_PUBLIC_AIRDROP_PAUSED === "1") {
-    return "paused";
-  }
-
-  if (process.env.NEXT_PUBLIC_MERKLE_CLAIM_ADDRESS) {
-    return "settlement-normal";
-  }
-
-  if (process.env.NEXT_PUBLIC_AIRDROP_FINAL_BURN_TX) {
-    return "settlement-final-burn";
-  }
-
-  if (!isConnected || !activatedAt) {
-    return "pre-activation";
-  }
-
+  if (IS_PAUSED) return "paused";
+  if (MERKLE_CLAIM_ADDRESS) return "settlement-normal";
+  if (FINAL_BURN_TX) return "settlement-final-burn";
+  if (!isConnected || !activatedAt) return "pre-activation";
   return "mining";
 }
 
@@ -45,6 +39,11 @@ export function AirdropStateMachine() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (IS_PAUSED || MERKLE_CLAIM_ADDRESS || FINAL_BURN_TX) {
+      setLoading(false);
+      return;
+    }
+
     if (!isConnected || !address) {
       setActivatedAt(null);
       setLoading(false);
@@ -63,12 +62,10 @@ export function AirdropStateMachine() {
 
   if (state === "paused") {
     return (
-      <>
-        <CampaignHero />
-        <div className="border-border mt-8 rounded border p-8 text-center">
-          <p className="text-muted text-sm">Campaign temporarily paused. Will resume shortly.</p>
-        </div>
-      </>
+      <div className="border-border mt-8 rounded border p-8 text-center">
+        <h2 className="text-accent mb-2 text-sm font-bold uppercase tracking-wider">Campaign Paused</h2>
+        <p className="text-muted text-sm">Campaign temporarily paused. Will resume shortly.</p>
+      </div>
     );
   }
 
@@ -77,19 +74,29 @@ export function AirdropStateMachine() {
       <>
         <CampaignHero />
         <div className="mt-8">
-          <ClaimCard mode="normal" />
+          <ClaimPanel />
         </div>
       </>
     );
   }
 
   if (state === "settlement-final-burn") {
-    const finalState = (process.env.NEXT_PUBLIC_AIRDROP_FINAL_STATE as "sub_bronze" | "zero_recipient" | undefined) ?? null;
     return (
       <>
         <CampaignHero />
         <div className="mt-8">
-          <ClaimCard mode="final-burn" finalState={finalState} />
+          <ClaimCard mode="final-burn" finalState={FINAL_STATE ?? null} />
+        </div>
+      </>
+    );
+  }
+
+  if (loading) {
+    return (
+      <>
+        <CampaignHero />
+        <div className="mt-8 text-center">
+          <p className="text-muted text-sm">Loading...</p>
         </div>
       </>
     );
@@ -107,18 +114,6 @@ export function AirdropStateMachine() {
           ) : (
             <ActivationFlow />
           )}
-        </div>
-      </>
-    );
-  }
-
-  // mining state
-  if (loading) {
-    return (
-      <>
-        <CampaignHero />
-        <div className="mt-8 text-center">
-          <p className="text-muted text-sm">Loading...</p>
         </div>
       </>
     );
