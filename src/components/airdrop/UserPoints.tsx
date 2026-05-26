@@ -3,7 +3,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { StreakCard } from "./StreakCard";
 import { useConnectedIdentity } from "../../hooks/useConnectedIdentity";
 import { formatUsdValue } from "../../../lib/usd-price";
 import { REFERRAL_STORAGE_KEY } from "../../hooks/useReferralCapture";
@@ -204,7 +203,6 @@ function UserPointsInner({ address }: { address: string }) {
       </div>
 
       {/* Streak card */}
-      <StreakCard streak={data.streak} address={address} />
 
       {/* Point breakdown — collapsed by default */}
       <div className="bg-surface border-border rounded-[var(--card-radius)] border px-3 py-2.5">
