@@ -40,10 +40,10 @@ export async function verifySiweRequest(
   }
 
   try {
-    const result = await parsed.verify({
-      signature,
-      domain: config.SIWE_DOMAIN,
-    });
+    const result = await parsed.verify(
+      { signature, domain: config.SIWE_DOMAIN },
+      { suppressExceptions: true },
+    );
 
     if (!result.success) {
       const errorType = result.error?.type ?? "unknown";

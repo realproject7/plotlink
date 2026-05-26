@@ -98,6 +98,16 @@ describe("verifySiweRequest", () => {
     expect(result).toEqual({ ok: false, error: "issued_in_future" });
   });
 
+  it("rejects message with past expirationTime", async () => {
+    const { verifySiweRequest } = await import("./siwe-verify");
+    const past = new Date(Date.now() - 60_000);
+    const msg = buildMessage({ expirationTime: past.toISOString() });
+    const sig = await signMessage(msg);
+    const result = await verifySiweRequest(msg.prepareMessage(), sig);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toBe("expired");
+  });
+
   it("rejects unparseable message", async () => {
     const { verifySiweRequest } = await import("./siwe-verify");
     const result = await verifySiweRequest("not a siwe message", "0x1234");
