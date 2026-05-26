@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useAccount } from "wagmi";
+import Link from "next/link";
 import { CampaignHero } from "../../components/airdrop/CampaignHero";
 import { ActivationFlow } from "../../components/airdrop/ActivationFlow";
 import { ContributionPanel } from "../../components/airdrop/ContributionPanel";
@@ -107,8 +108,11 @@ export function AirdropStateMachine() {
         <CampaignHero />
         <div className="mt-8 space-y-4">
           {!isConnected ? (
-            <div className="border-border rounded border p-8 text-center">
+            <div className="border-border rounded border p-8 text-center space-y-3">
               <p className="text-muted text-sm">Connect your wallet to get started.</p>
+              <Link href="/" className="text-accent text-xs hover:underline">
+                Browse storylines &rarr;
+              </Link>
             </div>
           ) : (
             <ActivationFlow onActivated={onActivated} />
