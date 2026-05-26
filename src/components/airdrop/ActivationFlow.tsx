@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAccount, useSignMessage } from "wagmi";
 import { SiweMessage } from "siwe";
-import { REFERRAL_STORAGE_KEY } from "../../hooks/useReferralCapture";
+import { handleInboundReferral } from "../../../lib/airdrop/activation-helpers";
 
 type StepState = "idle" | "active" | "done";
 
@@ -93,21 +93,7 @@ export function ActivationFlow({ onActivated }: ActivationFlowProps) {
       setSiweMessage(msg);
       setSignature(sig);
 
-      const refCode = localStorage.getItem(REFERRAL_STORAGE_KEY);
-      if (refCode) {
-        try {
-          const res = await fetch("/api/airdrop/register-referral", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: msg, signature: sig, referralCode: refCode }),
-          });
-          if (res.ok || res.status === 400 || res.status === 404 || res.status === 409) {
-            localStorage.removeItem(REFERRAL_STORAGE_KEY);
-          }
-        } catch {
-          // transient error — keep localStorage for retry
-        }
-      }
+      await handleInboundReferral(msg, sig);
 
       if (xConfirmed) {
         setStep(3);
