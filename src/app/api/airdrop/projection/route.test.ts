@@ -1,29 +1,15 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
-const mockActivations = vi.fn();
-const mockBuys = vi.fn();
-const mockReferrals = vi.fn();
+const mockRpc = vi.fn();
 const mockActivationSingle = vi.fn();
 
 vi.mock("../../../../../lib/supabase", () => ({
   createServerClient: () => ({
+    rpc: mockRpc,
     from: (table: string) => {
       if (table === "pl_activations") {
-        return {
-          select: (cols: string) => {
-            if (cols.includes("activated_at, is_blacklisted") && !cols.includes("fid")) {
-              return { eq: () => ({ single: mockActivationSingle }) };
-            }
-            return mockActivations();
-          },
-        };
-      }
-      if (table === "pl_points") {
-        return { select: () => ({ eq: () => ({ gte: () => ({ lte: mockBuys }) }) }) };
-      }
-      if (table === "pl_referrals") {
-        return { select: mockReferrals };
+        return { select: () => ({ eq: () => ({ single: mockActivationSingle }) }) };
       }
       return {};
     },
@@ -55,35 +41,20 @@ function makeReq(address?: string) {
   return new Request(url);
 }
 
-function setupMocks(opts: {
-  activations?: unknown[];
-  buys?: unknown[];
-  referrals?: unknown[];
-  activationSingle?: unknown;
-}) {
-  mockActivations.mockReturnValue({ data: opts.activations ?? [] });
-  mockBuys.mockResolvedValue({ data: opts.buys ?? [] });
-  mockReferrals.mockResolvedValue({ data: opts.referrals ?? [] });
-  mockActivationSingle.mockResolvedValue({ data: opts.activationSingle ?? null });
-}
-
 describe("GET /api/airdrop/projection", () => {
-  it("§4 worked example: 100 PLOT + 2 qualified refs + FC → multiplier 1.6, weighted 160", async () => {
-    setupMocks({
-      activations: [
-        { address: "alice", fid: 123, activated_at: "2026-07-01", is_blacklisted: false },
-        { address: "ref1", fid: null, activated_at: "2026-07-01", is_blacklisted: false },
-        { address: "ref2", fid: null, activated_at: "2026-07-01", is_blacklisted: false },
+  it("§4 worked example: 100 PLOT + 2 refs + FC → 1.6x, weighted 160", async () => {
+    const ref1Ws = 60;
+    const ref2Ws = 80;
+    const aliceWs = 160;
+    const total = aliceWs + ref1Ws + ref2Ws;
+
+    mockRpc.mockResolvedValue({
+      data: [
+        { address: "alice", buy_volume: 100, qualified_refs: 2, has_fc_bonus: 1, multiplier: 1.6, weighted_spend: 160, community_total: total },
+        { address: "ref1", buy_volume: 60, qualified_refs: 0, has_fc_bonus: 0, multiplier: 1, weighted_spend: 60, community_total: total },
+        { address: "ref2", buy_volume: 80, qualified_refs: 0, has_fc_bonus: 0, multiplier: 1, weighted_spend: 80, community_total: total },
       ],
-      buys: [
-        { address: "alice", action: "buy", points: 100, created_at: "2026-08-01" },
-        { address: "ref1", action: "buy", points: 60, created_at: "2026-08-01" },
-        { address: "ref2", action: "buy", points: 80, created_at: "2026-08-01" },
-      ],
-      referrals: [
-        { referrer_address: "alice", referred_address: "ref1" },
-        { referrer_address: "alice", referred_address: "ref2" },
-      ],
+      error: null,
     });
 
     const res = await GET(makeReq("alice"));
@@ -95,13 +66,9 @@ describe("GET /api/airdrop/projection", () => {
     expect(data.has_fc_bonus).toBe(true);
     expect(data.multiplier).toBeCloseTo(1.6);
     expect(data.weighted_spend).toBeCloseTo(160);
+    expect(data.community_total).toBeCloseTo(total);
 
-    const ref1Ws = 60 * 1;
-    const ref2Ws = 80 * 1;
-    const expectedTotal = 160 + ref1Ws + ref2Ws;
-    expect(data.community_total).toBeCloseTo(expectedTotal);
-
-    const share = 160 / expectedTotal;
+    const share = 160 / total;
     expect(data.projected_share.bronze).toBeCloseTo(200_000 * 0.10 * share);
     expect(data.projected_share.silver).toBeCloseTo(200_000 * 0.30 * share);
     expect(data.projected_share.gold).toBeCloseTo(200_000 * 0.50 * share);
@@ -109,11 +76,8 @@ describe("GET /api/airdrop/projection", () => {
   });
 
   it("returns zeros for activated wallet with no buys", async () => {
-    setupMocks({
-      activations: [{ address: "alice", fid: null, activated_at: "2026-07-01", is_blacklisted: false }],
-      buys: [],
-      activationSingle: { activated_at: "2026-07-01", is_blacklisted: false },
-    });
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    mockActivationSingle.mockResolvedValue({ data: { activated_at: "2026-07-01", is_blacklisted: false } });
 
     const res = await GET(makeReq("alice"));
     expect(res.status).toBe(200);
@@ -124,31 +88,25 @@ describe("GET /api/airdrop/projection", () => {
   });
 
   it("returns 404 for non-activated wallet", async () => {
-    setupMocks({
-      activations: [],
-      buys: [],
-      activationSingle: null,
-    });
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    mockActivationSingle.mockResolvedValue({ data: null });
+
     const res = await GET(makeReq("0xnone"));
     expect(res.status).toBe(404);
   });
 
   it("returns 404 for blacklisted wallet", async () => {
-    setupMocks({
-      activations: [{ address: "bad", fid: null, activated_at: "2026-07-01", is_blacklisted: true }],
-      buys: [],
-      activationSingle: { activated_at: "2026-07-01", is_blacklisted: true },
-    });
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    mockActivationSingle.mockResolvedValue({ data: { activated_at: "2026-07-01", is_blacklisted: true } });
+
     const res = await GET(makeReq("bad"));
     expect(res.status).toBe(404);
   });
 
   it("includes Cache-Control: public, max-age=30", async () => {
-    setupMocks({
-      activations: [{ address: "alice", fid: null, activated_at: "2026-07-01", is_blacklisted: false }],
-      buys: [],
-      activationSingle: { activated_at: "2026-07-01", is_blacklisted: false },
-    });
+    mockRpc.mockResolvedValue({ data: [], error: null });
+    mockActivationSingle.mockResolvedValue({ data: { activated_at: "2026-07-01", is_blacklisted: false } });
+
     const res = await GET(makeReq("alice"));
     expect(res.headers.get("Cache-Control")).toBe("public, max-age=30");
   });
@@ -156,5 +114,12 @@ describe("GET /api/airdrop/projection", () => {
   it("returns 400 when address is missing", async () => {
     const res = await GET(makeReq());
     expect(res.status).toBe(400);
+  });
+
+  it("returns 500 when RPC fails", async () => {
+    mockRpc.mockResolvedValue({ data: null, error: { message: "function not found" } });
+
+    const res = await GET(makeReq("alice"));
+    expect(res.status).toBe(500);
   });
 });

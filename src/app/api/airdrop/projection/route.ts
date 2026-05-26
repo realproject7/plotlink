@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "../../../../../lib/supabase";
 import { getAirdropConfig } from "../../../../../lib/airdrop/config";
-import { computeWeightedSpend } from "../../../../../lib/airdrop/sql";
+import type { WeightedSpendRow } from "../../../../../lib/airdrop/sql";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -17,28 +17,22 @@ export async function GET(req: Request) {
   }
 
   const config = getAirdropConfig();
-  const campStart = config.CAMPAIGN_START.toISOString();
-  const campEnd = config.CAMPAIGN_END.toISOString();
 
-  const [activationsRes, buysRes, referralsRes] = await Promise.all([
-    supabase.from("pl_activations").select("address, fid, activated_at, is_blacklisted"),
-    supabase
-      .from("pl_points")
-      .select("address, action, points, created_at")
-      .eq("action", "buy")
-      .gte("created_at", campStart)
-      .lte("created_at", campEnd),
-    supabase.from("pl_referrals").select("referrer_address, referred_address"),
-  ]);
+  const { data: rows, error } = await supabase.rpc("weighted_spend", {
+    p_campaign_start: config.CAMPAIGN_START.toISOString(),
+    p_campaign_end: config.CAMPAIGN_END.toISOString(),
+    p_min_referral_threshold: config.MIN_REFERRAL_THRESHOLD,
+    p_multiplier_per_ref: config.REFERRAL_MULTIPLIER_PER_REF,
+    p_multiplier_cap: config.REFERRAL_MULTIPLIER_CAP,
+  });
 
-  const rows = computeWeightedSpend(
-    config,
-    (activationsRes.data ?? []) as Parameters<typeof computeWeightedSpend>[1],
-    (buysRes.data ?? []) as Parameters<typeof computeWeightedSpend>[2],
-    (referralsRes.data ?? []) as Parameters<typeof computeWeightedSpend>[3],
-  );
+  if (error) {
+    console.error("[projection] weighted_spend RPC failed:", error.message);
+    return NextResponse.json({ error: "Failed to compute projection" }, { status: 500 });
+  }
 
-  const me = rows.find(r => r.address === address);
+  const allRows = (rows ?? []) as WeightedSpendRow[];
+  const me = allRows.find(r => r.address === address);
 
   if (!me) {
     const { data: activation } = await supabase
@@ -54,7 +48,6 @@ export async function GET(req: Request) {
       );
     }
 
-    const pool = config.POOL_AMOUNT;
     return NextResponse.json(
       {
         address,
@@ -63,25 +56,31 @@ export async function GET(req: Request) {
         has_fc_bonus: false,
         multiplier: 1,
         weighted_spend: 0,
-        community_total: rows[0]?.community_total ?? 0,
+        community_total: Number(allRows[0]?.community_total ?? 0),
         projected_share: { bronze: 0, silver: 0, gold: 0, diamond: 0 },
       },
       { headers: { "Cache-Control": "public, max-age=30" } },
     );
   }
 
-  const share = me.community_total > 0 ? me.weighted_spend / me.community_total : 0;
+  const buyVolume = Number(me.buy_volume);
+  const qualifiedRefs = Number(me.qualified_refs);
+  const hasFcBonus = Number(me.has_fc_bonus) === 1;
+  const multiplier = Number(me.multiplier);
+  const weightedSpend = Number(me.weighted_spend);
+  const communityTotal = Number(me.community_total);
+  const share = communityTotal > 0 ? weightedSpend / communityTotal : 0;
   const pool = config.POOL_AMOUNT;
 
   return NextResponse.json(
     {
       address,
-      buy_volume: me.buy_volume,
-      qualified_refs: me.qualified_refs,
-      has_fc_bonus: me.has_fc_bonus === 1,
-      multiplier: me.multiplier,
-      weighted_spend: me.weighted_spend,
-      community_total: me.community_total,
+      buy_volume: buyVolume,
+      qualified_refs: qualifiedRefs,
+      has_fc_bonus: hasFcBonus,
+      multiplier,
+      weighted_spend: weightedSpend,
+      community_total: communityTotal,
       projected_share: {
         bronze: pool * (config.MILESTONES.BRONZE.pct / 100) * share,
         silver: pool * (config.MILESTONES.SILVER.pct / 100) * share,
