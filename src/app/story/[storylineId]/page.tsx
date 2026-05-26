@@ -105,6 +105,7 @@ export async function generateMetadata({
     title: `${sl.title} — PlotLink`,
     description,
     openGraph: {
+      url: storyUrl,
       title: sl.title,
       description,
       images: [{ url: ogImageUrl, width: 1200, height: 630 }],
