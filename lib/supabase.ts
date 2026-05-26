@@ -532,6 +532,48 @@ export interface Database {
         };
         Relationships: [];
       };
+      pl_activations: {
+        Row: {
+          address: string;
+          x_handle: string | null;
+          x_user_id: string | null;
+          x_handle_confirmed_at: string | null;
+          x_follow_at: string | null;
+          fid: number | null;
+          fc_handle: string | null;
+          fc_verified_at: string | null;
+          activated_at: string | null;
+          is_blacklisted: boolean;
+          created_at: string;
+        };
+        Insert: {
+          address: string;
+          x_handle?: string | null;
+          x_user_id?: string | null;
+          x_handle_confirmed_at?: string | null;
+          x_follow_at?: string | null;
+          fid?: number | null;
+          fc_handle?: string | null;
+          fc_verified_at?: string | null;
+          activated_at?: string | null;
+          is_blacklisted?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          address?: string;
+          x_handle?: string | null;
+          x_user_id?: string | null;
+          x_handle_confirmed_at?: string | null;
+          x_follow_at?: string | null;
+          fid?: number | null;
+          fc_handle?: string | null;
+          fc_verified_at?: string | null;
+          activated_at?: string | null;
+          is_blacklisted?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       rate_limits: {
         Row: {
           id: number;
@@ -780,3 +822,4 @@ export type PlStreak = Database["public"]["Tables"]["pl_streaks"]["Row"];
 export type PlDailyPrice = Database["public"]["Tables"]["pl_daily_prices"]["Row"];
 export type PlWeeklySnapshot = Database["public"]["Tables"]["pl_weekly_snapshots"]["Row"];
 export type PlAirdropProof = Database["public"]["Tables"]["pl_airdrop_proofs"]["Row"];
+export type PlActivation = Database["public"]["Tables"]["pl_activations"]["Row"];
