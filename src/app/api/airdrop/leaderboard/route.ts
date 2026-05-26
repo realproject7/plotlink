@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
     address: row.address,
     username: usernameMap.get(row.address) ?? null,
     weighted_spend: Number(row.weighted_spend),
+    totalPoints: Number(row.weighted_spend),
     buy_volume: Number(row.buy_volume),
     multiplier: Number(row.multiplier),
     sharePercent: communityTotal > 0 ? Math.round((Number(row.weighted_spend) / communityTotal) * 10000) / 100 : 0,
