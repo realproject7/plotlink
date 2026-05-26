@@ -41,21 +41,30 @@ export async function POST(req: Request) {
   const address = auth.address;
   const now = new Date().toISOString();
 
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("pl_activations")
     .update({
       fid: result.fid,
       fc_handle: username.toLowerCase(),
       fc_verified_at: now,
     })
-    .eq("address", address);
+    .eq("address", address)
+    .select("address")
+    .single();
 
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json({ error: "Farcaster account already linked to another wallet" }, { status: 409 });
     }
+    if (error.code === "PGRST116") {
+      return NextResponse.json({ error: "Must confirm X handle first" }, { status: 400 });
+    }
     console.error("[verify-fc] Update failed:", error.message);
     return NextResponse.json({ error: "Failed to save FC verification" }, { status: 500 });
+  }
+
+  if (!updated) {
+    return NextResponse.json({ error: "Must confirm X handle first" }, { status: 400 });
   }
 
   return NextResponse.json({

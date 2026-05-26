@@ -2,7 +2,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const mockUpdate = vi.fn();
-const mockEq = vi.fn().mockReturnValue({ error: null });
+let updateResult: { data: unknown; error: unknown } = { data: { address: "0xabc" }, error: null };
 
 vi.mock("../../../../../lib/airdrop/siwe-verify", () => ({
   verifySiweRequest: vi.fn(),
@@ -16,7 +16,16 @@ vi.mock("../../../../../lib/airdrop/config", () => ({
 vi.mock("../../../../../lib/supabase", () => ({
   createServerClient: () => ({
     from: () => ({
-      update: (data: unknown) => { mockUpdate(data); return { eq: mockEq }; },
+      update: (data: unknown) => {
+        mockUpdate(data);
+        return {
+          eq: () => ({
+            select: () => ({
+              single: () => Promise.resolve(updateResult),
+            }),
+          }),
+        };
+      },
     }),
   }),
 }));
@@ -35,7 +44,7 @@ function makeReq(body: unknown) {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  mockEq.mockReturnValue({ error: null });
+  updateResult = { data: { address: "0xabc" }, error: null };
 });
 
 describe("POST /api/airdrop/verify-fc", () => {
@@ -83,8 +92,18 @@ describe("POST /api/airdrop/verify-fc", () => {
   it("returns 409 on FID UNIQUE conflict", async () => {
     vi.mocked(verifySiweRequest).mockResolvedValue({ ok: true, address: "0xabc" });
     vi.mocked(verifyFc).mockResolvedValue({ ok: true, fid: 999 });
-    mockEq.mockReturnValue({ error: { code: "23505", message: "unique violation" } });
+    updateResult = { data: null, error: { code: "23505", message: "unique violation" } };
     const res = await POST(makeReq({ message: "m", signature: "s", username: "dupe" }));
     expect(res.status).toBe(409);
+  });
+
+  it("returns 400 when no activation row exists", async () => {
+    vi.mocked(verifySiweRequest).mockResolvedValue({ ok: true, address: "0xnew" });
+    vi.mocked(verifyFc).mockResolvedValue({ ok: true, fid: 888 });
+    updateResult = { data: null, error: { code: "PGRST116", message: "no rows" } };
+    const res = await POST(makeReq({ message: "m", signature: "s", username: "newuser" }));
+    expect(res.status).toBe(400);
+    const data = await res.json();
+    expect(data.error).toContain("Must confirm X handle first");
   });
 });
