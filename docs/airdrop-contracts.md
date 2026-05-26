@@ -23,6 +23,8 @@ forge test -vv --match-path "contracts/test/*"
 forge snapshot --match-path "contracts/test/*"
 ```
 
+Baseline (v2 with deadline): claim path 83,648 gas. v1 (no deadline) baseline ~82,000. Delta ~+2%, well within the +5% acceptance threshold.
+
 ## Deploy
 
 Set env vars (never commit real keys):
@@ -30,7 +32,7 @@ Set env vars (never commit real keys):
 ```bash
 export BASE_RPC_URL=https://mainnet.base.org
 export DEPLOYER_PRIVATE_KEY=<your-key>
-export PLOT_TOKEN_ADDRESS=0x4F567DACBF9D15A6acBe4A47FC2Ade0719Fb63C4
+export PLOT_TOKEN_ADDRESS=<plot-token-address>
 export MERKLE_ROOT=<from-finalize-script>
 export CLAIM_DEADLINE=<unix-timestamp>
 ```
