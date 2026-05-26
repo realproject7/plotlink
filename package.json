@@ -1,6 +1,6 @@
 {
   "name": "plotlink",
-  "version": "1.30.4",
+  "version": "1.30.5",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -38,6 +38,7 @@
     "wagmi": "^2.19.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.4.6",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
