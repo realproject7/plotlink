@@ -31,15 +31,17 @@ export async function POST(req: Request) {
 
   let xUserId: string | null = null;
   let confirmedAt: string | null = null;
+  let apiDown = false;
 
   try {
     const user = await lookupXUser(username);
-    if (user) {
-      xUserId = user.x_user_id;
-      confirmedAt = new Date().toISOString();
+    if (!user) {
+      return NextResponse.json({ error: "X user not found" }, { status: 404 });
     }
+    xUserId = user.x_user_id;
+    confirmedAt = new Date().toISOString();
   } catch {
-    // R16 graceful degrade: twitterapi.io down → pending row without UNIQUE lock
+    apiDown = true;
   }
 
   const { error: upsertErr } = await supabase
