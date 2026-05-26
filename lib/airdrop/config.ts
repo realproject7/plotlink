@@ -51,14 +51,16 @@ const POINTS = {
 
 const STREAK_MIN_GAP_MINUTES = 30;
 
-const SIWE_COMMON = {
-  SIWE_DOMAIN: "plotlink.xyz",
-  SIWE_URI: "https://plotlink.xyz/airdrop",
-  SIWE_STATEMENT: "PlotLink Buy-Back Sprint activation",
-  SIWE_CHAIN_ID: 8453,
-  PLOTLINK_X_HANDLE: "plotlinkxyz",
-  PLOTLINK_FC_FID: 0, // pending operator — T0.1 action item #2
-} as const;
+function getSiweCommon() {
+  return {
+    SIWE_DOMAIN: "plotlink.xyz" as const,
+    SIWE_URI: "https://plotlink.xyz/airdrop" as const,
+    SIWE_STATEMENT: "PlotLink Buy-Back Sprint activation" as const,
+    SIWE_CHAIN_ID: 8453 as const,
+    PLOTLINK_X_HANDLE: "plotlinkxyz" as const,
+    PLOTLINK_FC_FID: Number(process.env.NEXT_PUBLIC_PLOTLINK_FC_FID) || 0,
+  };
+}
 
 const PROD_CONFIG: AirdropConfig = {
   CAMPAIGN_START: new Date("2026-07-01"),
@@ -79,7 +81,7 @@ const PROD_CONFIG: AirdropConfig = {
   REFERRAL_MULTIPLIER_CAP: 3.0,
   SIGNATURE_FRESHNESS_MIN: 10,
   CLAIM_WINDOW_DAYS: 30,
-  ...SIWE_COMMON,
+  ...getSiweCommon(),
 };
 
 function buildTestFastConfig(now: Date): AirdropConfig {
@@ -102,7 +104,7 @@ function buildTestFastConfig(now: Date): AirdropConfig {
     REFERRAL_MULTIPLIER_CAP: 3.0,
     SIGNATURE_FRESHNESS_MIN: 10,
     CLAIM_WINDOW_SECONDS: 60,
-    ...SIWE_COMMON,
+    ...getSiweCommon(),
   };
 }
 
@@ -126,7 +128,7 @@ function buildTestFullConfig(now: Date): AirdropConfig {
     REFERRAL_MULTIPLIER_CAP: 3.0,
     SIGNATURE_FRESHNESS_MIN: 10,
     CLAIM_WINDOW_SECONDS: 180,
-    ...SIWE_COMMON,
+    ...getSiweCommon(),
   };
 }
 
