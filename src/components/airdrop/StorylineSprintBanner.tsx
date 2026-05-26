@@ -12,22 +12,29 @@ function formatMcap(n: number): string {
 }
 
 export function StorylineSprintBanner() {
-  const [dismissed, setDismissed] = useState(true);
-  const [status, setStatus] = useState<{ timeElapsedPercent: number; currentFdv: number } | null>(null);
+  const [state, setState] = useState<{
+    dismissed: boolean;
+    status: { timeElapsedPercent: number; currentFdv: number } | null;
+  }>({ dismissed: true, status: null });
 
   useEffect(() => {
-    setDismissed(localStorage.getItem(DISMISS_KEY) === "1");
+    const isDismissed = localStorage.getItem(DISMISS_KEY) === "1";
     fetch("/api/airdrop/status")
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d) setStatus({ timeElapsedPercent: d.timeElapsedPercent, currentFdv: d.currentFdv }); })
-      .catch(() => {});
+      .then(d => setState({
+        dismissed: isDismissed,
+        status: d ? { timeElapsedPercent: d.timeElapsedPercent, currentFdv: d.currentFdv } : null,
+      }))
+      .catch(() => setState(prev => ({ ...prev, dismissed: isDismissed })));
   }, []);
+
+  const { dismissed, status } = state;
 
   if (dismissed) return null;
 
   const handleDismiss = () => {
     localStorage.setItem(DISMISS_KEY, "1");
-    setDismissed(true);
+    setState(prev => ({ ...prev, dismissed: true }));
   };
 
   const dayNum = status ? Math.ceil(status.timeElapsedPercent / 100 * 90) || 1 : null;

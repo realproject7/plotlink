@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import type { Storyline } from "../../lib/supabase";
 import { WriterIdentityClient } from "./WriterIdentityClient";
