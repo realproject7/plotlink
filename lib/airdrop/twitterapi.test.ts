@@ -103,6 +103,43 @@ describe("lookupXUser", () => {
     await expect(lookupXUser("test")).rejects.toThrow("TWITTERAPI_IO_KEY not configured");
   });
 
+  it("LRU: recently-hit key survives eviction past max entries", async () => {
+    const { lookupXUser } = await import("./twitterapi");
+
+    // Insert "old" + 199 fillers to fill cache to max (200)
+    mockFetchResponse(200, MOCK_USER_DATA);
+    await lookupXUser("old");
+    for (let i = 0; i < 199; i++) {
+      mockFetchResponse(200, {
+        data: { ...MOCK_USER_DATA.data, id: String(1000 + i) },
+      });
+      await lookupXUser(`filler_${i}`);
+    }
+    expect(fetch).toHaveBeenCalledTimes(200);
+
+    // Hit "old" to move it to most-recent position
+    await lookupXUser("old"); // cache hit, no fetch
+    expect(fetch).toHaveBeenCalledTimes(200);
+
+    // Insert one more — evicts filler_0 (oldest), NOT "old"
+    mockFetchResponse(200, {
+      data: { ...MOCK_USER_DATA.data, id: "9999" },
+    });
+    await lookupXUser("new_entry");
+
+    // "old" should still be cached
+    const fetchCountBefore = vi.mocked(fetch).mock.calls.length;
+    await lookupXUser("old");
+    expect(vi.mocked(fetch).mock.calls.length).toBe(fetchCountBefore);
+
+    // filler_0 should have been evicted — triggers a new fetch
+    mockFetchResponse(200, {
+      data: { ...MOCK_USER_DATA.data, id: "1000" },
+    });
+    await lookupXUser("filler_0");
+    expect(vi.mocked(fetch).mock.calls.length).toBe(fetchCountBefore + 1);
+  });
+
   it("truncates bio to 200 chars", async () => {
     const { lookupXUser } = await import("./twitterapi");
     const longBio = "a".repeat(300);

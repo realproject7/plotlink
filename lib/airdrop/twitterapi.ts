@@ -26,6 +26,8 @@ function evictExpired() {
 function cacheGet(key: string): { hit: true; value: XUser | null } | { hit: false } {
   const entry = cache.get(key);
   if (entry && entry.expiry > Date.now()) {
+    cache.delete(key);
+    cache.set(key, entry);
     return { hit: true, value: entry.value };
   }
   if (entry) cache.delete(key);
