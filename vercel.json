@@ -3,14 +3,6 @@
     {
       "path": "/api/cron/backfill",
       "schedule": "*/5 * * * *"
-    },
-    {
-      "path": "/api/cron/airdrop-price",
-      "schedule": "0 0 * * *"
-    },
-    {
-      "path": "/api/cron/airdrop-weekly",
-      "schedule": "0 0 * * 1"
     }
   ]
 }

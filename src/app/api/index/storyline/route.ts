@@ -13,7 +13,6 @@ import { hashContent } from "../../../../../lib/content";
 import { GENRES, LANGUAGES, CONTENT_TYPES } from "../../../../../lib/genres";
 import type { Database } from "../../../../../lib/supabase";
 import { reconcileStorylinePlotCount } from "../../../../../lib/reconcile";
-import { awardWritePoints } from "../../../../../lib/airdrop/award";
 
 const IPFS_GATEWAY = "https://ipfs.filebase.io/ipfs/";
 const IPFS_TIMEOUT_MS = 10_000;
@@ -223,9 +222,6 @@ export async function POST(req: Request) {
 
   // Reconcile plot_count from actual plots rows (prevents genesis double-count)
   await reconcileStorylinePlotCount(supabase, Number(storylineId));
-
-  // Award airdrop write points (non-blocking, using on-chain timestamp)
-  awardWritePoints(writer, Number(storylineId), new Date(Number(blockTimestamp) * 1000)).catch(() => {});
 
   return NextResponse.json({ success: true });
 }

@@ -18,7 +18,6 @@ export default function TermsPage() {
           <li>Bonding curve token creation via Mint Club V2 (third-party protocol)</li>
           <li>IPFS storage of story content via Filebase (third-party provider)</li>
           <li>An AI writing assistant tool (PlotLink OWS) for local use</li>
-          <li>An airdrop campaign with conditional token distribution</li>
         </ul>
         <p>PlotLink does NOT:</p>
         <ul>
@@ -93,28 +92,25 @@ export default function TermsPage() {
         </ul>
         <p>PlotLink earns no fees from token minting or burning. Creation fees are paid to Mint Club.</p>
 
-        <h2>12. Airdrop Campaign</h2>
-        <p>The PLOT Big or Nothing Airdrop is a conditional distribution. Participation does not guarantee any token distribution. The airdrop pool may be partially or fully burned based on market conditions. PlotLink makes no guarantees about token value or distribution outcomes. The airdrop is not compensation, income, or a return on investment.</p>
-
-        <h2>13. AI Writing Tool</h2>
+        <h2>12. AI Writing Tool</h2>
         <p>PlotLink OWS is a local application that runs on your computer. It connects to third-party AI providers (Anthropic, OpenAI, etc.) using your own API keys. PlotLink does not process, store, or have access to your AI conversations or API keys.</p>
 
-        <h2>14. Third-Party Services</h2>
+        <h2>13. Third-Party Services</h2>
         <p>PlotLink integrates with third-party services including but not limited to Mint Club, Filebase (IPFS), Base network, and Farcaster. PlotLink is not responsible for the availability, accuracy, or conduct of these services.</p>
 
-        <h2>15. No Warranty</h2>
+        <h2>14. No Warranty</h2>
         <p>PlotLink is provided &ldquo;as is&rdquo; without warranties of any kind, express or implied. We do not guarantee uninterrupted access, error-free operation, or the accuracy of any displayed data (including prices, market caps, or token metrics).</p>
 
-        <h2>16. Limitation of Liability</h2>
+        <h2>15. Limitation of Liability</h2>
         <p>To the maximum extent permitted by law, PlotLink and its contributors shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the service, including but not limited to loss of funds, tokens, or data.</p>
 
-        <h2>17. Modification</h2>
+        <h2>16. Modification</h2>
         <p>We may update these terms at any time. Continued use of PlotLink after changes constitutes acceptance.</p>
 
-        <h2>18. Governing Law</h2>
+        <h2>17. Governing Law</h2>
         <p>These terms are governed by the laws applicable to the user&apos;s jurisdiction. PlotLink does not operate as a registered entity in any specific jurisdiction.</p>
 
-        <h2>19. Contact</h2>
+        <h2>18. Contact</h2>
         <p>For questions about these terms, open an issue at <a href="https://github.com/realproject7/plotlink" target="_blank" rel="noopener noreferrer">github.com/realproject7/plotlink</a>.</p>
       </article>
     </div>
