@@ -35,15 +35,6 @@ export default function PrivacyPage() {
         <h3>Farcaster Profile Data</h3>
         <p>If your wallet is linked to a Farcaster account, we cache your public Farcaster profile (username, display name, profile picture) for display purposes. This data is publicly available via the Farcaster protocol.</p>
 
-        <h3>Airdrop Campaign Data</h3>
-        <p>If you participate in the PLOT airdrop campaign, we store:</p>
-        <ul>
-          <li>Your wallet address and earned points</li>
-          <li>Referral relationships (which wallet referred which)</li>
-          <li>Daily check-in streak data</li>
-          <li>Referral codes</li>
-        </ul>
-
         <h3>Story Ratings and Comments</h3>
         <p>If you rate or comment on a story, your wallet address and the rating/comment are stored in our database.</p>
 
@@ -64,7 +55,7 @@ export default function PrivacyPage() {
         <h2>6. Data Retention</h2>
         <ul>
           <li>On-chain data and IPFS content are permanent by design and cannot be deleted</li>
-          <li>Database records (ratings, airdrop points, cached profiles) are retained indefinitely</li>
+          <li>Database records (ratings, cached profiles) are retained indefinitely</li>
           <li>There is no account deletion process because there are no accounts &mdash; only wallet addresses</li>
         </ul>
 

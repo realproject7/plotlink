@@ -2,7 +2,6 @@
 
 import { useState, useCallback } from "react";
 import { usePlatformDetection } from "../hooks/usePlatformDetection";
-import { useReferralCode } from "../hooks/useReferralCode";
 
 interface ShareButtonsProps {
   storylineId: number;
@@ -12,12 +11,9 @@ interface ShareButtonsProps {
 export function ShareButtons({ storylineId, title }: ShareButtonsProps) {
   const { platform } = usePlatformDetection();
   const [copied, setCopied] = useState(false);
-  const { data: referralCode } = useReferralCode();
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  const storyUrl = referralCode
-    ? `${appUrl}/story/${storylineId}?ref=${encodeURIComponent(referralCode)}`
-    : `${appUrl}/story/${storylineId}`;
+  const storyUrl = `${appUrl}/story/${storylineId}`;
   // Rotate through share texts to keep shares feeling fresh
   const shareTexts = [
     `"${title}" — a tokenised story where every plot is tradeable. Read it, write the next chapter, earn royalties`,

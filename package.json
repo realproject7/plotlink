@@ -1,6 +1,6 @@
 {
   "name": "plotlink",
-  "version": "1.41.4",
+  "version": "1.42.0",
   "private": true,
   "workspaces": [
     "packages/*"
@@ -19,12 +19,10 @@
     "@farcaster/miniapp-node": "^0.1.13",
     "@farcaster/miniapp-sdk": "^0.2.3",
     "@farcaster/miniapp-wagmi-connector": "^1.1.0",
-    "@openzeppelin/merkle-tree": "^1.0.8",
     "@rainbow-me/rainbowkit": "^2.2.10",
     "@supabase/supabase-js": "^2.99.1",
     "@tanstack/react-query": "^5.90.21",
     "@vercel/analytics": "^2.0.1",
-    "nanoid": "^5.1.9",
     "next": "16.2.6",
     "ox": "^0.14.8",
     "react": "19.2.3",
@@ -33,12 +31,10 @@
     "rehype-sanitize": "^6.0.0",
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
-    "siwe": "^2.3.2",
     "viem": "^2.47.2",
     "wagmi": "^2.19.5"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.4.6",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",

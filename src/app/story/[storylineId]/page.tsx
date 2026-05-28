@@ -9,7 +9,6 @@ import { DonateWidget } from "../../../components/DonateWidget";
 import { RatingWidget } from "../../../components/RatingWidget";
 import { RatingSummary } from "../../../components/RatingSummary";
 import { ShareButtons } from "../../../components/ShareButtons";
-import { StorylineSprintBanner } from "../../../components/airdrop/StorylineSprintBanner";
 import { StoryContent } from "../../../components/StoryContent";
 import { ReadingModeWrapper } from "../../../components/ReadingModeWrapper";
 import { getTokenPrice, getCreatorEarnings, type TokenPriceInfo } from "../../../../lib/price";
@@ -240,8 +239,6 @@ export default async function StoryPage({ params }: { params: Params }) {
           <div className="mt-6">
             <ShareButtons storylineId={id} title={sl.title} />
           </div>
-
-          <StorylineSprintBanner />
         </main>
 
         {/* Sidebar — desktop only */}
