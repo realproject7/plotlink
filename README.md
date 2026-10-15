@@ -155,3 +155,48 @@ PLOT and Story tokens are utility tokens, not investments or securities. All on-
 <div align="center">
   <p>Made by <a href="https://farcaster.xyz/project7">@project7</a></p>
 </div>
+## Private container hosting
+
+`BUILD_STANDALONE=true` enables the container output. Build the `Dockerfile`
+outside the production server with a digest-pinned `NODE_IMAGE` and the existing
+public contract, chain, app URL and feature settings. The image context excludes
+environment files, wallet configuration, contracts, private dumps and Git state.
+Runtime DB/API/storage credentials must never be used as build arguments.
+
+Set server-only `POSTGREST_URL`, `POSTGREST_ADMIN_JWT` and
+`POSTGREST_PUBLIC_JWT` for a private host backend. Selecting the endpoint requires
+both role tokens; it never falls back to hosted credentials. App queries and SQL
+RPCs retain their current behavior. The browser uses `/api/public-data/<table>`
+on the app domain, restricted to GET/HEAD on the existing five public tables.
+The gateway uses a separate SELECT-only role and retains source visibility
+policies. Caller cookies, authentication and schema headers never reach the DB.
+Comments, ratings and views keep their existing application API routes.
+
+The CLI reads the public app API by default. `PLOTLINK_API_URL` selects another
+app origin. Explicit legacy Supabase configuration and the existing on-chain
+fallback remain supported. Users of a retired cloud URL must select the app API
+or remove those legacy settings. No CLI publication or wallet action is implied.
+
+Before any public cutover, capture and restore the actual live schema/data,
+including source functions, policies, triggers, grants, sequences, price history,
+OWS identity links and backfill state. Historical repository migrations include
+destructive cleanup and must not be replayed against production. Validate public
+read-policy parity and private data denial on the actual restored snapshot.
+Preserve Filebase/IPFS. Serialize the host's changes with its existing shared
+deploy/capacity lock and compare all existing services before and after.
+
+Stop old backfill and interactive writers before the final snapshot, drain all
+old functions, restore a fresh target and activate exactly one new backfill path.
+The backfill can emit notifications, so a frozen database alone is insufficient.
+After activation, recover forward on the new database; a DNS-only rollback can
+lose data or replay notifications. The migration branch does not auto-deploy to
+Vercel. The existing main-branch Vercel deployment workflow must be retired or
+replaced as part of the operator-approved release procedure before a future
+production merge/deployment.
+
+Required checks: `npm run lint`, `npm run typecheck`, `npm test`, the production
+container build and functional Playwright checks. Transport tests exercise real
+local HTTP, exact monetary strings, SQL errors, public counts/ranges, header
+isolation and rejected private-table/write access. Signing, payouts, messages,
+registry publication, production setup/cutover and provider deletion retain
+their exact operator gates. Independent review: review not selected.

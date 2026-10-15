@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { type Address } from "viem";
 import { publicClient } from "../../../../lib/rpc";
-import { createServerClient, supabase } from "../../../../lib/supabase";
+import { createServerClient, createPublicReadClient } from "../../../../lib/supabase";
 import { erc20Abi } from "../../../../lib/price";
 import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     return error("Missing storylineId");
   }
 
-  const db = supabase;
+  const db = createPublicReadClient();
   if (!db) {
     return error("Supabase not configured", 500);
   }

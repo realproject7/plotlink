@@ -32,7 +32,8 @@
     "remark-breaks": "^4.0.0",
     "remark-gfm": "^4.0.1",
     "viem": "^2.47.2",
-    "wagmi": "^2.19.5"
+    "wagmi": "^2.19.5",
+    "@supabase/postgrest-js": "2.104.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",

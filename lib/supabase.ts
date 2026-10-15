@@ -1,31 +1,23 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-
-// Browser-side client (anon key, respects RLS)
-export const supabase: SupabaseClient<Database> | null =
-  supabaseUrl && supabaseAnonKey
-    ? createClient<Database>(supabaseUrl, supabaseAnonKey)
-    : null;
+import { createDatabaseClient, type DatabaseClient } from "./postgrest.server";
+export type { DatabaseClient } from "./postgrest.server";
 
 // Server-side client (service role, bypasses RLS)
-export function createServerClient(): SupabaseClient<Database> | null {
+export function createServerClient(): DatabaseClient | null {
   return createServiceRoleClient();
+}
+
+export function createPublicReadClient(): DatabaseClient | null {
+  if (typeof window !== "undefined") return null;
+  return createDatabaseClient("public");
 }
 
 // Explicit service-role client for admin / privileged operations.
 // Uses SUPABASE_SERVICE_ROLE_KEY — never expose to the browser.
-export function createServiceRoleClient(): SupabaseClient<Database> | null {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-  if (!supabaseUrl || !serviceRoleKey) return null;
-
-  return createClient<Database>(supabaseUrl, serviceRoleKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  });
+export function createServiceRoleClient(): DatabaseClient | null {
+  // Shared read helpers also run in browser code; they retain their chain-only
+  // fallback there and must never initialize a privileged database connection.
+  if (typeof window !== "undefined") return null;
+  return createDatabaseClient();
 }
 
 // ---------------------------------------------------------------------------
@@ -43,6 +35,24 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      notification_tokens: {
+        Row: { fid: number; notification_token: string; notification_url: string;
+          client_app_fid: number | null; enabled: boolean; wallet_address: string | null;
+          created_at: string; updated_at: string };
+        Insert: { fid: number; notification_token: string; notification_url: string;
+          client_app_fid?: number | null; enabled?: boolean; wallet_address?: string | null;
+          created_at?: string; updated_at?: string };
+        Update: { notification_token?: string; notification_url?: string;
+          client_app_fid?: number | null; enabled?: boolean; wallet_address?: string | null;
+          updated_at?: string };
+        Relationships: [];
+      };
+      token_price_snapshots: {
+        Row: { id: number; token_address: string; price: number; snapshot_time: string | null };
+        Insert: { id?: never; token_address: string; price: number; snapshot_time?: string | null };
+        Update: { token_address?: string; price?: number; snapshot_time?: string | null };
+        Relationships: [];
+      };
       storylines: {
         Row: {
           id: number;

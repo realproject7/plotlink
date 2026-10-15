@@ -2,8 +2,8 @@ import { type Address, formatUnits } from "viem";
 import { get24hPriceChange, getTokenTVL, getBatchTokenData } from "./price";
 import { getPlotUsdPrice } from "./usd-price";
 import { STORY_FACTORY } from "./contracts/constants";
-import type { Database, Storyline, User } from "./supabase";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Storyline, User } from "./supabase";
+import type { DatabaseClient } from "./supabase";
 import { getStoryStatus } from "./story-status";
 
 interface RankedStoryline extends Storyline {
@@ -124,7 +124,7 @@ function computeTrendScore(
 
 /** Shared: fetch storyline candidates + batch ratings */
 async function fetchCandidatesAndRatings(
-  supabase: SupabaseClient<Database>,
+  supabase: DatabaseClient,
   writerType?: number,
   genre?: string,
   lang?: string,
@@ -245,7 +245,7 @@ async function enrichWithOnChain(
  * Fetch trending storylines ranked by composite score.
  */
 export async function getTrendingStorylines(
-  supabase: SupabaseClient<Database>,
+  supabase: DatabaseClient,
   limit = 20,
   writerType?: number,
   offset = 0,
@@ -294,7 +294,7 @@ export async function getTrendingStorylines(
  * MCap = totalSupply × pricePerToken × PLOT/USD rate.
  */
 export async function getMcapStorylines(
-  supabase: SupabaseClient<Database>,
+  supabase: DatabaseClient,
   limit = 20,
   writerType?: number,
   offset = 0,

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { type Address } from "viem";
 import { publicClient } from "../../../../lib/rpc";
-import { createServerClient, supabase } from "../../../../lib/supabase";
+import { createServerClient, createPublicReadClient } from "../../../../lib/supabase";
 import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 const MAX_COMMENT_LENGTH = 1000;
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   if (!storylineId || !plotIndex) return error("Missing storylineId or plotIndex");
 
-  const db = supabase;
+  const db = createPublicReadClient();
   if (!db) return error("Supabase not configured", 500);
 
   const sid = Number(storylineId);
