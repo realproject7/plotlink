@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerClient, supabase } from "../../../../lib/supabase";
+import { createServerClient, createPublicReadClient } from "../../../../lib/supabase";
 import { STORY_FACTORY } from "../../../../lib/contracts/constants";
 
 function error(message: string, status = 400) {
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const storylineId = req.nextUrl.searchParams.get("storylineId");
   if (!storylineId) return error("Missing storylineId");
 
-  const db = supabase;
+  const db = createPublicReadClient();
   if (!db) return error("Supabase not configured", 500);
 
   const sid = Number(storylineId);

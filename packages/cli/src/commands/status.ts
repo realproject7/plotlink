@@ -1,5 +1,5 @@
 import type { Command } from "commander";
-import { createClient } from "@supabase/supabase-js";
+import { readIndexedStoryline } from "../indexed-data.js";
 import { type Address, erc20Abi, formatUnits } from "viem";
 import { mcv2BondAbi } from "../sdk/index.js";
 import { buildClient } from "../sdk.js";
@@ -8,7 +8,7 @@ import { loadConfig } from "../config.js";
 export function registerStatus(program: Command): void {
   program
     .command("status")
-    .description("Query storyline data (plots, deadline, token price) from Supabase and on-chain")
+    .description("Query storyline data (plots, deadline, token price) from the public API and on-chain")
     .requiredOption("-s, --storyline <id>", "Storyline ID")
     .action(async (opts: { storyline: string }) => {
       try {
@@ -39,14 +39,8 @@ export function registerStatus(program: Command): void {
         // Try Supabase first (fast, indexed), fall back to paginated RPC
         // if not configured or if the storyline isn't indexed yet
         let fromSupabase = false;
-        if (cfg.supabaseUrl && cfg.supabaseAnonKey) {
-          const supabase = createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-          const { data } = await supabase
-            .from("storylines")
-            .select("title, writer_address, token_address, has_deadline, plot_count, last_plot_time, sunset, writer_type, block_timestamp")
-            .eq("storyline_id", Number(storylineId))
-            .eq("contract_address", client.storyFactory.toLowerCase())
-            .single();
+        if (cfg.apiUrl || (cfg.supabaseUrl && cfg.supabaseAnonKey)) {
+          const data = await readIndexedStoryline(cfg, Number(storylineId), client.storyFactory);
 
           if (data) {
             fromSupabase = true;

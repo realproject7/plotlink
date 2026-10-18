@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { type Address, formatUnits } from "viem";
-import { supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/database.browser";
 import { RESERVE_LABEL } from "../../lib/contracts/constants";
 import { usePlotUsdPrice } from "../hooks/usePlotUsdPrice";
 import { formatSubscriptPrice } from "../../lib/format";

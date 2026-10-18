@@ -15,6 +15,7 @@ export interface CliConfig {
   filebaseBucket?: string;
   supabaseUrl?: string;
   supabaseAnonKey?: string;
+  apiUrl?: string;
 }
 
 /**
@@ -44,6 +45,8 @@ export function loadConfig(): CliConfig {
 
   const chainIdRaw = env("PLOTLINK_CHAIN_ID") ?? rc.chainId;
   const chainId = chainIdRaw ? Number(chainIdRaw) : undefined;
+  const supabaseUrl = env("PLOTLINK_SUPABASE_URL") ?? rc.supabaseUrl;
+  const supabaseAnonKey = env("PLOTLINK_SUPABASE_ANON_KEY") ?? rc.supabaseAnonKey;
 
   return {
     privateKey,
@@ -52,8 +55,10 @@ export function loadConfig(): CliConfig {
     filebaseAccessKey: env("PLOTLINK_FILEBASE_ACCESS_KEY") ?? rc.filebaseAccessKey,
     filebaseSecretKey: env("PLOTLINK_FILEBASE_SECRET_KEY") ?? rc.filebaseSecretKey,
     filebaseBucket: env("PLOTLINK_FILEBASE_BUCKET") ?? rc.filebaseBucket,
-    supabaseUrl: env("PLOTLINK_SUPABASE_URL") ?? rc.supabaseUrl,
-    supabaseAnonKey: env("PLOTLINK_SUPABASE_ANON_KEY") ?? rc.supabaseAnonKey,
+    supabaseUrl,
+    supabaseAnonKey,
+    apiUrl: env("PLOTLINK_API_URL") ?? rc.apiUrl ??
+      (supabaseUrl && supabaseAnonKey ? undefined : "https://plotlink.xyz"),
   };
 }
 
@@ -67,6 +72,7 @@ function env(name: string): string | undefined {
 }
 
 interface RcData {
+  apiUrl?: string;
   privateKey?: string;
   rpcUrl?: string;
   chainId?: string;

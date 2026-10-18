@@ -8,20 +8,17 @@
  * storyline token holders. Price change alerts (>10%) sent to holders.
  */
 
-import { createClient } from "@supabase/supabase-js";
+import { createServiceRoleClient, type Database } from "./supabase";
 import { createPublicClient, http, erc20Abi, type Address } from "viem";
 import { base } from "viem/chains";
 import { STORY_FACTORY } from "./contracts/constants";
 
 const NEYNAR_BASE = "https://api.neynar.com/v2/farcaster";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
-
 function getSupabase() {
-  return createClient(supabaseUrl, supabaseServiceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const client = createServiceRoleClient();
+  if (!client) throw new Error("Database not configured");
+  return client;
 }
 
 function getRpcClient() {
@@ -50,7 +47,7 @@ export async function saveUserNotificationToken(
   // Resolve wallet from FID via trusted Neynar API
   const walletAddress = await resolveWalletForFid(fid);
 
-  const row: Record<string, unknown> = {
+  const row: Database["public"]["Tables"]["notification_tokens"]["Insert"] = {
     fid,
     notification_token: token,
     notification_url: url,

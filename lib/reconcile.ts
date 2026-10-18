@@ -1,7 +1,6 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "./supabase";
+import type { DatabaseClient } from "./supabase";
 
-type SupabaseDB = SupabaseClient<Database>;
+type SupabaseDB = DatabaseClient;
 
 /**
  * Reconcile a storyline's plot_count and last_plot_time from the plots table.

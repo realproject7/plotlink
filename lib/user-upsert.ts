@@ -3,8 +3,7 @@
  * Ensures consistent conflict resolution so concurrent calls cannot corrupt rows.
  */
 
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "./supabase";
+import type { Database, DatabaseClient } from "./supabase";
 
 type UserInsert = Database["public"]["Tables"]["users"]["Insert"];
 type UserRow = Database["public"]["Tables"]["users"]["Row"];
@@ -15,7 +14,7 @@ type UserRow = Database["public"]["Tables"]["users"]["Row"];
  * to match the full lookup chain used by getUserFromDB().
  */
 export async function findUserByWallet(
-  supabase: SupabaseClient<Database>,
+  supabase: DatabaseClient,
   normalizedAddress: string,
 ): Promise<UserRow | null> {
   const { data: byVerified } = await supabase
@@ -57,7 +56,7 @@ export async function findUserByWallet(
  * If inserting and a unique violation occurs, re-queries and updates by id.
  */
 export async function upsertUser(
-  supabase: SupabaseClient<Database>,
+  supabase: DatabaseClient,
   userData: UserInsert,
   normalizedAddress: string,
   existingUser: UserRow | null,

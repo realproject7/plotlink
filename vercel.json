@@ -1,4 +1,9 @@
 {
+  "git": {
+    "deploymentEnabled": {
+      "codex/resource-consolidation-plotlink": false
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/backfill",
