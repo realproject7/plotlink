@@ -6,6 +6,7 @@
 !next-env.d.ts
 !postcss.config.mjs
 !tsconfig.json
+!vitest.setup.ts
 !src/
 !src/**
 !lib/
