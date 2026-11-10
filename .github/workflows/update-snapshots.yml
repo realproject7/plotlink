@@ -9,7 +9,9 @@ concurrency:
 
 jobs:
   update-snapshots:
-    runs-on: ubuntu-latest
+    # Same pin as ci.yml: Playwright 1.59 cannot install Chromium on Ubuntu 26.04,
+    # which ubuntu-latest now points to. Lift both pins together.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
